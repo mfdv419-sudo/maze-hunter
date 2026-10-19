@@ -1,0 +1,9 @@
+export type Language = 'en' | 'id';
+const dict = {
+  en: { play:'Enter the maze', continue:'Continue descent', solo:'Solo Adventure', race:'Race · vs Warden AI', retro:'Retro palette', levels:'Journey map', settings:'Settings', back:'Back', sound:'Sound', language:'Language', reduced:'Reduce motion', level:'LEVEL', hp:'VITALITY', shards:'SHARDS', objective:'Find the shards. Reach the gate.', pause:'PAUSED', resume:'Resume', retry:'Try again', next:'Next level', levelSelect:'Journey map', home:'Title screen', victory:'The path remembers you.', defeat:'The maze claims another.', time:'TIME', attack:'ATTACK', locked:'Sealed', cleared:'Cleared', available:'Ready', sector:'SECTOR', collect:'Shard collected', boss:'The Warden', campaign:'Campaign complete', retroOn:'Retro palette: on', retroOff:'Retro palette: off' },
+  id: { play:'Masuki labirin', continue:'Lanjutkan perjalanan', solo:'Petualangan Solo', race:'Balapan · AI Penjaga', retro:'Palet retro', levels:'Peta perjalanan', settings:'Pengaturan', back:'Kembali', sound:'Suara', language:'Bahasa', reduced:'Kurangi animasi', level:'LEVEL', hp:'NYAWA', shards:'SERPIHAN', objective:'Temukan serpihan. Capai gerbang.', pause:'DIJEDA', resume:'Lanjutkan', retry:'Coba lagi', next:'Level berikutnya', levelSelect:'Peta perjalanan', home:'Layar judul', victory:'Labirin mengingatmu.', defeat:'Labirin menelanmu.', time:'WAKTU', attack:'SERANG', locked:'Terkunci', cleared:'Selesai', available:'Terbuka', sector:'SEKTOR', collect:'Serpihan didapat', boss:'Sang Penjaga', campaign:'Kampanye selesai', retroOn:'Palet retro: aktif', retroOff:'Palet retro: nonaktif' }
+} as const;
+export type TextKey = keyof typeof dict.en;
+export function t(key: TextKey, lang: Language = 'en'): string { return dict[lang][key]; }
+export function getLanguage(): Language { return (localStorage.getItem('mh-language') as Language) || 'en'; }
+export function setLanguage(lang: Language) { localStorage.setItem('mh-language', lang); }

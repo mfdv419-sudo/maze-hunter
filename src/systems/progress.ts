@@ -1,0 +1,5 @@
+export interface Progress { unlocked: number; cleared: number[]; bestTimes: Record<string, number>; kills: number; shards: number; }
+const KEY = 'maze-hunter-progress-v1';
+export function loadProgress(): Progress { try { const raw = localStorage.getItem(KEY); if (raw) { const p = JSON.parse(raw) as Progress; return { unlocked: Math.max(1, Math.min(100, p.unlocked || 1)), cleared: Array.isArray(p.cleared) ? p.cleared : [], bestTimes: p.bestTimes || {}, kills: p.kills || 0, shards: p.shards || 0 }; } } catch { /* recover with a fresh local save */ } return { unlocked: 1, cleared: [], bestTimes: {}, kills: 0, shards: 0 }; }
+export function saveProgress(p: Progress) { localStorage.setItem(KEY, JSON.stringify(p)); }
+export function clearLevel(id: number, seconds: number, kills: number, shards: number): Progress { const p = loadProgress(); if (!p.cleared.includes(id)) p.cleared.push(id); p.unlocked = Math.max(p.unlocked, Math.min(100, id + 1)); const k = String(id); if (!p.bestTimes[k] || seconds < p.bestTimes[k]) p.bestTimes[k] = seconds; p.kills += kills; p.shards += shards; saveProgress(p); return p; }
