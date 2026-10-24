@@ -1,0 +1,11 @@
+{
+ "rules": {
+  ".read": false, ".write": false,
+  "mazeRooms": { "$code": { ".read": "auth != null && data.child('owners').child(auth.uid).val() == true", ".write": false } },
+  "mazePresence": { "$code": { "$player": {
+   ".read": "auth != null && root.child('mazeRooms').child($code).child('owners').child(auth.uid).val() == true",
+   ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($player).child('uid').val() == auth.uid",
+   ".validate": "newData.isBoolean()"
+  } } }
+ }
+}

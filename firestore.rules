@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  match /families/{uid}/profiles/{profile} {
+   allow read: if request.auth != null && request.auth.uid == uid;
+   allow create, update: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['id','name','language','outfit','retro','modernWins','updatedAt'])
+    && request.resource.data.id == profile
+    && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 24
+    && request.resource.data.language in ['id','en']
+    && request.resource.data.outfit in ['classic','explorer','raincoat','space']
+    && request.resource.data.retro is map && request.resource.data.retro.size() <= 100
+    && request.resource.data.modernWins is number && request.resource.data.modernWins >= 0
+    && request.resource.data.updatedAt is number;
+   allow delete: if false;
+  }
+  match /entitlements/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
+ }
+}

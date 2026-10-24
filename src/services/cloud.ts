@@ -1,0 +1,148 @@
+import { initializeApp } from "firebase/app";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  type User,
+} from "firebase/auth";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  doc,
+  runTransaction,
+  getDoc,
+} from "firebase/firestore";
+import { getDatabase, ref, onValue, onDisconnect } from "firebase/database";
+import { mergeProfile, validProfile, type Profile } from "./local";
+const env = import.meta.env;
+export const cloudConfigured = !!(
+  env.VITE_FIREBASE_API_KEY &&
+  env.VITE_FIREBASE_AUTH_DOMAIN &&
+  env.VITE_FIREBASE_PROJECT_ID &&
+  env.VITE_FIREBASE_APP_ID
+);
+const app = cloudConfigured
+  ? initializeApp({
+      apiKey: env.VITE_FIREBASE_API_KEY,
+      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+      projectId: env.VITE_FIREBASE_PROJECT_ID,
+      appId: env.VITE_FIREBASE_APP_ID,
+      databaseURL: env.VITE_FIREBASE_DATABASE_URL,
+    })
+  : null;
+const auth = app ? getAuth(app) : null,
+  db = app ? getFirestore(app) : null,
+  rtdb = app && env.VITE_FIREBASE_DATABASE_URL ? getDatabase(app) : null;
+export function watchAuth(fn: (u: User | null) => void) {
+  if (!auth) {
+    queueMicrotask(() => fn(null));
+    return () => {};
+  }
+  return onAuthStateChanged(auth, fn);
+}
+export async function login() {
+  if (!auth)
+    throw Error("Firebase belum dikonfigurasi / Firebase is not configured");
+  await signInWithPopup(auth, new GoogleAuthProvider());
+}
+export async function logout() {
+  if (auth) await signOut(auth);
+}
+export async function getProfiles(uid: string) {
+  if (!db) throw Error("Cloud unavailable");
+  const snaps = await getDocs(collection(db, "families", uid, "profiles"));
+  return snaps.docs.map((d) => d.data()).filter(validProfile);
+}
+export async function syncProfile(uid: string, p: Profile) {
+  if (!db) throw Error("Cloud unavailable");
+  const target = doc(db, "families", uid, "profiles", p.id);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(target),
+      old = snap.data();
+    const merged = validProfile(old) ? mergeProfile(p, old) : p;
+    tx.set(target, merged);
+    return merged;
+  });
+}
+export async function getEntitlement(uid: string) {
+  if (!db) return false;
+  const s = await getDoc(doc(db, "entitlements", uid));
+  const d = s.data();
+  return !!(d?.adFreeUntil?.toMillis && d.adFreeUntil.toMillis() > Date.now());
+}
+export interface RoomPlayer {
+  uid: string;
+  profileId: string;
+  name: string;
+  outfit: string;
+  ready: boolean;
+  online: boolean;
+  x: number;
+  y: number;
+  angle: number;
+  lastMove: number;
+  seq: number;
+  finishedAt: number | null;
+  slot: number;
+}
+export interface Room {
+  id: string;
+  host: string;
+  mode: "race" | "coop";
+  difficulty: "medium" | "hard" | "extreme";
+  seed: number;
+  state: "lobby" | "playing" | "finished";
+  createdAt: number;
+  startsAt: number;
+  players: Record<string, RoomPlayer>;
+  winner: string | null;
+  finishedAt: number | null;
+  owners: Record<string, boolean>;
+  expiresAt: number;
+  revision: number;
+}
+export const multiplayerConfigured = () => !!rtdb;
+let clockOffset = 0;
+export const serverNow = () => Date.now() + clockOffset;
+export async function roomAction(
+  action: string,
+  payload: Record<string, unknown>,
+) {
+  if (!auth?.currentUser) throw Error("Login required");
+  const response = await fetch("/.netlify/functions/maze-room", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const data = await response.json();
+  if (typeof data.serverTime === "number")
+    clockOffset = data.serverTime - Date.now();
+  if (!response.ok) throw Error(data.error || "Room request failed");
+  return data as { room: Room; playerKey: string };
+}
+export function watchRoom(
+  code: string,
+  fn: (r: Room | null) => void,
+  error: (e: Error) => void,
+) {
+  if (!rtdb) throw Error("Realtime Database unavailable");
+  return onValue(ref(rtdb, `mazeRooms/${code}`), (s) => fn(s.val()), error);
+}
+export async function roomPresence(code: string, key: string) {
+  if (!rtdb) return () => Promise.resolve();
+  const target = ref(rtdb, `mazePresence/${code}/${key}`);
+  const { set } = await import("firebase/database");
+  const dc = onDisconnect(target);
+  await dc.set(false);
+  await set(target, true);
+  return async () => {
+    await set(target, false);
+    await dc.cancel();
+  };
+}

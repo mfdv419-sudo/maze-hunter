@@ -1,27 +1,63 @@
-import { describe, it, expect } from 'vitest';
-import { flood, generateMaze, getLevelConfig, SECTORS } from '../src/systems/levels';
-
-describe('Maze Hunter campaign integrity', () => {
-  it('defines exactly 100 unique levels across five named sectors', () => {
-    const levels = Array.from({length:100},(_,i)=>getLevelConfig(i+1));
-    expect(levels.map(l=>l.id)).toEqual(Array.from({length:100},(_,i)=>i+1));
-    expect(new Set(levels.map(l=>l.seed)).size).toBe(100);
-    expect(SECTORS.map(s=>s.name)).toEqual(['The Overgrown','Dark Ruins','Fungal Depths','Iron Maze','Last Garden']);
-    expect(SECTORS.reduce((n,s)=>n+s.to-s.from+1,0)).toBe(100);
-  });
-  it('generates valid connected routes, objectives, and unique spawn locations for all 100 levels', () => {
-    for(let id=1;id<=100;id++){
-      const config=getLevelConfig(id), maze=generateMaze(config), rows=maze.grid.length, cols=maze.grid[0].length;
-      expect(maze.grid.length).toBeGreaterThan(0); expect(maze.grid.every(r=>r.length===cols)).toBe(true);
-      expect(maze.grid[maze.start.y][maze.start.x]).toBe(0); expect(maze.grid[maze.exit.y][maze.exit.x]).toBe(0);
-      const reached=flood(maze.grid,maze.start); expect(reached.has(`${maze.exit.x},${maze.exit.y}`)).toBe(true);
-      expect(maze.shards.length).toBeGreaterThanOrEqual(1); expect(maze.shards.length).toBeLessThanOrEqual(config.requiredShards);
-      for(const p of [...maze.shards,...maze.enemies,...maze.hazards]){expect(p.x).toBeGreaterThan(0);expect(p.x).toBeLessThan(cols-1);expect(p.y).toBeGreaterThan(0);expect(p.y).toBeLessThan(rows-1);expect(maze.grid[p.y][p.x]).toBe(0);expect(reached.has(`${p.x},${p.y}`)).toBe(true);}
-      const unique=new Set([...maze.shards,...maze.enemies,...maze.hazards].map(p=>`${p.x},${p.y}`));expect(unique.size).toBe(maze.shards.length+maze.enemies.length+maze.hazards.length);
+import { describe, it, expect } from "vitest";
+import {
+  retroConfig,
+  retroMaze,
+  modernMaze,
+  modernSettings,
+  distances,
+  route,
+  center,
+  clearSegment,
+} from "../src/game/maze";
+describe("Retro 100-level campaign", () => {
+  it("has 100 unique deterministic solvable levels in 10 regions", () => {
+    const layouts = new Set<string>();
+    for (let id = 1; id <= 100; id++) {
+      const c = retroConfig(id),
+        m = c.maze;
+      expect(c.region).toBe(Math.floor((id - 1) / 10));
+      expect(m.grid).toEqual(retroMaze(id).grid);
+      layouts.add(JSON.stringify(m.grid));
+      const path = route(m.grid, m.start, m.finish);
+      expect(path.length).toBeGreaterThan(2);
+      expect(c.seconds).toBeGreaterThan(path.length);
+      for (let i = 1; i < path.length; i++)
+        expect(clearSegment(m.grid, center(path[i - 1]), center(path[i]))).toBe(
+          true,
+        );
     }
+    expect(layouts.size).toBe(100);
   });
-  it('creates distinct deterministic layouts and increasing difficulty bands',()=>{
-    const a=generateMaze(getLevelConfig(4)),b=generateMaze(getLevelConfig(4)),c=generateMaze(getLevelConfig(76));
-    expect(a.grid).toEqual(b.grid);expect(c.grid).not.toEqual(a.grid);expect(getLevelConfig(92).difficulty).toBeGreaterThanOrEqual(getLevelConfig(2).difficulty);
+  it("grows maze size each region and rejects out-of-range levels", () => {
+    for (let r = 1; r < 10; r++)
+      expect(retroMaze(r * 10 + 1).grid.length).toBeGreaterThan(
+        retroMaze((r - 1) * 10 + 1).grid.length,
+      );
+    expect(() => retroMaze(0)).toThrow();
+    expect(() => retroMaze(101)).toThrow();
+  });
+});
+describe("Modern fair entrances", () => {
+  it("provides 4 distinct reachable entrances with exactly equal shortest paths", () => {
+    for (const difficulty of ["medium", "hard", "extreme"] as const)
+      for (let seed = 1; seed <= 20; seed++) {
+        const m = modernMaze(difficulty, seed),
+          d = distances(m.grid, m.finish),
+          lengths = m.entrances.map((p) => d.get(`${p.x},${p.y}`));
+        expect(new Set(m.entrances.map((p) => JSON.stringify(p))).size).toBe(4);
+        expect(lengths.every((n) => typeof n === "number" && n > 0)).toBe(true);
+        expect(new Set(lengths).size).toBe(1);
+      }
+  });
+  it("increases map size and reduces vision by difficulty", () => {
+    expect(modernMaze("hard", 1).grid.length).toBeGreaterThan(
+      modernMaze("medium", 1).grid.length,
+    );
+    expect(modernMaze("extreme", 1).grid.length).toBeGreaterThan(
+      modernMaze("hard", 1).grid.length,
+    );
+    expect(modernSettings.extreme.vision).toBeLessThan(
+      modernSettings.hard.vision,
+    );
   });
 });

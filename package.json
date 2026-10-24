@@ -9,13 +9,20 @@
     "test": "vitest run",
     "validate:levels": "vitest run tests/levels.test.ts",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test:browser": "playwright test"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
+    "phaser": "^3.90.0",
+    "three": "^0.186.1"
   },
   "devDependencies": {
+    "@netlify/functions": "^6.0.3",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.15.30",
+    "@types/three": "^0.186.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.1.3"
