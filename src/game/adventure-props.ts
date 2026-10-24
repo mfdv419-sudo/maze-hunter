@@ -16,18 +16,32 @@ export function goldGate():T.Group {
  g.name='gold-gate';return g;
 }
 export function seedGuardian(boss=false):T.Group {
- const g=new T.Group();const bark=new T.MeshLambertMaterial({color:boss?0x735144:0x94774d,flatShading:true}),leaf=new T.MeshLambertMaterial({color:0x75b96c,flatShading:true}),cream=new T.MeshBasicMaterial({color:0xffe7b4}),ink=new T.MeshBasicMaterial({color:0x173b3b});
- function add(geo:T.BufferGeometry,mat:T.Material,x:number,y:number,z:number){const m=new T.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;}
- add(new T.IcosahedronGeometry(.3,1),bark,0,.43,0).scale.y=1.3;
- for(const s of [-1,1]) {
-  add(new T.BoxGeometry(.09,.2,.12),bark,s*.17,.12,0);
-  add(new T.ConeGeometry(.11,.3,4),leaf,s*.2,.84,0).rotation.z=-s*.5;
-  add(new T.SphereGeometry(.055,6,4),cream,s*.1,.52,.27);
-  add(new T.SphereGeometry(.025,6,4),ink,s*.1,.52,.31);
-  add(new T.BoxGeometry(.09,.25,.1),bark,s*.32,.44,.03).rotation.z=s*.5;
+ const g=new T.Group();g.name=boss?'raja-rimbun':'seed-guardian';
+ const bark=new T.MeshLambertMaterial({color:boss?0x78533d:0xa68050,flatShading:true}),leaf=new T.MeshLambertMaterial({color:boss?0x2c7450:0x78aa4f,flatShading:true}),gold=new T.MeshLambertMaterial({color:0xf2c766}),cream=new T.MeshBasicMaterial({color:0xfff1d0}),ink=new T.MeshBasicMaterial({color:0x173b3b}),pink=new T.MeshLambertMaterial({color:0xf4a8b7});
+ const k=boss?1.65:1;
+ function add(geo:T.BufferGeometry,mat:T.Material,x:number,y:number,z:number){const m=new T.Mesh(geo,mat);m.position.set(x*k,y*k,z*k);m.scale.setScalar(k);g.add(m);return m;}
+ add(new T.CylinderGeometry(.25,.32,.64,7),bark,0,.55,0);
+ add(new T.IcosahedronGeometry(.32,1),bark,0,.98,0).scale.y=k*.83;
+ for(const side of [-1,1]) {
+  add(new T.ConeGeometry(.09,.35,5),bark,side*.19,.16,.04).rotation.z=-side*.5;
+  const arm=add(new T.CylinderGeometry(.075,.1,.46,5),bark,side*.37,.66,0);arm.rotation.z=-side*.65;
+  add(new T.SphereGeometry(.09,8,5),cream,side*.12,1.02,.27);
+  add(new T.SphereGeometry(.043,7,5),ink,side*.12,1.01,.34);
+  const brow=add(new T.BoxGeometry(.19,.055,.07),leaf,side*.12,1.15,.27);brow.rotation.z=side*.17;
+  add(new T.IcosahedronGeometry(.21,0),leaf,side*.24,.83,-.07);
  }
- const sling=add(new T.TorusGeometry(.13,.025,4,8,Math.PI),bark,.29,.6,.15);sling.rotation.z=Math.PI;
- if(boss){for(let i=0;i<5;i++){const a=i/5*Math.PI*2;add(new T.ConeGeometry(.07,.19,4),cream,Math.cos(a)*.2,.89,Math.sin(a)*.2);}g.scale.setScalar(1.7);}
+ add(new T.TorusGeometry(.09,.02,4,10,Math.PI),ink,0,.89,.3).rotation.z=Math.PI;
+ const sling=add(new T.TorusGeometry(.17,.035,5,10,Math.PI),gold,.43,.8,.13);sling.rotation.z=Math.PI;
+ add(new T.CylinderGeometry(.11,.11,.07,8),pink,.43,.72,.14);
+ if(boss) {
+  add(new T.CylinderGeometry(.34,.37,.11,9),gold,0,1.25,0);
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2;add(new T.ConeGeometry(.075,.27,4),gold,Math.cos(a)*.29,1.41,Math.sin(a)*.29);}
+  add(new T.OctahedronGeometry(.11),new T.MeshLambertMaterial({color:0x7ee1ce}),0,1.35,.36);
+  for(let i=0;i<5;i++){const a=(i/4-.5)*1.5;const m=add(new T.ConeGeometry(.17,.7,5),leaf,Math.sin(a)*.33,.55,-.3);m.rotation.z=-a*.5;}
+ }else {
+  add(new T.ConeGeometry(.35,.3,6),leaf,0,1.28,0);
+  add(new T.BoxGeometry(.14,.18,.02),gold,0,.66,.29);
+ }
  return g;
 }
 export function collectible(kind:'seal'|'star'|'chest'):T.Group {

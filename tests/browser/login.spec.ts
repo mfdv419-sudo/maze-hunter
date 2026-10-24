@@ -3,7 +3,7 @@ test("failed Firebase initialization keeps its actual error visible and Play bec
   // Simulate the browser denying a new window, never simulate an account.
   await page.addInitScript(() => { window.open = () => null; });
   await page.goto("/");
-  await expect(page.locator(".build-label")).toHaveText("24.10.24-M5");
+  await expect(page.locator(".build-label")).toHaveText("24.10.24-M6");
   await page.locator("#play").click();
   const error = page.locator("#auth-error");
   // SDK versions may reject a null popup as internal-error or popup-blocked.

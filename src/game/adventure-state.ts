@@ -6,6 +6,7 @@ export class AdventureState {
  readonly layout; readonly grid; readonly guards:Guard[];
  position:Point;checkpoint:Point;elapsed=0;lives=3;ammo=6;seals=new Set<number>();stars=new Set<number>();chests=new Set<number>();broken=new Set<string>();projectiles:Cake[]=[];
  invulnerableUntil=0;slowUntil=0;stunUntil=0;hits=0;lastHit=-100;lastThrow=-100;lastJump=-100;resetFogRevision=0;respawns=0;revision=0;message='';messageAt=-10;
+ effectEvents:{id:number;source:'guard'|'boss'|'river'|'cake';point:Point}[]=[];effectId=0;
  phase:'playing'|'won'|'lost'='playing';reason:'time'|'lives'|null=null;
  constructor(readonly difficulty:Difficulty,readonly mapIndex:number,variation=1) {
   this.layout=adventureLayout(difficulty,mapIndex,variation);this.grid=this.layout.maze.grid.map(r=>[...r]);
@@ -31,6 +32,7 @@ export class AdventureState {
  }
  damage(source:'guard'|'boss'|'river') {
   if(this.phase!=='playing'||this.elapsed<this.invulnerableUntil)return;
+  this.effectEvents.push({id:++this.effectId,source,point:{...this.position}});this.effectEvents=this.effectEvents.slice(-32);
   this.invulnerableUntil=this.elapsed+1.4;
   if(source==='guard') {
    if(this.elapsed-this.lastHit>7)this.hits=0;this.lastHit=this.elapsed;this.hits++;
@@ -46,6 +48,7 @@ export class AdventureState {
  }
  hitGuard(g:Guard) {
   if(g.dead)return;
+  this.effectEvents.push({id:++this.effectId,source:'cake',point:{...g.position}});this.effectEvents=this.effectEvents.slice(-32);
   if(this.elapsed-g.lastHit>7&&!g.boss){g.hits=0;g.hp=3;}
   g.lastHit=this.elapsed;g.hits++;g.hp--;
   if(g.hp<=0){g.dead=true;this.ammo=Math.min(8,this.ammo+3);this.notify(g.boss?'boss-win':'guard-win');this.revision++;}
@@ -56,7 +59,7 @@ export class AdventureState {
   this.elapsed+=Math.max(0,raw);
   if(this.elapsed>=this.limit){this.phase='lost';this.reason='time';return;}
   if(this.elapsed-this.lastHit>7)this.hits=0;
-  this.position=moveSliding(this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor);
+  this.position=moveSliding(this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor,.13);
   if(jump<.08&&this.layout.rivers.some(p=>Math.floor(this.position.x)===p.x&&Math.floor(this.position.y)===p.y))this.damage('river');
   const pickup=(list:Point[],set:Set<number>,kind:string)=>list.forEach((p,i)=>{if(!set.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.48){set.add(i);this.revision++;this.notify(kind);if(kind==='seal'){this.checkpoint=center(p);this.ammo=Math.min(8,this.ammo+2);}if(kind==='chest'){this.ammo=8;this.lives=Math.min(3,this.lives+1);}}});
   pickup(this.layout.seals,this.seals,'seal');pickup(this.layout.stars,this.stars,'star');pickup(this.layout.chests,this.chests,'chest');
@@ -68,7 +71,7 @@ export class AdventureState {
     else g.position=moveSliding(this.grid,g.position,(target.x-g.position.x)/d*speed*dt,(target.y-g.position.y)/d*speed*dt,.16);
    }
    const d=Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y);
-   if(d<.5&&jump<.2)this.damage(g.boss?'boss':'guard');
+   if(d<(g.boss?.4:.3)&&jump<.2)this.damage(g.boss?'boss':'guard');
    if(this.elapsed>=g.stunUntil&&d<(g.boss?6:4.4)&&d>1&&clearSegment(this.grid,g.position,this.position,.05)) {
     if(!g.telegraphUntil&&this.elapsed>=g.nextShot){g.telegraphUntil=this.elapsed+(g.boss?.85:1);g.aim={...this.position};}
    }
@@ -84,8 +87,8 @@ export class AdventureState {
    const next={x:cake.position.x+cake.velocity.x*dt,y:cake.position.y+cake.velocity.y*dt};
    if(!clearSegment(this.grid,cake.position,next,.04))continue;
    cake.position=next;let hit=false;
-   if(cake.owner==='player') {for(const g of this.guards)if(!g.dead&&Math.hypot(g.position.x-next.x,g.position.y-next.y)<.37){this.hitGuard(g);hit=true;break;}}
-   else if(jump<.22&&Math.hypot(this.position.x-next.x,this.position.y-next.y)<.33){this.damage(cake.owner);hit=true;}
+   if(cake.owner==='player') {for(const g of this.guards)if(!g.dead&&Math.hypot(g.position.x-next.x,g.position.y-next.y)<(g.boss?.43:.27)){this.hitGuard(g);hit=true;break;}}
+   else if(jump<.22&&Math.hypot(this.position.x-next.x,this.position.y-next.y)<.25){this.damage(cake.owner);hit=true;}
    if(this.respawns!==respawnsBefore){keep.length=0;break;}
    if(!hit)keep.push(cake);
   }

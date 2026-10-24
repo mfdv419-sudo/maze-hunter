@@ -1,9 +1,10 @@
+import {recordRun,readRuns} from "./services/records";
 import {adventureRules,nextMap} from "./game/adventure-layout";
 import {readPreferences,writePreferences,furColors} from "./services/preferences";
 import {bindJoystick} from "./game/touch-controls";
 import "./style.css";
 import { authErrorInfo, loginErrorDetails, safeLoginText } from "./services/auth-errors";
-import { tone, isMuted, setMuted } from "./systems/audio";
+import { tone, isMuted, setMuted,unlockAudio,setAudioScene,sfx,audioVolumes,setAudioVolumes } from "./systems/audio";
 import {
   serverNow,
   watchAuth,
@@ -42,6 +43,8 @@ import type { ModernGame } from "./game/modern";
 import type { RetroGame } from "./game/retro";
 import { loadAds, betweenLevels } from "./services/ads";
 const root = document.querySelector<HTMLDivElement>("#game")!;
+window.addEventListener('pointerdown',unlockAudio,{once:true,capture:true});
+window.addEventListener('keydown',unlockAudio,{once:true,capture:true});
 let lang: "id" | "en" =
   localStorage.getItem("mh-language") === "en" ? "en" : "id";
 const tr = (id: string, en: string) => (lang === "id" ? id : en);
@@ -56,7 +59,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "24.10.24-M5";
+const buildLabel = "24.10.24-M6";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -137,6 +140,7 @@ function header() {
 }
 function begin(name: string, html: string) {
   generation++;
+  setAudioScene(name);
   cleanup();
   cleanup = () => {};
   game?.dispose();
@@ -166,7 +170,8 @@ function begin(name: string, html: string) {
       );
       return;
     }
-    if (screen === "map") journey();
+    if(screen==="scores")scores();
+    else if (screen === "map") journey();
     else if (screen === "profiles") profiles();
     else if (screen === "wardrobe") wardrobe();
     else if (screen === "setup") setup();
@@ -210,9 +215,9 @@ function home() {
         <button id="retro-mode" class="mode-tile" aria-pressed="${homeMode === "retro"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>RETRO JOURNEY</b><small>${tr("Sentuh & telusuri jalurnya", "Touch & trace your path")}</small></span><i>✓</i></button>
         <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
       </div>
-      <div class="scene-caption"><span class="scene-eyebrow">${tr("INTIP DUNIANYA", "A PEEK AT THE WORLD")}</span><strong>${tr("Rimba Pagi", "Morning Forest")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Ikuti jejak menuju gerbang emas", "Follow the trail to the golden gate") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
+      <div class="scene-caption"><span class="scene-eyebrow">${tr("SAHABAT PETUALANGANMU", "YOUR ADVENTURE COMPANION")}</span><strong>${profile?esc(profile.name):tr("Sahabat Rimba", "Forest Friend")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Ikuti jejak menuju gerbang emas", "Follow the trail to the golden gate") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
       <div class="mascot-hint">${tr("Ketuk binturong!", "Tap the binturong!")} <span>↗</span></div>
-      <div class="title-tools">${button("⚙", "settings", "round-tool")}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
+      <div class="title-tools">${button("⚙", "settings", "round-tool")}${profile?button('<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Zm0 2H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v7m-5 0h10"/></svg>',"scores","round-tool"):""}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
       ${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
       ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
     </main>`,
@@ -278,6 +283,8 @@ function home() {
   version.className = "build-label";
   version.textContent = buildLabel;
   el("title-world").parentElement!.append(version);
+  el("scores")?.setAttribute("aria-label",tr("Peringkat keluarga", "Family records"));
+  click("scores",()=>scores());
   click("settings", () => settings());
   click("how", () => instructions());
   function chooseMode(mode: "retro" | "modern") {
@@ -316,10 +323,10 @@ function home() {
   });
 }
 function settings() {
-  const prefs=readPreferences(),overlay=document.createElement('div');overlay.className='modal-backdrop';
-  overlay.innerHTML=`<section class="modal settings-modal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('PENGATURAN','SETTINGS')}</div><h2>${tr('Nyaman di tanganmu.','Made for your hands.')}</h2><label>${tr('Warna bulu','Fur color')}<select id="fur-choice"><option value="charcoal">${tr('Abu arang','Charcoal')}</option><option value="brown">${tr('Cokelat hangat','Warm brown')}</option><option value="silver">${tr('Perak','Silver')}</option></select></label><label>Joystick<select id="stick-choice"><option value="fixed">${tr('Tetap (bawaan)','Fixed (default)')}</option><option value="floating">${tr('Mengikuti sentuhan','Touch position')}</option></select></label><label>${tr('Ukuran kontrol','Control size')}<input id="control-size" type="range" min="0.8" max="1.25" step=".05" value="${prefs.controlScale}"></label><label>${tr('Jarak dari kiri','Left margin')}<input id="control-left" type="range" min="10" max="90" value="${prefs.left}"></label><label>${tr('Jarak dari bawah','Bottom margin')}<input id="control-bottom" type="range" min="10" max="90" value="${prefs.bottom}"></label>${button(tr('SIMPAN','SAVE'),'save-settings')}${button(tr('Batal','Cancel'),'cancel-settings','quiet')}</section>`;
-  document.body.append(overlay);el<HTMLSelectElement>('fur-choice').value=prefs.fur;el<HTMLSelectElement>('stick-choice').value=prefs.joystick;
-  click('cancel-settings',()=>overlay.remove());click('save-settings',()=>{writePreferences({fur:el<HTMLSelectElement>('fur-choice').value as typeof prefs.fur,joystick:el<HTMLSelectElement>('stick-choice').value as typeof prefs.joystick,controlScale:Number(el<HTMLInputElement>('control-size').value),left:Number(el<HTMLInputElement>('control-left').value),bottom:Number(el<HTMLInputElement>('control-bottom').value)});overlay.remove();home();});
+  const prefs=readPreferences(),volumes=audioVolumes(),overlay=document.createElement('div');overlay.className='modal-backdrop';
+  overlay.innerHTML=`<section class="modal settings-modal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('PENGATURAN','SETTINGS')}</div><h2>${tr('Nyaman di tanganmu.','Made for your hands.')}</h2><label>${tr('Warna bulu','Fur color')}<select id="fur-choice"><option value="charcoal">${tr('Abu arang','Charcoal')}</option><option value="brown">${tr('Cokelat hangat','Warm brown')}</option><option value="silver">${tr('Perak','Silver')}</option></select></label><label>Joystick<select id="stick-choice"><option value="fixed">${tr('Tetap (bawaan)','Fixed (default)')}</option><option value="floating">${tr('Mengikuti sentuhan','Touch position')}</option></select></label><label>${tr('Ukuran kontrol','Control size')}<input id="control-size" type="range" min="0.8" max="1.25" step=".05" value="${prefs.controlScale}"></label><label>${tr('Jarak dari kiri','Left margin')}<input id="control-left" type="range" min="10" max="90" value="${prefs.left}"></label><label>${tr('Jarak dari bawah','Bottom margin')}<input id="control-bottom" type="range" min="35" max="180" value="${prefs.bottom}"></label><label>${tr('Kamera Adventure','Adventure camera')}<select id="camera-choice"><option value="follow">${tr('Ikuti dari belakang','Follow from behind')}</option><option value="overview">${tr('Pandangan tinggi','High view')}</option></select></label><label>${tr('Musik','Music')}<input id="music-volume" type="range" min="0" max="1" step=".05" value="${volumes.music}"></label><label>${tr('Efek suara','Sound effects')}<input id="effects-volume" type="range" min="0" max="1" step=".05" value="${volumes.effects}"></label>${button(tr('SIMPAN','SAVE'),'save-settings')}${button(tr('Batal','Cancel'),'cancel-settings','quiet')}</section>`;
+  document.body.append(overlay);el<HTMLSelectElement>('fur-choice').value=prefs.fur;el<HTMLSelectElement>('stick-choice').value=prefs.joystick;el<HTMLSelectElement>('camera-choice').value=prefs.camera;
+  click('cancel-settings',()=>overlay.remove());click('save-settings',()=>{writePreferences({fur:el<HTMLSelectElement>('fur-choice').value as typeof prefs.fur,joystick:el<HTMLSelectElement>('stick-choice').value as typeof prefs.joystick,controlScale:Number(el<HTMLInputElement>('control-size').value),left:Number(el<HTMLInputElement>('control-left').value),bottom:Number(el<HTMLInputElement>('control-bottom').value),camera:el<HTMLSelectElement>('camera-choice').value as typeof prefs.camera});setAudioVolumes(Number(el<HTMLInputElement>('music-volume').value),Number(el<HTMLInputElement>('effects-volume').value));overlay.remove();home();});
 }
 function instructions() {
   const overlay = document.createElement("div");
@@ -617,7 +624,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
       el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.max(0,Math.ceil(state.limit-state.elapsed))}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
       objectives.textContent=`◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.mapIndex+1}/10`;
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Cari gerbang setelah semua segel terkumpul.','King defeated! Find the gate after collecting all seals.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text)toast(text[lang==='id'?0:1]);}
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Cari gerbang setelah semua segel terkumpul.','King defeated! Find the gate after collecting all seals.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
       const elapsed = room
@@ -633,6 +640,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
       tone(won ? 720 : 120, 0.18, "sine", 0.025);
       if (won && profile) {
         profile.modernWins++;
+        if(modern.adventure)recordRun(uid,{profileId:profile.id,name:profile.name,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
         void save();
       }
       result(
@@ -730,8 +738,9 @@ function wardrobe() {
     ] as const;
   begin(
     "wardrobe",
-    `<main class="page wardrobe-page"><section><div class="eyebrow">${tr("KARAKTER & KOSTUM", "CHARACTER & OUTFITS")}</div><h1>${tr("Gaya kecil.<br>Petualangan besar.", "Little style.<br>Big adventure.")}</h1><p>${tr("Binturong fantasi · semua kostum memiliki kemampuan setara.", "Fantasy binturong · every outfit has equal abilities.")}</p><div id="outfit-preview"></div></section><section class="outfit-options"><p class="eyebrow">${stars} ★ ${tr("DIKUMPULKAN", "COLLECTED")}</p>${outfits.map(([id, name, min]) => `<button id="outfit-${id}" class="outfit ${profile!.outfit === id ? "selected" : ""}" ${stars < min ? "disabled" : ""}><b>${name}</b><span>${stars < min ? `${min} ★` : profile!.outfit === id ? tr("DIPAKAI", "EQUIPPED") : tr("PAKAI", "EQUIP")}</span></button>`).join("")}<div class="parent-note"><b>${tr("Area orang tua", "Parent area")}</b><p>${tr("Kumpulkan bintang untuk membuka kostum baru. Semua kostum memiliki kemampuan setara.", "Collect stars to unlock new outfits. Every outfit has equal abilities.")}</p><p>${adFree ? tr("Status akun: bebas iklan", "Account: ad-free") : tr("Status akun: gratis", "Account: free")}</p></div></section></main>`,
+    `<main class="page wardrobe-page"><section class="wardrobe-stage"><div class="wardrobe-title"><span>${tr("RUANG KOSTUM", "DRESSING ROOM")}</span><h1>${esc(profile.name)}</h1></div><div id="outfit-preview"></div><div class="wardrobe-caption">${tr("Binturong fantasi", "Fantasy binturong")} · ★ ${stars}</div></section><section class="outfit-options"><div class="inventory-heading"><h2>${tr("Pilih gayamu", "Pick your style")}</h2>${button("×","wardrobe-close","round-tool")}</div><div class="outfit-grid">${outfits.map(([id,name,min],i)=>`<button id="outfit-${id}" class="outfit outfit-card ${profile!.outfit===id?"selected":""}" ${stars<min?"disabled":""}><span class="outfit-picture costume-${id}"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="M22 16 12 27l8 15 9-6v31h24V36l9 6 8-15-12-11-8 6H32Z" fill="${['#3ba995','#c29a59','#e9c344','#e9eee6'][i]}" stroke="#294e52" stroke-width="3"/><path d="M32 17c0 10 18 10 18 0" fill="none" stroke="#fff0b8" stroke-width="4"/>${i===1?'<path d="M18 15h45M29 15V7h22v8" stroke="#7c663c" stroke-width="7"/>':i===2?'<path d="M35 32v27m10-27v27" stroke="#fff4bb" stroke-width="3"/>':i===3?'<circle cx="41" cy="43" r="10" fill="#4f9ca7"/>':''}</svg></span><b>${name}</b><span class="outfit-state">${stars<min?`⌑ ${min} ★`:profile!.outfit===id?tr("DIPAKAI ✓","EQUIPPED ✓"):tr("PAKAI","EQUIP")}</span></button>`).join("")}</div></section></main>`,
   );
+  click("wardrobe-close",()=>home());
   void preview("outfit-preview", profile.outfit);
   for (const [id, , min] of outfits)
     click(`outfit-${id}`, () => {
@@ -741,6 +750,13 @@ function wardrobe() {
       void save();
       wardrobe();
     });
+}
+function scores(kind:'retro'|'adventure'='retro',level=1,map=0,difficulty:Difficulty='medium') {
+ if(!profile)return home();
+ const rows=kind==='retro'?family.profiles.filter(p=>p.retro[String(level)]).map(p=>({name:p.name,seconds:p.retro[String(level)].seconds,stars:p.retro[String(level)].stars})).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds):readRuns(uid).filter(r=>r.map===map&&r.difficulty===difficulty).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds);
+ begin('scores',`<main class="page scores-page"><div class="inventory-heading"><div><div class="eyebrow">${tr('CATATAN KELUARGA','FAMILY RECORDS')}</div><h1>${tr('Papan pencapaian','Best adventures')}</h1></div>${button('×','scores-close','round-tool')}</div><div class="score-filters"><button id="score-retro" class="${kind==='retro'?'selected':''}">RETRO JOURNEY</button><button id="score-adventure" class="${kind==='adventure'?'selected':''}">ADVENTURE</button>${kind==='retro'?`<select id="score-level" aria-label="Level">${Array.from({length:100},(_,i)=>`<option value="${i+1}" ${i+1===level?'selected':''}>LEVEL ${i+1}</option>`).join('')}</select>`:`<select id="score-difficulty" aria-label="Difficulty">${['medium','hard','extreme'].map(d=>`<option ${d===difficulty?'selected':''}>${d}</option>`).join('')}</select><select id="score-map" aria-label="Map">${Array.from({length:10},(_,i)=>`<option value="${i}" ${i===map?'selected':''}>MAP ${i+1}</option>`).join('')}</select>`}</div><p class="small">${kind==='retro'?tr('Catatan terbaik profil dalam akun keluarga.','Best results for profiles in your family account.'):tr('Catatan kemenangan Adventure pada perangkat ini.','Adventure wins recorded on this device.')}</p><div class="score-list">${rows.length?rows.map((r,i)=>`<div class="score-row"><strong>${i+1}</strong><b>${esc(r.name)}</b><span>★ ${r.stars}</span><span>${r.seconds.toFixed(1)}s</span></div>`).join(''):`<div class="empty-record">☆<p>${tr('Belum ada kemenangan pada pilihan ini.','No completed runs for this selection yet.')}</p></div>`}</div></main>`);
+ click('scores-close',()=>home());click('score-retro',()=>scores('retro',level,map,difficulty));click('score-adventure',()=>scores('adventure',level,map,difficulty));
+ el('score-level')?.addEventListener('change',()=>scores(kind,Number(el<HTMLSelectElement>('score-level').value),map,difficulty));el('score-map')?.addEventListener('change',()=>scores(kind,level,Number(el<HTMLSelectElement>('score-map').value),difficulty));el('score-difficulty')?.addEventListener('change',()=>scores(kind,level,map,el<HTMLSelectElement>('score-difficulty').value as Difficulty));
 }
 async function createRoom(mode: "race" | "coop") {
   await save();

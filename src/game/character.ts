@@ -224,14 +224,10 @@ export function createBinturong(
   const tail = new T.Group();
   body.add(tail);
   const points = [
-    new T.Vector3(0, 0.43, -0.17),
-    new T.Vector3(-0.22, 0.3, -0.43),
-    new T.Vector3(-0.58, 0.32, -0.5),
-    new T.Vector3(-0.88, 0.55, -0.36),
-    new T.Vector3(-0.99, 0.88, -0.13),
-    new T.Vector3(-0.91, 1.13, 0.02),
-    new T.Vector3(-0.7, 1.22, 0.12),
-    new T.Vector3(-0.53, 1.12, 0.13),
+    new T.Vector3(0,.43,-.18),new T.Vector3(-.08,.33,-.44),
+    new T.Vector3(-.25,.27,-.7),new T.Vector3(-.48,.3,-.91),
+    new T.Vector3(-.63,.43,-1.07),new T.Vector3(-.64,.65,-1.2),
+    new T.Vector3(-.48,.78,-1.28),new T.Vector3(-.31,.76,-1.25),
   ];
   const tailCurve=new T.CatmullRomCurve3(points);
   const tailRest=tailCurve.getPoints(16),tailLive=tailRest.map(p=>p.clone());

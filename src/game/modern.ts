@@ -1,3 +1,6 @@
+import {WORLD_UNIT as U,groundTexture,forestTree,riverTile,icing} from "./world-art";
+import {sfx} from "../systems/audio";
+import {readPreferences} from "../services/preferences";
 import {AdventureState} from "./adventure-state";
 import {goldGate,seedGuardian,collectible} from "./adventure-props";
 import * as T from "three";
@@ -59,7 +62,29 @@ export class ModernGame {
   joystick = { x: 0, y: 0 };
   private renderer: T.WebGLRenderer;
   private scene = new T.Scene();
-  private camera: T.OrthographicCamera;
+  private world=new T.Group();
+  private cameraYaw=0;
+  private inputYaw:number|null=null;
+  private particleColor=new T.Color();
+  private cameraMode=readPreferences().camera;
+  private lookAt=new T.Vector3();
+  private lastLook=0;
+  private lookPointer:number|null=null;
+  private lookX=0;
+  private heroIcing=icing();
+  private guardIcing:T.Group[]=[];
+  private leaves?:T.InstancedMesh;
+  private treeTrunks?:T.InstancedMesh;
+  private treeCrowns?:T.InstancedMesh;
+  private treePoints:Point[]=[];
+  private dust?:T.InstancedMesh;
+  private splats:{point:Point;at:number;color:number}[]=[];
+  private effectCursor=0;
+  private previousRespawns=0;
+  private previousHits=0;
+  private previousGuardHits:number[]=[];
+  private stepDistance=0;
+  private camera: T.PerspectiveCamera;
   private hero: Character;
   private keys = new Set<string>();
   private last = 0;
@@ -104,15 +129,16 @@ export class ModernGame {
     const field = kind === "jump" ? "jumpStarted" : "hitStarted";
     if ((this.elapsed - this[field]) * 1000 < actionCooldown[kind])
       return false;
+    if(kind==='hit'&&this.adventure&&!this.adventure.throwCake(this.angle))return false;
     const previous = this[field];
     this[field] = this.elapsed;
     this.options.onActionChange?.(kind, true);
+    sfx(kind==='jump'?'jump':'throw');
     if (this.options.online) {
       void this.options.onAction?.(kind).then((ok) => {
         if (!ok) this[field] = previous;
       });
     } else if(kind === "hit" && this.adventure) {
-      this.adventure.throwCake(this.angle);
       this.visionAcc=1;
     } else if (kind === "hit") {
       const targets = hitTargets(this.maze, this.position, this.broken);
@@ -158,28 +184,38 @@ export class ModernGame {
       powerPreference: "low-power",
     });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-    this.renderer.setClearColor(0x223b3b);
+    this.renderer.setClearColor(0xb4d6c3);
+    this.scene.fog=new T.Fog(0xb4d6c3,20,55);
+    this.world.scale.set(U,1,U);this.scene.add(this.world);
     host.append(this.renderer.domElement);
-    this.camera = new T.OrthographicCamera(-6, 6, 6, -6, 0.1, 100);
+    this.camera = new T.PerspectiveCamera(52,1,.08,160);
+    const startX=Math.floor(this.position.x),startY=Math.floor(this.position.y);
+    this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
+    this.angle=this.drawnAngle=this.cameraYaw;
     this.scene.add(new T.HemisphereLight(0xf9ffe4, 0x6c8b80, 2.4));
     const light = new T.DirectionalLight(0xffe7bd, 2.2);
     light.position.set(-4, 10, 7);
     this.scene.add(light);
     const n = this.maze.grid.length;
-    const floorMat = new T.MeshLambertMaterial({ color: 0xffffff });
+    const floorMat = new T.MeshLambertMaterial({ color: 0xffffff,map:groundTexture('path') });
     this.floor = new T.InstancedMesh(
       new T.BoxGeometry(1, 0.06, 1),
       floorMat,
       n * n,
     );
     this.walls = new T.InstancedMesh(
-      new T.BoxGeometry(0.99, 0.82, 0.99),
-      new T.MeshLambertMaterial({ color: 0xffffff }),
+      new T.BoxGeometry(0.99, 0.88, 0.99),
+      new T.MeshLambertMaterial({ color: 0xffffff,map:groundTexture('leaf') }),
       n * n,
     );
     this.walls.frustumCulled = false;
     this.floor.frustumCulled = false;
-    this.scene.add(this.floor, this.walls);
+    this.world.add(this.floor, this.walls);
+    const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,-.095,n/2);this.world.add(earth);
+    this.leaves=new T.InstancedMesh(new T.IcosahedronGeometry(.62,1),new T.MeshLambertMaterial({color:0x8db65d,flatShading:true}),n*n);this.leaves.frustumCulled=false;this.world.add(this.leaves);
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(this.maze.grid[y][x]===1&&((x*7+y*11)%13===0||(x===0&&y%5===0)))this.treePoints.push({x,y});
+    this.treeTrunks=new T.InstancedMesh(new T.CylinderGeometry(.045,.07,1.7,5),new T.MeshLambertMaterial({color:0x8f7351}),this.treePoints.length);this.treeCrowns=new T.InstancedMesh(new T.IcosahedronGeometry(.43,1),new T.MeshLambertMaterial({color:0x609347,flatShading:true}),this.treePoints.length);this.world.add(this.treeTrunks,this.treeCrowns);
+    this.dust=new T.InstancedMesh(new T.SphereGeometry(.065,6,4),new T.MeshBasicMaterial({color:0xffe5d4,transparent:true,opacity:.75}),160);this.dust.frustumCulled=false;this.dust.count=0;this.world.add(this.dust);
     this.shrubPoints = shrubs(this.maze);
     this.shrubMesh = new T.InstancedMesh(
       new T.IcosahedronGeometry(0.19, 0),
@@ -187,30 +223,31 @@ export class ModernGame {
       Math.max(1, this.shrubPoints.length * 3),
     );
     this.shrubMesh.frustumCulled = false;
-    this.scene.add(this.shrubMesh);
+    this.world.add(this.shrubMesh);
 
     this.hero = createBinturong(options.outfit,options.color);
-    this.hero.root.scale.setScalar(0.66);
-    this.scene.add(this.hero.root);
-    this.marker = goldGate();
+    this.hero.root.scale.set(.95/U,.95,.95/U);
+    this.hero.root.add(this.heroIcing);
+    this.world.add(this.hero.root);
+    this.marker = goldGate();this.marker.scale.y=1.4;
     this.marker.position.set(this.maze.finish.x+.5,0,this.maze.finish.y+.5);
-    this.scene.add(this.marker);
+    this.world.add(this.marker);
     if(this.adventure) {
       const a=this.adventure;
       for(const kind of ['seal','star','chest'] as const) {
         const points=kind==='seal'?a.layout.seals:kind==='star'?a.layout.stars:a.layout.chests;
-        points.forEach((p,index)=>{const group=collectible(kind);group.position.set(p.x+.5,0,p.y+.5);this.scene.add(group);this.items.push({kind,index,point:p,group});});
+        points.forEach((p,index)=>{const group=collectible(kind);group.position.set(p.x+.5,0,p.y+.5);this.world.add(group);this.items.push({kind,index,point:p,group});});
       }
-      this.guardModels=a.guards.map(g=>{const model=seedGuardian(g.boss);this.scene.add(model);const warning=new T.Mesh(new T.RingGeometry(.22,.3,16),new T.MeshBasicMaterial({color:g.boss?0xffa068:0xffd57b,side:T.DoubleSide,transparent:true,opacity:.85}));warning.rotation.x=-Math.PI/2;warning.visible=false;this.scene.add(warning);this.warningModels.push(warning);return model;});
+      this.guardModels=a.guards.map(g=>{const model=seedGuardian(g.boss);model.scale.set(1/U,1,1/U);const cream=icing();cream.scale.setScalar(g.boss?1.8:1.2);model.add(cream);this.guardIcing.push(cream);this.world.add(model);const warning=new T.Mesh(new T.RingGeometry(.22,.3,16),new T.MeshBasicMaterial({color:g.boss?0xffa068:0xffd57b,side:T.DoubleSide,transparent:true,opacity:.85}));warning.rotation.x=-Math.PI/2;warning.visible=false;this.world.add(warning);this.warningModels.push(warning);return model;});
       for(const p of a.layout.rivers) {
-        const mesh=new T.Mesh(new T.BoxGeometry(.99,.04,.99),new T.MeshLambertMaterial({color:0x3fadd4,emissive:0x16435b}));
-        mesh.position.set(p.x+.5,.015,p.y+.5);this.scene.add(mesh);this.riverModels.push({point:p,mesh});
+        const group=riverTile(!this.maze.grid[p.y][p.x-1]&&!this.maze.grid[p.y][p.x+1]);
+        group.position.set(p.x+.5,0,p.y+.5);this.world.add(group);this.riverModels.push({point:p,mesh:group as unknown as T.Mesh});
       }
       for(const p of a.layout.grass) {
-        const mesh=new T.Mesh(new T.BoxGeometry(.92,.78,.92),new T.MeshLambertMaterial({color:0x4cbb6a,flatShading:true}));
-        mesh.position.set(p.x+.5,.4,p.y+.5);this.scene.add(mesh);this.grassModels.push({point:p,mesh});
+        const mesh=new T.Mesh(new T.IcosahedronGeometry(.6,1),new T.MeshLambertMaterial({color:0x8ec857,map:groundTexture('leaf'),flatShading:true}));
+        mesh.position.set(p.x+.5,.55,p.y+.5);mesh.scale.y=1.2;this.world.add(mesh);this.grassModels.push({point:p,mesh});
       }
-      this.cakes=new T.InstancedMesh(new T.CylinderGeometry(.12,.12,.13,8),new T.MeshLambertMaterial({color:0xd79b72}),80);this.cakes.count=0;this.cakes.frustumCulled=false;this.scene.add(this.cakes);this.cakeTops=new T.InstancedMesh(new T.CylinderGeometry(.14,.14,.045,8),new T.MeshLambertMaterial({color:0xffd3df}),80);this.cakeTops.count=0;this.cakeTops.frustumCulled=false;this.scene.add(this.cakeTops);
+      this.cakes=new T.InstancedMesh(new T.CylinderGeometry(.12,.12,.13,8),new T.MeshLambertMaterial({color:0xd79b72}),80);this.cakes.count=0;this.cakes.frustumCulled=false;this.world.add(this.cakes);this.cakeTops=new T.InstancedMesh(new T.CylinderGeometry(.14,.14,.045,8),new T.MeshLambertMaterial({color:0xffd3df}),80);this.cakeTops.count=0;this.cakeTops.frustumCulled=false;this.world.add(this.cakeTops);
       this.mapPanel=document.createElement('div');this.mapPanel.className='minimap-panel';
       this.mapPanel.innerHTML='<canvas width="180" height="180" aria-label="Minimap"></canvas>';
       this.minimap=this.mapPanel.querySelector('canvas')!;host.parentElement!.append(this.mapPanel);
@@ -225,7 +262,7 @@ export class ModernGame {
           return;
         }
         if (
-          [
+          ["q","e","Q","E",
             "ArrowUp",
             "ArrowDown",
             "ArrowLeft",
@@ -241,6 +278,7 @@ export class ModernGame {
           ].includes(e.key)
         ) {
           e.preventDefault();
+          if(!['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>this.keys.has(k)))this.inputYaw=this.cameraYaw;
           this.keys.add(e.key.toLowerCase());
         }
       },
@@ -248,12 +286,16 @@ export class ModernGame {
     );
     window.addEventListener(
       "keyup",
-      (e) => this.keys.delete(e.key.toLowerCase()),
+      (e) => {this.keys.delete(e.key.toLowerCase());if(!['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>this.keys.has(k)))this.inputYaw=null;},
       { signal: this.abort.signal },
     );
     window.addEventListener("blur", () => this.clearInput(), {
       signal: this.abort.signal,
     });
+    host.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.abort.signal});
+    host.addEventListener('pointerdown',e=>{const r=host.getBoundingClientRect();if(e.clientX<r.left+r.width*.5||e.clientY<r.top+130||this.paused)return;this.lookPointer=e.pointerId;this.lookX=e.clientX;host.setPointerCapture(e.pointerId);},{signal:this.abort.signal});
+    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){this.cameraYaw-=(e.clientX-this.lookX)*.006;this.lookX=e.clientX;this.lastLook=this.time;}},{signal:this.abort.signal});
+    for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
     this.resize();
@@ -264,14 +306,14 @@ export class ModernGame {
     const w = this.host.clientWidth,
       h = this.host.clientHeight;
     this.renderer.setSize(w, h);
-    const half = w < h ? 6 : 4.5;
-    this.camera.left = (-half * w) / h;
-    this.camera.right = (half * w) / h;
-    this.camera.top = half;
-    this.camera.bottom = -half;
+    this.camera.aspect=w/h;
+    this.camera.fov=w<h?60:52;
     this.camera.updateProjectionMatrix();
   }
+  beginMovement(){this.inputYaw=this.cameraYaw;}
+  endMovement(){this.inputYaw=null;}
   clearInput() {
+    this.inputYaw=null;
     this.keys.clear();
     this.joystick = { x: 0, y: 0 };
     this.velocity={x:0,y:0};
@@ -279,6 +321,8 @@ export class ModernGame {
   setPaused(v: boolean) {
     this.paused = v;
     this.clearInput();
+    this.options.onTick(this.elapsed,this.explored.size);
+    if(this.adventure)this.options.onAdventure?.(this.adventure);
   }
   setPeers(
     players: Record<
@@ -303,8 +347,8 @@ export class ModernGame {
           p.outfit,
           [0x434952, 0x826854, 0x586b82, 0x726181][p.slot % 4],
         );
-        character.root.scale.setScalar(0.66);
-        this.scene.add(character.root);
+        character.root.scale.set(.95/U,.95,.95/U);
+        this.world.add(character.root);
         peer = {
           character,
           target: new T.Vector3(p.x, 0, p.y),
@@ -322,7 +366,7 @@ export class ModernGame {
     }
     for (const [key, p] of this.peers)
       if (!players[key]) {
-        this.scene.remove(p.character.root);
+        this.world.remove(p.character.root);
         p.character.dispose();
         this.peers.delete(key);
       }
@@ -356,21 +400,14 @@ export class ModernGame {
         this.floor.setMatrixAt(i, this.matrix.matrix);
         this.floor.setColorAt(
           i,
-          c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x398caf:0xa8c58b) : seen ? 0x647c65 : 0x223b3b),
+          c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x6db2b2:0xffffff) : seen ? 0xa6b698 : 0x557b59),
         );
-        const low =
-          lit &&
-          (x + 0.5 - this.position.x) * 0.57 +
-            (y + 0.5 - this.position.y) * 0.82 >
-            0.2 &&
-          Math.hypot(x + 0.5 - this.position.x, y + 0.5 - this.position.y) <
-            1.8;
-        this.matrix.position.set(x + 0.5, low ? 0.12 : 0.41, y + 0.5);
-        this.matrix.scale.setScalar(seen && this.maze.grid[y][x] === 1 ? 1 : 0);
-        if (low) this.matrix.scale.y = 0.3;
-        this.matrix.updateMatrix();
-        this.walls.setMatrixAt(i, this.matrix.matrix);
-        this.walls.setColorAt(i, c.set(lit ? 0xd9d6bd : 0x73827a));
+        this.matrix.position.set(x+.5,.44,y+.5);
+        this.matrix.scale.setScalar(this.maze.grid[y][x]===1?1:0);
+        this.matrix.updateMatrix();this.walls.setMatrixAt(i,this.matrix.matrix);
+        this.walls.setColorAt(i,c.set(lit?0x8bb768:seen?0x60865c:0x365c48));
+        if(this.leaves){this.matrix.position.y=.92;this.matrix.scale.set(this.maze.grid[y][x]===1?.91:0,this.maze.grid[y][x]===1?.48:0,this.maze.grid[y][x]===1?.91:0);this.matrix.updateMatrix();this.leaves.setMatrixAt(i,this.matrix.matrix);this.leaves.setColorAt(i,c.set(lit?0xffffff:seen?0x819d7e:0x4f7257));}
+
       }
     this.shrubPoints.forEach((p, index) => {
       const visible =
@@ -387,6 +424,9 @@ export class ModernGame {
         this.shrubMesh.setMatrixAt(index * 3 + n, this.matrix.matrix);
       }
     });
+    if(this.leaves){this.leaves.instanceMatrix.needsUpdate=true;if(this.leaves.instanceColor)this.leaves.instanceColor.needsUpdate=true;}
+    this.treePoints.forEach((p,i)=>{const seen=this.explored.has(`${p.x},${p.y}`);this.matrix.position.set(p.x+.5,.85,p.y+.5);this.matrix.scale.setScalar(seen?1:0);this.matrix.updateMatrix();this.treeTrunks!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=1.8;this.matrix.scale.y=seen?1.4:0;this.matrix.updateMatrix();this.treeCrowns!.setMatrixAt(i,this.matrix.matrix);});
+    if(this.treeTrunks){this.treeTrunks.instanceMatrix.needsUpdate=true;this.treeCrowns!.instanceMatrix.needsUpdate=true;}
     this.shrubMesh.instanceMatrix.needsUpdate = true;
     this.floor.instanceMatrix.needsUpdate = true;
     this.walls.instanceMatrix.needsUpdate = true;
@@ -435,15 +475,16 @@ export class ModernGame {
         dy /= length;
       }
       const before = this.position,
-        azimuth = Math.atan2(4.5, 6.5),
-        worldX = dx * Math.cos(azimuth) + dy * Math.sin(azimuth),
-        worldY = -dx * Math.sin(azimuth) + dy * Math.cos(azimuth);
+        azimuth = this.inputYaw??this.cameraYaw,
+        worldX = dx * Math.cos(azimuth) - dy * Math.sin(azimuth),
+        worldY = -dx * Math.sin(azimuth) - dy * Math.cos(azimuth);
       const ease=1-Math.exp(-dt*(length>.02?13:18));
-      this.velocity.x+=(worldX*2.7-this.velocity.x)*ease;
-      this.velocity.y+=(worldY*2.7-this.velocity.y)*ease;
+      this.velocity.x+=(worldX*2.3-this.velocity.x)*ease;
+      this.velocity.y+=(worldY*2.3-this.velocity.y)*ease;
       if(this.adventure) {
         this.adventure.step(dt,raw,this.velocity.x,this.velocity.y,jumpHeight((this.elapsed-this.jumpStarted)/JUMP_SECONDS));
         this.elapsed=this.adventure.elapsed;this.position={...this.adventure.position};
+        if(this.previousRespawns!==this.adventure.respawns){this.previousRespawns=this.adventure.respawns;this.acc=0;this.velocity={x:0,y:0};}
         if(this.fogRevision!==this.adventure.resetFogRevision){this.fogRevision=this.adventure.resetFogRevision;this.explored.clear();}
       }else this.position=moveSliding(this.maze.grid,this.position,this.velocity.x*dt,this.velocity.y*dt);
       actual = dt
@@ -486,7 +527,9 @@ export class ModernGame {
       shadow.position.y = 0.005 - this.hero.root.position.y;
       shadow.scale.setScalar(1 - this.hero.root.position.y * 0.25);
     }
-    this.hero.animate(this.time, actual / 2.7, this.outcome === "won", {
+    this.stepDistance+=actual*dt;
+    if(actual>.2&&this.stepDistance>.65&&!this.paused){this.stepDistance=0;sfx('step');this.splats.push({point:{...this.position},at:this.time,color:0xe6d2a5});}
+    this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {
       hit: Math.max(
         0,
         Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
@@ -506,22 +549,27 @@ export class ModernGame {
     }
     if(this.adventure) {
       const a=this.adventure;
-      this.guardModels.forEach((m,i)=>{const g=a.guards[i];m.visible=!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`);m.position.set(g.position.x,Math.sin(this.time*5+i)*.025,g.position.y);m.rotation.y=Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y);m.rotation.z=g.telegraphUntil?Math.sin(this.time*15)*.08:0;const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
+      this.heroIcing.visible=a.hits>0&&a.elapsed-a.lastHit<7;this.heroIcing.children.forEach((m,i)=>m.visible=i<(a.hits>=2?9:4));
+      for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
+      this.guardModels.forEach((m,i)=>{const g=a.guards[i];this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`);m.position.set(g.position.x,Math.sin(this.time*5+i)*.025,g.position.y);m.rotation.y=Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y);m.rotation.z=g.telegraphUntil?Math.sin(this.time*15)*.08:0;const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
       this.items.forEach(item=>{if(item.kind!=='chest')item.group.rotation.y=this.time*.7;});
+      this.riverModels.forEach(({mesh})=>mesh.children.forEach((r,i)=>{if(r.name==='water-ripple'){r.position.x=(i-3)*.15+Math.sin(this.time*1.3+i)*.07;}}));
       if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,.42,cake.position.y);this.matrix.scale.setScalar(this.current.has(`${Math.floor(cake.position.x)},${Math.floor(cake.position.y)}`)?(cake.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
       const glow=this.marker.getObjectByName('portal-glow') as T.Mesh;
       (glow.material as T.MeshBasicMaterial).opacity=a.gateOpen?.8:.12;
       this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
     }
-    const target = new T.Vector3(this.position.x, 0, this.position.y),
-      desired = target.clone().add(new T.Vector3(4.5, 7, 6.5));
-    if (!this.acc) this.camera.position.copy(desired);
-    else this.camera.position.lerp(desired, 1 - Math.exp(-dt * 10));
-    this.camera.lookAt(
-      this.camera.position.x - 4.5,
-      0,
-      this.camera.position.z - 6.5,
-    );
+    if(!this.paused){if(this.keys.has('q')){this.cameraYaw+=dt*1.7;this.lastLook=this.time;}if(this.keys.has('e')){this.cameraYaw-=dt*1.7;this.lastLook=this.time;}}
+    if(actual>.15&&this.lookPointer===null&&this.time-this.lastLook>2&&!this.keys.has('q')&&!this.keys.has('e')){const turn=Math.atan2(Math.sin(this.angle-this.cameraYaw),Math.cos(this.angle-this.cameraYaw));this.cameraYaw+=turn*(1-Math.exp(-dt*2.2));}
+    const mode=this.cameraMode;
+    const target=new T.Vector3(this.position.x*U,1,this.position.y*U);
+    const distance=mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=mode==='overview'?9:5;
+    const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
+    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*9));this.lookAt.lerp(target,1-Math.exp(-dt*12));}
+    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*1.0,this.lookAt.y,this.lookAt.z+Math.cos(this.cameraYaw)*1.0);
+    if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
+      const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;
+    }this.dust.count=count;this.dust.instanceMatrix.needsUpdate=true;if(this.dust.instanceColor)this.dust.instanceColor.needsUpdate=true;}
     this.acc += dt;
     this.visionAcc += dt;
     if (this.visionAcc > 0.12) {
@@ -539,14 +587,14 @@ export class ModernGame {
     this.mapPanel?.remove();
     const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();
     this.scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);if(o instanceof T.InstancedMesh)o.dispose();}});
-    for(const g of geometries)g.dispose();for(const m of materials)m.dispose();
+    for(const g of geometries)g.dispose();for(const m of materials){if((m as T.MeshLambertMaterial).map)(m as T.MeshLambertMaterial).map!.dispose();m.dispose();}
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
 }
 export function characterPreview(host: HTMLElement, outfit: string,color?:number) {
   const renderer = new T.WebGLRenderer({
-    alpha: true,
+    alpha: false,
     antialias: true,
     powerPreference: "low-power",
   });
@@ -554,8 +602,10 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
   host.append(renderer.domElement);
   const scene = new T.Scene(),
     camera = new T.PerspectiveCamera(34, 1, 0.1, 30);
-  camera.position.set(2.3, 1.6, 3.8);
-  camera.lookAt(0, 0.75, 0);
+  camera.position.set(0,1.0,3.6);camera.lookAt(0,.7,0);
+  renderer.setClearColor(0x83b29a);
+  const ground=new T.Mesh(new T.CircleGeometry(3,32),new T.MeshLambertMaterial({color:0x9cb67b,map:groundTexture('leaf')}));ground.rotation.x=-Math.PI/2;ground.position.y=-.04;scene.add(ground);
+  for(const side of [-1,1]){const tree=forestTree(side);tree.position.set(side*1.6,0,-2);tree.scale.setScalar(1.4);scene.add(tree);}
   scene.add(new T.HemisphereLight(0xffffff, 0x7f9783, 3));
   const sun = new T.DirectionalLight(0xffe3ae, 2.5);
   sun.position.set(3, 5, 5);
@@ -569,15 +619,14 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
   });
   ro.observe(host);
   renderer.setAnimationLoop((t) => {
-    hero.root.rotation.y = Math.sin(t * 0.0003) * 0.25;
-    hero.root.rotation.y=.5+Math.sin(t*.0003)*.12;
-    hero.animate(t / 1000, 0,false,{hit:0,lookUp:true});
+    hero.root.rotation.y=Math.sin(t*.0003)*.06;
+    hero.animate(t/1000,0);
     renderer.render(scene, camera);
   });
   return () => {
     ro.disconnect();
     renderer.setAnimationLoop(null);
-    hero.dispose();
+    const geos=new Set<T.BufferGeometry>(),mats=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh){geos.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])mats.add(m);}});for(const g of geos)g.dispose();for(const m of mats){(m as T.MeshLambertMaterial).map?.dispose();m.dispose();}
     renderer.dispose();
     renderer.domElement.remove();
   };

@@ -97,45 +97,41 @@ export function route(grid: Grid, start: Point, end: Point): Point[] {
   }
   return out;
 }
-const regionCache = new Map<number, Maze[]>();
-export function retroMaze(level: number): Maze {
-  if (!Number.isInteger(level) || level < 1 || level > 100)
-    throw new Error("Invalid level");
-  const region = Math.floor((level - 1) / 10);
-  if (!regionCache.has(region)) {
-    const seen = new Set<string>(),
-      candidates: { maze: Maze; length: number }[] = [];
-    for (let attempt = 0; candidates.length < 10; attempt++) {
-      const seed = 9173 + (region * 100 + attempt + 1) * 7919,
-        grid = carve(11 + region * 2, 11 + region * 2, seed),
-        signature = JSON.stringify(grid);
-      if (seen.has(signature)) continue;
-      seen.add(signature);
-      let junctions=0,deadEnds=0;
-      for(let y=1;y<grid.length-1;y+=2)for(let x=1;x<grid.length-1;x+=2){const degree=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>!grid[y+dy][x+dx]).length;if(degree>=3)junctions++;if(degree===1)deadEnds++;}
-      if(junctions<3||deadEnds<4)continue;
-      const start = { x: 1, y: 1 },
-        d = distances(grid, start);
-      let finish = start,
-        best = 0;
-      for (const [key, n] of d)
-        if (n > best) {
-          const [x, y] = key.split(",").map(Number);
-          finish = { x, y };
-          best = n;
-        }
-      candidates.push({
-        maze: { grid, start, finish, entrances: [start], seed },
-        length: best,
-      });
-    }
-    candidates.sort((a, b) => a.length - b.length);
-    regionCache.set(
-      region,
-      candidates.map((c) => c.maze),
-    );
+export function retroDifficulty(grid:Grid,start:Point,finish:Point) {
+ const path=route(grid,start,finish),pathSet=new Set(path.map(p=>`${p.x},${p.y}`));
+ let choices=0,misleading=0,deadEnds=0;
+ for(let y=1;y<grid.length-1;y+=2)for(let x=1;x<grid.length-1;x+=2){const degree=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>grid[y+dy][x+dx]===0).length;if(degree===1)deadEnds++;}
+ for(const p of path) {
+  if(p.x%2!==1||p.y%2!==1)continue;
+  const neighbors=[[1,0],[-1,0],[0,1],[0,-1]].map(([x,y])=>({x:p.x+x,y:p.y+y})).filter(q=>grid[q.y]?.[q.x]===0);
+  if(neighbors.length>=3)choices++;
+  for(const q of neighbors)if(!pathSet.has(`${q.x},${q.y}`)){
+   const queue=[{...q,d:1}],seen=new Set([`${q.x},${q.y}`]);let depth=0;
+   for(let i=0;i<queue.length;i++){const c=queue[i];depth=Math.max(depth,c.d);for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1]]){const x=c.x+dx,y=c.y+dy,k=`${x},${y}`;if(grid[y]?.[x]===0&&!pathSet.has(k)&&!seen.has(k)){seen.add(k);queue.push({x,y,d:c.d+1});}}}
+   if(depth>=6)misleading++;
   }
-  return structuredClone(regionCache.get(region)![(level - 1) % 10]);
+ }
+ return{length:(path.length-1)/2,choices,misleading,deadEnds};
+}
+const regionCache=new Map<string,Maze[]>();
+export function retroMaze(level:number):Maze {
+ if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');
+ const region=Math.floor((level-1)/10),intro=level<=5,band=intro?'intro':`region-${region}`;
+ const rooms=intro?5:9+region*2+(region>=2?2:0),count=intro||region===0?5:10;
+ if(!regionCache.has(band)) {
+  const candidates:{maze:Maze;score:number}[]=[];
+  for(let attempt=0;candidates.length<count&&attempt<1800;attempt++) {
+   const seed=43013+region*100003+attempt*7919+(intro?0:9173),grid=carve(rooms*2+1,rooms*2+1,seed),start={x:1,y:1};
+   let finish=start,best=0;for(const [k,d]of distances(grid,start))if(d>best){const [x,y]=k.split(',').map(Number);finish={x,y};best=d;}
+   const m=retroDifficulty(grid,start,finish);
+   if(m.choices<(intro?2:Math.floor(rooms*.65))||m.misleading<(intro?1:Math.floor(rooms/3))||m.length<(intro?10:rooms*rooms*.28)||m.deadEnds<(intro?4:rooms))continue;
+   candidates.push({maze:{grid,start,finish,entrances:[start],seed},score:m.length+m.choices*5+m.misleading*12});
+  }
+  if(candidates.length<count)throw Error('Retro difficulty criteria could not be met');
+  candidates.sort((a,b)=>a.score-b.score);regionCache.set(band,candidates.map(c=>c.maze));
+ }
+ const index=intro?level-1:region===0?level-6:(level-1)%10;
+ return structuredClone(regionCache.get(band)![index]);
 }
 export function retroConfig(level: number) {
   const maze = retroMaze(level),

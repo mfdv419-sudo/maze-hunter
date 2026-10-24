@@ -75,3 +75,20 @@ describe('Adventure end-to-end state progression',()=>{
   expect(s.projectiles.filter(p=>p.owner==='player')).toHaveLength(0);
  });
 });
+describe('M6 difficulty curve',()=>{
+ it('becomes denser at level 6 and has a substantially larger level 21',()=>{
+  expect(retroBoard(5).size).toBe(5);expect(retroBoard(6).size).toBe(9);expect(retroBoard(21).size).toBe(15);
+  expect(retroBoard(6).deadEnds.length).toBeGreaterThanOrEqual(7);
+ });
+});
+describe('Dodge space in Adventure corridors',()=>{
+ it('allows a sideways sidestep to avoid a center-line cake in a one-cell corridor',()=>{
+  const s=new AdventureState('medium',0);s.guards.forEach(g=>g.dead=true);s.layout.rivers=[];s.layout.seals=[];s.layout.stars=[];s.layout.chests=[];
+  s.grid.splice(0,s.grid.length,[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]);s.position={x:1.5,y:3.5};s.checkpoint={...s.position};
+  for(let i=0;i<8;i++)s.step(.025,.025,2,0,0);
+  expect(s.position.x).toBeGreaterThan(1.8);expect(s.position.x).toBeLessThan(1.88);
+  s.projectiles.push({position:{x:1.5,y:1.5},velocity:{x:0,y:3.5},owner:'guard',ttl:2});
+  for(let i=0;i<30;i++)s.step(.025,.025,0,0,0);
+  expect(s.hits).toBe(0);expect(s.lives).toBe(3);
+ });
+});
