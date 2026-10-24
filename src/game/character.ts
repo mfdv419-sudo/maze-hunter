@@ -1,6 +1,7 @@
 import * as T from "three";
 export interface CharacterAction {
   hit: number;
+  greet?: number;
 }
 export interface Character {
   root: T.Group;
@@ -294,6 +295,14 @@ export function createBinturong(
       } else body.rotation.y = 0;
       arms[0].rotation.z = celebrate ? -2.2 : 0.08;
       arms[1].rotation.z = celebrate ? 2.2 : -0.08;
+      const greet = action?.greet;
+      if (greet !== undefined) {
+        const pulse = Math.sin(greet * Math.PI);
+        arms[1].rotation.z = -0.08 + pulse * (2.1 + Math.sin(greet * Math.PI * 8) * 0.35);
+        head.rotation.y = Math.sin(greet * Math.PI * 2) * 0.25;
+        tail.rotation.z += Math.sin(greet * Math.PI * 6) * pulse * 0.25;
+        body.position.y += Math.max(0, Math.sin(greet * Math.PI * 2)) * 0.15;
+      } else head.rotation.y = 0;
     },
     dispose() {
       for (const g of geometries) g.dispose();

@@ -1,7 +1,7 @@
 import * as T from "three";
 import { createBinturong } from "./character";
 /** A real, lightweight title-screen scene; no marketing hero image or fake screenshot. */
-export function menuWorld(host: HTMLElement, outfit = "classic") {
+export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" | "en" = "id") {
   const renderer = new T.WebGLRenderer({
     antialias: true,
     alpha: false,
@@ -113,6 +113,35 @@ export function menuWorld(host: HTMLElement, outfit = "classic") {
   hero.root.scale.setScalar(1.35);
   hero.root.position.set(1, 0.22, 0);
   scene.add(hero.root);
+  const touch = document.createElement("button");
+  touch.id = "mascot-touch";
+  touch.className = "mascot-touch";
+  touch.setAttribute("aria-label", language === "id" ? "Sapa binturong" : "Greet the binturong");
+  host.append(touch);
+  let reactionAt = -Infinity;
+  const greet = () => {
+    reactionAt = performance.now() / 1000;
+    touch.dataset.reactions = String(Number(touch.dataset.reactions || 0) + 1);
+  };
+  touch.addEventListener("click", greet);
+  const bounds = new T.Box3();
+  const projected = new T.Vector3();
+  function positionTouch() {
+    hero.root.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    bounds.setFromObject(hero.root);
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    for (const x of [bounds.min.x, bounds.max.x])
+      for (const y of [bounds.min.y, bounds.max.y])
+        for (const z of [bounds.min.z, bounds.max.z]) {
+          projected.set(x, y, z).project(camera);
+          const px = (projected.x + 1) * host.clientWidth / 2;
+          const py = (1 - projected.y) * host.clientHeight / 2;
+          left = Math.min(left, px); right = Math.max(right, px);
+          top = Math.min(top, py); bottom = Math.max(bottom, py);
+        }
+    Object.assign(touch.style, {left: `${left}px`, top: `${top}px`, width: `${right-left}px`, height: `${bottom-top}px`});
+  }
   const ro = new ResizeObserver(resize);
   ro.observe(host);
   let portrait = false;
@@ -131,12 +160,16 @@ export function menuWorld(host: HTMLElement, outfit = "classic") {
     );
     camera.lookAt(portrait ? 1 : 0.1, portrait ? 1.3 : 0.85, 0);
     camera.updateProjectionMatrix();
+    positionTouch();
   }
   resize();
   renderer.setAnimationLoop((ms) => {
     const t = ms / 1000;
     hero.root.rotation.y = 0.2 + Math.sin(t * 0.55) * 0.18;
-    hero.animate(t, 0);
+    const age = t - reactionAt;
+    const reacting = age >= 0 && age < 1.25;
+    touch.dataset.reacting = String(reacting);
+    hero.animate(t, 0, false, reacting ? {hit: 0, greet: age / 1.25} : undefined);
     portal.rotation.z = t * 0.15;
     renderer.render(scene, camera);
   });
@@ -148,5 +181,7 @@ export function menuWorld(host: HTMLElement, outfit = "classic") {
     for (const m of materials) m.dispose();
     renderer.dispose();
     renderer.domElement.remove();
+    touch.removeEventListener("click", greet);
+    touch.remove();
   };
 }
