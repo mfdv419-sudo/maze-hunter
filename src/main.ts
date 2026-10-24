@@ -94,7 +94,15 @@ function toast(message: string) {
   setTimeout(() => n.remove(), 6000);
 }
 function showError(error: unknown) {
-  toast(error instanceof Error ? error.message : String(error));
+  const message = error instanceof Error ? error.message : String(error);
+  toast(
+    /Firebase|permission|auth\/|cloud|configured|token|functions/i.test(message)
+      ? tr(
+          "Belum bisa terhubung. Coba lagi sebentar.",
+          "Unable to connect. Please try again shortly.",
+        )
+      : message,
+  );
   console.error(error);
 }
 function header() {
@@ -107,6 +115,7 @@ function begin(name: string, html: string) {
   game?.dispose();
   game = null;
   screen = name;
+  root.dataset.screen = name;
   root.innerHTML = `${lab ? `<div class="lab-banner">${tr("LAB KONTROL LOKAL · Tanpa login, cloud, pembelian, atau multiplayer", "LOCAL CONTROL LAB · No login, cloud, purchases, or multiplayer")}</div>` : ""}${header()}${html}`;
   click("brand", () =>
     activeRoom ? confirmLeave() : game ? pauseOverlay() : home(),
@@ -160,9 +169,28 @@ async function preview(id: string, outfit = "classic") {
 function home() {
   begin(
     "home",
-    `<main class="home"><section class="hero-copy"><div class="eyebrow">${tr("PETUALANGAN UNTUK SELURUH KELUARGA", "AN ADVENTURE FOR EVERYONE")}</div><h1>${tr("Setiap belokan,<br>petualangan baru.", "Every turn.<br>A new adventure.")}</h1><p class="lead">${tr("Ikuti jejakmu. Buka misterinya. Temukan jalan bersama sahabat rimba.", "Trace your path. Uncover the mystery. Find your way with a forest friend.")}</p><div class="hero-actions">${button(profile ? tr("Mulai petualangan", "Let’s explore") : tr("Masuk dengan Google", "Sign in with Google"), "play")}${button(tr("Cara bermain", "How to play"), "how", "secondary")}</div>${!profile ? `<p class="account-note">${tr("Satu akun orang tua, petualangan berbeda untuk setiap anggota keluarga.", "One parent account. A separate adventure for every family member.")}</p>` : ""}<div class="hero-features"><span>01 <b>RETRO JOURNEY</b></span><span>02 <b>HIDDEN MAZE</b></span></div></section><section class="hero-art" aria-label="Binturong mascot"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div id="mascot" class="mascot"></div><div class="mascot-tag"><span>✦</span> ${tr("Sahabat rimba, penjelajah kecil.", "Forest friend. Little explorer.")}</div></section></main>${profile ? `<section class="mode-cards"><button id="retro-mode" class="mode-card"><span class="mode-number">01 / TRACE</span><h2>Retro Maze Journey <span>↗</span></h2><p>${tr("100 level · 10 wilayah · ikuti jalur dengan jarimu", "100 levels · 10 regions · trace with your finger")}</p><span class="mode-meta">${tr("LANJUT LEVEL", "CONTINUE LEVEL")} ${unlocked(profile)} / 100</span></button><button id="modern-mode" class="mode-card modern-card"><span class="mode-number">02 / EXPLORE</span><h2>Modern Hidden Maze <span>↗</span></h2><p>${tr("Dunia 3D · peta tersembunyi · solo atau bersama", "3D world · hidden paths · solo or together")}</p><span class="mode-meta">SOLO · RACE · CO-OP</span></button><button id="wardrobe" class="wardrobe-link">${tr("Karakter & kostum", "Character & outfits")} ↗</button></section>` : `<section class="connection-note">${cloudConfigured ? tr("Google login siap. Progres disimpan per profil keluarga.", "Google sign-in is configured. Each family profile has its own progress.") : tr("Login menunggu konfigurasi Firebase pemilik project. Tidak ada akun simulasi.", "Sign-in needs the project owner’s Firebase configuration. No simulated accounts.")} ${import.meta.env.DEV ? button(tr("Buka lab kontrol lokal", "Open local control lab"), "lab", "quiet") : ""}</section>`}`,
+    `<main class="title-screen"><div id="title-world" class="title-world" aria-label="${tr("Dunia labirin binturong", "Binturong maze world")}"></div><div class="title-vignette"></div><h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span><span class="title-ribbon">${tr("PETUALANGAN RIMBA", "WILD LITTLE ADVENTURES")}</span></h1><section class="title-menu">${button(`<span class="play-triangle">▶</span> ${tr("MAIN", "PLAY")}`, "play", "game-play")}<div class="title-mode-row">${profile ? button("RETRO", "retro-mode", "game-mode") + button("HIDDEN MAZE", "modern-mode", "game-mode blue-mode") : ""}</div><div class="title-tools">${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div></section>${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}</main>`,
   );
-  void preview("mascot", profile?.outfit);
+  el("play").setAttribute(
+    "aria-label",
+    profile
+      ? tr("Main", "Play")
+      : tr("Main — masuk dengan Google", "Play — sign in with Google"),
+  );
+  el("how").setAttribute("aria-label", tr("Cara bermain", "How to play"));
+  el("fullscreen").setAttribute("aria-label", tr("Layar penuh", "Fullscreen"));
+  if (el("wardrobe"))
+    el("wardrobe").setAttribute(
+      "aria-label",
+      tr("Karakter dan kostum", "Character and outfits"),
+    );
+  const token = generation;
+  void import("./game/menu-world")
+    .then(({ menuWorld }) => {
+      if (token === generation)
+        cleanup = menuWorld(el("title-world"), profile?.outfit);
+    })
+    .catch(showError);
   click("play", () =>
     profile
       ? journey()
@@ -170,8 +198,8 @@ function home() {
         ? login()
         : toast(
             tr(
-              "Lengkapi konfigurasi Firebase sesuai panduan deployment.",
-              "Complete Firebase configuration using the deployment guide.",
+              "Petualangan belum tersedia. Coba lagi sebentar.",
+              "Adventure is unavailable. Please try again shortly.",
             ),
           ),
   );
@@ -179,6 +207,18 @@ function home() {
   click("retro-mode", () => journey());
   click("modern-mode", () => setup());
   click("wardrobe", () => wardrobe());
+  click("fullscreen", async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen)
+      await document.documentElement.requestFullscreen();
+    else
+      toast(
+        tr(
+          "Gunakan tombol layar penuh pada browser.",
+          "Use your browser’s fullscreen option.",
+        ),
+      );
+  });
   click("lab", () => {
     lab = true;
     uid = "local-control-lab";
@@ -193,7 +233,7 @@ function home() {
 function instructions() {
   const overlay = document.createElement("div");
   overlay.className = "modal-backdrop";
-  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Sentuh titik putih di START, lalu telusuri koridor ke gerbang emas. Angkat jari kapan saja dan lanjutkan dari titik terakhir. Menembus dinding mengurangi satu nyawa.", "Touch the white START marker, then trace the corridor to the gold gate. Lift your finger freely and resume at the last point. Crossing a wall costs one life.")}</p><p><b>Modern:</b> ${tr("Gunakan joystick atau WASD/tombol arah. Jelajahi area tersembunyi dan temukan gerbang. Area yang sudah ditemukan tetap tercatat.", "Use the joystick or WASD/arrow keys. Explore hidden areas and find the gate. Discovered areas remain on your map.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
+  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Sentuh titik putih di START, lalu telusuri koridor ke gerbang emas. Angkat jari kapan saja dan lanjutkan dari titik terakhir. Menembus dinding mengurangi satu nyawa.", "Touch the white START marker, then trace the corridor to the gold gate. Lift your finger freely and resume at the last point. Crossing a wall costs one life.")}</p><p><b>Modern:</b> ${tr("Gunakan joystick kiri atau WASD. A biru / Spasi untuk lompat; B merah / J untuk menebas semak. Cari gerbang emas. Lompat tidak melewati dinding.", "Use the left joystick or WASD. Blue A / Space to jump; red B / J to clear shrubs. Find the golden gate. Jumping cannot cross walls.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
   document.body.append(overlay);
   el("close-help").focus();
   click("close-help", () => overlay.remove());
@@ -256,8 +296,8 @@ async function save() {
   } catch (e) {
     toast(
       tr(
-        "Progres tersimpan lokal; sinkronisasi cloud belum berhasil.",
-        "Progress saved locally; cloud sync has not completed.",
+        "Progres tersimpan di perangkat. Belum bisa disinkronkan.",
+        "Progress saved on this device. Sync is not complete yet.",
       ),
     );
     console.error(e);
@@ -292,7 +332,7 @@ function journey(region?: number) {
     click(`level-${id}`, () => playRetro(id));
 }
 function hud(title: string, sub: string, touch = false) {
-  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div>` : ""}<div id="game-overlay"></div></main>`;
+  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Tebas semak", "Clear shrubs")}"><b>B</b><small>${tr("TEBAS", "HIT")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
 }
 function pauseOverlay(online = false) {
   if (online) {
@@ -405,7 +445,7 @@ function setup() {
   if (!profile) return home();
   begin(
     "setup",
-    `<main class="page narrow"><div class="eyebrow">MODERN HIDDEN MAZE</div><h1>${tr("Apa yang ada<br>di balik kabut?", "What’s waiting<br>beyond the mist?")}</h1><p class="lead">${tr("Temukan gerbang emas bersama sahabat rimba. Peta terbuka saat kamu menjelajah.", "Find the golden gate with your forest friend. Reveal the world as you explore.")}</p><label>${tr("Tingkat tantangan", "Choose your challenge")}</label><div class="difficulty">${(["medium", "hard", "extreme"] as Difficulty[]).map((d) => `<button id="difficulty-${d}" class="${d === currentDifficulty ? "selected" : ""}"><b>${d.toUpperCase()}</b><small>${modernSettings[d].vision} ${tr("jarak pandang", "vision radius")}</small></button>`).join("")}</div><div class="setup-actions">${button(tr("Jelajahi sendiri", "Explore solo"), "solo")}<div class="divider">${tr("ATAU BERSAMA TEMAN", "OR EXPLORE TOGETHER")}</div><div class="input-row">${button("Race · 2–4", "race", "secondary", lab || !multiplayerConfigured())}${button("Co-op · 2–4", "coop", "secondary", lab || !multiplayerConfigured())}</div><form id="join-form"><label for="room-code">${tr("Punya kode room?", "Have a room code?")}</label><div class="input-row"><input id="room-code" maxlength="6" minlength="6" placeholder="ABC234" autocomplete="off" ${lab || !multiplayerConfigured() ? "disabled" : ""}>${button(tr("Gabung", "Join"), "join", "secondary", lab || !multiplayerConfigured())}</div></form></div><p class="small">${lab ? tr("Room online memerlukan akun Google dan backend Firebase nyata.", "Online rooms require Google sign-in and a real Firebase backend.") : !multiplayerConfigured() ? tr("Room menunggu konfigurasi Realtime Database dan Netlify Function.", "Rooms require Realtime Database and Netlify Function configuration.") : tr("Room privat · tanpa chat · maksimal empat pemain", "Private rooms · no chat · up to four players")}</p></main>`,
+    `<main class="page narrow"><div class="eyebrow">MODERN HIDDEN MAZE</div><h1>${tr("Apa yang ada<br>di balik kabut?", "What’s waiting<br>beyond the mist?")}</h1><p class="lead">${tr("Temukan gerbang emas bersama sahabat rimba. Peta terbuka saat kamu menjelajah.", "Find the golden gate with your forest friend. Reveal the world as you explore.")}</p><label>${tr("Tingkat tantangan", "Choose your challenge")}</label><div class="difficulty">${(["medium", "hard", "extreme"] as Difficulty[]).map((d) => `<button id="difficulty-${d}" class="${d === currentDifficulty ? "selected" : ""}"><b>${d.toUpperCase()}</b><small>${modernSettings[d].vision} ${tr("jarak pandang", "vision radius")}</small></button>`).join("")}</div><div class="setup-actions">${button(tr("Jelajahi sendiri", "Explore solo"), "solo")}<div class="divider">${tr("ATAU BERSAMA TEMAN", "OR EXPLORE TOGETHER")}</div><div class="input-row">${button("Race · 2–4", "race", "secondary", lab || !multiplayerConfigured())}${button("Co-op · 2–4", "coop", "secondary", lab || !multiplayerConfigured())}</div><form id="join-form"><label for="room-code">${tr("Punya kode room?", "Have a room code?")}</label><div class="input-row"><input id="room-code" maxlength="6" minlength="6" placeholder="ABC234" autocomplete="off" ${lab || !multiplayerConfigured() ? "disabled" : ""}>${button(tr("Gabung", "Join"), "join", "secondary", lab || !multiplayerConfigured())}</div></form></div><p class="small">${lab ? tr("Main bersama tidak tersedia dalam uji kontrol lokal.", "Play together is unavailable in the local control lab.") : !multiplayerConfigured() ? tr("Main bersama belum tersedia.", "Play together is currently unavailable.") : tr("Room privat · tanpa chat · maksimal empat pemain", "Private rooms · no chat · up to four players")}</p></main>`,
   );
   for (const d of ["medium", "hard", "extreme"] as Difficulty[])
     click(`difficulty-${d}`, () => {
@@ -445,8 +485,8 @@ async function playModern(difficulty: Difficulty, room?: Room) {
   );
   const token = generation;
   el("play-hint").textContent = tr(
-    "Joystick / WASD / tombol arah · cari gerbang emas",
-    "Joystick / WASD / arrow keys · find the gold gate",
+    "Joystick / WASD · A / Spasi: lompat · B / J: tebas semak",
+    "Joystick / WASD · A / Space: jump · B / J: clear shrubs",
   );
   click("pause-game", () => pauseOverlay(!!room));
   click("exit-game", () => (room ? confirmLeave() : pauseOverlay()));
@@ -459,6 +499,30 @@ async function playModern(difficulty: Difficulty, room?: Room) {
     entrance: me?.slot ?? Math.floor(Math.random() * 4),
     outfit: profile.outfit,
     online: !!room,
+    onActionChange: (kind, active) => {
+      const b = el(kind === "jump" ? "jump-action" : "hit-action");
+      b?.classList.toggle("active", active);
+      b?.setAttribute("aria-pressed", String(active));
+    },
+    onFeedback: (count) => {
+      if (count) toast(tr("Semak terbuka!", "Shrub cleared!"));
+    },
+    onAction: room
+      ? async (kind) => {
+          try {
+            const { room: r } = await roomAction("ability", {
+              code: room.id,
+              profileId: profile!.id,
+              kind,
+            });
+            if (activeRoom?.id === r.id) applyRoom(r);
+            return true;
+          } catch (e) {
+            showError(e);
+            return false;
+          }
+        }
+      : undefined,
     onTick: (seconds, explored) => {
       const elapsed = room
         ? Math.max(
@@ -486,6 +550,19 @@ async function playModern(difficulty: Difficulty, room?: Room) {
     },
   });
   game = modern;
+  for (const [id, kind] of [
+    ["jump-action", "jump"],
+    ["hit-action", "hit"],
+  ] as const) {
+    const b = el(id);
+    b.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      modern.useAction(kind);
+    });
+    b.addEventListener("click", (e) => {
+      if (e.detail === 0) modern.useAction(kind);
+    });
+  }
   const stick = el("joystick"),
     knob = el("stick");
   let pointer: number | null = null;
@@ -584,7 +661,7 @@ function wardrobe() {
     ] as const;
   begin(
     "wardrobe",
-    `<main class="page wardrobe-page"><section><div class="eyebrow">${tr("KARAKTER & KOSTUM", "CHARACTER & OUTFITS")}</div><h1>${tr("Gaya kecil.<br>Petualangan besar.", "Little style.<br>Big adventure.")}</h1><p>${tr("Binturong fantasi · semua kostum memiliki kemampuan setara.", "Fantasy binturong · every outfit has equal abilities.")}</p><div id="outfit-preview"></div></section><section class="outfit-options"><p class="eyebrow">${stars} ★ ${tr("DIKUMPULKAN", "COLLECTED")}</p>${outfits.map(([id, name, min]) => `<button id="outfit-${id}" class="outfit ${profile!.outfit === id ? "selected" : ""}" ${stars < min ? "disabled" : ""}><b>${name}</b><span>${stars < min ? `${min} ★` : profile!.outfit === id ? tr("DIPAKAI", "EQUIPPED") : tr("PAKAI", "EQUIP")}</span></button>`).join("")}<div class="parent-note"><b>${tr("Area orang tua", "Parent area")}</b><p>${tr("Koleksi awal diperoleh melalui permainan. Pembelian kostum dan langganan belum diaktifkan pada tahap ini.", "The initial collection is earned by playing. Outfit purchases and subscriptions are not activated in this stage.")}</p><p>${adFree ? tr("Status akun: bebas iklan", "Account: ad-free") : tr("Status akun: gratis", "Account: free")}</p></div></section></main>`,
+    `<main class="page wardrobe-page"><section><div class="eyebrow">${tr("KARAKTER & KOSTUM", "CHARACTER & OUTFITS")}</div><h1>${tr("Gaya kecil.<br>Petualangan besar.", "Little style.<br>Big adventure.")}</h1><p>${tr("Binturong fantasi · semua kostum memiliki kemampuan setara.", "Fantasy binturong · every outfit has equal abilities.")}</p><div id="outfit-preview"></div></section><section class="outfit-options"><p class="eyebrow">${stars} ★ ${tr("DIKUMPULKAN", "COLLECTED")}</p>${outfits.map(([id, name, min]) => `<button id="outfit-${id}" class="outfit ${profile!.outfit === id ? "selected" : ""}" ${stars < min ? "disabled" : ""}><b>${name}</b><span>${stars < min ? `${min} ★` : profile!.outfit === id ? tr("DIPAKAI", "EQUIPPED") : tr("PAKAI", "EQUIP")}</span></button>`).join("")}<div class="parent-note"><b>${tr("Area orang tua", "Parent area")}</b><p>${tr("Kumpulkan bintang untuk membuka kostum baru. Semua kostum memiliki kemampuan setara.", "Collect stars to unlock new outfits. Every outfit has equal abilities.")}</p><p>${adFree ? tr("Status akun: bebas iklan", "Account: ad-free") : tr("Status akun: gratis", "Account: free")}</p></div></section></main>`,
   );
   void preview("outfit-preview", profile.outfit);
   for (const [id, , min] of outfits)
@@ -685,6 +762,7 @@ function applyRoom(r: Room) {
   if (screen === "modern" && game) {
     const m = game as ModernGame;
     m.setPeers(r.players, playerKey, r.mode === "coop");
+    m.syncActions(r.players, playerKey, r.broken || {}, serverNow());
     if (r.mode === "coop")
       m.reveal(
         Object.keys(
