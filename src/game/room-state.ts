@@ -7,6 +7,12 @@ import {
   type Difficulty,
   type Point,
 } from "./maze";
+import {
+  actionCooldown,
+  hitTargets,
+  shrubKey,
+  type ActionKind,
+} from "./actions";
 export interface Player {
   uid: string;
   profileId: string;
@@ -21,6 +27,8 @@ export interface Player {
   seq: number;
   finishedAt: number | null;
   slot: number;
+  jumpAt?: number;
+  hitAt?: number;
 }
 export interface Match {
   id: string;
@@ -38,6 +46,7 @@ export interface Match {
   expiresAt: number;
   revision: number;
   explored?: Record<string, boolean>;
+  broken?: Record<string, boolean>;
 }
 export function createMatch(
   id: string,
@@ -179,6 +188,37 @@ export function leaveMatch(room: Match, key: string, now: number) {
     room.state = "finished";
     room.finishedAt = now;
     room.winner = null;
+  }
+  room.revision++;
+  return room;
+}
+
+export function performAction(
+  room: Match,
+  key: string,
+  kind: ActionKind,
+  now: number,
+) {
+  if (kind !== "jump" && kind !== "hit") throw Error("Invalid action");
+  const p = room.players[key];
+  if (!p) throw Error("Not a room member");
+  if (room.state !== "playing" || now < room.startsAt || p.finishedAt)
+    throw Error("Match not active");
+  if (now - room.startsAt >= modernSettings[room.difficulty].seconds * 1000) {
+    room.state = "finished";
+    room.finishedAt = now;
+    room.revision++;
+    return room;
+  }
+  const field = kind === "jump" ? "jumpAt" : "hitAt";
+  if (now - (p[field] ?? -Infinity) < actionCooldown[kind])
+    throw Error("Action cooling down");
+  p[field] = now;
+  if (kind === "hit") {
+    const maze = modernMaze(room.difficulty, room.seed);
+    room.broken ??= {};
+    for (const q of hitTargets(maze, p, room.broken))
+      room.broken[shrubKey(q)] = true;
   }
   room.revision++;
   return room;

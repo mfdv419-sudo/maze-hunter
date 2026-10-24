@@ -1,6 +1,16 @@
 import * as T from "three";
 import { createBinturong, type Character } from "./character";
 import {
+  jumpHeight,
+  JUMP_SECONDS,
+  HIT_SECONDS,
+  actionCooldown,
+  shrubs,
+  shrubKey,
+  hitTargets,
+  type ActionKind,
+} from "./actions";
+import {
   center,
   modernMaze,
   modernSettings,
@@ -17,6 +27,9 @@ export interface ModernOptions {
   onTick: (seconds: number, explored: number) => void;
   onFinish: (won: boolean) => void;
   online?: boolean;
+  onAction?: (kind: ActionKind) => Promise<boolean>;
+  onFeedback?: (count: number) => void;
+  onActionChange?: (kind: ActionKind, active: boolean) => void;
 }
 export class ModernGame {
   readonly maze;
@@ -44,11 +57,75 @@ export class ModernGame {
   private matrix = new T.Object3D();
   private peers = new Map<
     string,
-    { character: Character; target: T.Vector3; angle: number }
+    {
+      character: Character;
+      target: T.Vector3;
+      angle: number;
+      jumpAt: number;
+      hitAt: number;
+    }
   >();
   private observer: ResizeObserver;
   private abort = new AbortController();
   private drawnAngle = 0;
+  private jumpStarted = -1000;
+  private hitStarted = -1000;
+  private broken: Record<string, boolean> = {};
+  private shrubPoints: Point[] = [];
+  private shrubMesh: T.InstancedMesh;
+  private serverOffset = 0;
+  private confirmedJump = 0;
+  private confirmedHit = 0;
+  get actionState() {
+    return {
+      jumping: this.elapsed - this.jumpStarted < JUMP_SECONDS,
+      hitting: this.elapsed - this.hitStarted < HIT_SECONDS,
+    };
+  }
+  useAction(kind: ActionKind) {
+    if (this.paused || this.ended) return false;
+    const field = kind === "jump" ? "jumpStarted" : "hitStarted";
+    if ((this.elapsed - this[field]) * 1000 < actionCooldown[kind])
+      return false;
+    const previous = this[field];
+    this[field] = this.elapsed;
+    this.options.onActionChange?.(kind, true);
+    if (this.options.online) {
+      void this.options.onAction?.(kind).then((ok) => {
+        if (!ok) this[field] = previous;
+      });
+    } else if (kind === "hit") {
+      const targets = hitTargets(this.maze, this.position, this.broken);
+      for (const q of targets) this.broken[shrubKey(q)] = true;
+      this.options.onFeedback?.(targets.length);
+      this.visionAcc = 1;
+    }
+    return true;
+  }
+  syncActions(
+    players: Record<string, { jumpAt?: number; hitAt?: number }>,
+    self: string,
+    broken: Record<string, boolean>,
+    now: number,
+  ) {
+    this.serverOffset = now - Date.now();
+    const own = players[self];
+    if (own?.jumpAt && own.jumpAt > this.confirmedJump) {
+      this.confirmedJump = own.jumpAt;
+      this.jumpStarted = this.elapsed - (now - own.jumpAt) / 1000;
+    }
+    if (own?.hitAt && own.hitAt > this.confirmedHit) {
+      this.confirmedHit = own.hitAt;
+      this.hitStarted = this.elapsed - (now - own.hitAt) / 1000;
+    }
+    this.broken = broken;
+    for (const [key, p] of this.peers) {
+      p.jumpAt = players[key]?.jumpAt || 0;
+      p.hitAt = players[key]?.hitAt || 0;
+    }
+    this.visionAcc = 1;
+  }
+
   constructor(
     private host: HTMLElement,
     private options: ModernOptions,
@@ -82,6 +159,15 @@ export class ModernGame {
     this.walls.frustumCulled = false;
     this.floor.frustumCulled = false;
     this.scene.add(this.floor, this.walls);
+    this.shrubPoints = shrubs(this.maze);
+    this.shrubMesh = new T.InstancedMesh(
+      new T.IcosahedronGeometry(0.19, 0),
+      new T.MeshLambertMaterial({ color: 0x65ad5b, flatShading: true }),
+      Math.max(1, this.shrubPoints.length * 3),
+    );
+    this.shrubMesh.frustumCulled = false;
+    this.scene.add(this.shrubMesh);
+
     this.hero = createBinturong(options.outfit);
     this.hero.root.scale.setScalar(0.66);
     this.scene.add(this.hero.root);
@@ -103,6 +189,11 @@ export class ModernGame {
     window.addEventListener(
       "keydown",
       (e) => {
+        if ([" ", "j", "J", "b", "B"].includes(e.key)) {
+          e.preventDefault();
+          if (!e.repeat) this.useAction(e.key === " " ? "jump" : "hit");
+          return;
+        }
         if (
           [
             "ArrowUp",
@@ -187,6 +278,8 @@ export class ModernGame {
           character,
           target: new T.Vector3(p.x, 0, p.y),
           angle: p.angle,
+          jumpAt: 0,
+          hitAt: 0,
         };
         peer.character.root.position.copy(peer.target);
         this.peers.set(key, peer);
@@ -248,6 +341,22 @@ export class ModernGame {
         this.walls.setMatrixAt(i, this.matrix.matrix);
         this.walls.setColorAt(i, c.set(lit ? 0xd9d6bd : 0x73827a));
       }
+    this.shrubPoints.forEach((p, index) => {
+      const visible =
+        this.explored.has(`${Math.floor(p.x)},${Math.floor(p.y)}`) &&
+        !this.broken[shrubKey(p)];
+      for (let n = 0; n < 3; n++) {
+        this.matrix.position.set(
+          p.x + (n - 1) * 0.12,
+          0.16 + (n === 1 ? 0.07 : 0),
+          p.y,
+        );
+        this.matrix.scale.setScalar(visible ? 1 : 0);
+        this.matrix.updateMatrix();
+        this.shrubMesh.setMatrixAt(index * 3 + n, this.matrix.matrix);
+      }
+    });
+    this.shrubMesh.instanceMatrix.needsUpdate = true;
     this.floor.instanceMatrix.needsUpdate = true;
     this.walls.instanceMatrix.needsUpdate = true;
     if (this.floor.instanceColor) this.floor.instanceColor.needsUpdate = true;
@@ -262,6 +371,9 @@ export class ModernGame {
     this.last = t;
     this.time += dt;
     let actual = 0;
+    const action = this.actionState;
+    this.options.onActionChange?.("jump", action.jumping);
+    this.options.onActionChange?.("hit", action.hitting);
     if (!this.paused && !this.ended) {
       this.elapsed += raw;
       let dx =
@@ -315,13 +427,33 @@ export class ModernGame {
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     this.drawnAngle += diff * Math.min(1, dt * 15);
     this.hero.root.rotation.y = this.drawnAngle;
-    this.hero.root.position.set(this.position.x, 0, this.position.y);
-    this.hero.animate(this.time, actual / 2.7, this.outcome === "won");
+    this.hero.root.position.set(
+      this.position.x,
+      jumpHeight((this.elapsed - this.jumpStarted) / JUMP_SECONDS),
+      this.position.y,
+    );
+    const shadow = this.hero.root.getObjectByName("ground-shadow");
+    if (shadow) {
+      shadow.position.y = 0.005 - this.hero.root.position.y;
+      shadow.scale.setScalar(1 - this.hero.root.position.y * 0.25);
+    }
+    this.hero.animate(this.time, actual / 2.7, this.outcome === "won", {
+      hit: Math.max(
+        0,
+        Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
+      ),
+    });
     for (const p of this.peers.values()) {
       const dist = p.character.root.position.distanceTo(p.target);
       p.character.root.position.lerp(p.target, Math.min(1, dt * 12));
       p.character.root.rotation.y = p.angle;
-      p.character.animate(this.time, Math.min(1, dist * 5));
+      const now = Date.now() + this.serverOffset;
+      p.character.root.position.y = jumpHeight(
+        (now - p.jumpAt) / 1000 / JUMP_SECONDS,
+      );
+      p.character.animate(this.time, Math.min(1, dist * 5), false, {
+        hit: Math.max(0, Math.min(1, (now - p.hitAt) / 1000 / HIT_SECONDS)),
+      });
     }
     const target = new T.Vector3(this.position.x, 0, this.position.y),
       desired = target.clone().add(new T.Vector3(4.5, 7, 6.5));

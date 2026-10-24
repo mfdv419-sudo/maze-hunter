@@ -178,7 +178,10 @@ export class RetroGame {
       render: { powerPreference: "low-power" },
     });
     this.scene = this.game.scene.getScene("RetroTrace");
-    this.observer=new ResizeObserver(()=>{if(this.game.isBooted)this.game.scale.resize(host.clientWidth,host.clientHeight);});
+    this.observer = new ResizeObserver(() => {
+      if (this.game.isBooted)
+        this.game.scale.resize(host.clientWidth, host.clientHeight);
+    });
     this.observer.observe(host);
   }
   zoom(delta: number) {
