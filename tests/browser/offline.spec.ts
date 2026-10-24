@@ -31,10 +31,13 @@ test("production excludes control lab and caches the app and Retro assets for of
   });
   expect(assets.some((n) => n.includes("/assets/retro-"))).toBe(true);
   expect(assets.some((n) => n.includes("/assets/phaser-"))).toBe(true);
+  expect(assets.some((n) => n.endsWith("/fonts/fredoka-latin.woff"))).toBe(
+    true,
+  );
   await page.reload();
   await context.setOffline(true);
   await page.reload();
-  await expect(page.locator("#play")).toHaveText("Masuk dengan Google");
-  await expect(page.locator("h1")).toContainText("Setiap belokan");
+  await expect(page.locator("#play")).toContainText("MAIN");
+  await expect(page.locator("h1")).toContainText("MAZE");
   await context.close();
 });

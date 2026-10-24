@@ -4,9 +4,9 @@ test("real login gate and bilingual menu; no fake production account", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.locator("#play")).toHaveText("Masuk dengan Google");
+  await expect(page.locator("#play")).toContainText("MAIN");
   await page.locator("#language").click();
-  await expect(page.locator("#play")).toHaveText("Sign in with Google");
+  await expect(page.locator("#play")).toContainText("PLAY");
 });
 test("Retro mouse playthrough, lift/regrab, unlock and retry", async ({
   page,
@@ -122,8 +122,23 @@ test("phone touch tracing: one penalty per gesture, lift/regrab, orientation pre
   });
   await expect(page.locator(".lives")).toHaveText("♥♥♡");
   await page.setViewportSize({ width: 844, height: 390 });
-  await expect.poll(()=>page.locator("#game-stage canvas").evaluate(c=>{const canvas=c as HTMLCanvasElement;return canvas.width===canvas.parentElement!.clientWidth&&canvas.height===canvas.parentElement!.clientHeight;})).toBe(true);
-  await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+  await expect
+    .poll(() =>
+      page.locator("#game-stage canvas").evaluate((c) => {
+        const canvas = c as HTMLCanvasElement;
+        return (
+          canvas.width === canvas.parentElement!.clientWidth &&
+          canvas.height === canvas.parentElement!.clientHeight
+        );
+      }),
+    )
+    .toBe(true);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
   await expect(page.locator(".lives")).toHaveText("♥♥♡");
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchStart",
@@ -148,6 +163,74 @@ test("phone touch tracing: one penalty per gesture, lift/regrab, orientation pre
     touchPoints: [],
   });
   await expect(page.locator(".stars")).toHaveText("★★☆");
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test("title is a game scene without admin text; touch action buttons work with joystick", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 1024, height: 768 },
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await expect(page.locator("#title-world canvas")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Satu akun orang tua");
+  await expect(page.locator("body")).not.toContainText("Firebase");
+  await expect(page.locator(".game-title")).toContainText("HUNTER");
+  await page.locator("#lab").click();
+  await page.locator("#modern-mode").click();
+  await page.locator("#solo").click();
+  await expect(page.locator("#joystick")).toBeVisible();
+  await expect(page.locator("#jump-action")).toBeVisible();
+  await expect(page.locator("#hit-action")).toBeVisible();
+  const cdp = await context.newCDPSession(page);
+  const stick = await page.locator("#joystick").boundingBox(),
+    jump = await page.locator("#jump-action").boundingBox();
+  if (!stick || !jump) throw Error("Controls unavailable");
+  const left = {
+      x: stick.x + stick.width * 0.67,
+      y: stick.y + stick.height / 2,
+      id: 1,
+    },
+    right = { x: jump.x + jump.width / 2, y: jump.y + jump.height / 2, id: 2 };
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [left],
+  });
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [left, right],
+  });
+  await expect(page.locator("#jump-action")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  const hit = await page.locator("#hit-action").boundingBox();
+  if (!hit) throw Error("Hit button unavailable");
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [
+      { x: hit.x + hit.width / 2, y: hit.y + hit.height / 2, id: 3 },
+    ],
+  });
+  await expect(page.locator("#hit-action")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(page.locator("#game-stage canvas")).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });
