@@ -1,3 +1,4 @@
+import {roomCapacity} from '../../src/game/adventure-room';
 import type { Handler } from "@netlify/functions";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
@@ -74,13 +75,25 @@ export const handler: Handler = async (event) => {
     };
     let id = String(body.code || "").toUpperCase(),
       result: Match | null = null;
-    if (action === "create") {
+    if (action === "create" || action === "random") {
       const difficulty: Difficulty = ["medium", "hard", "extreme"].includes(
           body.difficulty,
         )
           ? body.difficulty
           : "medium",
         mode = body.mode === "coop" ? "coop" : "race";
+      const queue=getDatabase().ref(`mazeMatchQueue/${difficulty}/${mode}`);
+      if(action==='random'){
+        const candidates=((await queue.get()).val()||{}) as Record<string,number>;
+        for(const code of Object.keys(candidates).slice(-20)){
+          if(now-candidates[code]>600000){await queue.child(code).remove();continue;}
+          const joined=await getDatabase().ref(`mazeRooms/${code}`).transaction((r:Match|null)=>{
+            if(!r||r.state!=='lobby'||!r.public||r.expiresAt<now||Object.keys(r.players||{}).length>=roomCapacity[difficulty])return;
+            try{return addPlayer(r,key,player,now);}catch{return;}
+          });
+          if(joined.committed)return{statusCode:200,headers,body:JSON.stringify({room:joined.snapshot.val(),playerKey:key,serverTime:now})};
+        }
+      }
       // A per-account creation cooldown prevents unbounded room creation.
       const rate = getDatabase().ref(`mazeRoomLimits/${identity.uid}`);
       const lease = await rate.transaction((last) =>
@@ -102,6 +115,7 @@ export const handler: Handler = async (event) => {
           now,
           crypto.getRandomValues(new Uint32Array(1))[0],
         );
+        room.adventure={version:2,map:room.seed%10,states:{},tickAt:0,escapeAt:-1,escapeDuration:90,bossHP:0};room.public=action==='random';
         const saved = await getDatabase()
           .ref(`mazeRooms/${id}`)
           .transaction((old) =>
@@ -109,6 +123,7 @@ export const handler: Handler = async (event) => {
           );
         if (saved.committed) {
           result = saved.snapshot.val();
+          if(room.public)await queue.child(id).set(now);
           break;
         }
       }
@@ -132,6 +147,7 @@ export const handler: Handler = async (event) => {
             room.owners ??= {};
             if (action === "join") return addPlayer(room, key, player, now);
             if (!room.players[key]) throw Error("Not a room member");
+            if(action==='reconnect'){room.players[key].online=true;room.revision++;return room;}
             if (action === "ready") {
               if (room.state !== "lobby") throw Error("Match already started");
               room.players[key].ready = body.ready === true;
@@ -142,6 +158,7 @@ export const handler: Handler = async (event) => {
             if (
               action === "move" &&
               room.state === "playing" &&
+              !room.adventure &&
               presence &&
               Object.keys(room.players).some((k) => presence[k] === false)
             ) {

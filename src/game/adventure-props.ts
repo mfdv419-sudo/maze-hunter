@@ -25,7 +25,7 @@ export function seedGuardian(boss=false):T.Group {
  for(const side of [-1,1]) {
   add(new T.ConeGeometry(.09,.35,5),bark,side*.19,.16,.04).rotation.z=-side*.5;
   const arm=add(new T.CylinderGeometry(.075,.1,.46,5),bark,side*.37,.66,0);arm.rotation.z=-side*.65;
-  add(new T.SphereGeometry(.09,8,5),cream,side*.12,1.02,.27);
+  const eye=add(new T.SphereGeometry(.09,8,5),boss?new T.MeshBasicMaterial({color:0xb7f5be}):cream,side*.12,1.02,.27);if(boss)eye.name='king-eye';
   add(new T.SphereGeometry(.043,7,5),ink,side*.12,1.01,.34);
   const brow=add(new T.BoxGeometry(.19,.055,.07),leaf,side*.12,1.15,.27);brow.rotation.z=side*.17;
   add(new T.IcosahedronGeometry(.21,0),leaf,side*.24,.83,-.07);

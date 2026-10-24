@@ -1,3 +1,4 @@
+import {startAdventureRoom,moveAdventurePlayer,adventureAbility,roomCapacity,type AdventureRoom} from './adventure-room';
 import {
   center,
   modernMaze,
@@ -31,6 +32,8 @@ export interface Player {
   hitAt?: number;
 }
 export interface Match {
+  adventure?:AdventureRoom;
+  public?:boolean;
   id: string;
   host: string;
   mode: "race" | "coop";
@@ -78,9 +81,9 @@ export function addPlayer(room: Match, key: string, p: Player, now: number) {
   if (room.state !== "lobby" || room.expiresAt < now)
     throw Error("Room is not available");
   if (room.players[key]) return room;
-  if (Object.keys(room.players).length >= 4) throw Error("Room is full");
+  if (Object.keys(room.players).length >= (room.adventure?roomCapacity[room.difficulty]:4)) throw Error("Room is full");
   const slots = Object.values(room.players).map((p) => p.slot);
-  p.slot = [0, 1, 2, 3].find((n) => !slots.includes(n))!;
+  p.slot = Array.from({length:room.adventure?roomCapacity[room.difficulty]:4},(_,i)=>i).find((n) => !slots.includes(n))!;
   room.players[key] = p;
   room.owners[p.uid] = true;
   room.revision++;
@@ -91,7 +94,8 @@ export function startMatch(room: Match, key: string, now: number) {
     throw Error("Only the host can start");
   const players = Object.values(room.players);
   if (players.length < 2 || players.some((p) => !p.ready))
-    throw Error("All 2–4 players must be ready");
+    throw Error("All players must be ready");
+  if(room.adventure){room.state='playing';room.startsAt=now+3000;startAdventureRoom(room,now);room.revision++;return room;}
   const maze = modernMaze(room.difficulty, room.seed);
   for (const p of players) {
     Object.assign(p, center(maze.entrances[p.slot]));
@@ -113,6 +117,7 @@ export function movePlayer(
   seq: number,
   now: number,
 ) {
+  if(room.adventure)return moveAdventurePlayer(room,key,points,angle,seq,now);
   if (
     !Number.isSafeInteger(seq) ||
     seq < 1 ||
@@ -181,10 +186,11 @@ export function leaveMatch(room: Match, key: string, now: number) {
   const p = room.players[key];
   if (!p) return room;
   delete room.players[key];
+  if(room.adventure)delete room.adventure.states[key];
   if (!Object.values(room.players).some((q) => q.uid === p.uid))
     delete room.owners[p.uid];
   if (room.host === key) room.host = Object.keys(room.players)[0] || "";
-  if (room.state === "playing") {
+  if (room.state === "playing" && (!room.adventure||!Object.keys(room.players).length)) {
     room.state = "finished";
     room.finishedAt = now;
     room.winner = null;
@@ -199,6 +205,7 @@ export function performAction(
   kind: ActionKind,
   now: number,
 ) {
+  if(room.adventure){if(kind!=='jump'&&kind!=='hit')throw Error('Invalid action');return adventureAbility(room,key,kind,now);}
   if (kind !== "jump" && kind !== "hit") throw Error("Invalid action");
   const p = room.players[key];
   if (!p) throw Error("Not a room member");

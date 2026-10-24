@@ -115,6 +115,8 @@ export interface RoomPlayer {
   hitAt?: number;
 }
 export interface Room {
+  adventure?:import('../game/adventure-room').AdventureRoom;
+  public?:boolean;
   id: string;
   host: string;
   mode: "race" | "coop";

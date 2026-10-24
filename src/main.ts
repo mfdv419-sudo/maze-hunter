@@ -1,3 +1,4 @@
+import {zones} from './game/adventure-zones';
 import {recordRun,readRuns} from "./services/records";
 import {adventureRules,nextMap} from "./game/adventure-layout";
 import {readPreferences,writePreferences,furColors} from "./services/preferences";
@@ -59,7 +60,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "24.10.24-M6";
+const buildLabel = "25.10.26-M7";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -331,7 +332,7 @@ function settings() {
 function instructions() {
   const overlay = document.createElement("div");
   overlay.className = "modal-backdrop";
-  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Bantu binturong menemukan buah. Pilih cabang dengan teliti. Masuk jalan buntu mengurangi satu nyawa dan kembali ke Start. Menyentuh tembok atau mengangkat jari tidak mengurangi nyawa.", "Help the binturong find figs. Reaching a dead end costs a life and returns you to Start. Touching walls or lifting your finger costs no life.")}</p><p><b>Adventure:</b> ${tr("Kumpulkan tiga segel dan kalahkan satu Raja untuk membuka gerbang. A / Spasi: lompat sungai. B / J: lempar kue atau tebas pagar rumput. Minimap menyimpan area yang ditemukan. Kalah dari Raja pada Hard/Extreme menghapus penemuan peta, bukan segel.", "Collect three seals and defeat a King to unlock the gate. A / Space: jump rivers. B / J: throw cake or cut grass. The minimap remembers discoveries. Losing to a King on Hard/Extreme resets discoveries, but preserves seals.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
+  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Bantu binturong menemukan buah. Pilih cabang dengan teliti. Masuk jalan buntu mengurangi satu nyawa dan kembali ke Start. Menyentuh tembok atau mengangkat jari tidak mengurangi nyawa.", "Help the binturong find figs. Reaching a dead end costs a life and returns you to Start. Touching walls or lifting your finger costs no life.")}</p><p><b>Adventure:</b> ${tr("Joystick atas: maju; bawah: mundur; kiri/kanan: belok. Kumpulkan tiga segel, hadapi Raja tiga fase, lalu berlomba melewati gerbang sebelum hitung mundur habis. A / Spasi: lompat sungai. B / J: lempar kue atau tebas pagar rumput. Minimap menyimpan area yang ditemukan. Kalah dari Raja pada Hard/Extreme menghapus penemuan peta, bukan segel.", "Collect three seals, defeat the three-phase King, then escape through the gate before the countdown ends. A / Space: jump rivers. B / J: throw cake or cut grass. The minimap remembers discoveries. Losing to a King on Hard/Extreme resets discoveries, but preserves seals.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
   document.body.append(overlay);
   el("close-help").focus();
   click("close-help", () => overlay.remove());
@@ -543,7 +544,7 @@ function setup() {
   if (!profile) return home();
   begin(
     "setup",
-    `<main class="page narrow adventure-select"><div class="eyebrow">ADVENTURE · SOLO</div><h1>${tr("Rimba menyimpan<br>banyak rahasia.", "The forest holds<br>many secrets.")}</h1><p class="lead">${tr("Tiga segel. Penjaga hutan. Gerbang emas. Temukan jalanmu.", "Three seals. Forest guardians. A golden gate. Find your way.")}</p><div class="difficulty">${(["medium","hard","extreme"] as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?"selected":""}"><b>${d.toUpperCase()}</b><small>${adventureRules[d].size} × ${adventureRules[d].size} · ${adventureRules[d].bosses} ${tr("Raja", "Kings")}</small></button>`).join("")}</div><div class="adventure-brief"><span>◆ ${tr("Cari 3 segel", "Find 3 seals")}</span><span>★ ${tr("Bintang & peti rahasia", "Stars & hidden chests")}</span><span>♛ ${tr("Kalahkan Raja gerbang", "Defeat a gate King")}</span></div>${currentDifficulty!=="medium"?`<p class="boss-rule">${tr("Kalah melawan Raja: kembali ke Start dan minimap tertutup. Segel tetap tersimpan.","Losing to a King: back to Start and minimap resets. Seals are kept.")}</p>`:""}<div class="setup-actions">${button(tr("MULAI PETUALANGAN", "START ADVENTURE"),"solo")}<p class="small">${tr("Main Acak dan Main Bersama sedang disiapkan untuk Adventure.","Random matchmaking and private Adventure rooms are being prepared.")}</p></div></main>`,
+    `<main class="page narrow adventure-select"><div class="eyebrow">ADVENTURE</div><h1>${tr("Rimba menyimpan<br>banyak rahasia.", "The forest holds<br>many secrets.")}</h1><p class="lead">${tr("Tiga segel. Penjaga hutan. Gerbang emas. Temukan jalanmu.", "Three seals. Forest guardians. A golden gate. Find your way.")}</p><div class="difficulty">${(["medium","hard","extreme"] as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?"selected":""}"><b>${d.toUpperCase()}</b><small>${adventureRules[d].size} × ${adventureRules[d].size} · ${tr("1 Raja + penjaga benteng", "1 King + fortress guards")}</small></button>`).join("")}</div><div class="adventure-brief"><span>◆ ${tr("Cari 3 segel", "Find 3 seals")}</span><span>★ ${tr("Bintang & peti rahasia", "Stars & hidden chests")}</span><span>♛ ${tr("Kalahkan Raja gerbang", "Defeat a gate King")}</span></div>${currentDifficulty!=="medium"?`<p class="boss-rule">${tr("Kalah melawan Raja: kembali ke Start dan minimap tertutup. Segel tetap tersimpan.","Losing to a King: back to Start and minimap resets. Seals are kept.")}</p>`:""}<div class="setup-actions">${button(tr("SOLO", "SOLO"),"solo")}${button(tr("ONLINE · BETA", "ONLINE · BETA"),"online-menu","secondary")}</div></main>`,
   );
   for (const d of ["medium", "hard", "extreme"] as Difficulty[])
     click(`difficulty-${d}`, () => {
@@ -551,6 +552,15 @@ function setup() {
       setup();
     });
   click("solo", () => playModern(currentDifficulty));
+  click('online-menu',()=>{
+   if(lab||!multiplayerConfigured()){toast(tr('Main online memerlukan login Google dan koneksi server.','Online play needs Google login and a configured server.'));return;}
+   const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal online-modal" role="dialog" aria-modal="true"><h2>${tr('Petualangan bersama','Explore together')}</h2><label>${tr('Jenis pertandingan','Match type')}<select id="online-mode"><option value="race">Race</option><option value="coop">Co-op</option></select></label>${button(tr('CARI PEMAIN ACAK','FIND RANDOM PLAYERS'),'random-room')}${button(tr('BUAT ROOM PRIVAT','CREATE PRIVATE ROOM'),'private-room','secondary')}<div class="input-row"><input id="join-code" maxlength="6" placeholder="ABC234" aria-label="Room code">${button(tr('GABUNG','JOIN'),'join-room','secondary')}</div>${button(tr('Tutup','Close'),'close-online','quiet')}</section>`;document.body.append(overlay);
+   const resume=sessionStorage.getItem('mh-active-room');if(resume){const b=document.createElement('button');b.textContent=tr('LANJUTKAN ROOM ','RECONNECT ROOM ')+resume;b.onclick=()=>{void roomAction('reconnect',{profileId:profile!.id,code:resume}).then(r=>enterRoom(r.room,r.playerKey)).then(()=>overlay.remove()).catch(showError);};overlay.querySelector('section')!.prepend(b);}
+   const mode=()=>el<HTMLSelectElement>('online-mode').value as 'race'|'coop';
+   const run=async(action:()=>Promise<void>)=>{try{await action();overlay.remove();}catch(e){showError(e);}};
+   click('random-room',()=>run(async()=>{await save();const r=await roomAction('random',{profileId:profile!.id,difficulty:currentDifficulty,mode:mode()});await enterRoom(r.room,r.playerKey);}));
+   click('private-room',()=>run(()=>createRoom(mode())));click('join-room',()=>run(()=>joinRoom(el<HTMLInputElement>('join-code').value.trim())));click('close-online',()=>overlay.remove());
+  });
 
 }
 let currentAdventure:{difficulty:Difficulty;map:number;seed:number}|undefined;
@@ -577,8 +587,8 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
   );
   const token = generation;
   el("play-hint").textContent = tr(
-    "A / Spasi: lompat · B / J: kue atau tebas · cari 3 segel & kalahkan Raja",
-    "A / Space: jump · B / J: cake or cut · find 3 seals & defeat a King",
+    "↑ maju · ↓ mundur · ← → belok · A lompat · B interaksi / kue",
+    "↑ forward · ↓ reverse · ← → steer · A jump · B interact / cake",
   );
   click("pause-game", () => pauseOverlay(!!room));
   click("exit-game", () => (room ? confirmLeave() : pauseOverlay()));
@@ -586,12 +596,12 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
   if (token !== generation) return;
   const me = room?.players[playerKey];
   if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty))currentAdventure={difficulty,map:nextMap(difficulty),seed:crypto.getRandomValues(new Uint32Array(1))[0]};
-  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';if(!room)el('game-stage').after(objectives);
+  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);
   let feedbackAt=-1;
   const modern = new ModernGame(el("game-stage"), {
     difficulty,
     seed: room?.seed ?? currentAdventure!.seed,
-    adventureMap:room?undefined:currentAdventure!.map,
+    adventureMap:room?room.adventure?.map:currentAdventure!.map,
     color:furColors[readPreferences().fur],
     entrance: me?.slot ?? Math.floor(Math.random() * 4),
     outfit: profile.outfit,
@@ -621,12 +631,16 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
         }
       : undefined,
     onAdventure:(state)=>{
-      el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.max(0,Math.ceil(state.limit-state.elapsed))}s</span>`;
+      el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
-      objectives.textContent=`◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.mapIndex+1}/10`;
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Cari gerbang setelah semua segel terkumpul.','King defeated! Find the gate after collecting all seals.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
+      objectives.classList.toggle('escape-active',state.stage==='escape');
+      el('play-hint').textContent=state.stage==='escape'?tr('LARI! Gerbang terbuka — pilih jalurmu.','RUN! The gate is open — choose your route.'):state.stage==='boss'?`${tr('RAJA RIMBUN · FASE','FOREST KING · PHASE')} ${state.bossPhase}`:zones[state.zone][lang==='id'?'idName':'enName'];
+      const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
+      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.mapIndex+1}/10 · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja Rimbun bangkit. Perhatikan tanda serangannya!','The Forest King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Temukan tiga segel untuk melemahkan pelindung Raja.','Find three seals to weaken the King’s shield.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
+      if(modern.adventure)return;
       const elapsed = room
         ? Math.max(
             0,
@@ -647,7 +661,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
         won,
         modern.elapsed,
         0,
-        modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):tr("Waktu habis", "Time is up"),
+        modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):modern.adventure?.reason==='escape'?tr('Waktu pelarian habis','Escape time expired'):tr("Waktu habis", "Time is up"),
         () => playModern(difficulty,undefined,true),
         () => setup(),
       );
@@ -679,13 +693,13 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
     modernTimer = setInterval(() => {
       if (screen !== "modern" || !activeRoom) return;
       const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
-      modern.paused = !started;
-      el("play-hint").textContent = started
+      modern.paused = !started||!!(modern.adventure&&modern.adventure.phase!=='playing');
+      if(!room.adventure||!started)el("play-hint").textContent = started
         ? tr("Jelajahi labirin", "Explore the maze")
         : String(
             Math.max(1, Math.ceil((activeRoom.startsAt - serverNow()) / 1000)),
           );
-      if (started)
+      if (started&&!room.adventure)
         el("play-hint").textContent = tr(
           "Joystick / WASD · room privat online",
           "Joystick / WASD · private online room",
@@ -693,7 +707,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
       if (!started || modern.ended) return;
       sample++;
       if (buffer.length < 20) buffer.push({ ...modern.position });
-      if (inFlight || sample % 5) return;
+      if (inFlight || sample % 10) return;
       inFlight = true;
       const points = buffer;
       buffer = [];
@@ -774,6 +788,7 @@ async function joinRoom(code: string) {
 }
 async function enterRoom(room: Room, key: string) {
   roomUnwatch();
+  sessionStorage.setItem('mh-active-room',room.id);
   activeRoom = room;
   playerKey = key;
   endPresence = await roomPresence(room.id, key);
@@ -788,14 +803,14 @@ async function enterRoom(room: Room, key: string) {
     },
     showError,
   );
-  lobby();
+  if(room.state==='playing')void playModern(room.difficulty,room);else lobby();
 }
 function lobby() {
   if (!activeRoom) return setup();
   const room = activeRoom;
   begin(
     "lobby",
-    `<main class="page narrow"><div class="eyebrow">${room.mode.toUpperCase()} · ${room.difficulty.toUpperCase()}</div><h1>${tr("Berkumpul sebelum<br>berpetualang.", "Gather your<br>fellow explorers.")}</h1><div class="room-code">${room.id}</div><p>${tr("Bagikan kode ini kepada teman atau keluarga.", "Share this code with friends or family.")}</p><div id="room-players"></div><div class="input-row">${button(tr("Siap / batal siap", "Ready / unready"), "ready")}${button(tr("Mulai pertandingan", "Start match"), "start-match", "secondary", room.host !== playerKey)}</div>${button(tr("Tinggalkan room", "Leave room"), "leave", "quiet")}<p class="small">${tr("Semua pemain harus siap. Pertandingan berakhir jika seorang pemain keluar.", "All players must be ready. Leaving ends an active match.")}</p></main>`,
+    `<main class="page narrow"><div class="eyebrow">${room.mode.toUpperCase()} · ${room.difficulty.toUpperCase()}</div><h1>${tr("Berkumpul sebelum<br>berpetualang.", "Gather your<br>fellow explorers.")}</h1><div class="room-code">${room.id}</div><p>${tr("Bagikan kode ini kepada teman atau keluarga.", "Share this code with friends or family.")}</p><div id="room-players"></div><div class="input-row">${button(tr("Siap / batal siap", "Ready / unready"), "ready")}${button(tr("Mulai pertandingan", "Start match"), "start-match", "secondary", room.host !== playerKey)}</div>${button(tr("Tinggalkan room", "Leave room"), "leave", "quiet")}<p class="small">${tr("Semua pemain harus siap. Pemain terputus dapat kembali selama pertandingan masih berjalan.", "All players must be ready. Disconnected players can return while the match is active.")}</p></main>`,
   );
   updateLobby();
   click("ready", async () => {
@@ -848,6 +863,7 @@ function applyRoom(r: Room) {
     const m = game as ModernGame;
     m.setPeers(r.players, playerKey, r.mode === "coop");
     m.syncActions(r.players, playerKey, r.broken || {}, serverNow());
+    const state=r.adventure?.states?.[playerKey];if(state){m.syncAdventure(state);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}
     if (r.mode === "coop")
       m.reveal(
         Object.keys(
@@ -884,13 +900,14 @@ function applyRoom(r: Room) {
           ? tr("Tim menemukan jalan!", "A path to victory!")
           : tr("Pertandingan selesai", "Match complete"),
       );
+      const board=document.createElement('div');board.className='match-ranking';const finishers=Object.values(r.players).filter(p=>p.finishedAt).sort((a,b)=>a.finishedAt!-b.finishedAt!);board.innerHTML=`<h3>${tr('URUTAN FINISH','FINISH ORDER')}</h3>${finishers.length?finishers.map((p,i)=>`<p><b>${i+1}. ${esc(p.name)}</b> · ${((p.finishedAt!-r.startsAt)/1000).toFixed(2)}s</p>`).join(''):`<p>${tr('Belum ada pemain melewati gerbang.','No player reached the gate.')}</p>`}`;el('game-overlay').querySelector('.result')?.append(board);
     }
   }
 }
 function confirmLeave() {
   if (!activeRoom) return;
   el("game-overlay").innerHTML =
-    `<div class="modal-backdrop"><section class="modal"><h2>${tr("Tinggalkan pertandingan?", "Leave this match?")}</h2><p>${tr("Pertandingan ini akan berakhir untuk semua pemain.", "This match will end for all players.")}</p>${button(tr("Tetap bermain", "Keep playing"), "stay")}${button(tr("Keluar", "Leave"), "leave-match", "secondary")}</section></div>`;
+    `<div class="modal-backdrop"><section class="modal"><h2>${tr("Tinggalkan pertandingan?", "Leave this match?")}</h2><p>${tr("Kamu meninggalkan pertandingan ini.", "You will leave this match.")}</p>${button(tr("Tetap bermain", "Keep playing"), "stay")}${button(tr("Keluar", "Leave"), "leave-match", "secondary")}</section></div>`;
   click("stay", () => (el("game-overlay").innerHTML = ""));
   click("leave-match", async () => {
     await leaveRoom();
@@ -910,6 +927,7 @@ async function leaveRoom() {
   }
   const room = activeRoom;
   activeRoom = null;
+  sessionStorage.removeItem('mh-active-room');
   if (room && profile && !lab) {
     try {
       await roomAction("leave", { profileId: profile.id, code: room.id });

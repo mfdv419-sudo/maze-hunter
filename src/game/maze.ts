@@ -1,3 +1,4 @@
+import retroCatalog from "./retro-catalog-v7.json" with {type:"json"};
 export interface Point {
   x: number;
   y: number;
@@ -116,6 +117,7 @@ export function retroDifficulty(grid:Grid,start:Point,finish:Point) {
 const regionCache=new Map<string,Maze[]>();
 export function retroMaze(level:number):Maze {
  if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');
+ if(level>=6){const {grid,start,finish,seed}=retroCatalog[level-6];return structuredClone({grid,start,finish,seed,entrances:[start]});}
  const region=Math.floor((level-1)/10),intro=level<=5,band=intro?'intro':`region-${region}`;
  const rooms=intro?5:9+region*2+(region>=2?2:0),count=intro||region===0?5:10;
  if(!regionCache.has(band)) {

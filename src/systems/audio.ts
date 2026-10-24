@@ -16,7 +16,7 @@ export function unlockAudio(){try{
  if(!timer){next=ctx.currentTime+.08;timer=setInterval(()=>{
   if(!ctx||muted||document.hidden||ctx.state!=='running'){next=ctx?ctx.currentTime+.08:0;return;}
   while(next<ctx.currentTime+.25){const melody=scene==='modern'?[0,7,12,14,7,4,9,7,0,4,12,7,9,4,2,7]:[0,4,7,12,7,4,9,7,2,5,9,12,9,5,7,4];
-   const base=scene==='retro'?220:196,f=base*Math.pow(2,melody[beat%16]/12);note(f*2,next,.33,.22,'sine',music!);if(beat%4===0)note(base*Math.pow(2,[0,5,7,0][Math.floor(beat/4)%4]/12),next,1.5,.12,'triangle',music!);beat++;next+=scene==='modern'?.3:.37;
+   const base=scene==='retro'?220:scene==='boss'?146.83:scene==='deep'?174.61:196,f=base*Math.pow(2,melody[beat%16]/12);note(f*2,next,.33,.22,'sine',music!);if(beat%4===0)note(base*Math.pow(2,[0,5,7,0][Math.floor(beat/4)%4]/12),next,1.5,.12,'triangle',music!);beat++;next+=scene==='escape'?.18:scene==='boss'?.24:scene==='modern'?.3:.37;
   }
  },100);}
 }catch{}}

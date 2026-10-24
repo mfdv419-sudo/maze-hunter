@@ -1236,3 +1236,12 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
  .adventure-select > .setup-actions { grid-column:1;grid-row:4;margin:0;width:100%; }.adventure-select .setup-actions .primary { min-height:43px;font-size:15px;padding:9px; }.adventure-select .setup-actions .small { display:none; }
 }
 @media(max-height:700px) and (max-aspect-ratio:85/100) { .adventure-select .lead,.adventure-select .adventure-brief { display:none; }.adventure-select .eyebrow { margin-bottom:8px; }.adventure-select h1 { font-size:27px!important; }.adventure-select .difficulty button { padding:14px 7px; }.adventure-select .setup-actions .small { font-size:10px;line-height:1.3; } }
+/* M7: compact game HUD, contextual actions and online room controls. */
+.setup-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.setup-actions>button{flex:1;min-width:100px}
+.adventure-objectives{max-width:calc(100vw - 200px);font-size:clamp(10px,1.15vw,15px);line-height:1.5;pointer-events:none}
+.adventure-objectives.escape-active{border-color:#ffcc79;background:#653b36;color:#ffe6a5;box-shadow:0 0 22px #ffbe5955}
+.online-modal{max-height:85dvh;overflow:auto}.online-modal input{min-width:0;text-transform:uppercase}.online-modal .input-row{display:flex;gap:8px}.online-modal label{display:grid;gap:8px}
+.action-button[data-interaction="cut"],#hit-action[data-interaction="cut"]{background:#77a64c}#hit-action[data-interaction="harvest"]{background:#bc8b45}
+@media(max-width:600px){.adventure-objectives{max-width:calc(100vw - 105px);padding:7px 9px;font-size:10px}.minimap-panel{width:96px;height:96px}.adventure-select .difficulty small{font-size:9px}}
+@media(max-width:600px){.adventure-select .setup-actions{padding-bottom:12px;flex-shrink:0}.adventure-select .difficulty{gap:6px}.adventure-select .difficulty button{padding:10px 5px}.adventure-select .lead{font-size:14px}.adventure-select h1{font-size:clamp(24px,7vw,36px)}}
+.match-ranking{margin-top:12px;border-top:1px solid #c4d2a955;padding-top:8px;text-align:left}.match-ranking h3{font-size:13px}.match-ranking p{font-size:13px;margin:5px 0}.result{max-height:88dvh;overflow:auto}
