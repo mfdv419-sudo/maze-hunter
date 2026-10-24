@@ -52,7 +52,8 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "24.10.24-M3";
+const buildLabel = "24.10.24-M4";
+let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
   const panel = document.createElement("section");
@@ -190,7 +191,26 @@ async function preview(id: string, outfit = "classic") {
 function home() {
   begin(
     "home",
-    `<main class="title-screen"><div id="title-world" class="title-world" aria-label="${tr("Dunia labirin binturong", "Binturong maze world")}"></div><div class="title-vignette"></div><h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span><span class="title-ribbon">${tr("PETUALANGAN RIMBA", "WILD LITTLE ADVENTURES")}</span></h1><section class="title-menu">${button(`<span class="play-triangle">▶</span> ${tr("MAIN", "PLAY")}`, "play", "game-play")}<div class="title-mode-row">${profile ? button("RETRO", "retro-mode", "game-mode") + button("HIDDEN MAZE", "modern-mode", "game-mode blue-mode") : ""}</div><div class="title-tools">${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div></section>${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}</main>`,
+    `<main class="title-screen">
+      <div id="title-world" class="title-world" aria-label="${tr("Pratinjau labirin Rimba Pagi", "Morning Forest maze preview")}"></div>
+      <div class="title-vignette"></div>
+      <div class="home-kicker"><span></span> ${tr("PETUALANGAN KECIL, DUNIA LUAS", "LITTLE PAWS. BIG ADVENTURES.")}</div>
+      <h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span></h1>
+      <p class="home-tagline">${tr("Setiap belokan, petualangan baru.", "A new adventure around every corner.")}</p>
+      <section class="title-menu">
+        ${button(`<span class="play-triangle">▶</span> ${tr("MAIN", "PLAY")}`, "play", "game-play")}
+        <span class="play-note">${profile ? esc(profile.name) + " · " + tr("Petualanganmu menunggu", "Your adventure awaits") : tr("Mulai dengan akun Google", "Start with your Google account")}</span>
+      </section>
+      <div class="mode-selector" role="group" aria-label="${tr("Pilih petualangan", "Choose your adventure")}">
+        <button id="retro-mode" class="mode-tile" aria-pressed="${homeMode === "retro"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>RETRO JOURNEY</b><small>${tr("Sentuh & telusuri jalurnya", "Touch & trace your path")}</small></span><i>✓</i></button>
+        <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>HIDDEN MAZE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
+      </div>
+      <div class="scene-caption"><span class="scene-eyebrow">${tr("INTIP DUNIANYA", "A PEEK AT THE WORLD")}</span><strong>${tr("Rimba Pagi", "Morning Forest")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Ikuti jejak menuju gerbang emas", "Follow the trail to the golden gate") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
+      <div class="mascot-hint">${tr("Ketuk binturong!", "Tap the binturong!")} <span>↗</span></div>
+      <div class="title-tools">${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
+      ${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
+      ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
+    </main>`,
   );
   el("play").setAttribute(
     "aria-label",
@@ -206,14 +226,18 @@ function home() {
       tr("Karakter dan kostum", "Character and outfits"),
     );
   const token = generation;
+  let setPreview: ((mode: "retro" | "modern") => void) | undefined;
   void import("./game/menu-world")
     .then(({ menuWorld }) => {
-      if (token === generation)
-        cleanup = menuWorld(el("title-world"), profile?.outfit, lang);
+      if (token === generation) {
+        const world = menuWorld(el("title-world"), profile?.outfit, lang, homeMode);
+        cleanup = world.dispose;
+        setPreview = world.setMode;
+      }
     })
     .catch(showError);
   click("play", async () => {
-    if (profile) return journey();
+    if (profile) return homeMode === "retro" ? journey() : setup();
     if (cloudConfigured) {
       const play = el<HTMLButtonElement>("play");
       if (play.disabled) return;
@@ -250,8 +274,17 @@ function home() {
   version.textContent = buildLabel;
   el("title-world").parentElement!.append(version);
   click("how", () => instructions());
-  click("retro-mode", () => journey());
-  click("modern-mode", () => setup());
+  function chooseMode(mode: "retro" | "modern") {
+    homeMode = mode;
+    if (profile) return mode === "retro" ? journey() : setup();
+    el("retro-mode").setAttribute("aria-pressed", String(mode === "retro"));
+    el("modern-mode").setAttribute("aria-pressed", String(mode === "modern"));
+    el("scene-description").textContent = mode === "retro" ? tr("Ikuti jejak menuju gerbang emas", "Follow the trail to the golden gate") : tr("Temukan jalan di balik kabut", "Find your way through the fog");
+    setPreview?.(mode);
+    tone(mode === "retro" ? 520 : 660);
+  }
+  click("retro-mode", () => chooseMode("retro"));
+  click("modern-mode", () => chooseMode("modern"));
   click("wardrobe", () => wardrobe());
   click("fullscreen", async () => {
     if (document.fullscreenElement) await document.exitFullscreen();
