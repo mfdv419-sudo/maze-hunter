@@ -53,10 +53,14 @@ export function watchAuth(fn: (u: User | null) => void) {
   }
   return onAuthStateChanged(auth, fn);
 }
+let pendingLogin: Promise<unknown> | null = null;
 export async function login() {
   if (!auth)
     throw Error("Firebase belum dikonfigurasi / Firebase is not configured");
-  await signInWithPopup(auth, new GoogleAuthProvider());
+  if (pendingLogin) return pendingLogin;
+  pendingLogin = signInWithPopup(auth, new GoogleAuthProvider());
+  try { await pendingLogin; }
+  finally { pendingLogin = null; }
 }
 export async function logout() {
   if (auth) await signOut(auth);
