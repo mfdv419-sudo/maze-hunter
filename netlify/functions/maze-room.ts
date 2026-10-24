@@ -4,6 +4,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getDatabase } from "firebase-admin/database";
 import { getFirestore } from "firebase-admin/firestore";
 import {
+  performAction,
   createMatch,
   addPlayer,
   startMatch,
@@ -149,6 +150,8 @@ export const handler: Handler = async (event) => {
               room.winner = null;
               return room;
             }
+            if (action === "ability")
+              return performAction(room, key, body.kind, now);
             if (action === "move")
               return movePlayer(
                 room,
