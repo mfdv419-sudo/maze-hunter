@@ -1,33 +1,13 @@
-# Mulai di sini — Maze Hunter
+# Mulai di sini — tampilan game terbaru
 
-Paket ini diterapkan ke **branch `maze-1`**, bukan `main`. Konsep terbaru menjadi acuan: Retro trace-path, Modern 3D, dan maskot binturong sederhana.
+Paket `maze-hunter-game-ui-delta.zip` adalah **delta gabungan terhadap ZIP baseline maze-1 original**. Sudah termasuk implementasi awal, perbaikan Netlify Node 24/secret scanning, serta revisi UI, binturong, dan kontrol A/B. Tidak perlu menumpuk kembali paket lama setelah paket ini.
 
-## Cara menerapkan tanpa instalasi di laptop
+1. Upload seluruh isi paket ke branch `maze-1`, pertahankan struktur folder dan timpa file yang namanya sama.
+2. Hapus file lama dalam `DELETE_FILES.txt`. ZIP tidak otomatis menghapus file.
+3. Deploy source terbaru di Netlify. Node 24, `npm run build`, publish `dist` dan Functions sudah ditentukan di `netlify.toml`.
+4. Konfigurasi publik Firebase Web yang Anda kirim sudah ada di source. Untuk login nyata, Google provider dan domain deployment harus diizinkan pada project Firebase existing.
+5. Room online tetap membutuhkan URL Realtime Database yang benar serta environment server Functions. `storageBucket` bukan URL Realtime Database. Jangan kirim service account/private key melalui percakapan.
 
-1. Ekstrak ZIP delta.
-2. Upload seluruh file di dalamnya ke root branch `maze-1`, pertahankan struktur folder.
-3. Hapus file lama yang tercantum dalam `DELETE_FILES.txt`. Mengekstrak atau mengunggah ZIP tidak otomatis menghapus file lama.
-4. Di Netlify, pastikan branch/deploy preview yang dibangun sesuai, build command `npm run build`, publish directory `dist`. Folder Functions adalah `netlify/functions`.
-5. Lengkapi konfigurasi Firebase milik project. Nama variabel ada di `.env.example`, penjelasan rinci di `README.md`. Jangan memasukkan secret ke source atau ZIP.
-6. Jika menguji deploy preview atau branch deploy, pastikan variabel tersedia di konteks deployment tersebut. Perubahan `VITE_` memerlukan rebuild.
+Yang berubah: home menjadi scene game 3D; font Fredoka tersimpan lokal; teks admin dihapus dari home; binturong memiliki moncong, kumis, telinga berjumbai dan ekor panjang terlihat; Modern memakai joystick kiri dan dua tombol kanan: A biru lompat, B merah tebas semak. Retro tetap trace-path. Lompat tidak melewati dinding; tebas tidak mengubah game menjadi combat wajib.
 
-## Mengapa halaman meminta Google login?
-
-Login merupakan persyaratan produk yang sudah disepakati. Versi production tidak memiliki akun palsu atau bypass. Tanpa konfigurasi Firebase, halaman tetap tampil tetapi menjelaskan bahwa login belum dikonfigurasi.
-
-Setelah Google login berjalan, buat profil dengan nama panggilan. Progres dan kostum setiap profil terpisah. Gunakan project Firebase existing; jangan membuat project pengganti hanya untuk mengikuti panduan ini.
-
-## Apa yang sudah dapat dimainkan?
-
-- Retro: menelusuri jalur, 100 level unik, 10 wilayah, timer, tiga nyawa, bintang, unlock, retry, zoom/pan, mouse dan sentuhan.
-- Modern Solo: labirin 3D, binturong dengan animasi, joystick/keyboard, gerakan kontinu dan sliding dinding, peta tersembunyi, beberapa pintu masuk, tiga kesulitan.
-- Empat tampilan binturong: classic, explorer, raincoat, space. Kostum awal diperoleh dari bintang; kemampuan bermain tetap setara.
-- Bahasa Indonesia/English dan kontrol suara.
-
-## Apa yang belum boleh disebut final?
-
-Kode login/cloud dan room Race/Co-op sudah disertakan, tetapi belum diuji dengan layanan Firebase Anda. Uji online harus memakai sesi terpisah dan koneksi nyata, bukan lab lokal.
-
-Iklan memerlukan konfigurasi/persetujuan penyedia. Checkout, penagihan langganan dan pembelian kostum belum diimplementasikan. Game belum boleh dinyatakan final komersial sebelum bagian-bagian tersebut selesai dan teruji.
-
-Lihat `QA_REPORT.md` untuk hasil pengujian. Belum ada perubahan langsung atau deployment ke GitHub/Netlify Anda.
+Panduan lengkap tetap ada di `README.md`; hasil tes di `QA_REPORT.md`. Browser game belum final komersial: koneksi Firebase/multiplayer nyata dan pembayaran/iklan tetap perlu diselesaikan dan diverifikasi. Tidak ada perubahan langsung ke GitHub Anda.

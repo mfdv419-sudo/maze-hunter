@@ -61,3 +61,14 @@ Separate PASS, FAIL and NOT VERIFIED. A delivered stage may be playable without 
 ## 10. Acceptance
 
 The final browser game includes complete Retro, Modern Solo, actual Race/Co-op, family sign-in/profiles, bilingual UI, original low-poly characters with smooth movement, saved progress, configured ads/subscriptions/costume purchases and tested responsive play. App-store work follows, not precedes, this gate.
+
+
+## 11. Accepted UI refinement — 2026-10-24
+
+Replace the marketing-style landing page with a full-screen lightweight 3D garden maze title screen. Use expressive game typography, a large Play button, clear icon controls and bright family-friendly colors. Operational Firebase/setup messages and account architecture explanations do not belong on the home. Put setup details in documentation; communicate failures to players in understandable language.
+
+The mascot must visibly read as a fantasy binturong through its snout, tufted dark ears, prominent whiskers and long prehensile tail visible in the silhouette. Keep simple geometry and animation, with an original small teal scarf/maze badge.
+
+Modern tablet/phone: joystick left; blue A for jump, red B for hit. The implemented hit is a friendly shrub-clearing swipe, not mandatory enemy combat. Space and J/B provide keyboard equivalents. The actions must be real, support simultaneous movement, obey cooldowns and respect wall collision. Keep Retro solely trace-path. Network actions require server validation and must not be claimed live-tested before actual multi-client testing.
+
+Bahasa Indonesia/English remain required. The owner supplied public Firebase Web app settings for the existing project. These identifiers are distinct from Admin credentials; do not request or expose Admin secrets in chat. The Realtime Database URL was not supplied.
