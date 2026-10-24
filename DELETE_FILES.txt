@@ -13,3 +13,6 @@ The old scenes are replaced by src/game/retro.ts and src/game/modern.ts.
 The generator and rules are in src/game/maze.ts and src/game/room-state.ts.
 Family state and Firebase integration are in src/services/.
 No runtime depends on any deleted file. Do not delete unrelated files.
+
+If the earlier Netlify fix package was applied, delete its superseded manifest:
+NETLIFY_FIX_MANIFEST.json

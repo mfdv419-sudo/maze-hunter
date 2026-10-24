@@ -8,6 +8,7 @@ function offlineRetro(): Plugin {
         "/index.html",
         "/manifest.webmanifest",
         "/icon.svg",
+        "/fonts/fredoka-latin.woff",
         ...Object.keys(bundle).map((n) => "/" + n),
       ];
       const version = Object.keys(bundle).join("|");

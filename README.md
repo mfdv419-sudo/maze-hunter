@@ -26,7 +26,7 @@ npm ci
 npm run dev
 ```
 
-Without Firebase configuration, the product displays a clear login configuration state. In **Vite development only**, a separate **local control lab** is available to exercise movement and gameplay. It has a persistent banner, no Google identity, no cloud progress, no multiplayer, no purchases, and does not write family progress. It is excluded from the production build. It is not an authentication bypass for the published game.
+The project owner’s public Firebase Web app configuration is included in `src/services/firebase-web-config.ts`; explicit build environment variables can override the four identifiers. Service account credentials are not included. Login and server errors use player-facing feedback, while technical details remain in the console and documentation. In **Vite development only**, a separate **local control lab** is available to exercise movement and gameplay. It has a persistent banner, no Google identity, no cloud progress, no multiplayer, no purchases, and does not write family progress. It is excluded from the production build. It is not an authentication bypass for the published game.
 
 ## Netlify build correction (2026-10-24)
 
@@ -87,6 +87,16 @@ Rooms have a six-character private code, maximum four players, no chat, and a th
 - The generated service worker caches the app and game bundles after an online load. The first Google sign-in and profile creation need internet. Previously authenticated profiles can use locally stored Retro progress offline and sync on reconnection.
 - Modern, cloud operations and online rooms require connectivity.
 - Service-worker app-shell caching was browser-tested. Real-account offline resumption and sync conflicts still require validation with the owner's Firebase configuration.
+
+## Game UI and character revision (2026-10-24)
+
+The title screen is now an actual lightweight 3D garden/maze scene with an animated mascot, game logo, large Play button, language/sound/help/fullscreen controls. The old marketing hero layout, family account explanation and Firebase configuration status are removed from the player home. Fredoka is self-hosted as a subset WOFF font and cached for offline use; its SIL OFL license is included in `public/fonts/OFL-Fredoka.txt`.
+
+The binturong has a projecting grey snout, dark tufted ears, long whiskers, a short teal neckerchief, and a long segmented tail curled beside its silhouette. It does not use the old cream square bear muzzle. This is original procedural game geometry, not a reskinned existing character.
+
+Modern touch controls: joystick left, **blue A = jump**, **red B = clear shrubs** on the right. Desktop: Space jumps, J/B hits. Actions work together with joystick movement. Jump changes the character’s vertical position but cannot cross maze walls. Hit clears nearby optional dead-end shrubs; there are no mandatory combat encounters and no change to Retro trace-path objectives. In rooms, the server validates cooldowns and stores shared cleared shrubs/action timestamps; live multi-client verification remains pending.
+
+The supplied Firebase Web app configuration activates the client for `maze-hunter-e362b`; verify the Google provider and authorized deployment domain in the existing Firebase project. The supplied configuration does not contain a Realtime Database URL. Room setup still needs that URL plus the server credentials described above. Analytics is not initialized automatically by this revision.
 
 ## Modern controls and character
 

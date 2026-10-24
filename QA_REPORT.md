@@ -95,3 +95,12 @@ Reverification on Node 24.22.1:
 | Google authentication/room services | NOT VERIFIED against owner's Firebase project |
 
 The failed deploy's listed environment did not include VITE_FIREBASE_APP_ID; the owner must confirm it in the deploy-preview build context. It is required for client initialization but is distinct from the secret-scanning failure. No real secret value appeared in the supplied log, and none was requested or inserted into the fix.
+
+
+## Game UI, mascot and touch action revision — 2026-10-24
+
+Implemented a 3D title scene, self-hosted Fredoka game typography, game buttons/HUD, original binturong snout/whisker/ear/tail geometry, removal of home admin copy, blue A jump and red B optional shrub-clearing controls. Modern game navigation no longer reserves a website header. Owner-supplied public Firebase Web app configuration is used as a fallback, without service account credentials or automatic Analytics initialization.
+
+Checks: strict typecheck PASS; 20 unit tests PASS (including three action tests); level validation PASS; production build PASS; public-env bundle boundary check PASS; six Chromium browser tests PASS. The added browser test checks the 3D title canvas, absence of Firebase/family admin home text, and simultaneous touch joystick + jump plus the hit button. Offline regression now verifies the local font is cached too. The hit feedback initially depended on a throttled HUD callback; it is now updated directly on input and each frame.
+
+Visual review: desktop 1366x768, phone portrait 390x844, tablet 1024x768; the title/mascot/controls were inspected in rendered screenshots. Phone title layout reports no horizontal overflow. Screenshots are internal QA artifacts, not included in the source deliverable. Physical-device performance, real Google sign-in, multiplayer action synchronization, subscriptions, payments and real ad serving remain NOT VERIFIED/unfinished as described above.
