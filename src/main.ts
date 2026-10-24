@@ -51,6 +51,17 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
+const buildLabel = "24.10.24-M2";
+function signInPanel(title: string, message: string, code = "") {
+  document.getElementById("auth-error")?.remove();
+  const panel = document.createElement("section");
+  panel.id = "auth-error";
+  panel.className = "auth-error";
+  panel.setAttribute("role", "alert");
+  panel.innerHTML = `<strong>${esc(title)}</strong><p>${esc(message)}</p>${code ? `<code>${esc(code)}</code>` : ""}<small>${buildLabel}</small><button type="button">${tr("Tutup", "Close")}</button>`;
+  panel.querySelector("button")!.onclick = () => panel.remove();
+  document.body.append(panel);
+}
 let activeRoom: Room | null = null,
   playerKey = "",
   roomUnwatch: () => void = () => {},
@@ -99,14 +110,7 @@ function toast(message: string) {
 function showError(error: unknown) {
   const authIssue = authErrorInfo(error, lang);
   if (authIssue) {
-    document.getElementById("auth-error")?.remove();
-    const panel = document.createElement("section");
-    panel.id = "auth-error";
-    panel.className = "auth-error";
-    panel.setAttribute("role", "alert");
-    panel.innerHTML = `<strong>${tr("Masuk belum selesai", "Sign-in incomplete")}</strong><p>${esc(authIssue.message)}</p><code>${esc(authIssue.code)}</code><button type="button">${tr("Tutup", "Close")}</button>`;
-    panel.querySelector("button")!.onclick = () => panel.remove();
-    document.body.append(panel);
+    signInPanel(tr("Masuk belum selesai", "Sign-in incomplete"), authIssue.message, authIssue.code);
     console.error(error);
     return;
   }
@@ -204,7 +208,7 @@ function home() {
   void import("./game/menu-world")
     .then(({ menuWorld }) => {
       if (token === generation)
-        cleanup = menuWorld(el("title-world"), profile?.outfit);
+        cleanup = menuWorld(el("title-world"), profile?.outfit, lang);
     })
     .catch(showError);
   click("play", async () => {
@@ -212,12 +216,23 @@ function home() {
     if (cloudConfigured) {
       const play = el<HTMLButtonElement>("play");
       if (play.disabled) return;
-      document.getElementById("auth-error")?.remove();
+      signInPanel(tr("Membuka Google…", "Opening Google…"), tr("Selesaikan masuk di jendela Google. Jangan tekan Play lagi selama proses berjalan.", "Complete sign-in in the Google window. Wait for this attempt to finish."));
       const label = play.innerHTML;
       play.disabled = true;
       play.textContent = tr("MEMBUKA GOOGLE…", "OPENING GOOGLE…");
-      try { await login(); }
+      const waiting = setTimeout(() => {
+        signInPanel(tr("Masih menunggu Google", "Still waiting for Google"), tr("Jika jendela Google sudah tertutup sendiri, foto pesan ini. Proses login belum mengembalikan hasil.", "If the Google window closed itself, take a screenshot of this message. Sign-in has not returned a result."), "login/pending");
+      }, 20000);
+      try {
+        await login();
+        document.getElementById("auth-error")?.remove();
+      } catch (error) {
+        if (authErrorInfo(error, lang)) throw error;
+        signInPanel(tr("Masuk belum selesai", "Sign-in incomplete"), tr("Proses login gagal tanpa kode Firebase. Foto pesan ini agar dapat diperiksa.", "Sign-in failed without a Firebase code. Take a screenshot for diagnosis."), "login/unknown");
+        console.error(error);
+      }
       finally {
+        clearTimeout(waiting);
         if (play.isConnected) { play.disabled = false; play.innerHTML = label; }
       }
     } else toast(
@@ -227,6 +242,10 @@ function home() {
             ),
           );
   });
+  const version = document.createElement("small");
+  version.className = "build-label";
+  version.textContent = buildLabel;
+  el("title-world").parentElement!.append(version);
   click("how", () => instructions());
   click("retro-mode", () => journey());
   click("modern-mode", () => setup());

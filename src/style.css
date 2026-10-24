@@ -1344,3 +1344,8 @@ input {
 .auth-error p { margin: 10px 0; line-height: 1.45; }
 .auth-error code { display: block; overflow-wrap: anywhere; font-size: 14px; color: #ffe18a; }
 .auth-error button { display: block; margin: 14px 0 0 auto; border-radius: 12px; padding: 8px 20px; background: #ffe18a; color: #173e47; border: 0; font: inherit; cursor: pointer; }
+.mascot-touch { position: absolute; display: block; padding: 0; margin: 0; background: transparent; border: 0; border-radius: 40%; box-shadow: none; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.mascot-touch:hover, .mascot-touch:active { background: transparent; box-shadow: none; transform: none; }
+.mascot-touch:focus-visible { outline: 3px dashed #ffe18a; outline-offset: 4px; }
+.build-label { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 12px; color: #fff4cc; font-size: 11px; opacity: .75; pointer-events: none; }
+.auth-error small { display: block; margin-top: 8px; opacity: .65; font-size: 11px; }
