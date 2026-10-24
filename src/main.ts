@@ -1,4 +1,5 @@
 import "./style.css";
+import { authErrorInfo } from "./services/auth-errors";
 import { tone, isMuted, setMuted } from "./systems/audio";
 import {
   serverNow,
@@ -82,7 +83,9 @@ function el<T extends HTMLElement = HTMLElement>(id: string) {
 }
 function click(id: string, fn: () => unknown) {
   el(id)?.addEventListener("click", () => {
-    Promise.resolve().then(fn).catch(showError);
+    // Start popup login directly in the user's click handler.
+    try { Promise.resolve(fn()).catch(showError); }
+    catch (error) { showError(error); }
   });
 }
 function toast(message: string) {
@@ -94,6 +97,19 @@ function toast(message: string) {
   setTimeout(() => n.remove(), 6000);
 }
 function showError(error: unknown) {
+  const authIssue = authErrorInfo(error, lang);
+  if (authIssue) {
+    document.getElementById("auth-error")?.remove();
+    const panel = document.createElement("section");
+    panel.id = "auth-error";
+    panel.className = "auth-error";
+    panel.setAttribute("role", "alert");
+    panel.innerHTML = `<strong>${tr("Masuk belum selesai", "Sign-in incomplete")}</strong><p>${esc(authIssue.message)}</p><code>${esc(authIssue.code)}</code><button type="button">${tr("Tutup", "Close")}</button>`;
+    panel.querySelector("button")!.onclick = () => panel.remove();
+    document.body.append(panel);
+    console.error(error);
+    return;
+  }
   const message = error instanceof Error ? error.message : String(error);
   toast(
     /Firebase|permission|auth\/|cloud|configured|token|functions/i.test(message)
@@ -191,18 +207,26 @@ function home() {
         cleanup = menuWorld(el("title-world"), profile?.outfit);
     })
     .catch(showError);
-  click("play", () =>
-    profile
-      ? journey()
-      : cloudConfigured
-        ? login()
-        : toast(
+  click("play", async () => {
+    if (profile) return journey();
+    if (cloudConfigured) {
+      const play = el<HTMLButtonElement>("play");
+      if (play.disabled) return;
+      document.getElementById("auth-error")?.remove();
+      const label = play.innerHTML;
+      play.disabled = true;
+      play.textContent = tr("MEMBUKA GOOGLE…", "OPENING GOOGLE…");
+      try { await login(); }
+      finally {
+        if (play.isConnected) { play.disabled = false; play.innerHTML = label; }
+      }
+    } else toast(
             tr(
               "Petualangan belum tersedia. Coba lagi sebentar.",
               "Adventure is unavailable. Please try again shortly.",
             ),
-          ),
-  );
+          );
+  });
   click("how", () => instructions());
   click("retro-mode", () => journey());
   click("modern-mode", () => setup());

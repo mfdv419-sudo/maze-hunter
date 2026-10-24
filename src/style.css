@@ -1338,3 +1338,9 @@ input {
     transition: none;
   }
 }
+
+/* Persistent, safe login diagnostics for touch devices; dismiss explicitly. */
+.auth-error { position: fixed; z-index: 1000; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(520px, calc(100vw - 32px)); max-height: 75dvh; overflow: auto; box-sizing: border-box; padding: 20px; background: #173e47; color: #fff4cc; border: 3px solid #ffe18a; border-radius: 22px; box-shadow: 0 8px 30px #0007; font-size: 16px; }
+.auth-error p { margin: 10px 0; line-height: 1.45; }
+.auth-error code { display: block; overflow-wrap: anywhere; font-size: 14px; color: #ffe18a; }
+.auth-error button { display: block; margin: 14px 0 0 auto; border-radius: 12px; padding: 8px 20px; background: #ffe18a; color: #173e47; border: 0; font: inherit; cursor: pointer; }
