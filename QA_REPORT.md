@@ -68,6 +68,30 @@ The browser tests do not log in as a Google user. They use a separately labeled 
 
 The production build reports large vendor chunks. Approximate engine bundle gzip sizes: Phaser 340 kB, Three.js 130 kB, Firebase 215 kB. Engine bundles are split; offline preparation intentionally caches the game modules. No runtime model downloads, detailed fur textures or external image packs are required for the procedural character.
 
-Tests ran on Node 24 in this execution environment; Netlify/CI configuration targets Node 22. Chromium 153 was used through an existing executable path after the default browser CDN download returned an invalid archive in this environment. The project itself supports normal Playwright browser installation and does not depend on that local executable path.
+Tests ran on Node 24 in this execution environment; the original Netlify/CI configuration targeted Node 22 (corrected to Node 24 by the 2026-10-24 fix below). Chromium 153 was used through an existing executable path after the default browser CDN download returned an invalid archive in this environment. The project itself supports normal Playwright browser installation and does not depend on that local executable path.
 
 No source credentials, generated build output, node_modules, browser binaries or internal screenshots are included in the deliverable ZIP.
+
+
+## Netlify deploy correction — 2026-10-24
+
+The supplied Netlify deploy log shows TypeScript/Vite and Function bundling succeeded; deployment then failed because the secret scanner matched the two public Firebase browser configuration values. It also showed Firebase packages requiring Node >=24.12 under a Node 22 build. That runtime configuration in the earlier package was incorrect.
+
+Changes: Node 24 in Netlify, CI and .nvmrc; package/lockfile minimum Node >=24.12 <25; secret scanning remains enabled with only five explicitly public Firebase web keys omitted; Firebase source reads only its required fields instead of serializing import.meta.env; a production bundling regression checks unrelated/server values stay out of frontend output.
+
+Reverification on Node 24.22.1:
+
+| Check | Result |
+| --- | --- |
+| npm ci --engine-strict --ignore-scripts --no-audit --no-fund | PASS; no EBADENGINE mismatch |
+| npm run typecheck | PASS |
+| npm run test | PASS — 17 tests |
+| npm run validate:levels | PASS — four suites |
+| npm run build | PASS |
+| npm run check:public-env | PASS — five public fields retained, unused VITE values and server marker excluded |
+| npm run test:browser | PASS — five Chromium tests |
+| Netlify configuration and delta archive validation | PASS locally |
+| New Netlify deployment and its real secret scanner | NOT VERIFIED — no remote account mutation/deploy performed |
+| Google authentication/room services | NOT VERIFIED against owner's Firebase project |
+
+The failed deploy's listed environment did not include VITE_FIREBASE_APP_ID; the owner must confirm it in the deploy-preview build context. It is required for client initialization but is distinct from the secret-scanning failure. No real secret value appeared in the supplied log, and none was requested or inserted into the fix.

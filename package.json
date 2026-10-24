@@ -10,7 +10,8 @@
     "validate:levels": "vitest run tests/levels.test.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "check:public-env": "node scripts/check-public-env.mjs"
   },
   "dependencies": {
     "firebase": "^13.1.0",
@@ -26,5 +27,8 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.1.3"
+  },
+  "engines": {
+    "node": ">=24.12.0 <25"
   }
 }

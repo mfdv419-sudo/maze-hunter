@@ -19,7 +19,7 @@ The delta includes a real `package-lock.json`; CI now uses `npm ci` with the mat
 
 ## Local development
 
-Node 22:
+Node 24.12+ (24 LTS; `.nvmrc` pins the major version):
 
 ```sh
 npm ci
@@ -27,6 +27,16 @@ npm run dev
 ```
 
 Without Firebase configuration, the product displays a clear login configuration state. In **Vite development only**, a separate **local control lab** is available to exercise movement and gameplay. It has a persistent banner, no Google identity, no cloud progress, no multiplayer, no purchases, and does not write family progress. It is excluded from the production build. It is not an authentication bypass for the published game.
+
+## Netlify build correction (2026-10-24)
+
+Netlify/CI now use Node 24, matching the installed Firebase packages' minimum Node 24.12 requirement. Secret scanning stays enabled. `netlify.toml` omits only the five public Firebase web configuration keys from value scanning. No directory exclusion, private-key exclusion, or global scanner disable is used.
+
+Only explicitly referenced browser fields are bundled; unrelated `VITE_` values are no longer serialized by the Firebase client module. Run `npm run check:public-env` to verify the built output excludes synthetic unrelated/admin markers while retaining public web configuration. Never place actual secrets in a `VITE_` variable.
+
+The supplied failed deploy's environment list did not include `VITE_FIREBASE_APP_ID`. Confirm it in the same **deploy-preview build** context; its value comes from the existing Firebase **Web app** configuration and is not the project ID or measurement ID. Rooms also require the actual `VITE_FIREBASE_DATABASE_URL` and the two server-side settings described below. `VITE_FIREBASE_CLIENT_EMAIL` is not used by the app and should not be supplied as browser configuration. Keep Admin credentials in `FIREBASE_SERVICE_ACCOUNT_JSON` with Functions scope.
+
+See `docs/NETLIFY_BUILD_FIX.md` for manual application and verification.
 
 ## Activate Google sign-in and family cloud saves
 
