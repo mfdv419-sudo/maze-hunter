@@ -17,25 +17,32 @@ import {
 } from "firebase/firestore";
 import { getDatabase, ref, onValue, onDisconnect } from "firebase/database";
 import { mergeProfile, validProfile, type Profile } from "./local";
-const env = import.meta.env;
+// Read only public fields used by this browser client. Do not serialize import.meta.env.
+const config = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+};
 export const cloudConfigured = !!(
-  env.VITE_FIREBASE_API_KEY &&
-  env.VITE_FIREBASE_AUTH_DOMAIN &&
-  env.VITE_FIREBASE_PROJECT_ID &&
-  env.VITE_FIREBASE_APP_ID
+  config.apiKey &&
+  config.authDomain &&
+  config.projectId &&
+  config.appId
 );
 const app = cloudConfigured
   ? initializeApp({
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      appId: env.VITE_FIREBASE_APP_ID,
-      databaseURL: env.VITE_FIREBASE_DATABASE_URL,
+      apiKey: config.apiKey,
+      authDomain: config.authDomain,
+      projectId: config.projectId,
+      appId: config.appId,
+      databaseURL: config.databaseURL,
     })
   : null;
 const auth = app ? getAuth(app) : null,
   db = app ? getFirestore(app) : null,
-  rtdb = app && env.VITE_FIREBASE_DATABASE_URL ? getDatabase(app) : null;
+  rtdb = app && config.databaseURL ? getDatabase(app) : null;
 export function watchAuth(fn: (u: User | null) => void) {
   if (!auth) {
     queueMicrotask(() => fn(null));
