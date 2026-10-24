@@ -1,10 +1,11 @@
 import * as T from "three";
+import {goldGate} from "./adventure-props";
 import { createBinturong } from "./character";
 import { carve, route } from "./maze";
 export type MenuMode = "retro" | "modern";
 export interface MenuWorld { dispose: () => void; setMode: (mode: MenuMode) => void }
 /** A small, real maze diorama, built from the game's generator and route solver. */
-export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" | "en" = "id", initialMode: MenuMode = "modern"): MenuWorld {
+export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" | "en" = "id", initialMode: MenuMode = "modern", color?:number): MenuWorld {
   const renderer = new T.WebGLRenderer({antialias: true, powerPreference:"low-power"});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.35));
   renderer.setClearColor(0x123d48);
@@ -51,12 +52,8 @@ export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" 
   const wallCaps=instances(walls,wallTop,.12,.8,.99);
   const routeMaterial=new T.MeshBasicMaterial({color:0xffd56f,transparent:true,opacity:.9});materials.push(routeMaterial);
   const dots=instances(solution,routeMaterial,.035,.225,.3);
-  const gate=new T.Group();gate.position.set(finish.x-5,.2,finish.y-4);island.add(gate);
-  mesh(box,stone,-.41,.59,0,.16,1.25,.24,gate);mesh(box,stone,.41,.59,0,.16,1.25,.24,gate);
-  mesh(box,gold,0,1.2,0,.98,.16,.27,gate);
-  const ring=mesh(geometry(new T.TorusGeometry(.34,.065,5,18)),gold,0,.63,.02,1,1,1,gate);
-  const glowMat=new T.MeshBasicMaterial({color:0xffed9a,transparent:true,opacity:.27,side:T.DoubleSide,depthWrite:false});materials.push(glowMat);
-  mesh(geometry(new T.CircleGeometry(.34,18)),glowMat,0,.63,.015,1,1,1,gate);
+  const gate=goldGate();gate.position.set(finish.x-5,.2,finish.y-4);island.add(gate);
+  const ring=gate.getObjectByName('portal-glow')!;
   const orbMat=new T.MeshBasicMaterial({color:0xfff3b4});materials.push(orbMat);
   const traveler=mesh(geometry(new T.SphereGeometry(.12,8,6)),orbMat,0,.35,0,1,1,1,island);
   // A second hint of the world beyond; this is scenery, not unlocked player progress.
@@ -76,7 +73,7 @@ export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" 
   const motes: T.Mesh[]=[];
   const moteGeo=geometry(new T.OctahedronGeometry(.045,0));
   for(let i=0;i<12;i++)motes.push(mesh(moteGeo,gold,-5+(i*7%11),1+(i%4)*.4,-4+(i*3%9)));
-  const hero=createBinturong(outfit);
+  const hero=createBinturong(outfit,color);
   const plinth=geometry(new T.CylinderGeometry(1.0,1.12,.55,8));
   mesh(plinth,stone,4.6,.48,4.5,1,1,1,island);
   mesh(geometry(new T.CylinderGeometry(1.03,1.0,.12,8)),lime,4.6,.81,4.5,1,1,1,island);
@@ -125,7 +122,7 @@ export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" 
     const t=ms/1000, age=t-reactionAt,reacting=age>=0&&age<1.25;
     touch.dataset.reacting=String(reacting);
     hero.root.rotation.y=.35+(reduced.matches?0:Math.sin(t*.5)*.12);
-    hero.animate(reduced.matches?0:t,0,false,reacting?{hit:0,greet:age/1.25}:undefined);
+    hero.animate(reduced.matches?0:t,0,false,{hit:0,lookUp:true,...(reacting?{greet:age/1.25}:{})});
     const distance=(reduced.matches?0:t*.9)%(solution.length-1),i=Math.floor(distance),f=distance-i,a=solution[i],b=solution[i+1];
     pos.set(a.x+(b.x-a.x)*f-5,.35,a.y+(b.y-a.y)*f-4);traveler.position.copy(pos);
     traveler.visible=mode==="retro";ring.rotation.z=reduced.matches?0:t*.2;
@@ -133,7 +130,7 @@ export function menuWorld(host: HTMLElement, outfit = "classic", language: "id" 
     renderer.render(scene,camera);
   });
   return {setMode,dispose() {
-    ro.disconnect();renderer.setAnimationLoop(null);touch.removeEventListener("click",greet);touch.remove();
-    hero.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();renderer.dispose();renderer.domElement.remove();
+    ro.disconnect();renderer.setAnimationLoop(null);scene.traverse(o=>{if(o instanceof T.InstancedMesh)o.dispose();});touch.removeEventListener("click",greet);touch.remove();
+    hero.dispose();gate.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});for(const g of geometries)g.dispose();for(const m of materials)m.dispose();renderer.dispose();renderer.domElement.remove();
   }};
 }

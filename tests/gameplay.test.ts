@@ -1,3 +1,4 @@
+import {boardRoute} from "../src/game/retro-board";
 import { describe, it, expect } from "vitest";
 import {
   moveSliding,
@@ -67,11 +68,7 @@ describe("Retro lifecycle", () => {
   it("a valid path wins and rates actual performance", () => {
     const s = new RetroState(1);
     s.start();
-    for (const p of route(
-      s.config.maze.grid,
-      s.config.maze.start,
-      s.config.maze.finish,
-    ))
+    for (const p of boardRoute(s.board))
       s.trace(center(p));
     expect(s.phase).toBe("won");
     expect(s.rating).toBe(3);

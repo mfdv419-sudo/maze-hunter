@@ -1,3 +1,5 @@
+import {retroViewport} from "./retro-board";
+import {drawBinturong,drawFigs} from "./retro-art";
 import Phaser from "phaser";
 import { RetroState } from "./retro-state";
 export interface RetroOptions {
@@ -17,7 +19,7 @@ export class RetroGame {
     const state = (this.state = new RetroState(options.level));
     let reported = false,
       dragging = false,
-      penalized = false,
+
       panning = false,
       lastPan = { x: 0, y: 0 };
     let scale = 1,
@@ -47,7 +49,7 @@ export class RetroGame {
           ) {
             state.start();
             dragging = true;
-            penalized = false;
+
           } else if (owner.zoomLevel > 1) {
             panning = true;
             lastPan = { x: p.x, y: p.y };
@@ -63,20 +65,18 @@ export class RetroGame {
           if (!dragging || !p.isDown || state.phase !== "playing") return;
           const world = this.cameras.main.getWorldPoint(p.x, p.y);
           const q = { x: (world.x - ox) / scale, y: (world.y - oy) / scale };
-          if (!state.trace(q)) {
-            if (!penalized) {
-              state.mistake();
-              penalized = true;
-            }
-            dragging = false;
-            this.cameras.main.flash(90, 255, 145, 110);
+          const previousResets=state.resets;
+          state.trace(q);
+          if(state.resets!==previousResets) {
+            dragging=false;
+            this.cameras.main.flash(140,255,180,90);
           }
           paint.current();
         });
         const release = () => {
           dragging = false;
           panning = false;
-          penalized = false;
+
         };
         this.input.on("pointerup", release);
         this.input.on("gameout", release);
@@ -91,31 +91,21 @@ export class RetroGame {
       draw() {
         const w = this.scale.width,
           h = this.scale.height,
-          n = state.config.maze.grid.length;
-        scale = Math.min((w - 28) / n, (h - 28) / n);
-        ox = (w - n * scale) / 2;
-        oy = (h - n * scale) / 2;
+          n = state.board.size;
+        const fit=retroViewport(w,h,n);scale=fit.scale;ox=fit.ox;oy=fit.oy;
         owner.layout = { scale, ox, oy };
         if (owner.zoomLevel > 1) this.cameras.main.setBounds(0, 0, w, h);
         const g = this.gfx;
         g.clear();
-        g.fillStyle(0x173f3e).fillRoundedRect(
-          ox - 5,
-          oy - 5,
-          n * scale + 10,
-          n * scale + 10,
-          12,
-        );
-        for (let y = 0; y < n; y++)
-          for (let x = 0; x < n; x++) {
-            g.fillStyle(state.config.maze.grid[y][x] ? 0x173f3e : 0xe9edce);
-            g.fillRect(
-              ox + x * scale,
-              oy + y * scale,
-              scale + 0.5,
-              scale + 0.5,
-            );
-          }
+        g.fillStyle(0xfff6da).fillRoundedRect(ox-7,oy-7,n*scale+14,n*scale+14,14);
+        g.lineStyle(Math.max(2.5,scale*.045),0x2a5657,1);
+        for(let y=0;y<n;y++)for(let x=0;x<n;x++) {
+          const walls=state.board.walls[y][x],px=ox+x*scale,py=oy+y*scale;
+          if(walls&1)g.lineBetween(px,py,px+scale,py);
+          if(walls&8)g.lineBetween(px,py,px,py+scale);
+          if(x===n-1&&(walls&2))g.lineBetween(px+scale,py,px+scale,py+scale);
+          if(y===n-1&&(walls&4))g.lineBetween(px,py+scale,px+scale,py+scale);
+        }
         if (state.path.length > 1) {
           g.lineStyle(Math.max(3, scale * 0.2), 0x4caa94, 1);
           g.beginPath();
@@ -126,30 +116,11 @@ export class RetroGame {
           );
           g.strokePath();
         }
-        const f = state.config.maze.finish,
-          s = state.config.maze.start;
-        g.fillStyle(0x76bc93).fillCircle(
-          ox + (s.x + 0.5) * scale,
-          oy + (s.y + 0.5) * scale,
-          scale * 0.29,
-        );
-        g.fillStyle(0xf2bb55).fillRoundedRect(
-          ox + (f.x + 0.14) * scale,
-          oy + (f.y + 0.14) * scale,
-          scale * 0.72,
-          scale * 0.72,
-          3,
-        );
-        g.fillStyle(0xffffff).fillCircle(
-          ox + state.position.x * scale,
-          oy + state.position.y * scale,
-          Math.max(3, scale * 0.19),
-        );
-        g.lineStyle(2, 0x255d56).strokeCircle(
-          ox + state.position.x * scale,
-          oy + state.position.y * scale,
-          Math.max(3, scale * 0.19),
-        );
+        const f=state.board.finish,s=state.board.start;
+        drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);
+        drawBinturong(g,ox+(s.x+.5)*scale,oy+(s.y+.5)*scale,scale*.65,.2);
+        drawBinturong(g,ox+state.position.x*scale,oy+state.position.y*scale,scale*.65);
+
       }
       update() {
         const now = performance.now();

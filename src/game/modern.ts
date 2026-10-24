@@ -1,3 +1,5 @@
+import {AdventureState} from "./adventure-state";
+import {goldGate,seedGuardian,collectible} from "./adventure-props";
 import * as T from "three";
 import { createBinturong, type Character } from "./character";
 import {
@@ -24,15 +26,30 @@ export interface ModernOptions {
   seed: number;
   entrance: number;
   outfit: string;
+  color?: number;
   onTick: (seconds: number, explored: number) => void;
   onFinish: (won: boolean) => void;
   online?: boolean;
+  adventureMap?: number;
+  onAdventure?: (state:AdventureState)=>void;
   onAction?: (kind: ActionKind) => Promise<boolean>;
   onFeedback?: (count: number) => void;
   onActionChange?: (kind: ActionKind, active: boolean) => void;
 }
 export class ModernGame {
   readonly maze;
+  readonly adventure?:AdventureState;
+  private minimap?:HTMLCanvasElement;
+  private mapPanel?:HTMLDivElement;
+  private items:{kind:'seal'|'star'|'chest';index:number;point:Point;group:T.Group}[]=[];
+  private guardModels:T.Group[]=[];
+  private warningModels:T.Mesh[]=[];
+  private riverModels:{point:Point;mesh:T.Mesh}[]=[];
+  private grassModels:{point:Point;mesh:T.Mesh}[]=[];
+  private cakes?:T.InstancedMesh;
+  private cakeTops?:T.InstancedMesh;
+  private fogRevision=0;
+  private velocity={x:0,y:0};
   position: Point;
   angle = 0;
   paused = false;
@@ -94,6 +111,9 @@ export class ModernGame {
       void this.options.onAction?.(kind).then((ok) => {
         if (!ok) this[field] = previous;
       });
+    } else if(kind === "hit" && this.adventure) {
+      this.adventure.throwCake(this.angle);
+      this.visionAcc=1;
     } else if (kind === "hit") {
       const targets = hitTargets(this.maze, this.position, this.broken);
       for (const q of targets) this.broken[shrubKey(q)] = true;
@@ -130,8 +150,9 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    this.maze = modernMaze(options.difficulty, options.seed);
-    this.position = center(this.maze.entrances[options.entrance % 4]);
+    if(options.adventureMap!==undefined&&!options.online)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed);
+    this.maze = this.adventure ? {...this.adventure.layout.maze,grid:this.adventure.grid} : modernMaze(options.difficulty, options.seed);
+    this.position = this.adventure ? {...this.adventure.position} : center(this.maze.entrances[options.entrance % 4]);
     this.renderer = new T.WebGLRenderer({
       antialias: true,
       powerPreference: "low-power",
@@ -168,23 +189,32 @@ export class ModernGame {
     this.shrubMesh.frustumCulled = false;
     this.scene.add(this.shrubMesh);
 
-    this.hero = createBinturong(options.outfit);
+    this.hero = createBinturong(options.outfit,options.color);
     this.hero.root.scale.setScalar(0.66);
     this.scene.add(this.hero.root);
-    this.marker = new T.Group();
-    const ring = new T.Mesh(
-      new T.TorusGeometry(0.28, 0.07, 6, 16),
-      new T.MeshBasicMaterial({ color: 0xf7c35b }),
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.12;
-    this.marker.add(ring);
-    this.marker.position.set(
-      this.maze.finish.x + 0.5,
-      0,
-      this.maze.finish.y + 0.5,
-    );
+    this.marker = goldGate();
+    this.marker.position.set(this.maze.finish.x+.5,0,this.maze.finish.y+.5);
     this.scene.add(this.marker);
+    if(this.adventure) {
+      const a=this.adventure;
+      for(const kind of ['seal','star','chest'] as const) {
+        const points=kind==='seal'?a.layout.seals:kind==='star'?a.layout.stars:a.layout.chests;
+        points.forEach((p,index)=>{const group=collectible(kind);group.position.set(p.x+.5,0,p.y+.5);this.scene.add(group);this.items.push({kind,index,point:p,group});});
+      }
+      this.guardModels=a.guards.map(g=>{const model=seedGuardian(g.boss);this.scene.add(model);const warning=new T.Mesh(new T.RingGeometry(.22,.3,16),new T.MeshBasicMaterial({color:g.boss?0xffa068:0xffd57b,side:T.DoubleSide,transparent:true,opacity:.85}));warning.rotation.x=-Math.PI/2;warning.visible=false;this.scene.add(warning);this.warningModels.push(warning);return model;});
+      for(const p of a.layout.rivers) {
+        const mesh=new T.Mesh(new T.BoxGeometry(.99,.04,.99),new T.MeshLambertMaterial({color:0x3fadd4,emissive:0x16435b}));
+        mesh.position.set(p.x+.5,.015,p.y+.5);this.scene.add(mesh);this.riverModels.push({point:p,mesh});
+      }
+      for(const p of a.layout.grass) {
+        const mesh=new T.Mesh(new T.BoxGeometry(.92,.78,.92),new T.MeshLambertMaterial({color:0x4cbb6a,flatShading:true}));
+        mesh.position.set(p.x+.5,.4,p.y+.5);this.scene.add(mesh);this.grassModels.push({point:p,mesh});
+      }
+      this.cakes=new T.InstancedMesh(new T.CylinderGeometry(.12,.12,.13,8),new T.MeshLambertMaterial({color:0xd79b72}),80);this.cakes.count=0;this.cakes.frustumCulled=false;this.scene.add(this.cakes);this.cakeTops=new T.InstancedMesh(new T.CylinderGeometry(.14,.14,.045,8),new T.MeshLambertMaterial({color:0xffd3df}),80);this.cakeTops.count=0;this.cakeTops.frustumCulled=false;this.scene.add(this.cakeTops);
+      this.mapPanel=document.createElement('div');this.mapPanel.className='minimap-panel';
+      this.mapPanel.innerHTML='<canvas width="180" height="180" aria-label="Minimap"></canvas>';
+      this.minimap=this.mapPanel.querySelector('canvas')!;host.parentElement!.append(this.mapPanel);
+    }
     // Entrance marks appear only after their cells have been discovered.
     window.addEventListener(
       "keydown",
@@ -234,7 +264,7 @@ export class ModernGame {
     const w = this.host.clientWidth,
       h = this.host.clientHeight;
     this.renderer.setSize(w, h);
-    const half = w < h ? 3.25 : 3.5;
+    const half = w < h ? 6 : 4.5;
     this.camera.left = (-half * w) / h;
     this.camera.right = (half * w) / h;
     this.camera.top = half;
@@ -244,6 +274,7 @@ export class ModernGame {
   clearInput() {
     this.keys.clear();
     this.joystick = { x: 0, y: 0 };
+    this.velocity={x:0,y:0};
   }
   setPaused(v: boolean) {
     this.paused = v;
@@ -325,7 +356,7 @@ export class ModernGame {
         this.floor.setMatrixAt(i, this.matrix.matrix);
         this.floor.setColorAt(
           i,
-          c.set(lit ? 0xa8c58b : seen ? 0x647c65 : 0x223b3b),
+          c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x398caf:0xa8c58b) : seen ? 0x647c65 : 0x223b3b),
         );
         const low =
           lit &&
@@ -361,9 +392,23 @@ export class ModernGame {
     this.walls.instanceMatrix.needsUpdate = true;
     if (this.floor.instanceColor) this.floor.instanceColor.needsUpdate = true;
     if (this.walls.instanceColor) this.walls.instanceColor.needsUpdate = true;
+    this.riverModels.forEach(({point:p,mesh})=>{mesh.visible=this.explored.has(`${p.x},${p.y}`);});
+    this.grassModels.forEach(({point:p,mesh})=>{mesh.visible=this.explored.has(`${p.x},${p.y}`)&&!this.adventure?.broken.has(`${p.x},${p.y}`);});
+    this.items.forEach(item=>{const set=item.kind==='seal'?this.adventure!.seals:item.kind==='star'?this.adventure!.stars:this.adventure!.chests;item.group.visible=this.explored.has(`${item.point.x},${item.point.y}`)&&!set.has(item.index);});
+    this.paintMinimap();
     this.marker.visible = this.explored.has(
       `${this.maze.finish.x},${this.maze.finish.y}`,
     );
+  }
+  private paintMinimap() {
+    if(!this.minimap)return;const ctx=this.minimap.getContext('2d')!;const n=this.maze.grid.length,unit=180/n;
+    ctx.fillStyle='#102f3b';ctx.fillRect(0,0,180,180);
+    for(const k of this.explored){const [x,y]=k.split(',').map(Number);ctx.fillStyle=this.maze.grid[y]?.[x]?'#536c69':this.current.has(k)?'#d4e1b3':'#709588';ctx.fillRect(x*unit,y*unit,Math.ceil(unit),Math.ceil(unit));}
+    for(const item of this.items)if(item.group.visible){ctx.fillStyle=item.kind==='seal'?'#67e4df':item.kind==='star'?'#ffdb7b':'#e8a669';ctx.fillRect((item.point.x+.2)*unit,(item.point.y+.2)*unit,Math.max(3,unit*.6),Math.max(3,unit*.6));}
+    for(const g of this.adventure?.guards||[])if(!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)){ctx.fillStyle=g.boss?'#ffc363':'#e78b83';ctx.fillRect(g.position.x*unit-2,g.position.y*unit-2,4,4);}
+    if(this.explored.has(`${this.maze.finish.x},${this.maze.finish.y}`)){ctx.fillStyle='#ffcb67';ctx.fillRect(this.maze.finish.x*unit,this.maze.finish.y*unit,unit,unit);}
+    ctx.save();ctx.translate(this.position.x*unit,this.position.y*unit);ctx.rotate(Math.PI-this.angle);ctx.fillStyle='#fff8e1';ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(3.5,4);ctx.lineTo(-3.5,4);ctx.closePath();ctx.fill();ctx.restore();
+    if(this.mapPanel)this.mapPanel.dataset.explored=String(this.explored.size);
   }
   private frame(t: number) {
     const raw = this.last ? Math.max(0, (t - this.last) / 1000) : 0,
@@ -393,12 +438,14 @@ export class ModernGame {
         azimuth = Math.atan2(4.5, 6.5),
         worldX = dx * Math.cos(azimuth) + dy * Math.sin(azimuth),
         worldY = -dx * Math.sin(azimuth) + dy * Math.cos(azimuth);
-      this.position = moveSliding(
-        this.maze.grid,
-        this.position,
-        worldX * 2.7 * dt,
-        worldY * 2.7 * dt,
-      );
+      const ease=1-Math.exp(-dt*(length>.02?13:18));
+      this.velocity.x+=(worldX*2.7-this.velocity.x)*ease;
+      this.velocity.y+=(worldY*2.7-this.velocity.y)*ease;
+      if(this.adventure) {
+        this.adventure.step(dt,raw,this.velocity.x,this.velocity.y,jumpHeight((this.elapsed-this.jumpStarted)/JUMP_SECONDS));
+        this.elapsed=this.adventure.elapsed;this.position={...this.adventure.position};
+        if(this.fogRevision!==this.adventure.resetFogRevision){this.fogRevision=this.adventure.resetFogRevision;this.explored.clear();}
+      }else this.position=moveSliding(this.maze.grid,this.position,this.velocity.x*dt,this.velocity.y*dt);
       actual = dt
         ? Math.hypot(this.position.x - before.x, this.position.y - before.y) /
           dt
@@ -408,7 +455,9 @@ export class ModernGame {
           this.position.x - before.x,
           this.position.y - before.y,
         );
-      if (!this.options.online) {
+      if(this.adventure&&this.adventure.phase!=='playing') {
+        this.ended=true;this.outcome=this.adventure.phase==='won'?'won':'lost';this.options.onFinish(this.outcome==='won');
+      } else if (!this.options.online&&!this.adventure) {
         const f = center(this.maze.finish);
         if (Math.hypot(this.position.x - f.x, this.position.y - f.y) < 0.3) {
           this.ended = true;
@@ -455,6 +504,15 @@ export class ModernGame {
         hit: Math.max(0, Math.min(1, (now - p.hitAt) / 1000 / HIT_SECONDS)),
       });
     }
+    if(this.adventure) {
+      const a=this.adventure;
+      this.guardModels.forEach((m,i)=>{const g=a.guards[i];m.visible=!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`);m.position.set(g.position.x,Math.sin(this.time*5+i)*.025,g.position.y);m.rotation.y=Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y);m.rotation.z=g.telegraphUntil?Math.sin(this.time*15)*.08:0;const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
+      this.items.forEach(item=>{if(item.kind!=='chest')item.group.rotation.y=this.time*.7;});
+      if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,.42,cake.position.y);this.matrix.scale.setScalar(this.current.has(`${Math.floor(cake.position.x)},${Math.floor(cake.position.y)}`)?(cake.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
+      const glow=this.marker.getObjectByName('portal-glow') as T.Mesh;
+      (glow.material as T.MeshBasicMaterial).opacity=a.gateOpen?.8:.12;
+      this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
+    }
     const target = new T.Vector3(this.position.x, 0, this.position.y),
       desired = target.clone().add(new T.Vector3(4.5, 7, 6.5));
     if (!this.acc) this.camera.position.copy(desired);
@@ -470,6 +528,7 @@ export class ModernGame {
       this.visionAcc = 0;
       this.updateVision();
       this.options.onTick(this.elapsed, this.explored.size);
+      if(this.adventure)this.options.onAdventure?.(this.adventure);
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -477,20 +536,15 @@ export class ModernGame {
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.abort.abort();
-    this.hero.dispose();
-    for (const p of this.peers.values()) p.character.dispose();
-    this.scene.traverse((o) => {
-      if (o instanceof T.Mesh && !o.parent?.userData.character) {
-        o.geometry.dispose();
-        for (const m of Array.isArray(o.material) ? o.material : [o.material])
-          m.dispose();
-      }
-    });
+    this.mapPanel?.remove();
+    const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();
+    this.scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);if(o instanceof T.InstancedMesh)o.dispose();}});
+    for(const g of geometries)g.dispose();for(const m of materials)m.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
 }
-export function characterPreview(host: HTMLElement, outfit: string) {
+export function characterPreview(host: HTMLElement, outfit: string,color?:number) {
   const renderer = new T.WebGLRenderer({
     alpha: true,
     antialias: true,
@@ -506,7 +560,7 @@ export function characterPreview(host: HTMLElement, outfit: string) {
   const sun = new T.DirectionalLight(0xffe3ae, 2.5);
   sun.position.set(3, 5, 5);
   scene.add(sun);
-  const hero = createBinturong(outfit);
+  const hero = createBinturong(outfit,color);
   scene.add(hero.root);
   const ro = new ResizeObserver(() => {
     renderer.setSize(host.clientWidth, host.clientHeight);
@@ -516,7 +570,8 @@ export function characterPreview(host: HTMLElement, outfit: string) {
   ro.observe(host);
   renderer.setAnimationLoop((t) => {
     hero.root.rotation.y = Math.sin(t * 0.0003) * 0.25;
-    hero.animate(t / 1000, 0.18);
+    hero.root.rotation.y=.5+Math.sin(t*.0003)*.12;
+    hero.animate(t / 1000, 0,false,{hit:0,lookUp:true});
     renderer.render(scene, camera);
   });
   return () => {

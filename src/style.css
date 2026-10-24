@@ -1148,3 +1148,18 @@ input {
 .build-label { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 12px; color: #fff4cc; font-size: 11px; opacity: .75; pointer-events: none; }
 .auth-error small { display: block; margin-top: 8px; opacity: .65; font-size: 11px; }
 .auth-error .login-detail { margin: 12px 0 0; padding: 10px; border-radius: 10px; background: #092c3499; color: #fff4cc; font: 12px/1.5 monospace; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+/* Adventure HUD, controls and game panels. */
+.minimap-panel { position:absolute; top:85px; right:max(14px,env(safe-area-inset-right)); width:146px; height:146px; padding:7px; background:#10303de8; border:2px solid #d6c682; border-radius:18px; pointer-events:none; z-index:2; box-shadow:0 5px 0 #09232b66; }
+.minimap-panel canvas { width:100%; height:100%; display:block; image-rendering:pixelated; border-radius:10px; }
+.adventure-objectives { position:absolute; left:15px; top:85px; max-width:calc(100% - 190px); padding:10px 14px; border-radius:14px; background:#143a42e8; color:#ffe4a0; border:1px solid #b1cda96b; z-index:2; font-size:13px; line-height:1.5; pointer-events:none; }
+.adventure-select { background:radial-gradient(ellipse at 80% 15%,#376452,#123b48 65%); color:#e8f1d6; min-height:calc(100dvh - 78px); max-width:none; display:flex; flex-direction:column; align-items:center; text-align:center; }
+.adventure-select h1 { color:#ffe3a1; }.adventure-select .lead { color:#b7d7c8; max-width:560px; }
+.adventure-select .difficulty { width:min(650px,100%); }.adventure-select .difficulty button { background:#24515b;color:#fff0c5;border-color:#668a79; }.adventure-select .difficulty .selected { background:#3b6f61;border-color:#ffda7b; }
+.adventure-brief { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; color:#dbddac; margin:15px 0; }.adventure-brief span { padding:10px 14px; background:#092f3c77; border-radius:12px;font-size:13px; }
+.adventure-select .small { color:#a9cbbb; }.boss-rule { font-size:13px; max-width:540px; color:#f2cc8c; }
+.settings-modal { max-height:85dvh; overflow:auto; }.settings-modal label { display:flex;flex-direction:column;gap:6px;margin:14px 0; }.settings-modal select { font:inherit; padding:10px;border-radius:12px;color:#23474a;background:#fff7dc;border:1px solid #91b5a0; }
+.joystick { touch-action:none; }.action-controls { padding-right:env(safe-area-inset-right); }.action-button { touch-action:none; }
+@media(max-width:600px) { .minimap-panel { width:105px;height:105px;top:80px;right:10px;border-radius:14px;padding:5px; }.adventure-objectives { left:10px;top:80px;max-width:calc(100% - 130px);font-size:10px;padding:8px; }.adventure-select h1 { font-size:34px; } }
+@media(max-height:520px) and (orientation:landscape) { .minimap-panel { width:98px;height:98px;top:61px; }.adventure-objectives { top:61px;max-width:55%;font-size:10px;padding:7px; } }
+.game-toast { top:145px;bottom:auto;pointer-events:none;font-size:13px;max-width:min(520px,85vw); }
+@media(max-width:600px) { #game[data-screen="modern"] .play-hint { display:none; }.game-toast { top:205px;font-size:12px; } }

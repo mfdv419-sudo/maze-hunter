@@ -2,6 +2,7 @@ import * as T from "three";
 export interface CharacterAction {
   hit: number;
   greet?: number;
+  lookUp?: boolean;
 }
 export interface Character {
   root: T.Group;
@@ -232,23 +233,12 @@ export function createBinturong(
     new T.Vector3(-0.7, 1.22, 0.12),
     new T.Vector3(-0.53, 1.12, 0.13),
   ];
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i],
-      b = points[i + 1],
-      d = b.clone().sub(a),
-      mid = a.clone().add(b).multiplyScalar(0.5);
-    const part = box(
-      0.17 - i * 0.01,
-      0.17 - i * 0.01,
-      d.length() + 0.035,
-      i === points.length - 2 ? grey : fur,
-      mid.x,
-      mid.y,
-      mid.z,
-      tail,
-    );
-    part.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), d.normalize());
-  }
+  const tailCurve=new T.CatmullRomCurve3(points);
+  const tailRest=tailCurve.getPoints(16),tailLive=tailRest.map(p=>p.clone());
+  const tailGeo=new T.CylinderGeometry(1,1,1,6);geometries.push(tailGeo);
+  const tailPieces:T.Mesh[]=[],tailDirection=new T.Vector3(),tailMid=new T.Vector3(),tailAxis=new T.Vector3(0,1,0);
+  for(let i=0;i<tailRest.length-1;i++) {const m=new T.Mesh(tailGeo,i>13?grey:fur);tail.add(m);tailPieces.push(m);}
+  let tailLag=0,previousTurn=root.rotation.y;
   if (outfit === "explorer") {
     box(0.72, 0.05, 0.51, gold, 0, 0.27, 0, head);
     chamfer(0.4, 0.17, 0.33, gold, 0, 0.35, 0, head);
@@ -284,6 +274,20 @@ export function createBinturong(
         : Math.sin(time * (motion > 0.05 ? 24 : 2)) *
           (motion > 0.05 ? 0.02 : 0.008);
       head.rotation.z = Math.sin(time * 2) * 0.025;
+      head.rotation.x=action?.lookUp?-.28:0;
+      const turn=Math.atan2(Math.sin(root.rotation.y-previousTurn),Math.cos(root.rotation.y-previousTurn));
+      previousTurn=root.rotation.y;
+      tailLag+=(Math.max(-.5,Math.min(.5,-turn*7))-tailLag)*(1-Math.exp(-dt*7));
+      tailLive.forEach((p,i)=>{
+        const u=i/(tailLive.length-1),base=tailRest[i];
+        p.set(base.x+Math.sin(time*2.4-u*3.8)*.055*u+tailLag*u*u,base.y+Math.sin(time*2-u*3)*.035*u,base.z+Math.sin(time*2.1-u*4)*.085*u);
+      });
+      tailPieces.forEach((part,i)=>{
+        const a=tailLive[i],b=tailLive[i+1],r=.085-i*.003;
+        tailDirection.copy(b).sub(a);tailMid.copy(a).add(b).multiplyScalar(.5);
+        part.position.copy(tailMid);part.scale.set(r,tailDirection.length()+.025,r);
+        part.quaternion.setFromUnitVectors(tailAxis,tailDirection.normalize());
+      });
       tail.rotation.y = Math.sin(time * 2.6) * 0.06;
       tail.rotation.z = Math.sin(time * 2) * 0.035;
       const blink = time % 4.4 > 4.24 ? 0.1 : 1;

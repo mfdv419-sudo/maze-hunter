@@ -1,3 +1,6 @@
+import {adventureRules,nextMap} from "./game/adventure-layout";
+import {readPreferences,writePreferences,furColors} from "./services/preferences";
+import {bindJoystick} from "./game/touch-controls";
 import "./style.css";
 import { authErrorInfo, loginErrorDetails, safeLoginText } from "./services/auth-errors";
 import { tone, isMuted, setMuted } from "./systems/audio";
@@ -30,6 +33,7 @@ import {
 } from "./services/local";
 import {
   retroConfig,
+  clearSegment,
   modernSettings,
   type Difficulty,
   type Point,
@@ -52,7 +56,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "24.10.24-M4";
+const buildLabel = "24.10.24-M5";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -103,11 +107,12 @@ function click(id: string, fn: () => unknown) {
 }
 function toast(message: string) {
   const n = document.createElement("div");
-  n.className = "toast";
+  if(screen==="modern")document.querySelector(".game-toast")?.remove();
+  n.className = screen==="modern"?"toast game-toast":"toast";
   n.role = "status";
   n.textContent = message;
   document.body.append(n);
-  setTimeout(() => n.remove(), 6000);
+  setTimeout(() => n.remove(), screen==="modern"?2800:6000);
 }
 function showError(error: unknown) {
   const authIssue = authErrorInfo(error, lang);
@@ -183,7 +188,7 @@ async function preview(id: string, outfit = "classic") {
   try {
     const { characterPreview } = await import("./game/modern");
     if (token !== generation) return;
-    cleanup = characterPreview(el(id), outfit);
+    cleanup = characterPreview(el(id), outfit,furColors[readPreferences().fur]);
   } catch (e) {
     if (token === generation) showError(e);
   }
@@ -203,11 +208,11 @@ function home() {
       </section>
       <div class="mode-selector" role="group" aria-label="${tr("Pilih petualangan", "Choose your adventure")}">
         <button id="retro-mode" class="mode-tile" aria-pressed="${homeMode === "retro"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>RETRO JOURNEY</b><small>${tr("Sentuh & telusuri jalurnya", "Touch & trace your path")}</small></span><i>✓</i></button>
-        <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>HIDDEN MAZE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
+        <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
       </div>
       <div class="scene-caption"><span class="scene-eyebrow">${tr("INTIP DUNIANYA", "A PEEK AT THE WORLD")}</span><strong>${tr("Rimba Pagi", "Morning Forest")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Ikuti jejak menuju gerbang emas", "Follow the trail to the golden gate") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
       <div class="mascot-hint">${tr("Ketuk binturong!", "Tap the binturong!")} <span>↗</span></div>
-      <div class="title-tools">${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
+      <div class="title-tools">${button("⚙", "settings", "round-tool")}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
       ${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
       ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
     </main>`,
@@ -230,7 +235,7 @@ function home() {
   void import("./game/menu-world")
     .then(({ menuWorld }) => {
       if (token === generation) {
-        const world = menuWorld(el("title-world"), profile?.outfit, lang, homeMode);
+        const world = menuWorld(el("title-world"), profile?.outfit, lang, homeMode,furColors[readPreferences().fur]);
         cleanup = world.dispose;
         setPreview = world.setMode;
       }
@@ -273,6 +278,7 @@ function home() {
   version.className = "build-label";
   version.textContent = buildLabel;
   el("title-world").parentElement!.append(version);
+  click("settings", () => settings());
   click("how", () => instructions());
   function chooseMode(mode: "retro" | "modern") {
     homeMode = mode;
@@ -309,10 +315,16 @@ function home() {
     home();
   });
 }
+function settings() {
+  const prefs=readPreferences(),overlay=document.createElement('div');overlay.className='modal-backdrop';
+  overlay.innerHTML=`<section class="modal settings-modal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('PENGATURAN','SETTINGS')}</div><h2>${tr('Nyaman di tanganmu.','Made for your hands.')}</h2><label>${tr('Warna bulu','Fur color')}<select id="fur-choice"><option value="charcoal">${tr('Abu arang','Charcoal')}</option><option value="brown">${tr('Cokelat hangat','Warm brown')}</option><option value="silver">${tr('Perak','Silver')}</option></select></label><label>Joystick<select id="stick-choice"><option value="fixed">${tr('Tetap (bawaan)','Fixed (default)')}</option><option value="floating">${tr('Mengikuti sentuhan','Touch position')}</option></select></label><label>${tr('Ukuran kontrol','Control size')}<input id="control-size" type="range" min="0.8" max="1.25" step=".05" value="${prefs.controlScale}"></label><label>${tr('Jarak dari kiri','Left margin')}<input id="control-left" type="range" min="10" max="90" value="${prefs.left}"></label><label>${tr('Jarak dari bawah','Bottom margin')}<input id="control-bottom" type="range" min="10" max="90" value="${prefs.bottom}"></label>${button(tr('SIMPAN','SAVE'),'save-settings')}${button(tr('Batal','Cancel'),'cancel-settings','quiet')}</section>`;
+  document.body.append(overlay);el<HTMLSelectElement>('fur-choice').value=prefs.fur;el<HTMLSelectElement>('stick-choice').value=prefs.joystick;
+  click('cancel-settings',()=>overlay.remove());click('save-settings',()=>{writePreferences({fur:el<HTMLSelectElement>('fur-choice').value as typeof prefs.fur,joystick:el<HTMLSelectElement>('stick-choice').value as typeof prefs.joystick,controlScale:Number(el<HTMLInputElement>('control-size').value),left:Number(el<HTMLInputElement>('control-left').value),bottom:Number(el<HTMLInputElement>('control-bottom').value)});overlay.remove();home();});
+}
 function instructions() {
   const overlay = document.createElement("div");
   overlay.className = "modal-backdrop";
-  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Sentuh titik putih di START, lalu telusuri koridor ke gerbang emas. Angkat jari kapan saja dan lanjutkan dari titik terakhir. Menembus dinding mengurangi satu nyawa.", "Touch the white START marker, then trace the corridor to the gold gate. Lift your finger freely and resume at the last point. Crossing a wall costs one life.")}</p><p><b>Modern:</b> ${tr("Gunakan joystick kiri atau WASD. A biru / Spasi untuk lompat; B merah / J untuk menebas semak. Cari gerbang emas. Lompat tidak melewati dinding.", "Use the left joystick or WASD. Blue A / Space to jump; red B / J to clear shrubs. Find the golden gate. Jumping cannot cross walls.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
+  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Bantu binturong menemukan buah. Pilih cabang dengan teliti. Masuk jalan buntu mengurangi satu nyawa dan kembali ke Start. Menyentuh tembok atau mengangkat jari tidak mengurangi nyawa.", "Help the binturong find figs. Reaching a dead end costs a life and returns you to Start. Touching walls or lifting your finger costs no life.")}</p><p><b>Adventure:</b> ${tr("Kumpulkan tiga segel dan kalahkan satu Raja untuk membuka gerbang. A / Spasi: lompat sungai. B / J: lempar kue atau tebas pagar rumput. Minimap menyimpan area yang ditemukan. Kalah dari Raja pada Hard/Extreme menghapus penemuan peta, bukan segel.", "Collect three seals and defeat a King to unlock the gate. A / Space: jump rivers. B / J: throw cake or cut grass. The minimap remembers discoveries. Losing to a King on Hard/Extreme resets discoveries, but preserves seals.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
   document.body.append(overlay);
   el("close-help").focus();
   click("close-help", () => overlay.remove());
@@ -390,7 +402,7 @@ function journey(region?: number) {
     r = region ?? Math.floor((max - 1) / 10);
   begin(
     "map",
-    `<main class="page journey-page"><div class="page-top"><div><div class="eyebrow">RETRO MAZE JOURNEY · ${String(r + 1).padStart(2, "0")} / 10</div><h1>${regions[r][lang === "id" ? 0 : 1]}</h1><p>${tr("Ikuti jalurmu, satu belokan pada satu waktu.", "Follow your path, one turn at a time.")}</p></div>${button(tr("Cara bermain", "How to play"), "help", "secondary")}</div><div class="journey-land"><div class="landmark mountain mountain-a"></div><div class="landmark mountain mountain-b"></div><svg class="journey-path" viewBox="0 0 1000 460" preserveAspectRatio="none"><path d="M 70 280 C 200 100, 240 100, 360 260 S 550 420, 620 240 S 810 80, 930 220"/></svg>${Array.from(
+    `<main class="page journey-page"><div class="page-top"><div><div class="eyebrow">RETRO JOURNEY · ${String(r + 1).padStart(2, "0")} / 10</div><h1>${regions[r][lang === "id" ? 0 : 1]}</h1><p>${tr("Ikuti jalurmu, satu belokan pada satu waktu.", "Follow your path, one turn at a time.")}</p></div>${button(tr("Cara bermain", "How to play"), "help", "secondary")}</div><div class="journey-land"><div class="landmark mountain mountain-a"></div><div class="landmark mountain mountain-b"></div><svg class="journey-path" viewBox="0 0 1000 460" preserveAspectRatio="none"><path d="M 70 280 C 200 100, 240 100, 360 260 S 550 420, 620 240 S 810 80, 930 220"/></svg>${Array.from(
       { length: 10 },
       (_, i) => {
         const id = r * 10 + i + 1,
@@ -411,7 +423,7 @@ function journey(region?: number) {
     click(`level-${id}`, () => playRetro(id));
 }
 function hud(title: string, sub: string, touch = false) {
-  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Tebas semak", "Clear shrubs")}"><b>B</b><small>${tr("TEBAS", "HIT")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
+  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Lempar kue / tebas rumput", "Throw cake / cut grass")}"><b>B</b><small>${tr("KUE", "CAKE")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
 }
 function pauseOverlay(online = false) {
   if (online) {
@@ -430,7 +442,7 @@ function pauseOverlay(online = false) {
   click("restart", () =>
     screen === "retro"
       ? playRetro((game as RetroGame).state.level)
-      : playModern(currentDifficulty),
+      : playModern(currentDifficulty,undefined,true),
   );
   click("quit", () => home());
 }
@@ -453,8 +465,8 @@ async function playRetro(level: number) {
     (game as RetroGame)?.zoom(0.5);
     toast(
       tr(
-        "Saat zoom: geser area di luar titik putih untuk menggeser peta.",
-        "While zoomed: drag away from the white marker to pan.",
+        "Saat zoom: geser area di luar binturong untuk menggeser peta.",
+        "While zoomed: drag away from the binturong to pan.",
       ),
     );
   });
@@ -463,8 +475,8 @@ async function playRetro(level: number) {
   });
   const token = generation;
   el("play-hint").textContent = tr(
-    "Sentuh titik putih untuk mulai · angkat jari tanpa penalti · tujuan: gerbang emas",
-    "Touch the white marker to start · lift freely · goal: gold gate",
+    "Bantu binturong mencari buah · jalan buntu: kembali ke Start, −1 nyawa",
+    "Help the binturong find figs · dead end: back to Start, −1 life",
   );
   click("pause-game", () => pauseOverlay());
   click("exit-game", () => pauseOverlay());
@@ -524,7 +536,7 @@ function setup() {
   if (!profile) return home();
   begin(
     "setup",
-    `<main class="page narrow"><div class="eyebrow">MODERN HIDDEN MAZE</div><h1>${tr("Apa yang ada<br>di balik kabut?", "What’s waiting<br>beyond the mist?")}</h1><p class="lead">${tr("Temukan gerbang emas bersama sahabat rimba. Peta terbuka saat kamu menjelajah.", "Find the golden gate with your forest friend. Reveal the world as you explore.")}</p><label>${tr("Tingkat tantangan", "Choose your challenge")}</label><div class="difficulty">${(["medium", "hard", "extreme"] as Difficulty[]).map((d) => `<button id="difficulty-${d}" class="${d === currentDifficulty ? "selected" : ""}"><b>${d.toUpperCase()}</b><small>${modernSettings[d].vision} ${tr("jarak pandang", "vision radius")}</small></button>`).join("")}</div><div class="setup-actions">${button(tr("Jelajahi sendiri", "Explore solo"), "solo")}<div class="divider">${tr("ATAU BERSAMA TEMAN", "OR EXPLORE TOGETHER")}</div><div class="input-row">${button("Race · 2–4", "race", "secondary", lab || !multiplayerConfigured())}${button("Co-op · 2–4", "coop", "secondary", lab || !multiplayerConfigured())}</div><form id="join-form"><label for="room-code">${tr("Punya kode room?", "Have a room code?")}</label><div class="input-row"><input id="room-code" maxlength="6" minlength="6" placeholder="ABC234" autocomplete="off" ${lab || !multiplayerConfigured() ? "disabled" : ""}>${button(tr("Gabung", "Join"), "join", "secondary", lab || !multiplayerConfigured())}</div></form></div><p class="small">${lab ? tr("Main bersama tidak tersedia dalam uji kontrol lokal.", "Play together is unavailable in the local control lab.") : !multiplayerConfigured() ? tr("Main bersama belum tersedia.", "Play together is currently unavailable.") : tr("Room privat · tanpa chat · maksimal empat pemain", "Private rooms · no chat · up to four players")}</p></main>`,
+    `<main class="page narrow adventure-select"><div class="eyebrow">ADVENTURE · SOLO</div><h1>${tr("Rimba menyimpan<br>banyak rahasia.", "The forest holds<br>many secrets.")}</h1><p class="lead">${tr("Tiga segel. Penjaga hutan. Gerbang emas. Temukan jalanmu.", "Three seals. Forest guardians. A golden gate. Find your way.")}</p><div class="difficulty">${(["medium","hard","extreme"] as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?"selected":""}"><b>${d.toUpperCase()}</b><small>${adventureRules[d].size} × ${adventureRules[d].size} · ${adventureRules[d].bosses} ${tr("Raja", "Kings")}</small></button>`).join("")}</div><div class="adventure-brief"><span>◆ ${tr("Cari 3 segel", "Find 3 seals")}</span><span>★ ${tr("Bintang & peti rahasia", "Stars & hidden chests")}</span><span>♛ ${tr("Kalahkan Raja gerbang", "Defeat a gate King")}</span></div>${currentDifficulty!=="medium"?`<p class="boss-rule">${tr("Kalah melawan Raja: kembali ke Start dan minimap tertutup. Segel tetap tersimpan.","Losing to a King: back to Start and minimap resets. Seals are kept.")}</p>`:""}<div class="setup-actions">${button(tr("MULAI PETUALANGAN", "START ADVENTURE"),"solo")}<p class="small">${tr("Main Acak dan Main Bersama sedang disiapkan untuk Adventure.","Random matchmaking and private Adventure rooms are being prepared.")}</p></div></main>`,
   );
   for (const d of ["medium", "hard", "extreme"] as Difficulty[])
     click(`difficulty-${d}`, () => {
@@ -532,24 +544,18 @@ function setup() {
       setup();
     });
   click("solo", () => playModern(currentDifficulty));
-  click("race", () => createRoom("race"));
-  click("coop", () => createRoom("coop"));
-  el("join-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    void joinRoom(
-      el<HTMLInputElement>("room-code").value.trim().toUpperCase(),
-    ).catch(showError);
-  });
+
 }
+let currentAdventure:{difficulty:Difficulty;map:number;seed:number}|undefined;
 let modernTimer: ReturnType<typeof setInterval> | null = null;
-async function playModern(difficulty: Difficulty, room?: Room) {
+async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
   if (!profile) return;
   currentDifficulty = difficulty;
   if (!navigator.onLine && !lab) {
     toast(
       tr(
-        "Modern memerlukan koneksi internet. Retro tersedia offline.",
-        "Modern needs an internet connection. Retro is available offline.",
+        "Adventure memerlukan koneksi internet. Retro tersedia offline.",
+        "Adventure needs an internet connection. Retro is available offline.",
       ),
     );
     return;
@@ -557,24 +563,29 @@ async function playModern(difficulty: Difficulty, room?: Room) {
   begin(
     "modern",
     hud(
-      room ? `${room.mode.toUpperCase()} · ${room.id}` : "MODERN · SOLO",
+      room ? `${room.mode.toUpperCase()} · ${room.id}` : "ADVENTURE · SOLO",
       difficulty.toUpperCase(),
       true,
     ),
   );
   const token = generation;
   el("play-hint").textContent = tr(
-    "Joystick / WASD · A / Spasi: lompat · B / J: tebas semak",
-    "Joystick / WASD · A / Space: jump · B / J: clear shrubs",
+    "A / Spasi: lompat · B / J: kue atau tebas · cari 3 segel & kalahkan Raja",
+    "A / Space: jump · B / J: cake or cut · find 3 seals & defeat a King",
   );
   click("pause-game", () => pauseOverlay(!!room));
   click("exit-game", () => (room ? confirmLeave() : pauseOverlay()));
   const { ModernGame } = await import("./game/modern");
   if (token !== generation) return;
   const me = room?.players[playerKey];
+  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty))currentAdventure={difficulty,map:nextMap(difficulty),seed:crypto.getRandomValues(new Uint32Array(1))[0]};
+  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';if(!room)el('game-stage').after(objectives);
+  let feedbackAt=-1;
   const modern = new ModernGame(el("game-stage"), {
     difficulty,
-    seed: room?.seed ?? crypto.getRandomValues(new Uint32Array(1))[0],
+    seed: room?.seed ?? currentAdventure!.seed,
+    adventureMap:room?undefined:currentAdventure!.map,
+    color:furColors[readPreferences().fur],
     entrance: me?.slot ?? Math.floor(Math.random() * 4),
     outfit: profile.outfit,
     online: !!room,
@@ -602,6 +613,12 @@ async function playModern(difficulty: Difficulty, room?: Room) {
           }
         }
       : undefined,
+    onAdventure:(state)=>{
+      el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.max(0,Math.ceil(state.limit-state.elapsed))}s</span>`;
+      const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
+      objectives.textContent=`◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.mapIndex+1}/10`;
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Cari gerbang setelah semua segel terkumpul.','King defeated! Find the gate after collecting all seals.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text)toast(text[lang==='id'?0:1]);}
+    },
     onTick: (seconds, explored) => {
       const elapsed = room
         ? Math.max(
@@ -610,7 +627,7 @@ async function playModern(difficulty: Difficulty, room?: Room) {
           )
         : seconds;
       el("hud-stats").textContent =
-        `${Math.max(0, Math.ceil(modernSettings[difficulty].seconds - elapsed))}s · ${explored} ${tr("area", "tiles")}`;
+        `${Math.max(0, Math.ceil((room?modernSettings[difficulty].seconds:adventureRules[difficulty].seconds) - elapsed))}s · ${explored} ${tr("area", "tiles")}`;
     },
     onFinish: (won) => {
       tone(won ? 720 : 120, 0.18, "sine", 0.025);
@@ -622,8 +639,8 @@ async function playModern(difficulty: Difficulty, room?: Room) {
         won,
         modern.elapsed,
         0,
-        tr("Waktu habis", "Time is up"),
-        () => playModern(difficulty),
+        modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):tr("Waktu habis", "Time is up"),
+        () => playModern(difficulty,undefined,true),
         () => setup(),
       );
     },
@@ -642,36 +659,8 @@ async function playModern(difficulty: Difficulty, room?: Room) {
       if (e.detail === 0) modern.useAction(kind);
     });
   }
-  const stick = el("joystick"),
-    knob = el("stick");
-  let pointer: number | null = null;
-  const control = (e: PointerEvent) => {
-    const r = stick.getBoundingClientRect(),
-      dx = (e.clientX - r.left - r.width / 2) / (r.width * 0.32),
-      dy = (e.clientY - r.top - r.height / 2) / (r.height * 0.32),
-      n = Math.max(1, Math.hypot(dx, dy));
-    modern.joystick = {
-      x: Math.abs(dx) < 0.08 ? 0 : dx / n,
-      y: Math.abs(dy) < 0.08 ? 0 : dy / n,
-    };
-    knob.style.transform = `translate(${(dx / n) * 27}px,${(dy / n) * 27}px)`;
-  };
-  stick.addEventListener("pointerdown", (e) => {
-    pointer = e.pointerId;
-    stick.setPointerCapture(pointer);
-    control(e);
-  });
-  stick.addEventListener("pointermove", (e) => {
-    if (pointer === e.pointerId) control(e);
-  });
-  const release = () => {
-    pointer = null;
-    modern.joystick = { x: 0, y: 0 };
-    knob.style.transform = "";
-  };
-  stick.addEventListener("pointerup", release);
-  stick.addEventListener("pointercancel", release);
-  stick.addEventListener("lostpointercapture", release);
+  const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
+  cleanup=unbind;
   if (room) {
     modern.position = { x: me!.x, y: me!.y };
     modern.paused = true;
@@ -723,6 +712,7 @@ async function playModern(difficulty: Difficulty, room?: Room) {
         .finally(() => (inFlight = false));
     }, 50);
     cleanup = () => {
+      unbind();
       if (modernTimer) clearInterval(modernTimer);
       modernTimer = null;
     };

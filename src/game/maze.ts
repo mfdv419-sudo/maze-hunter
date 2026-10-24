@@ -107,10 +107,13 @@ export function retroMaze(level: number): Maze {
       candidates: { maze: Maze; length: number }[] = [];
     for (let attempt = 0; candidates.length < 10; attempt++) {
       const seed = 9173 + (region * 100 + attempt + 1) * 7919,
-        grid = carve(7 + region * 2, 7 + region * 2, seed),
+        grid = carve(11 + region * 2, 11 + region * 2, seed),
         signature = JSON.stringify(grid);
       if (seen.has(signature)) continue;
       seen.add(signature);
+      let junctions=0,deadEnds=0;
+      for(let y=1;y<grid.length-1;y+=2)for(let x=1;x<grid.length-1;x+=2){const degree=[[1,0],[-1,0],[0,1],[0,-1]].filter(([dx,dy])=>!grid[y+dy][x+dx]).length;if(degree>=3)junctions++;if(degree===1)deadEnds++;}
+      if(junctions<3||deadEnds<4)continue;
       const start = { x: 1, y: 1 },
         d = distances(grid, start);
       let finish = start,
