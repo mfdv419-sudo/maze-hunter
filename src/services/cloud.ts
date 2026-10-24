@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { firebaseWebConfig } from "./firebase-web-config";
 import {
   getAuth,
   GoogleAuthProvider,
@@ -19,10 +20,12 @@ import { getDatabase, ref, onValue, onDisconnect } from "firebase/database";
 import { mergeProfile, validProfile, type Profile } from "./local";
 // Read only public fields used by this browser client. Do not serialize import.meta.env.
 const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseWebConfig.apiKey,
+  authDomain:
+    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseWebConfig.authDomain,
+  projectId:
+    import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseWebConfig.projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseWebConfig.appId,
   databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
 };
 export const cloudConfigured = !!(
@@ -94,6 +97,8 @@ export interface RoomPlayer {
   seq: number;
   finishedAt: number | null;
   slot: number;
+  jumpAt?: number;
+  hitAt?: number;
 }
 export interface Room {
   id: string;
@@ -110,6 +115,7 @@ export interface Room {
   owners: Record<string, boolean>;
   expiresAt: number;
   revision: number;
+  broken?: Record<string, boolean>;
 }
 export const multiplayerConfigured = () => !!rtdb;
 let clockOffset = 0;
