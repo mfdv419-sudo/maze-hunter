@@ -1,10 +1,11 @@
 import "./style.css";
-import { authErrorInfo } from "./services/auth-errors";
+import { authErrorInfo, loginErrorDetails, safeLoginText } from "./services/auth-errors";
 import { tone, isMuted, setMuted } from "./systems/audio";
 import {
   serverNow,
   watchAuth,
   login,
+  loginContext,
   logout,
   cloudConfigured,
   getProfiles,
@@ -51,14 +52,14 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "24.10.24-M2";
-function signInPanel(title: string, message: string, code = "") {
+const buildLabel = "24.10.24-M3";
+function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
   const panel = document.createElement("section");
   panel.id = "auth-error";
   panel.className = "auth-error";
   panel.setAttribute("role", "alert");
-  panel.innerHTML = `<strong>${esc(title)}</strong><p>${esc(message)}</p>${code ? `<code>${esc(code)}</code>` : ""}<small>${buildLabel}</small><button type="button">${tr("Tutup", "Close")}</button>`;
+  panel.innerHTML = `<strong>${esc(title)}</strong><p>${esc(message)}</p>${code ? `<code>${esc(code)}</code>` : ""}${detail ? `<pre class="login-detail">${esc(detail)}</pre>` : ""}<small>${buildLabel}</small><button type="button">${tr("Tutup", "Close")}</button>`;
   panel.querySelector("button")!.onclick = () => panel.remove();
   document.body.append(panel);
 }
@@ -227,9 +228,11 @@ function home() {
         await login();
         document.getElementById("auth-error")?.remove();
       } catch (error) {
-        if (authErrorInfo(error, lang)) throw error;
-        signInPanel(tr("Masuk belum selesai", "Sign-in incomplete"), tr("Proses login gagal tanpa kode Firebase. Foto pesan ini agar dapat diperiksa.", "Sign-in failed without a Firebase code. Take a screenshot for diagnosis."), "login/unknown");
-        console.error(error);
+        const info = loginErrorDetails(error, lang);
+        const context = loginContext();
+        const details = `${info.name}: ${info.detail}${info.frames ? `\n${info.frames}` : ""}\nProject: ${safeLoginText(context.project, 100)}\nAuth domain: ${safeLoginText(context.authDomain, 180)}\nGame: ${safeLoginText(context.origin.replace(/^https?:\/\//, ""), 180)}\nMethod: ${context.method}\nSigned in: ${context.signedIn ? "yes" : "no"}`;
+        signInPanel(tr("Masuk belum selesai", "Sign-in incomplete"), info.message, info.code ?? info.name, details);
+        console.error("Sign-in failed", info.code ?? info.name, details);
       }
       finally {
         clearTimeout(waiting);

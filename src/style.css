@@ -1349,3 +1349,4 @@ input {
 .mascot-touch:focus-visible { outline: 3px dashed #ffe18a; outline-offset: 4px; }
 .build-label { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 12px; color: #fff4cc; font-size: 11px; opacity: .75; pointer-events: none; }
 .auth-error small { display: block; margin-top: 8px; opacity: .65; font-size: 11px; }
+.auth-error .login-detail { margin: 12px 0 0; padding: 10px; border-radius: 10px; background: #092c3499; color: #fff4cc; font: 12px/1.5 monospace; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
