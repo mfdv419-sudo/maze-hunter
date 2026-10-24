@@ -1,6 +1,8 @@
 {
   "baseline_archive": "maze-hunter-maze-1.zip",
+  "release": "24.10.24-M2",
   "includes_prior_netlify_fix": true,
+  "includes_prior_game_ui_and_login_diagnostic": true,
   "changed_files": {
     ".env.example": "e82caf7e3be70b96b154e1703901fa71569b0641b8ee65b8003fc10ed797545b",
     ".github/workflows/ci.yml": "31ecca28f76c60180bf4f6ebfe59d4f02cf1e7c78778ded39dad3f9b252672f9",
@@ -29,19 +31,19 @@
     "scripts/check-public-env.mjs": "8bb3957337c053cdc673d75317a1cf5c750bccdc47d88e406e8b7516794fa4f8",
     "src/env.d.ts": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5",
     "src/game/actions.ts": "9cdc7ca988db07d277a5f31faf0f6a2dd56892936b488c46a050e356c6a05ce0",
-    "src/game/character.ts": "a7a87d1498210ddb70ed996dbf75c092bb38f7e47a76b7eb97524c41bcb84a7e",
+    "src/game/character.ts": "595608bfaaf65a006dbc74368f960b9ccb518c2c10031db2d49b019d25c6ab10",
     "src/game/maze.ts": "1600116c7e272207b34c56897d655fb5b61be99da548b7b451ed9b874b899d2c",
-    "src/game/menu-world.ts": "754cba151bcaf216143ed42d812828715fc09784bcba5086bed1505a3c770455",
+    "src/game/menu-world.ts": "5b5c171306c6267ac57c4d9738ca0a04415956d99a765abbca2a047fc25fde16",
     "src/game/modern.ts": "f1cb3bfb5dd8415b19b5287fa37b81cdf2c7f7b1654354d91518972b394dd4fe",
     "src/game/retro-state.ts": "fdd126cc299c741def55011be65bc76f4d9353d4d970b47cf024dd55e19c3833",
     "src/game/retro.ts": "a721de33ccae00af84b49491046f42dd7c042ed9608c1ad26f0341e11a324aa4",
     "src/game/room-state.ts": "4f1e8da37a0ea75deafefd05c697f78fcaae841542885a4b6babb5dee63406bf",
-    "src/main.ts": "efb1e2dbeaa84f421091b6d0220afe89e4ba30f1d2f181249aeefda9fd4d84bd",
+    "src/main.ts": "186f53c26a7c37266f637966cd41f6efdab30adb187c35d9454d77d405eb7f1e",
     "src/services/ads.ts": "f3ee27ab4e4d7f31f7cb48006fed15bd2ef34cabd92eb197b2de441476cb968f",
-    "src/services/cloud.ts": "42fc1934c7de1072a9f13dbbe24c6f6fdc95590d006f285d81ed9de7480e485c",
+    "src/services/cloud.ts": "02229479287d029c39538e980dd7e8eb75119c5a064bf9dc231002d647d6a50d",
     "src/services/firebase-web-config.ts": "91ccafeb5cf58f819885eba157f2c103f5550c953b51ef4dca553374c2106e27",
     "src/services/local.ts": "13319ff9a168ba1b52ef41b28bdba5f0f01100dc36096ad22e4182d2833e6f46",
-    "src/style.css": "930047583973c96c3f8ea5e742401b6dda45ad5a67387ed75b05f5011f0e13c3",
+    "src/style.css": "1c4c2b0bbfac6f84dbd745d0a580f8db78ae938f9062759e86b830ae422a211a",
     "src/systems/audio.ts": "885d5d2759ca4034124fd1da9389c987b21bef08c654b7f49f752177586fb1bd",
     "tests/actions.test.ts": "de5553f243a7447a0c9778c45c89953d3bedd80d7e4ef6a8b97ef09253c267c0",
     "tests/browser/game.spec.ts": "ad3ea80ec26d24b67e71d033ba5c922eee12edde565c4960c0d784e81b7e571b",
@@ -51,18 +53,10 @@
     "tests/room.test.ts": "273a7b9e4820a4758bf92106ed11cc9ee595a6e6605f1dd72afa64ee37590ff6",
     "tsconfig.json": "a772050bb1b67993d49602349afc9c87fc861876442a851695816f928238817c",
     "vite.config.ts": "38ea9ed656cbbbddb49c101cd557e9bc85d15cfe1edb9ba98078e0dd47e622a6",
-    "vitest.config.ts": "a0f7c1e0fc8c4803cc4ac9bed783bee5f64b7c37adc0a3232fe4ed623e62c839"
-  },
-  "deleted_files": [
-    ".giticnore",
-    "public/test.jpg",
-    "src/scenes/GameScene.ts",
-    "src/scenes/GameScene.ts.patch",
-    "src/scenes/MenuScene.ts",
-    "src/scenes/MenuScene.ts.patch",
-    "src/systems/i18n.ts",
-    "src/systems/levels.ts",
-    "src/systems/progress.ts",
-    "NETLIFY_FIX_MANIFEST.json"
-  ]
+    "vitest.config.ts": "a0f7c1e0fc8c4803cc4ac9bed783bee5f64b7c37adc0a3232fe4ed623e62c839",
+    "src/services/auth-errors.ts": "40da55fc6d35ccc3bd4a42015242d1d07943f322411b3074cab527f75db48d24",
+    "tests/auth-errors.test.ts": "145b1793362f5c61b060dbf6cecd4abd58c8437ab4fd63aa54aa7209e7a03fc5",
+    "tests/browser/login.spec.ts": "d49c5ff42d4ed61de0391c3c78a09601cbcc306d06ecf1845864daa15dfc22cb",
+    "docs/LOGIN_MASCOT_M2.md": "70543d95a38c4efa1c53a8229063be492e86180eb22291bc40bc50b1972c6ca4"
+  }
 }
