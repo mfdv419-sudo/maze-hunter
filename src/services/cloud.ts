@@ -54,6 +54,16 @@ export function watchAuth(fn: (u: User | null) => void) {
   return onAuthStateChanged(auth, fn);
 }
 let pendingLogin: Promise<unknown> | null = null;
+// Only public identifiers and coarse status; never expose UID, email, API key, or tokens.
+export function loginContext() {
+  return {
+    project: config.projectId,
+    authDomain: config.authDomain,
+    origin: location.origin,
+    method: "Google popup",
+    signedIn: !!auth?.currentUser,
+  };
+}
 export async function login() {
   if (!auth)
     throw Error("Firebase belum dikonfigurasi / Firebase is not configured");
