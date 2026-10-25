@@ -1,3 +1,4 @@
+import {forestQuests} from './game/forest-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
 import {appearanceOf,permittedAppearance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
@@ -65,7 +66,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "25.10.26-M12";
+const buildLabel = "25.10.26-M13";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -142,7 +143,7 @@ function showError(error: unknown) {
   console.error(error);
 }
 function header() {
-  return `<header><a href="#" id="brand" aria-label="Maze Hunter home"><span class="brand-mark">▥</span> MAZE<span>HUNTER</span></a><div class="header-right">${profile ? `<button class="profile-pill" id="profiles">${esc(profile.name)} <span>⌄</span></button>` : ""}<button class="quiet" id="sound-toggle" aria-label="${tr("Suara", "Sound")}">${isMuted() ? "♪ ×" : "♪"}</button><button class="language" id="language" aria-label="Change language">${lang === "id" ? "ID / EN" : "EN / ID"}</button>${uid && !lab ? `<button class="quiet" id="logout">${tr("Keluar akun", "Sign out")}</button>` : ""}</div></header>`;
+  return `<header><a href="#" id="brand" aria-label="Maze Hunter home"><span class="brand-mark">▥</span> MAZE<span>HUNTER</span></a><div class="header-right">${profile ? `<button class="profile-pill" id="profiles"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg>${esc(profile.name)}</button>` : ""}<button class="quiet" id="sound-toggle" aria-label="${tr("Suara", "Sound")}">${isMuted() ? "♪ ×" : "♪"}</button><button class="language" id="language" aria-label="Change language">${lang === "id" ? "ID / EN" : "EN / ID"}</button>${uid && !lab ? `<button class="quiet" id="logout">${tr("Keluar akun", "Sign out")}</button>` : ""}</div></header>`;
 }
 function rememberAdventure(){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample)return;recordExpedition(profile,`${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});void save();}
 function begin(name: string, html: string) {
@@ -217,27 +218,17 @@ function home() {
       <div class="home-kicker"><span></span> ${tr("PETUALANGAN KECIL, DUNIA LUAS", "LITTLE PAWS. BIG ADVENTURES.")}</div>
       <h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span></h1>
       <p class="home-tagline">${tr("Setiap belokan, petualangan baru.", "A new adventure around every corner.")}</p>
-      <section class="title-menu">
-        ${button(`<span class="play-triangle">▶</span> ${tr("MAIN", "PLAY")}`, "play", "game-play")}
-        <span class="play-note">${profile ? esc(profile.name) + " · " + tr("Petualanganmu menunggu", "Your adventure awaits") : tr("Mulai dengan akun Google", "Start with your Google account")}</span>
-      </section>
       <div class="mode-selector" role="group" aria-label="${tr("Pilih petualangan", "Choose your adventure")}">
         <button id="retro-mode" class="mode-tile" aria-pressed="${homeMode === "retro"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>RETRO JOURNEY</b><small>${tr("Sentuh & telusuri jalurnya", "Touch & trace your path")}</small></span><i>✓</i></button>
         <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
       </div>
       <div class="scene-caption"><span class="scene-eyebrow">${tr("SAHABAT PETUALANGANMU", "YOUR ADVENTURE COMPANION")}</span><strong>${profile?esc(profile.name):tr("Sahabat Rimba", "Forest Friend")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Temukan buah favorit binturong", "Find the binturong’s favorite figs") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
-      <div class="mascot-hint">${tr("Ketuk binturong!", "Tap the binturong!")} <span>↗</span></div>
+      <div class="mascot-hint">${tr("Ketuk untuk lompat · tahan & geser untuk putar", "Tap to jump · hold & drag to rotate")} <span>↗</span></div>
       <div class="title-tools">${button("⚙", "settings", "round-tool")}${profile?button('<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Zm0 2H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v7m-5 0h10"/></svg>',"scores","round-tool"):""}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
       ${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
       ${profile?`<div class="home-collection"><button id="collection-open"><b>◉ ${stats(profile).coins}</b><span>${tr('KOLEKSI & MISI','COLLECTION & QUESTS')}</span><small>${cosmetics.filter(c=>{const s=stats(profile!);return s.stars>=c.stars&&s.wins>=(c.wins||0);}).length}/${cosmetics.length}</small></button></div>`:''}
       ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
     </main>`,
-  );
-  el("play").setAttribute(
-    "aria-label",
-    profile
-      ? tr("Main", "Play")
-      : tr("Main — masuk dengan Google", "Play — sign in with Google"),
   );
   el("how").setAttribute("aria-label", tr("Cara bermain", "How to play"));
   el("fullscreen").setAttribute("aria-label", tr("Layar penuh", "Fullscreen"));
@@ -257,14 +248,13 @@ function home() {
       }
     })
     .catch(showError);
-  click("play", async () => {
+  const enterMode = async (play:HTMLButtonElement) => {
     if (profile) return homeMode === "retro" ? journey() : setup();
     if (cloudConfigured) {
-      const play = el<HTMLButtonElement>("play");
-      if (play.disabled) return;
-      signInPanel(tr("Membuka Google…", "Opening Google…"), tr("Selesaikan masuk di jendela Google. Jangan tekan Play lagi selama proses berjalan.", "Complete sign-in in the Google window. Wait for this attempt to finish."));
+      if ([el<HTMLButtonElement>('retro-mode'),el<HTMLButtonElement>('modern-mode')].some(b=>b.disabled)) return;
+      signInPanel(tr("Membuka Google…", "Opening Google…"), tr("Selesaikan masuk di jendela Google. Tunggu sampai proses masuk selesai.", "Complete sign-in in the Google window. Wait for this attempt to finish."));
       const label = play.innerHTML;
-      play.disabled = true;
+      for(const id of ['retro-mode','modern-mode'])el<HTMLButtonElement>(id).disabled=true;
       play.textContent = tr("MEMBUKA GOOGLE…", "OPENING GOOGLE…");
       const waiting = setTimeout(() => {
         signInPanel(tr("Masih menunggu Google", "Still waiting for Google"), tr("Jika jendela Google sudah tertutup sendiri, foto pesan ini. Proses login belum mengembalikan hasil.", "If the Google window closed itself, take a screenshot of this message. Sign-in has not returned a result."), "login/pending");
@@ -281,7 +271,7 @@ function home() {
       }
       finally {
         clearTimeout(waiting);
-        if (play.isConnected) { play.disabled = false; play.innerHTML = label; }
+        if (play.isConnected) {for(const id of ['retro-mode','modern-mode'])el<HTMLButtonElement>(id).disabled=false;play.innerHTML = label;}
       }
     } else toast(
             tr(
@@ -289,7 +279,7 @@ function home() {
               "Adventure is unavailable. Please try again shortly.",
             ),
           );
-  });
+  };
   const version = document.createElement("small");
   version.className = "build-label";
   version.textContent = buildLabel;
@@ -301,6 +291,7 @@ function home() {
   function chooseMode(mode: "retro" | "modern") {
     homeMode = mode;
     if (profile) return mode === "retro" ? journey() : setup();
+    void enterMode(el<HTMLButtonElement>(mode === "retro" ? "retro-mode" : "modern-mode"));
     el("retro-mode").setAttribute("aria-pressed", String(mode === "retro"));
     el("modern-mode").setAttribute("aria-pressed", String(mode === "modern"));
     el("scene-description").textContent = mode === "retro" ? tr("Temukan buah favorit binturong", "Find the binturong’s favorite figs") : tr("Temukan jalan di balik kabut", "Find your way through the fog");
@@ -343,7 +334,7 @@ function fieldGuide(){
  if(document.getElementById('field-guide'))return;
  const current=game,token=generation,wasRunning=!!game&&(screen==='retro'?(game as RetroGame).state.phase==='playing':screen==='modern'&&!(game as ModernGame).paused);
  if(wasRunning)current?.setPaused(true);
- const overlay=document.createElement('div');overlay.id='field-guide';overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal field-guide" role="dialog" aria-modal="true" aria-labelledby="field-guide-title"><div class="guide-heading"><div><div class="eyebrow">${tr('BUKU PENJELAJAH','EXPLORER HANDBOOK')}</div><h2 id="field-guide-title">${tr('Kenali benda di rimbamu','Know your forest items')}</h2></div>${button('×','close-field-guide','round-tool')}</div>${activeRoom?`<p class="guide-online">${tr('Pertandingan online tetap berjalan saat buku dibuka.','Online matches keep running while this book is open.')}</p>`:''}<div class="guide-grid">${fieldGuideContent(lang)}</div></section>`;document.body.append(overlay);el('close-field-guide').focus();
+ const overlay=document.createElement('div');overlay.id='field-guide';overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal field-guide" role="dialog" aria-modal="true" aria-labelledby="field-guide-title"><div class="guide-heading"><div><div class="eyebrow">${tr('BUKU PENJELAJAH','EXPLORER HANDBOOK')}</div><h2 id="field-guide-title">${tr('Kenali benda di rimbamu','Know your forest items')}</h2></div>${button('×','close-field-guide','round-tool')}</div>${activeRoom?`<p class="guide-online">${tr('Pertandingan online tetap berjalan saat buku dibuka.','Online matches keep running while this book is open.')}</p>`:''}<div class="guide-grid">${fieldGuideContent(lang,game&&'adventure' in game&&game.adventure?{sample:game.adventure.sample,sealGoal:game.adventure.sealGoal}:undefined)}</div></section>`;document.body.append(overlay);el('close-field-guide').focus();
  const close=()=>{overlay.remove();document.removeEventListener('keydown',escape,true);if(token===generation&&current===game&&wasRunning)current?.setPaused(false);el('item-guide')?.focus();};
  const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.stopImmediatePropagation();close();}};document.addEventListener('keydown',escape,true);click('close-field-guide',close);
 }
@@ -610,8 +601,8 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   );
   const token = generation;
   el("play-hint").textContent = tr(
-    "Joystick: arah layar · Geser kanan: kamera · A lompat / panjat · B interaksi · ↕ sudut kamera",
-    "Joystick: screen direction · Right drag: camera · A jump / climb · B interact · ↕ camera angle",
+    "Joystick: arah layar · Geser kanan: kamera · A lompat 2× / panjat · B interaksi · ↕ sudut kamera",
+    "Joystick: screen direction · Right drag: camera · A double jump / climb · B interact · ↕ camera angle",
   );
   click("item-guide",fieldGuide);
   click("pause-game", () => pauseOverlay(!!room));
@@ -621,9 +612,12 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const me = room?.players[playerKey];
   if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample))currentAdventure={difficulty,map:sample?0:nextMap(difficulty),seed:sample?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample};
   const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);
+  const shownLoot=new Set<number>();
+  const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
+  journal.onclick=()=>{const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sample?forestQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
-    forestSample:sample,difficulty,
+    questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,forestSample:sample,difficulty,
     seed: room?.seed ?? currentAdventure!.seed,
     adventureMap:room?room.adventure?.map:currentAdventure!.map,
     color:furColors[readPreferences().fur],
@@ -656,17 +650,20 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         }
       : undefined,
     onAdventure:(state)=>{
+      if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
+       const loot=state.lastLoot;shownLoot.add(loot.id);const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal loot-reveal center" role="dialog" aria-modal="true"><div class="loot-emblem">✦</div><div class="eyebrow">${tr('HARTA DITEMUKAN','TREASURE FOUND')}</div><h2>${tr('Bekal petualanganmu','Supplies for your journey')}</h2><div class="loot-items"><span>◉ <b>+${loot.coins}</b>${tr('Koin','Coins')}</span><span>⚿ <b>+${loot.keys}</b>${tr('Kunci','Key')}</span><span>▰ <b>+${loot.cakes}</b>${tr('Kue','Cakes')}</span><span>♥ <b>+${loot.hearts}</b>${tr('Nyawa','Hearts')}</span></div><p>${tr('Kue maksimal 8 · Nyawa maksimal 3','Maximum 8 cakes · Maximum 3 hearts')}</p>${button(tr('AMBIL & LANJUTKAN','COLLECT & CONTINUE'),'loot-close')}</section></div>`;click('loot-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});
+      }
       el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
-      if(sample){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${tr('RAJA RIMBUN','FOREST KING')} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:tr('Hindari buah ungu · cari celah serangan','Dodge purple fruit · find your opening')}</small>`;}}
+      if(sample){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${tr('RAJA RIMBUN','FOREST KING')} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:state.bossVulnerable?tr('PELIN­DUNG PADAM · SERANG!','SHIELD DOWN · ATTACK!'):tr('PELIN­DUNG AKTIF · HINDARI','SHIELD ACTIVE · DODGE')}</small>`;}}
       tracker.textContent=primaryObjective(state,lang);const info=areaInformation(state,lang);area.innerHTML=`<strong>${esc(info.name)} · ${tr('Bahaya','Danger')}: ${esc(info.danger)}</strong><small>${esc(info.description)}</small>`;area.dataset.danger=String(info.level);area.title=info.description;interaction.textContent=nearbyInformation(state,lang);
       if(lastZone!==state.zone){lastZone=state.zone;const discovery=document.createElement('div');discovery.className='zone-discovery';discovery.innerHTML=`<strong>${esc(info.name)}</strong><span>${esc(info.description)}</span><small>${tr('Bahaya','Danger')}: ${esc(info.danger)} · +3 ${tr('koin penemuan pertama','coins on first discovery')}</small>`;document.querySelector('.zone-discovery')?.remove();el('game-stage').parentElement!.append(discovery);setTimeout(()=>discovery.remove(),3200);}
       objectives.classList.toggle('escape-active',state.stage==='escape');
       el('play-hint').textContent=state.stage==='escape'?tr('LARI! Gerbang terbuka — pilih jalurmu.','RUN! The gate is open — choose your route.'):state.stage==='boss'?`${tr('RAJA RIMBUN · FASE','FOREST KING · PHASE')} ${state.bossPhase}`:zones[state.zone][lang==='id'?'idName':'enName'];
       const jumpButton=el('jump-action');const jumpCaption=jumpButton.querySelector('small');if(jumpCaption)jumpCaption.textContent=state.climber.state.phase==='hanging'?tr('NAIK','CLIMB'):tr('LOMPAT','JUMP');
       const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
-      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja Rimbun bangkit. Perhatikan tanda serangannya!','The Forest King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Temukan tiga segel untuk melemahkan pelindung Raja.','Find three seals to weaken the King’s shield.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
+      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/${state.sealGoal}   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja Rimbun bangkit. Perhatikan tanda serangannya!','The Forest King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Temukan tiga segel untuk melemahkan pelindung Raja.','Find three seals to weaken the King’s shield.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(state.message!=='chest')toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
       if(modern.adventure)return;

@@ -2,10 +2,11 @@ import type {GamePreferences} from '../services/preferences';
 export function bindJoystick(root:HTMLElement,game:{joystick:{x:number;y:number};beginMovement?:()=>void;endMovement?:()=>void},prefs:GamePreferences) {
  const stick=root.querySelector<HTMLElement>('#joystick')!,knob=root.querySelector<HTMLElement>('#stick')!;
  const controller=new AbortController(),signal=controller.signal;
- const size=104*prefs.controlScale,bottom=Math.min(prefs.bottom,root.clientHeight*.23);
- const actions=root.querySelector<HTMLElement>('.action-controls');if(actions){actions.style.transform=`scale(${prefs.controlScale})`;actions.style.transformOrigin='right bottom';actions.style.bottom=`max(${bottom}px,env(safe-area-inset-bottom))`;}
+ const size=104*prefs.controlScale;
+ const bottom=()=>Math.min(prefs.bottom,root.clientHeight*.18);
+ const actions=root.querySelector<HTMLElement>('.action-controls');if(actions){actions.style.transform=`scale(${prefs.controlScale})`;actions.style.transformOrigin='right bottom';actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;}
  stick.style.width=`${size}px`;stick.style.height=`${size}px`;
- stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom}px,env(safe-area-inset-bottom))`;
+ stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;
  let pointer:number|null=null,origin={x:0,y:0};
  const reset=()=>{pointer=null;game.endMovement?.();game.joystick={x:0,y:0};knob.style.transform='';};
  const control=(e:PointerEvent)=>{const dx=(e.clientX-origin.x)/(size*.32),dy=(e.clientY-origin.y)/(size*.32),length=Math.hypot(dx,dy),n=Math.max(1,length);
@@ -27,6 +28,6 @@ export function bindJoystick(root:HTMLElement,game:{joystick:{x:number;y:number}
  },{signal});
  root.addEventListener('pointermove',e=>{if(pointer===e.pointerId)control(e);},{signal});
  for(const name of ['pointerup','pointercancel','lostpointercapture'] as const)root.addEventListener(name,e=>{if(pointer===e.pointerId)reset();},{signal});
- window.addEventListener('blur',reset,{signal});window.addEventListener('resize',()=>{reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom}px,env(safe-area-inset-bottom))`;},{signal});
+ window.addEventListener('blur',reset,{signal});window.addEventListener('resize',()=>{reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;if(actions)actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;},{signal});
  return()=>{controller.abort();reset();};
 }

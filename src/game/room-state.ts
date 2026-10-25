@@ -32,6 +32,8 @@ export interface Player {
   elevation?:number;
   climb?:import('./climbing').ClimbSave['phase'];
   jumpAt?: number;
+  jumpBase?:number;
+  jumpCount?:number;
   hitAt?: number;
 }
 export interface Match {

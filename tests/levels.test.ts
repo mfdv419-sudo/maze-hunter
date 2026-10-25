@@ -20,7 +20,7 @@ describe("Retro 100-level campaign", () => {
       layouts.add(JSON.stringify(m.grid));
       const path = route(m.grid, m.start, m.finish);
       expect(path.length).toBeGreaterThan(2);
-      expect(c.seconds).toBeGreaterThan(path.length);
+      expect(c.seconds).toBe(id<=20?60:id<=40?90:id<=80?120:150);
       for (let i = 1; i < path.length; i++)
         expect(clearSegment(m.grid, center(path[i - 1]), center(path[i]))).toBe(
           true,
@@ -29,7 +29,7 @@ describe("Retro 100-level campaign", () => {
     expect(layouts.size).toBe(100);
   });
   it("grows staged choices and adds maps while rejecting out-of-range levels", () => {
-    for(const [level,choices,pages]of [[5,[2],1],[11,[3],1],[21,[3,2],1],[31,[3,3],1],[41,[3,3,2],2],[51,[3,3,3],2],[61,[3,3,3,2],2],[71,[3,3,3,3],2],[81,[3,3,3,3,2],3],[91,[3,3,3,3,3],3]]as const){expect(retroPageCount(level)).toBe(pages);expect(Array.from({length:pages},(_,i)=>retroDecisions(level,i)).flat().map(d=>d.choices.length)).toEqual(choices);}
+    for(const [level,choices,pages]of [[5,[2],1],[11,[3],1],[21,[3,2],1],[31,[3,3],1],[41,[4,3,4],2],[51,[5,4,4],2],[61,[5,4,4,3],2],[71,[5,5,4,4],2],[81,[5,5,5,4,4],3],[91,[5,5,5,5,5],3]]as const){expect(retroPageCount(level)).toBe(pages);expect(Array.from({length:pages},(_,i)=>retroDecisions(level,i)).flat().map(d=>d.choices.length)).toEqual(choices);}
     expect(() => retroMaze(0)).toThrow();expect(() => retroMaze(101)).toThrow();
   });
 });

@@ -1,7 +1,7 @@
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
-export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean}
+export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appearance):Character{
@@ -68,16 +68,23 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
  for(let i=0;i<28;i++)for(let j=0;j<8;j++){const k=i*9+j;indices.push(k,k+9,k+1,k+1,k+9,k+10);}geo.setIndex(indices);geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setAttribute('normal',new T.BufferAttribute(normals,3));geo.boundingSphere=new T.Sphere(new T.Vector3(-.3,.5,-.5),1.1);addMesh(tail,geo,fur);
  const charm=joint(tail,0,0,0,'tail-charm');if(a.tail==='bow')for(const side of [-1,1]){const q=addMesh(charm,new T.ConeGeometry(.075,.12,5),pink,side*.06,0,0);q.rotation.z=side*Math.PI/2;}if(a.tail==='leaf')addMesh(charm,new T.TorusGeometry(.065,.018,5,12),leaf).rotation.x=Math.PI/2;if(a.tail==='star')addMesh(charm,new T.OctahedronGeometry(.075),gold,0,-.055,0);
  const shadow=addMesh(root,new T.CircleGeometry(.29,16),new T.MeshBasicMaterial({color:0x183e39,transparent:true,opacity:.17,depthWrite:false}),0,.005,0);shadow.rotation.x=-Math.PI/2;shadow.name='ground-shadow';
+ const pole=joint(elbows[0],0,-.13,.04,'trekking-pole');addMesh(pole,new T.CylinderGeometry(.011,.014,.66,7),satin(0xc2d3cf),0,-.26,0);box(pole,.045,.11,.045,ink,0,.02,0,.012);addMesh(pole,new T.CylinderGeometry(.03,.04,.035,7),ink,0,-.55,0);pole.visible=false;
+ // Gloves and boots are part of the selected full outfit, preserving existing account slots.
+ if(a.body!=='classic')for(let i=0;i<2;i++){box(elbows[i],.17,.08,.17,a.body==='raincoat'?gold:teal,0,-.11,.02,.025);box(knees[i],.19,.13,.27,a.body==='raincoat'?gold:ink,0,-.1,.055,.035);box(knees[i],.2,.035,.28,cream,0,-.165,.055,.012);for(let j=0;j<2;j++)box(knees[i],.12,.015,.02,cream,0,-.075+j*.035,.195,.005);}
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion),stride=Math.sin(time*11)*walk*.5;
   body.position.y=celebrate?Math.abs(Math.sin(time*5))*.1:Math.sin(time*(walk>.05?22:2))*(walk>.05?.014:.006);body.rotation.x=-walk*.085;chest.scale.y=1+Math.sin(time*2)*.012;
-  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?-.08:.08));elbows[i].rotation.x=-.12-Math.max(0,swing)*.35;legs[i].rotation.x=-swing;knees[i].rotation.x=Math.max(0,swing)*.65;}
+  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);legs[i].rotation.x=-swing;knees[i].rotation.x=Math.max(0,swing)*.65;}
   head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
   const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
-  if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms[1].rotation.z=-p*2.1;elbows[1].rotation.x=-.5-Math.sin(time*15)*.3;head.rotation.z=p*.11;}
-  if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?-1:1)*1.8);
+  if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms.forEach((a,i)=>{a.rotation.x=-p*2.65;a.rotation.z=(i?1:-1)*(.12+p*.32);});elbows.forEach(e=>e.rotation.x=-.12);head.rotation.x=-p*.12;}
+  if((action?.jump||0)>.05){const p=Math.min(1,action!.jump!);arms.forEach((a,i)=>{a.rotation.x=-.8-p*.5;a.rotation.z=(i?1:-1)*.35;});knees.forEach(k=>k.rotation.x=.5);}
+  pole.visible=!!action?.pole&&!(hit>0&&hit<1)&&action?.climb==='ground'&&!(action?.jump);if(pole.visible){arms[0].rotation.x=-.4+stride*.5;elbows[0].rotation.x=-.65;pole.rotation.x=.4;}
+  if(walk<.04&&time%12>9&&action?.greet===undefined&&!action?.pole){arms[0].rotation.x=-.55;arms[0].rotation.z=-.28;elbows[0].rotation.x=-.8;head.rotation.y=Math.sin(time*2)*.12;}
+
+  if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
   if(action?.climb==='hanging'||action?.climb==='climbing'){body.position.y-=.1;arms.forEach(arm=>{arm.rotation.x=-2.35;arm.rotation.z=0;});elbows.forEach(e=>e.rotation.x=-.15);legs.forEach(l=>l.rotation.x=-.6);knees.forEach(k=>k.rotation.x=.6);}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
   centers.forEach((p,i)=>{const u=i/28,b=rest[i];p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,b.y+Math.sin(time*2-u*3)*.025*u,b.z+Math.sin(time*2.3-u*4)*.045*u);});

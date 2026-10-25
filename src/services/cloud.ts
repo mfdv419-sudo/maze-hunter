@@ -115,6 +115,8 @@ export interface RoomPlayer {
   elevation?:number;
   climb?:import('../game/climbing').ClimbSave['phase'];
   jumpAt?: number;
+  jumpBase?:number;
+  jumpCount?:number;
   hitAt?: number;
 }
 export interface Room {

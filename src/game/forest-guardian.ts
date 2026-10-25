@@ -13,13 +13,15 @@ export function forestGuardian(boss=false){
  const held=addMesh(elbows[1],new T.SphereGeometry(.085,9,6),fruit,0,-.12,.13);held.name='held-poison-fruit';addMesh(held,new T.ConeGeometry(.035,.07,4),leaf,0,.095,0);
  if(boss){addMesh(head,new T.CylinderGeometry(.3,.31,.08,12),gold,0,.28,0);for(let i=0;i<6;i++){const a=i*Math.PI/3;addMesh(head,new T.ConeGeometry(.06,.23,6),gold,Math.sin(a)*.25,.4,Math.cos(a)*.25);}addMesh(head,new T.OctahedronGeometry(.09),glow,0,.31,.31);for(let i=0;i<5;i++){const panel=addMesh(rig,roundBox(.15,.55,.035,.015),leaf,(i-2)*.11,.57,-.3);panel.rotation.z=(i-2)*-.06;}}
  else {const hat=addMesh(head,new T.ConeGeometry(.36,.27,10),leaf,0,.33,0);hat.rotation.z=.1;addMesh(rig,roundBox(.12,.14,.025,.015),gold,0,.65,.29);}
+ const armor=new T.Group();armor.name='king-armor';if(boss)for(let i=0;i<3;i++){const ring=addMesh(armor,new T.TorusGeometry(.46,.018,5,24),new T.MeshBasicMaterial({color:0x92e2ba,transparent:true,opacity:.6}),0,.72,0);ring.rotation.x=i*Math.PI/3;ring.rotation.z=i*.8;}rig.add(armor);
  const stars=new T.Group();rig.add(stars);for(let i=0;i<3;i++)addMesh(stars,new T.OctahedronGeometry(.035),gold,Math.sin(i*2.09)*.23,1.65,Math.cos(i*2.09)*.23);
  root.userData.animate=(time:number,speed:number,windup:number,stunned:boolean,reaction:number,phase:number)=>{
   const stride=Math.sin(time*(boss?6:9))*Math.min(1,speed)*.48;rig.position.y=Math.sin(time*2)*.008+Math.abs(stride)*.025;torso.rotation.x=-Math.min(1,speed)*.07;head.rotation.z=Math.sin(time*1.4)*.025;head.rotation.y=Math.sin(time*.8)*.06;
-  legs.forEach((l,i)=>l.rotation.x=i?-stride:stride);arms.forEach((a,i)=>{a.rotation.x=i?stride:-stride;a.rotation.z=(i?-1:1)*.12;});elbows.forEach(e=>e.rotation.x=-.2);
+  legs.forEach((l,i)=>l.rotation.x=i?-stride:stride);arms.forEach((a,i)=>{a.rotation.x=i?stride:-stride;a.rotation.z=(i?1:-1)*.14;});elbows.forEach(e=>e.rotation.x=-.2);
   if(windup>0){arms[1].rotation.x=-Math.sin(windup*Math.PI/2)*2.2;elbows[1].rotation.x=-.65;torso.rotation.y=-windup*.25;head.rotation.z=-windup*.08;}else torso.rotation.y=0;
   if(reaction>0&&reaction<.35){const p=Math.sin(reaction/.35*Math.PI);torso.rotation.x+=p*.22;head.rotation.x=-p*.15;}else head.rotation.x=0;
   const blink=time%5>4.83?.12:1;eyes.forEach(e=>e.scale.y=stunned?.45:blink*(boss?.85:1));stars.visible=stunned;stars.rotation.y=time*3;if(stunned)head.rotation.z=Math.sin(time*12)*.1;held.visible=windup>0;
+  armor.rotation.y=time*.8;if(boss&&windup>.1){arms[0].rotation.x=-windup*2.3;torso.rotation.x=-windup*.22;legs.forEach((l,i)=>l.rotation.z=(i?1:-1)*windup*.1); }else legs.forEach(l=>l.rotation.z=0);
   if(boss)glow.color.set(phase===3?0xffd47b:phase===2?0xb5d8ed:0xa8e4be);
  };
  return root;

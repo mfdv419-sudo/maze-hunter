@@ -37,6 +37,8 @@ export class RetroGame {
       }
       create() {
         owner.scene = this;
+        state.start();
+        this.lastTick=performance.now();
         this.gfx = this.add.graphics();
         this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
           if (transitioning)return;
@@ -144,6 +146,7 @@ export class RetroGame {
         const now = performance.now();
         state.tick((now - this.lastTick) / 1000);
         this.lastTick = now;
+        this.game.canvas.dataset.remaining=String(state.config.seconds-state.elapsed);this.game.canvas.dataset.phase=state.phase;
         options.onTick(state);
         if (!reported && (state.phase === "won" || state.phase === "lost")) {
           reported = true;

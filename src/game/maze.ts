@@ -1,4 +1,4 @@
-import retroCatalog from "./retro-catalog-v11.json" with {type:"json"};
+import retroCatalog from "./retro-catalog-v13.json" with {type:"json"};
 export interface Point {
   x: number;
   y: number;
@@ -116,7 +116,7 @@ export function retroDifficulty(grid:Grid,start:Point,finish:Point) {
 }
 const regionCache=new Map<string,Maze[]>();
 export function retroPageCount(level:number){if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');return level<5?1:retroCatalog[level-5].pages.length;}
-export interface RetroDecision {point:Point;next:Point;length:number;choices:{end:Point;length:number;correct:boolean}[]}
+export interface RetroDecision {point:Point;next:Point;length:number;hall?:boolean;hallCells?:Point[];choices:{end:Point;length:number;correct:boolean}[]}
 export function retroDecisions(level:number,page=0):RetroDecision[]{return level<5?[]:structuredClone(retroCatalog[level-5].pages[page].decisions);}
 export function retroMaze(level:number,page=0):Maze {
  if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');
@@ -145,7 +145,7 @@ export function retroConfig(level: number) {
     level,
     region: Math.floor((level - 1) / 10),
     lives: 3,
-    seconds: Math.ceil(35 + length * (level < 21 ? 1.7 : 1.25)+(pageCount-1)*8),
+    seconds: level<=20?60:level<=40?90:level<=80?120:150,
     maps,pageCount,
     maze,
     length,

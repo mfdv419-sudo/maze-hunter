@@ -9,10 +9,10 @@ it('audits every visible route, exact choice counts and a 90% failed route per d
   maps++;const b=retroBoard(level,page),decisions=retroDecisions(level,page),claimed=new Set<string>();let failures=0;
   expect(decisions[0].point).toEqual(b.start);expect(decisions.at(-1)!.next).toEqual(b.finish);unique.add(JSON.stringify(b));
   for(const [i,d]of decisions.entries()){
-   expect(neighbors(b,d.point).length).toBe(d.choices.length+(i?1:0));expect(d.choices.filter(c=>c.correct)).toHaveLength(1);
+   if(!d.hall)expect(neighbors(b,d.point).length).toBe(d.choices.length+(i?1:0));expect(d.choices.filter(c=>c.correct)).toHaveLength(1);
    const correct=d.choices.find(c=>c.correct)!;expect(correct.end).toEqual(d.next);
    const actualCorrect=boardRoute(b,d.point,d.next).length-1;expect(actualCorrect).toBe(d.length);
-   for(const c of d.choices){const path=boardRoute(b,d.point,c.end);expect(path.length-1).toBe(c.length);for(const p of path)claimed.add(key(p));for(const p of path.slice(1,-1))expect(neighbors(b,p)).toHaveLength(2);
+   for(const c of d.choices){const path=boardRoute(b,d.point,c.end);expect(path.length-1).toBe(c.length);for(const p of path)claimed.add(key(p));for(const p of path.slice(1,-1))if(!decisions.some(q=>q.hallCells?.some(h=>key(h)===key(p))))expect(neighbors(b,p)).toHaveLength(2);
     if(!c.correct){failures++;expect((path.length-1)/actualCorrect).toBeCloseTo(.9,10);expect(neighbors(b,c.end)).toHaveLength(1);}
    }
    if(i<decisions.length-1)expect(d.next).toEqual(decisions[i+1].point);

@@ -3,7 +3,7 @@ import {carve, distances, route, random, type Maze, type Difficulty, type Point}
 import type {GrassKind} from './adventure-zones';
 export const adventureRules={medium:{size:43,seconds:720,guards:3,bosses:1,minPath:65},hard:{size:53,seconds:1080,guards:5,bosses:2,minPath:90},extreme:{size:63,seconds:1500,guards:7,bosses:3,minPath:120}} as const;
 export interface Vegetation extends Point {kind:GrassKind}
-export interface AdventureLayout {forest?:{trunks:Point[];pillars:Point[];arenaRadius:number};ledges:Ledge[];secret?:Point;escapeConnector:Point[];fastRiver:Point;areas:{point:Point;zone:number}[];zoneCells:number[][];vegetation:Vegetation[];starts:Point[];fortress:Point;escapeRoutes:Point[][];maze:Maze;index:number;seals:Point[];stars:Point[];chests:Point[];rivers:Point[];grass:Point[];patrols:Point[][];bosses:Point[];solution:Point[]}
+export interface AdventureLayout {forest?:{trunks:Point[];pillars:Point[];boulders:Point[];arenaRadius:number;cave:Point;cabin:Point;highland:Point};ledges:Ledge[];secret?:Point;escapeConnector:Point[];fastRiver:Point;areas:{point:Point;zone:number}[];zoneCells:number[][];vegetation:Vegetation[];starts:Point[];fortress:Point;escapeRoutes:Point[][];maze:Maze;index:number;seals:Point[];stars:Point[];chests:Point[];rivers:Point[];grass:Point[];patrols:Point[][];bosses:Point[];solution:Point[]}
 const key=(p:Point)=>`${p.x},${p.y}`;
 const layoutCache=new Map<string,AdventureLayout>();
 export function adventureLayout(difficulty:Difficulty,index:number,variation=1):AdventureLayout {
