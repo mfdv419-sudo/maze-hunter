@@ -1,4 +1,4 @@
-import retroCatalog from "./retro-catalog-v15.json" with {type:"json"};
+import retroCatalog from "./retro-catalog.json" with {type:"json"};
 export interface Point {
   x: number;
   y: number;

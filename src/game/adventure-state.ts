@@ -1,3 +1,4 @@
+import {aquaticSwimming,aquaticGround,aquaticChestDepth} from './aquatic';
 import {biomeLayout,biomeElevation} from './biome-layout';
 import {areaTime,type AdventureArea} from './areas';
 import {forestLayout,forestElevation,inCave} from './forest-layout';
@@ -6,10 +7,13 @@ import {Climber,type ClimbSave} from './climbing';
 import {adventureLayout,adventureRules} from './adventure-layout';
 import {center,clearSegment,moveSliding,route,type Point,type Difficulty} from './maze';
 export interface Guard {position:Point;patrol:Point[];step:number;direction:number;hp:number;boss:boolean;slowUntil:number;stunUntil:number;hits:number;lastHit:number;nextShot:number;telegraphUntil:number;aim:Point;dead:boolean;vulnerableAt?:number;vulnerableUntil?:number;elite?:boolean;sapling?:boolean}
-export interface Cake {position:Point;velocity:Point;owner:'player'|'guard'|'boss';ttl:number}
+export interface Cake {depth?:number;position:Point;velocity:Point;owner:'player'|'guard'|'boss';ttl:number}
 export interface Hazard {id:number;kind:'slam'|'seed'|'roots'|'spin'|'vine'|'cataclysm'|'branch'|'charge'|'lightning';point:Point;from:Point;at:number;end:number;radius:number;resolved:boolean}
-export interface AdventureSave {lastLoot?:AdventureState['lastLoot'];climb?:ClimbSave;climbed?:number[];visitedZones?:number[];position:Point;checkpoint:Point;elapsed:number;lives:number;ammo:number;seals:number[];stars:number[];chests:number[];broken:string[];harvested:number[];coins:number;keys:number;buffUntil:number;shield:number;guards:Guard[];projectiles:Cake[];hazards:Hazard[];stage:'explore'|'boss'|'escape';escapeAt:number;escapeDuration:number;phase:'playing'|'won'|'lost';reason:'time'|'lives'|'escape'|null;resetFogRevision:number;respawns:number;revision:number;invulnerableUntil:number;slowUntil:number;stunUntil:number;hits:number;lastHit:number;lastThrow:number;lastJump:number;hazardId:number;nextBossSkill:number;nextEscapeHazard:number;message:string;messageAt:number}
+export interface AdventureSave {depth?:number;diving?:boolean;lastDive?:number;lastLoot?:AdventureState['lastLoot'];climb?:ClimbSave;climbed?:number[];visitedZones?:number[];position:Point;checkpoint:Point;elapsed:number;lives:number;ammo:number;seals:number[];stars:number[];chests:number[];broken:string[];harvested:number[];coins:number;keys:number;buffUntil:number;shield:number;guards:Guard[];projectiles:Cake[];hazards:Hazard[];stage:'explore'|'boss'|'escape';escapeAt:number;escapeDuration:number;phase:'playing'|'won'|'lost';reason:'time'|'lives'|'escape'|null;resetFogRevision:number;respawns:number;revision:number;invulnerableUntil:number;slowUntil:number;stunUntil:number;hits:number;lastHit:number;lastThrow:number;lastJump:number;hazardId:number;nextBossSkill:number;nextEscapeHazard:number;message:string;messageAt:number}
 export class AdventureState {
+ depth=0;diving=false;lastDive=-10;
+ get swimming(){return aquaticSwimming(this.area,this.position,this.layout)&&this.climber.elevation<.1;}
+ toggleDive(){if(this.phase!=='playing'||!this.swimming||this.elapsed-this.lastDive<.45)return false;this.lastDive=this.elapsed;this.diving=!this.diving;this.revision++;return true;}
  lastLoot?:{id:number;coins:number;keys:number;cakes:number;hearts:number};
  readonly layout;readonly grid;guards:Guard[];climber=new Climber();climbed=new Set<number>();visitedZones=new Set<number>();
  position:Point;checkpoint:Point;elapsed=0;lives=3;ammo=6;seals=new Set<number>();stars=new Set<number>();chests=new Set<number>();broken=new Set<string>();harvested=new Set<number>();projectiles:Cake[]=[];hazards:Hazard[]=[];
@@ -51,7 +55,7 @@ export class AdventureState {
   let dx=Math.sin(angle),dy=Math.cos(angle);
   const target=this.guards.filter(g=>!g.dead&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<5&&clearSegment(this.grid,this.position,g.position,.05)).sort((a,b)=>Math.hypot(a.position.x-this.position.x,a.position.y-this.position.y)-Math.hypot(b.position.x-this.position.x,b.position.y-this.position.y))[0];
   if(target){const n=Math.hypot(target.position.x-this.position.x,target.position.y-this.position.y);if(n){dx=(target.position.x-this.position.x)/n;dy=(target.position.y-this.position.y)/n;}}
-  this.projectiles.push({position:{...this.position},velocity:{x:dx*6,y:dy*6},owner:'player',ttl:1.25});return true;
+  this.projectiles.push({position:{...this.position},velocity:{x:dx*6,y:dy*6},owner:'player',depth:this.depth,ttl:1.25});return true;
  }
  damage(source:'guard'|'boss'|'river') {
   if(this.phase!=='playing'||this.elapsed<this.invulnerableUntil)return;
@@ -60,7 +64,7 @@ export class AdventureState {
   if(source==='guard') {if(this.elapsed-this.lastHit>7)this.hits=0;this.lastHit=this.elapsed;this.hits++;
    if(this.hits===1){this.slowUntil=this.elapsed+3;this.notify('slow');return;}
    if(this.hits===2){this.stunUntil=this.elapsed+1;this.notify('stun');return;}}
-  this.climber.reset();this.lives--;this.respawns++;this.hits=0;this.slowUntil=0;this.stunUntil=0;this.projectiles=[];
+  this.depth=0;this.diving=false;this.climber.reset();this.lives--;this.respawns++;this.hits=0;this.slowUntil=0;this.stunUntil=0;this.projectiles=[];
   const reset=source==='boss'&&this.difficulty!=='medium'&&this.stage!=='escape';
   this.position={...(reset?center(this.layout.maze.start):this.checkpoint)};
   if(reset)this.resetFogRevision++;
@@ -94,7 +98,7 @@ export class AdventureState {
  }
  private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g)g.position=moveSliding(this.grid,g.position,h.point.x-g.position.x,h.point.y-g.position.y,.4);}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
    if(h.kind==='charge'||h.kind==='vine'){const vx=h.point.x-h.from.x,vy=h.point.y-h.from.y,l=vx*vx+vy*vy,t=Math.max(0,Math.min(1,((this.position.x-h.from.x)*vx+(this.position.y-h.from.y)*vy)/(l||1)));inside=Math.hypot(this.position.x-h.from.x-vx*t,this.position.y-h.from.y-vy*t)<h.radius;}
-   if(inside&&jump<.22){if(h.kind==='roots'){this.slowUntil=this.elapsed+2;this.notify('roots');}else this.damage(this.stage==='escape'?'guard':'boss');}}
+   if(inside&&jump<.22&&this.depth<.75){if(h.kind==='roots'){this.slowUntil=this.elapsed+2;this.notify('roots');}else this.damage(this.stage==='escape'?'guard':'boss');}}
   this.hazards=this.hazards.filter(h=>h.end>this.elapsed);
  }
  step(dt:number,raw:number,dx:number,dy:number,jump:number,movementOnly=false) {
@@ -109,7 +113,8 @@ export class AdventureState {
   if(!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
   jump=Math.max(jump,this.climber.elevation);
   if(jump<.08&&this.layout.rivers.some(p=>Math.floor(this.position.x)===p.x&&Math.floor(this.position.y)===p.y))this.damage('river');
-  const pickup=(list:Point[],set:Set<number>,kind:string)=>list.forEach((p,i)=>{if(!set.has(i)&&(kind!=='seal'||this.sealUnlocked(i))&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.48){set.add(i);this.revision++;this.notify(kind);if(kind==='seal'){this.checkpoint=center(p);this.ammo=Math.min(8,this.ammo+2);}if(kind==='chest'){this.lastLoot={id:i,coins:5,keys:1,cakes:8-this.ammo,hearts:Math.min(1,3-this.lives)};this.ammo=8;this.lives=Math.min(3,this.lives+1);this.coins+=5;this.keys++;}}});
+  if(!this.swimming){this.depth=0;this.diving=false;}else{const max=Math.max(0,-aquaticGround(this.area,this.position.x,this.position.y,this.layout)-.72),target=this.diving?Math.min(2.6,max):0;this.depth+=Math.max(-dt*1.8,Math.min(dt*1.8,target-this.depth));}
+  const pickup=(list:Point[],set:Set<number>,kind:string)=>list.forEach((p,i)=>{if((kind==='chest'||this.depth<.55)&&(kind!=='chest'||Math.abs(this.depth-aquaticChestDepth(this.area,i,p,this.layout))<.55)&&!set.has(i)&&(kind!=='seal'||this.sealUnlocked(i))&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.48){set.add(i);this.revision++;this.notify(kind);if(kind==='seal'){this.checkpoint=center(p);this.ammo=Math.min(8,this.ammo+2);}if(kind==='chest'){this.lastLoot={id:i,coins:5,keys:1,cakes:8-this.ammo,hearts:Math.min(1,3-this.lives)};this.ammo=8;this.lives=Math.min(3,this.lives+1);this.coins+=5;this.keys++;}}});
   pickup(this.layout.seals,this.seals,'seal');pickup(this.layout.stars,this.stars,'star');pickup(this.layout.chests,this.chests,'chest');
   if(movementOnly)return;
   const king=this.guards.find(g=>g.boss),inArena=Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<this.arenaRadius;
@@ -127,16 +132,16 @@ export class AdventureState {
     if(d>.8){const tx=dx/d+(d<2.5?dy/d*.7:0),ty=dy/d-(d<2.5?dx/d*.7:0),next=moveSliding(this.grid,g.position,tx*speed*dt,ty*speed*dt,.4);if(Math.hypot(next.x-this.layout.fortress.x-.5,next.y-this.layout.fortress.y-.5)<this.arenaRadius-.9)g.position=next;}
    }
    const d=Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y);
-   if(d<(g.boss?.55:.3)&&jump<.2)this.damage(g.boss?'boss':'guard');
+   if(d<(g.boss?.55:.3)&&jump<.2&&Math.abs(this.depth-(this.area==='sea'&&aquaticSwimming(this.area,g.position,this.layout)?.4:0))<.75)this.damage(g.boss?'boss':'guard');
    if(this.elapsed>=g.stunUntil&&d<(g.boss?(this.expedition?9:5):4.4)&&d>1&&clearSegment(this.grid,g.position,this.position,.05)&&(!g.boss||this.seals.size===this.sealGoal))if(!g.telegraphUntil&&this.elapsed>=g.nextShot){g.telegraphUntil=this.elapsed+(g.boss?1:1.2);g.aim={...this.position};}
    if(g.telegraphUntil&&this.elapsed>=g.telegraphUntil) {const vx=g.aim.x-g.position.x,vy=g.aim.y-g.position.y;
-    for(const offset of g.boss&&(this.expedition||this.difficulty==='extreme')?[-.22,0,.22]:[0]){const a=Math.atan2(vy,vx)+offset;this.projectiles.push({position:{...g.position},velocity:{x:Math.cos(a)*3.5,y:Math.sin(a)*3.5},owner:g.boss?'boss':'guard',ttl:2});}
+    for(const offset of g.boss&&(this.expedition||this.difficulty==='extreme')?[-.22,0,.22]:[0]){const a=Math.atan2(vy,vx)+offset;this.projectiles.push({position:{...g.position},velocity:{x:Math.cos(a)*3.5,y:Math.sin(a)*3.5},owner:g.boss?'boss':'guard',depth:this.area==='sea'&&aquaticSwimming(this.area,g.position,this.layout)?.4:0,ttl:2});}
     g.telegraphUntil=0;g.nextShot=this.elapsed+(g.boss?2.5:3.2);}
   }
   const keep:Cake[]=[];const respawnsBefore=this.respawns;
   for(const cake of this.projectiles) {cake.ttl-=dt;if(cake.ttl<=0)continue;const next={x:cake.position.x+cake.velocity.x*dt,y:cake.position.y+cake.velocity.y*dt};if(!clearSegment(this.grid,cake.position,next,.04))continue;if(this.expedition&&([...this.layout.forest!.trunks,...this.layout.forest!.pillars].some(p=>Math.hypot(next.x-p.x-.5,next.y-p.y-.5)<.26)||this.layout.forest!.boulders.some(p=>Math.hypot(next.x-p.x-.5,next.y-p.y-.5)<1.2)||this.layout.ledges.some(l=>Math.abs(next.x-l.point.x-.5)<.5&&Math.abs(next.y-l.point.y-.5)<.5)))continue;cake.position=next;let hit=false;
-   if(cake.owner==='player'){for(const g of this.guards)if(!g.dead&&Math.hypot(g.position.x-next.x,g.position.y-next.y)<(g.boss?.55:.27)){this.hitGuard(g);hit=true;break;}}
-   else if(jump<.22&&Math.hypot(this.position.x-next.x,this.position.y-next.y)<.25){this.damage(cake.owner);hit=true;}
+   if(cake.owner==='player'){for(const g of this.guards)if(!g.dead&&Math.abs((cake.depth||0)-(this.area==='sea'&&aquaticSwimming(this.area,g.position,this.layout)?.4:0))<.75&&Math.hypot(g.position.x-next.x,g.position.y-next.y)<(g.boss?.55:.27)){this.hitGuard(g);hit=true;break;}}
+   else if(jump<.22&&Math.abs((cake.depth||0)-this.depth)<.75&&Math.hypot(this.position.x-next.x,this.position.y-next.y)<.25){this.damage(cake.owner);hit=true;}
    if(this.respawns!==respawnsBefore){keep.length=0;break;}if(!hit)keep.push(cake);}
   this.projectiles=keep;
   if(Math.hypot(this.position.x-this.checkpoint.x,this.position.y-this.checkpoint.y)<.5&&this.elapsed%2<dt)this.ammo=Math.min(8,this.ammo+1);
@@ -144,6 +149,6 @@ export class AdventureState {
   if(Math.hypot(this.position.x-finish.x,this.position.y-finish.y)<.45){if(this.gateOpen)this.phase='won';else if(this.elapsed-this.messageAt>3)this.notify('gate');}
  }
  acceptPosition(target:Point,jump:number){const start={...this.position},steps=Math.max(1,Math.ceil(Math.hypot(target.x-start.x,target.y-start.y)/.08));for(let i=1;i<=steps;i++){const q={x:start.x+(target.x-start.x)*i/steps,y:start.y+(target.y-start.y)*i/steps},input={x:(q.x-this.position.x)*25,y:(q.y-this.position.y)*25};this.position=this.climber.step(this.position,q,input,jump,0,this.layout.ledges).position;if(this.climber.state.phase==='hanging'||this.climber.state.phase==='climbing')break;}this.step(0,0,0,0,jump,true);}
- save():AdventureSave {const names=['lastLoot','position','checkpoint','elapsed','lives','ammo','coins','keys','buffUntil','shield','guards','projectiles','hazards','stage','escapeAt','escapeDuration','phase','reason','resetFogRevision','respawns','revision','invulnerableUntil','slowUntil','stunUntil','hits','lastHit','lastThrow','lastJump','hazardId','nextBossSkill','nextEscapeHazard','message','messageAt'] as const;const out:Record<string,unknown>={};for(const k of names)if(this[k]!==undefined)out[k]=this[k];return structuredClone({...out,climb:this.climber.state,climbed:[...this.climbed],visitedZones:[...this.visitedZones],seals:[...this.seals],stars:[...this.stars],chests:[...this.chests],broken:[...this.broken],harvested:[...this.harvested]}) as unknown as AdventureSave;}
- restore(s:AdventureSave){for(let y=0;y<this.layout.maze.grid.length;y++)this.grid[y]=[...this.layout.maze.grid[y]];const {seals,stars,chests,broken,harvested,climb,climbed,visitedZones,...rest}=s;this.climber.reset();if(climb)this.climber.state=structuredClone(climb);this.climbed=new Set(climbed||[]);this.visitedZones=new Set(visitedZones||[]);Object.assign(this,structuredClone(rest));this.seals=new Set(seals||[]);this.stars=new Set(stars||[]);this.chests=new Set(chests||[]);this.broken=new Set(broken||[]);this.projectiles=structuredClone(s.projectiles||[]);this.hazards=structuredClone(s.hazards||[]);this.harvested=new Set(harvested||[]);for(const p of this.layout.grass)this.grid[p.y][p.x]=this.broken.has(`${p.x},${p.y}`)?0:1;for(const k of this.broken){const [x,y]=k.split(',').map(Number);if(this.grid[y])this.grid[y][x]=0;}}
+ save():AdventureSave {const names=['depth','diving','lastDive','lastLoot','position','checkpoint','elapsed','lives','ammo','coins','keys','buffUntil','shield','guards','projectiles','hazards','stage','escapeAt','escapeDuration','phase','reason','resetFogRevision','respawns','revision','invulnerableUntil','slowUntil','stunUntil','hits','lastHit','lastThrow','lastJump','hazardId','nextBossSkill','nextEscapeHazard','message','messageAt'] as const;const out:Record<string,unknown>={};for(const k of names)if(this[k]!==undefined)out[k]=this[k];return structuredClone({...out,climb:this.climber.state,climbed:[...this.climbed],visitedZones:[...this.visitedZones],seals:[...this.seals],stars:[...this.stars],chests:[...this.chests],broken:[...this.broken],harvested:[...this.harvested]}) as unknown as AdventureSave;}
+ restore(s:AdventureSave){for(let y=0;y<this.layout.maze.grid.length;y++)this.grid[y]=[...this.layout.maze.grid[y]];const {seals,stars,chests,broken,harvested,climb,climbed,visitedZones,...rest}=s;this.depth=s.depth||0;this.diving=!!s.diving;this.lastDive=s.lastDive??-10;this.climber.reset();if(climb)this.climber.state=structuredClone(climb);this.climbed=new Set(climbed||[]);this.visitedZones=new Set(visitedZones||[]);Object.assign(this,structuredClone(rest));this.seals=new Set(seals||[]);this.stars=new Set(stars||[]);this.chests=new Set(chests||[]);this.broken=new Set(broken||[]);this.projectiles=structuredClone(s.projectiles||[]);this.hazards=structuredClone(s.hazards||[]);this.harvested=new Set(harvested||[]);for(const p of this.layout.grass)this.grid[p.y][p.x]=this.broken.has(`${p.x},${p.y}`)?0:1;for(const k of this.broken){const [x,y]=k.split(',').map(Number);if(this.grid[y])this.grid[y][x]=0;}}
 }

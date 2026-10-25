@@ -29,10 +29,10 @@ export interface RetroViewport {scale:number;sx:number;sy:number;ox:number;oy:nu
 export function retroViewport(width:number,height:number,cols:number,rows=cols):RetroViewport{
  const top=height<520?78:96,bottom=18,rotated=height>width&&cols>rows;
  const viewCols=rotated?rows:cols,viewRows=rotated?cols:rows,availableW=Math.max(100,width-36),availableH=Math.max(80,height-top-bottom);
- let sx=availableW/viewCols,sy=availableH/viewRows;
- // Modest rectangular cells fill the arena while keeping corridors and touch targets legible.
- sx=Math.min(sx,sy*2.4);sy=Math.min(sy,sx*1.45);
- return{scale:Math.min(sx,sy),sx,sy,ox:(width-viewCols*sx)/2,oy:top+(availableH-viewRows*sy)/2,rotated,boardHeight:rows,cols:viewCols,rows:viewRows};
+ // A shared square cell scale across the campaign; unused viewport space is intentional.
+ const cell=Math.min(40,availableW/(height>width?18:26),availableH/(height>width?26:18));
+ const sx=cell,sy=cell;
+ return{scale:cell,sx,sy,ox:(width-viewCols*cell)/2,oy:top+(availableH-viewRows*cell)/2,rotated,boardHeight:rows,cols:viewCols,rows:viewRows};
 }
 export function retroToScreen(p:Point,v:RetroViewport):Point{const q=v.rotated?{x:v.boardHeight-p.y,y:p.x}:p;return{x:v.ox+q.x*v.sx,y:v.oy+q.y*v.sy};}
 export function retroFromScreen(p:Point,v:RetroViewport):Point{const q={x:(p.x-v.ox)/v.sx,y:(p.y-v.oy)/v.sy};return v.rotated?{x:q.y,y:v.boardHeight-q.x}:q;}

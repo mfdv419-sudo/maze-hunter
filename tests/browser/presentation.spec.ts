@@ -4,10 +4,10 @@ for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:844
  await page.goto('/');await page.locator('#lab').click();
  async function noPageScroll(){expect(await page.evaluate(()=>document.documentElement.scrollHeight>innerHeight+1||document.body.scrollHeight>innerHeight+1)).toBe(false);}
  await noPageScroll();await page.locator('#wardrobe').click();await expect(page.locator('#outfit-preview canvas')).toBeVisible();await noPageScroll();
- await expect(page.locator('#wardrobe-close')).toBeInViewport();await page.screenshot({path:`/workspace/scratch/0f24cdd6d8e3/qa/m6-wardrobe-${viewport.width}.png`});
+ await expect(page.locator('#wardrobe-close')).toBeInViewport();await page.screenshot({path:`test-results/screenshots/presentation-wardrobe-${viewport.width}.png`});
  await page.locator('#wardrobe-close').click();await page.locator('#scores').click();await expect(page.locator('.score-list')).toContainText('Belum ada kemenangan');await noPageScroll();
- await page.locator('#scores-close').click();await page.locator('#modern-mode').click();await noPageScroll();for(const mode of ['hard','extreme','medium']){await page.locator('#difficulty-'+mode).click();await expect(page.locator('#solo')).toBeInViewport({ratio:1});}
- await page.locator('#solo').click();await expect(page.locator('.minimap-panel')).toBeVisible();await noPageScroll();await page.screenshot({path:`/workspace/scratch/0f24cdd6d8e3/qa/m6-adventure-${viewport.width}.png`});
+ await page.locator('#scores-close').click();await page.locator('#modern-mode').click();if(viewport.height>viewport.width)await page.setViewportSize({width:844,height:390});await noPageScroll();for(const mode of ['hard','extreme','medium']){await page.locator('#difficulty-'+mode).click();await expect(page.locator('#explore-area')).toBeInViewport({ratio:1});}
+ await page.locator('#area-classic').click();await page.locator('#explore-area').click();await expect(page.locator('.minimap-panel')).toBeVisible();await noPageScroll();await page.screenshot({path:`test-results/screenshots/presentation-adventure-${viewport.width}.png`});
  expect(errors).toEqual([]);await context.close();
 });
 test('camera and independent music/effects controls persist',async({page})=>{

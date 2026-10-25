@@ -17,7 +17,7 @@ test("production excludes control lab and caches the app and Retro assets for of
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto("http://127.0.0.1:5183/");
-  await expect(page.locator("#play")).toBeVisible();
+  await expect(page.locator("#retro-mode")).toBeVisible();
   await expect(page.locator("#lab")).toHaveCount(0);
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -37,7 +37,7 @@ test("production excludes control lab and caches the app and Retro assets for of
   await page.reload();
   await context.setOffline(true);
   await page.reload();
-  await expect(page.locator("#play")).toContainText("MAIN");
+  await expect(page.locator("#retro-mode")).toContainText("RETRO");
   await expect(page.locator("h1")).toContainText("MAZE");
   await context.close();
 });

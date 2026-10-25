@@ -52,7 +52,7 @@ test("Modern renders 3D, keyboard moves and rotate/resize preserves session", as
   await page.goto("/");
   await page.locator("#lab").click();
   await page.locator("#modern-mode").click();
-  await page.locator("#solo").click();
+  await page.locator("#area-classic").click();await page.locator("#explore-area").click();
   await expect(page.locator("#game-stage canvas")).toBeVisible();
   await expect(page.locator("#adventure-objectives")).toContainText("0/3");
   await expect(page.locator(".minimap-panel canvas")).toBeVisible();
@@ -80,7 +80,7 @@ test("phone trace: wall contact is free, dead end resets and orientation preserv
  for(const cell of boardRoute(board,board.start,board.deadEnds[0]).slice(1)){const p=center(cell);await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[await point(p.x,p.y)]});await page.waitForTimeout(30);}
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect(page.locator('.lives')).toHaveText('♥♥♡');
  await page.setViewportSize({width:844,height:390});await expect(page.locator('.lives')).toHaveText('♥♥♡');
- await page.screenshot({path:'/workspace/scratch/0f24cdd6d8e3/qa/m5-retro-touch.png'});await context.close();
+ await page.screenshot({path:'test-results/screenshots/presentation-retro-touch.png'});await context.close();
 });
 
 test("title is a game scene without admin text; touch action buttons work with joystick", async ({
@@ -100,7 +100,7 @@ test("title is a game scene without admin text; touch action buttons work with j
   await expect(page.locator(".game-title")).toContainText("HUNTER");
   await page.locator("#lab").click();
   await page.locator("#modern-mode").click();
-  await page.locator("#solo").click();
+  await page.locator("#area-classic").click();await page.locator("#explore-area").click();
   await expect(page.locator("#joystick")).toBeVisible();
   await expect(page.locator("#jump-action")).toBeVisible();
   await expect(page.locator("#hit-action")).toBeVisible();

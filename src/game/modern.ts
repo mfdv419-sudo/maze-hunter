@@ -1,3 +1,4 @@
+import {aquaticChestDepth,aquaticGround} from './aquatic';
 import {roundBox} from './model-parts';
 import {aquaticGuardian} from './aquatic-guardian';
 import {biomeWorld} from './biome-world';
@@ -144,7 +145,7 @@ export class ModernGame {
       character: Character;
       target: T.Vector3;
       angle: number;
-      jumpAt: number; jumpBase?:number;jumpCount?:number;
+      depth?:number;swimming?:boolean;jumpAt: number; jumpBase?:number;jumpCount?:number;
       hitAt: number;
       elevation:number;
       climb?:import('./climbing').ClimbSave['phase'];
@@ -158,7 +159,7 @@ export class ModernGame {
   private jumpCount=0;
   private worldVisible(p:Point,r=16){return this.current.has(`${Math.floor(p.x)},${Math.floor(p.y)}`)||(!!this.adventure?.expedition&&Math.hypot(p.x-this.position.x,p.y-this.position.y)<r&&clearSight(this.maze.grid,this.position,{x:p.x+.01,y:p.y+.01},.01));}
   private terrain(x:number,y:number){return this.adventure?.sample?forestElevation(x,y):this.adventure?.expedition?biomeElevation(this.adventure.area,x,y,this.adventure.layout):0;}
-  private get wallHeight(){return this.adventure?.sample?1.95:this.adventure?.expedition?(this.adventure.area==='gorge'?4.5:this.adventure.area==='mountain'?2.8:2.05):.82;}
+  private get wallHeight(){return this.adventure?.sample?1.95:this.adventure?.expedition?(this.adventure.area==='gorge'?4.5:this.adventure.area==='sea'?5.5:this.adventure.area==='mountain'?2.8:2.05):.82;}
   private jumpAt(time:number){return airborneHeight({at:this.jumpStarted,base:this.jumpBase,count:this.jumpCount},time);}
   private hitStarted = -1000;
   private broken: Record<string, boolean> = {};
@@ -175,6 +176,8 @@ export class ModernGame {
   }
   useAction(kind: ActionKind) {
     if (this.orientationBlocked||this.paused || this.ended||this.expandedMap||document.getElementById('maze-transition')) return false;
+    if(kind==='dive'){if(!this.adventure?.toggleDive())return false;if(this.options.online)void this.options.onAction?.(kind);this.host.dataset.lastAction=kind;return true;}
+    if(kind==='jump'&&this.adventure?.swimming){this.adventure.diving=false;if(this.options.online)void this.options.onAction?.(kind);return true;}
     const field = kind === "jump" ? "jumpStarted" : "hitStarted";
     if (kind==="hit"&&(this.elapsed - this[field]) * 1000 < actionCooldown[kind])
       return false;
@@ -300,7 +303,7 @@ export class ModernGame {
       this.poison=new T.InstancedMesh(new T.SphereGeometry(.11,9,6),new T.MeshLambertMaterial({color:0xa267b6}),80);this.poisonLeaves=new T.InstancedMesh(new T.ConeGeometry(.06,.12,4),new T.MeshLambertMaterial({color:0x83b95c}),80);this.poison.count=this.poisonLeaves.count=0;this.poison.frustumCulled=this.poisonLeaves.frustumCulled=false;this.world.add(this.poison,this.poisonLeaves);
       this.ensureGuardModels();
       a.layout.areas.forEach(({point,zone})=>{const group=landmark(a.expedition&&!a.sample&&a.area!=='forest'?(zone===5?5:1):zone);group.position.set(point.x+.5,this.terrain(point.x+.5,point.y+.5),point.y+.5);if(zone!==5)group.position.x+=.65;this.world.add(group);this.landmarkModels.push({point,group});});
-      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.44,.56,l.height,7):new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.48,.5,.05,7):new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?areaThemes[this.adventure.area].floor:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,this.terrain(l.point.x+.5,l.point.y+.5),l.point.y+.5);group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
+      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.44,.56,l.height,7):new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.48,.5,.05,7):new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?areaThemes[this.adventure.area].floor:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,this.terrain(l.point.x+.5,l.point.y+.5),l.point.y+.5);if(l.kind==='palm'){group.clear();const trunk=new T.Mesh(new T.CylinderGeometry(.13,.2,l.height,9),new T.MeshLambertMaterial({color:0x96704d}));trunk.position.y=l.height/2;group.add(trunk);for(let i=0;i<7;i++){const a=i*Math.PI*2/7,leaf=new T.Mesh(new T.SphereGeometry(1,10,6),new T.MeshLambertMaterial({color:0x65965b}));leaf.scale.set(.19,.06,1.05);leaf.position.set(Math.sin(a)*.65,l.height+.15,Math.cos(a)*.65);leaf.rotation.y=a;leaf.rotation.x=.18;group.add(leaf);}for(let i=0;i<3;i++){const fruit=new T.Mesh(new T.SphereGeometry(.12,8,6),new T.MeshLambertMaterial({color:0x78523b}));fruit.position.set(Math.sin(i*2.1)*.23,l.height-.12,Math.cos(i*2.1)*.23);group.add(fruit);}const rim=new T.Mesh(new T.TorusGeometry(.25,.025,6,24),new T.MeshBasicMaterial({color:0xf4d9a1}));rim.rotation.x=Math.PI/2;rim.position.y=l.height;group.add(rim);group.name='climbable-palm';}else group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
       a.layout.vegetation.forEach(p=>{const group=vegetation(p.kind);group.position.set(p.x+.5,this.terrain(p.x+.5,p.y+.5),p.y+.5);this.world.add(group);this.vegetationModels.push(group);});
       for(const p of a.layout.rivers) {
         const group=riverTile(!this.maze.grid[p.y][p.x-1]&&!this.maze.grid[p.y][p.x+1]);
@@ -320,6 +323,7 @@ export class ModernGame {
       "keydown",
       (e) => {
         if(this.expandedMap||document.getElementById('maze-transition'))return;
+        if (["v","V"].includes(e.key)){e.preventDefault();if(!e.repeat)this.useAction("dive");return;}
         if ([" ", "j", "J", "b", "B"].includes(e.key)) {
           e.preventDefault();
           if (!e.repeat) this.useAction(e.key === " " ? "jump" : "hit");
@@ -404,7 +408,7 @@ export class ModernGame {
         angle: number;
         outfit: string;
         appearance?:Appearance;
-        elevation?:number;
+        elevation?:number;depth?:number;swimming?:boolean;
         climb?:import('./climbing').ClimbSave['phase'];
         slot: number;
         finishedAt: number | null;
@@ -427,14 +431,14 @@ export class ModernGame {
           character,
           target: new T.Vector3(p.x, 0, p.y),
           angle: p.angle,
-          jumpAt: 0,
+          depth:p.depth,swimming:p.swimming,jumpAt: 0,
           hitAt: 0,elevation:0,
         };
         peer.character.root.position.copy(peer.target);
         this.peers.set(key, peer);
       }
       peer.target.set(p.x, 0, p.y);
-      peer.angle = p.angle;peer.elevation=p.elevation||0;peer.climb=p.climb;
+      peer.angle = p.angle;peer.depth=p.depth;peer.swimming=p.swimming;peer.elevation=this.terrain(p.x,p.y)+(p.elevation||0);peer.climb=p.climb;
       const known = this.current.has(`${Math.floor(p.x)},${Math.floor(p.y)}`);
       peer.character.root.visible = coop || known;
     }
@@ -607,31 +611,31 @@ export class ModernGame {
     this.drawnAngle=dampAngle(this.drawnAngle,this.angle,dt,28);
     this.hero.root.rotation.y = this.drawnAngle;
     const climbingPose=this.adventure?.climber.state.phase==='hanging'||this.adventure?.climber.state.phase==='climbing';
-    const elevation=this.terrain(this.position.x,this.position.y)+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed))+(this.adventure?.area==='sea'?.22:0);
+    const elevation=(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed));
     const drawnElevation=climbingPose?this.hero.root.position.y+(elevation-this.hero.root.position.y)*(1-Math.exp(-dt*20)):elevation;
     this.hero.root.position.set(this.position.x,drawnElevation,this.position.y);
     const shadow = this.hero.root.getObjectByName("ground-shadow");
     if (shadow) {
       shadow.position.y=this.terrain(this.position.x,this.position.y)+(this.adventure?.climber.state.phase==='top'?this.adventure.climber.elevation:0)+0.005-this.hero.root.position.y;
-      shadow.scale.setScalar(1 - this.hero.root.position.y * 0.25);
+      shadow.visible=!this.adventure?.swimming;shadow.scale.setScalar(Math.max(.1,1-this.jumpAt(this.elapsed)*.25));
     }
     this.stepDistance+=actual*dt;
-    if(actual>.2&&this.stepDistance>.32&&!this.paused){this.stepDistance=0;sfx('step');this.splats.push({point:{...this.position},at:this.time,color:0xe6d2a5});}
+    if(actual>.2&&this.stepDistance>.32&&!this.paused&&!this.adventure?.swimming){this.stepDistance=0;sfx('step');this.splats.push({point:{...this.position},at:this.time,color:0xe6d2a5});}
     this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {
-      jump:this.jumpAt(this.elapsed),swim:this.adventure?.area==='sea',pole:!!this.adventure?.expedition&&this.adventure.area!=='sea'&&this.elapsed-this.hitStarted>HIT_SECONDS,lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
+      jump:this.jumpAt(this.elapsed),swim:this.adventure?.swimming,pole:!!this.adventure?.expedition&&!this.adventure.swimming&&this.adventure.area!=='sea'&&this.elapsed-this.hitStarted>HIT_SECONDS,lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
       hit: Math.max(
         0,
         Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
       ),
     });
     for (const p of this.peers.values()) {
-      const dist = p.character.root.position.distanceTo(p.target);
+      const dist = Math.hypot(p.character.root.position.x-p.target.x,p.character.root.position.z-p.target.z);
       p.character.root.position.lerp(p.target, Math.min(1, dt * 12));
       p.character.root.rotation.y = p.angle;
       const now = Date.now() + this.serverOffset;
-      p.character.root.position.y=p.elevation+(p.climb==='hanging'||p.climb==='climbing'?0:airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));
-      const peerShadow=p.character.root.getObjectByName('ground-shadow');if(peerShadow)peerShadow.position.y=.005+(p.climb==='top'?p.elevation:0)-p.character.root.position.y;
-      p.character.animate(this.time, Math.min(1, dist * 5), false, {
+      p.character.root.position.y=(p.swimming?-.68-(p.depth||0):p.elevation)+(p.climb==='hanging'||p.climb==='climbing'?0:airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));
+      const peerShadow=p.character.root.getObjectByName('ground-shadow');if(peerShadow){peerShadow.visible=!p.swimming;peerShadow.position.y=.005+(p.climb==='top'?p.elevation:this.terrain(p.target.x,p.target.z))-p.character.root.position.y;}
+      p.character.animate(this.time, Math.min(1, dist * 5), false, {swim:p.swimming,
         climb:p.climb==='hanging'?'hanging':p.climb==='climbing'?'climbing':'ground',
         hit: Math.max(0, Math.min(1, (now - p.hitAt) / 1000 / HIT_SECONDS)),
       });
@@ -644,16 +648,16 @@ export class ModernGame {
       for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:a.expedition&&event.source!=='cake'?0xc08dd1:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
       this.guardModels.forEach((m,i)=>{const g=a.guards[i];if(!g){m.visible=false;this.warningModels[i].visible=false;return;}this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&(this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)||((g.boss||a.expedition)&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<(g.boss?18:12)&&clearSight(this.maze.grid,this.position,g.position)));const previous=m.userData.previousPosition as Point|undefined;const vx=previous?g.position.x-previous.x:0,vy=previous?g.position.y-previous.y:0;
       const moving=Math.hypot(vx,vy)/Math.max(.001,dt),heading=g.boss||g.telegraphUntil?Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y):moving>.02?Math.atan2(vx,vy):m.rotation.y;
-      m.position.set(g.position.x,this.terrain(g.position.x,g.position.y),g.position.y);m.rotation.y=dampAngle(m.rotation.y,heading,dt,10);m.userData.previousPosition={...g.position};const upcoming=g.boss?a.hazards.find(h=>!h.resolved):undefined;const windup=upcoming?Math.max(0,1-(upcoming.at-a.elapsed)/1.8):g.telegraphUntil?Math.max(0,1-(g.telegraphUntil-a.elapsed)/(g.boss?1:1.2)):0;const armor=m.getObjectByName('king-armor');if(armor)armor.visible=g.boss&&(a.seals.size<a.sealGoal||!a.bossVulnerable);m.userData.animate?.(this.time,moving,windup,a.elapsed<g.stunUntil,a.elapsed-g.lastHit,a.bossPhase);
+      m.position.set(g.position.x,a.area==='sea'?Math.max(this.terrain(g.position.x,g.position.y),-.7):this.terrain(g.position.x,g.position.y),g.position.y);m.rotation.y=dampAngle(m.rotation.y,heading,dt,10);m.userData.previousPosition={...g.position};const upcoming=g.boss?a.hazards.find(h=>!h.resolved):undefined;const windup=upcoming?Math.max(0,1-(upcoming.at-a.elapsed)/1.8):g.telegraphUntil?Math.max(0,1-(g.telegraphUntil-a.elapsed)/(g.boss?1:1.2)):0;const armor=m.getObjectByName('king-armor');if(armor)armor.visible=g.boss&&(a.seals.size<a.sealGoal||!a.bossVulnerable);m.userData.animate?.(this.time,moving,windup,a.elapsed<g.stunUntil,a.elapsed-g.lastHit,a.bossPhase);
       const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
       for(const {mesh} of this.grassModels){const ring=mesh.getObjectByName('interaction-ring');if(ring)ring.visible=mesh.position.distanceTo(this.hero.root.position)<1.4;mesh.rotation.z=Math.sin(this.time*2+mesh.position.x)*.025;}
       this.vegetationModels.forEach((m,i)=>{m.rotation.z=Math.sin(this.time*2+i)*.035;const ring=m.getObjectByName('interaction-ring');if(ring)ring.visible=a.layout.vegetation[i].kind!=='normal'&&m.position.distanceTo(this.hero.root.position)<1.1;const glow=m.getObjectByName('rare-glow');if(glow)glow.position.y=.12+Math.sin(this.time*2)*.06;});
       const alive=new Set(a.hazards.map(h=>h.id));for(const [id,g]of this.hazardModels)if(!alive.has(id)){this.world.remove(g);g.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();(o.material as T.Material).dispose();}});this.hazardModels.delete(id);}
       for(const h of a.hazards){let g=this.hazardModels.get(h.id);if(!g){g=new T.Group();const mat=new T.MeshBasicMaterial({color:h.kind==='lightning'?0xa1d7f5:h.kind==='roots'?0x91d599:0xffa77a,transparent:true,opacity:.65,side:T.DoubleSide});const m=new T.Mesh(new T.RingGeometry(h.radius*.83,h.radius,28),mat);m.rotation.x=-Math.PI/2;g.add(m);const fill=new T.Mesh(new T.CircleGeometry(h.radius,28),mat.clone());(fill.material as T.MeshBasicMaterial).opacity=.12;fill.rotation.x=-Math.PI/2;fill.position.y=-.005;g.add(fill);if(h.kind==='charge'||h.kind==='vine'){const length=Math.hypot(h.point.x-h.from.x,h.point.y-h.from.y),line=new T.Mesh(new T.BoxGeometry(h.radius*2,.015,length),mat.clone());line.position.set((h.from.x-h.point.x)/2,.01,(h.from.y-h.point.y)/2);line.rotation.y=Math.atan2(h.point.x-h.from.x,h.point.y-h.from.y);g.add(line);}const impact=h.kind==='roots'?rootImpact(h.radius):h.kind==='lightning'?new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0,5,0),new T.Vector3(.22,3,0),new T.Vector3(-.14,2.6,0),new T.Vector3(.12,1.1,0),new T.Vector3(0,0,0)]),8,.045,5,false),new T.MeshBasicMaterial({color:0xe5f5ff})):new T.Mesh(new T.ConeGeometry(.12,1,5),new T.MeshLambertMaterial({color:0x89674d}));impact.name='impact';g.add(impact);this.world.add(g);this.hazardModels.set(h.id,g);}g.position.set(h.point.x,this.terrain(h.point.x,h.point.y)+.04,h.point.y);g.visible=this.current.has(`${Math.floor(h.point.x)},${Math.floor(h.point.y)}`)||(a.stage==='boss'&&Math.hypot(h.point.x-this.position.x,h.point.y-this.position.y)<16);const impact=g.getObjectByName('impact')!;impact.visible=h.resolved;impact.position.y=h.kind==='lightning'||h.kind==='roots'?0:h.resolved?.3:3;g.children[0].scale.setScalar(1+Math.sin(this.time*10)*.04);}
-      this.items.forEach(item=>{if(item.kind!=='chest')item.group.rotation.y=this.time*.7;if(item.kind==='seal'){const crystal=item.group.getObjectByName('seal-crystal') as T.Mesh;crystal.position.y=1.05+Math.sin(this.time*2+item.index)*.12;const mat=crystal.material as T.MeshLambertMaterial;mat.color.set(a.sealUnlocked(item.index)?0x63e8d1:0x819eab);}});
+      this.items.forEach(item=>{if(a.swimming||a.area==='sea'||a.area==='coast')item.group.position.y=item.kind==='chest'?this.terrain(item.point.x+.5,item.point.y+.5):Math.max(0,this.terrain(item.point.x+.5,item.point.y+.5));if(item.kind!=='chest')item.group.rotation.y=this.time*.7;if(item.kind==='seal'){const crystal=item.group.getObjectByName('seal-crystal') as T.Mesh;crystal.position.y=1.05+Math.sin(this.time*2+item.index)*.12;const mat=crystal.material as T.MeshLambertMaterial;mat.color.set(a.sealUnlocked(item.index)?0x63e8d1:0x819eab);}});
       this.riverModels.forEach(({mesh})=>mesh.children.forEach((r,i)=>{if(r.name==='water-ripple'){r.position.x=(i-3)*.15+Math.sin(this.time*1.3+i)*.07;}}));
-      if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,this.terrain(cake.position.x,cake.position.y)+.42,cake.position.y);this.matrix.scale.setScalar(this.worldVisible(cake.position)&&cake.owner==='player'?1:0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=this.terrain(cake.position.x,cake.position.y)+.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
-      if(this.poison&&this.poisonLeaves){const fruits=a.projectiles.filter(p=>p.owner!=='player').slice(0,80);this.poison.count=this.poisonLeaves.count=fruits.length;fruits.forEach((fruit,i)=>{this.matrix.position.set(fruit.position.x,this.terrain(fruit.position.x,fruit.position.y)+(fruit.owner==='boss'?1.2:.62),fruit.position.y);this.matrix.rotation.set(0,this.time*5,0);this.matrix.scale.setScalar(this.worldVisible(fruit.position)?(fruit.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.poison!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y+=.15;this.matrix.updateMatrix();this.poisonLeaves!.setMatrixAt(i,this.matrix.matrix);});this.poison.instanceMatrix.needsUpdate=this.poisonLeaves.instanceMatrix.needsUpdate=true;this.matrix.rotation.set(0,0,0);}
+      if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,(this.adventure!.area==='sea'||this.adventure!.area==='coast'?Math.max(this.terrain(cake.position.x,cake.position.y),-.35-(cake.depth||0)):this.terrain(cake.position.x,cake.position.y))+.42,cake.position.y);this.matrix.scale.setScalar(this.worldVisible(cake.position)&&cake.owner==='player'?1:0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=(this.adventure!.area==='sea'||this.adventure!.area==='coast'?Math.max(this.terrain(cake.position.x,cake.position.y),-.35-(cake.depth||0)):this.terrain(cake.position.x,cake.position.y))+.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
+      if(this.poison&&this.poisonLeaves){const fruits=a.projectiles.filter(p=>p.owner!=='player').slice(0,80);this.poison.count=this.poisonLeaves.count=fruits.length;fruits.forEach((fruit,i)=>{this.matrix.position.set(fruit.position.x,(this.adventure!.area==='sea'?Math.max(this.terrain(fruit.position.x,fruit.position.y),-.7):this.terrain(fruit.position.x,fruit.position.y))+(fruit.owner==='boss'?1.2:.62),fruit.position.y);this.matrix.rotation.set(0,this.time*5,0);this.matrix.scale.setScalar(this.worldVisible(fruit.position)?(fruit.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.poison!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y+=.15;this.matrix.updateMatrix();this.poisonLeaves!.setMatrixAt(i,this.matrix.matrix);});this.poison.instanceMatrix.needsUpdate=this.poisonLeaves.instanceMatrix.needsUpdate=true;this.matrix.rotation.set(0,0,0);}
       const glow=this.marker.getObjectByName('portal-glow') as T.Mesh;
       (glow.material as T.MeshBasicMaterial).opacity=a.gateOpen?.65+Math.sin(this.time*3)*.18:.12;this.marker.scale.set(a.gateOpen?1.45:1,a.gateOpen?1.8:1.4,a.gateOpen?1.45:1);
       this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
@@ -662,12 +666,12 @@ export class ModernGame {
     if(!this.paused){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(75*Math.PI/180,this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(-25*Math.PI/180,this.desiredPitch-cameraInputDt*.8);}
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
     const mode=this.cameraMode;
-    const target=new T.Vector3(this.position.x*U,this.terrain(this.position.x,this.position.y)+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
-    const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.cameraPitch));
+    const target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
+    const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
     // A low camera must keep the torso visible, not merely clear the hedge with a head-height ray.
     // In open ground the requested 0-degree view is exact; a foreground hedge gently lifts/shortens the arm.
-    if(this.cameraPitch<(this.adventure?.expedition?35:15)*Math.PI/180){
+    if(!this.adventure?.swimming&&this.cameraPitch<(this.adventure?.expedition?35:15)*Math.PI/180){
       const torso=target.clone();torso.y-=.55;const line=desired.clone().sub(torso),samples=Math.ceil(line.length()/.16);let blocked=false;
       for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<this.terrain(x+.5,y+.5)+(this.adventure?.sample?(x>=55&&x<=71&&y>=54&&y<=71?4.2:2.15):this.wallHeight+.2))||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
       if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+(this.adventure?.expedition?this.wallHeight+.15:1.35)),target.z-Math.cos(this.cameraYaw)*near);}
@@ -691,8 +695,8 @@ export class ModernGame {
       if(this.adventure)this.options.onAdventure?.(this.adventure);
     }
     if(!this.adventure?.expedition){const rise=Math.max(0,this.camera.position.y-target.y-10);const fog=this.scene.fog as T.Fog;fog.near=10+rise;fog.far=24+rise;}
-    this.forestScene?.update(this.time,this.camera,this.position);this.biomeScene?.update(this.time,this.camera,this.position);
-    this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
+    this.forestScene?.update(this.time,this.camera,this.position);this.biomeScene?.update(this.time,this.camera,{...this.position,depth:this.adventure?.depth});
+    this.host.dataset.swimming=String(!!this.adventure?.swimming);this.host.dataset.depth=String(this.adventure?.depth||0);this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {

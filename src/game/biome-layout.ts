@@ -1,3 +1,4 @@
+import {aquaticGround} from './aquatic';
 import type {AdventureLayout} from './adventure-layout';
 import {areaSize,type AdventureArea} from './areas';
 import {carve,distances,route,random,type Difficulty,type Point} from './maze';
@@ -20,7 +21,7 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
  const open:Point[]=[];for(let y=1;y<n-1;y++)for(let x=1;x<n-1;x++)if(!grid[y][x]&&!used.has(`${x},${y}`))open.push(p(x,y));
  const choose=(count:number,spacing=4)=>{const out:Point[]=[];for(const q of [...open].sort((a,b)=>((a.x*71+a.y*193+variation)%997)-((b.x*71+b.y*193+variation)%997))){if(used.has(`${q.x},${q.y}`)||out.some(t=>Math.hypot(q.x-t.x,q.y-t.y)<spacing))continue;out.push(q);used.add(`${q.x},${q.y}`);if(out.length===count)break;}return out;};
  const stars=choose(9,8),vegetation=choose(30,4).map((q,i)=>({...q,kind:(i%7===0?'rare':i%5===0?'danger':i%3?'tall':'normal')as'rare'|'danger'|'tall'|'normal'}));
- const ledges=[areas[0],areas[3],areas[4]].map((a,id)=>({id,point:p(Math.max(2,Math.min(n-3,a.point.x-1)),Math.max(2,Math.min(n-3,a.point.y-1))),height:id===1?1.5:1.15}));
+ const ledges=[areas[0],areas[3],areas[4]].map((a,id)=>({id,point:p(Math.max(2,Math.min(n-3,a.point.x-1)),Math.max(2,Math.min(n-3,a.point.y-1))),height:(area==='coast'||area==='sea')&&id===0?2.65:id===1?1.5:1.15,kind:((area==='coast'||area==='sea')&&id===0?'palm':'rock') as 'palm'|'rock'}));
  const guardStarts=[...seals.map(q=>p(q.x+1,q.y)),...choose({medium:7,hard:13,extreme:21}[difficulty],8)];
  const patrols=guardStarts.map(q=>{const near=distances(grid,q);let end=q;for(const[k,d]of near)if(d===4){const[x,y]=k.split(',').map(Number);end=p(x,y);break;}return route(grid,q,end);});
  const fd=distances(grid,fortress),target=fd.get(`${start.x},${start.y}`)!,starts=[start],candidates=open.filter(q=>(fd.get(`${q.x},${q.y}`)??0)>target*.65);while(starts.length<({medium:4,hard:8,extreme:10}[difficulty])){let best:Point|undefined,spread=-1;for(const q of candidates){const d=Math.min(...starts.map(t=>Math.hypot(q.x-t.x,q.y-t.y)));if(d>spread){spread=d;best=q;}}if(!best||spread<2)throw Error('Insufficient expedition starts');starts.push(best);}
@@ -31,9 +32,9 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){
  const h=layout.forest!.highland,c=layout.forest!.cave,d=Math.hypot(x-h.x-.5,y-h.y-.5);
- if(area==='sea')return -.55;if(area==='gorge')return -.35*Math.max(0,1-Math.hypot(x-c.x,y-c.y)/8);
+ if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return -.35*Math.max(0,1-Math.hypot(x-c.x,y-c.y)/8);
  if(area==='mountain')return Math.max(0,4-d*.12)+Math.sin(x*.08)*.25;
  if(area==='desert')return Math.sin(x*.11)*Math.cos(y*.09)*.4-Math.max(0,1-Math.hypot(x-c.x-.5,y-c.y-.5)/3.8)*.8;
- if(area==='coast')return Math.sin(x*.07)*.15-Math.max(0,1-Math.hypot(x-c.x-.5,y-c.y-.5)/5.2)*.6;
+
  return Math.max(0,1.8-d*.14)+Math.sin(x*.1)*Math.sin(y*.08)*.16;
 }

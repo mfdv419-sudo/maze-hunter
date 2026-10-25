@@ -1,8 +1,8 @@
 import { clearSegment, type Maze, type Point } from "./maze";
-export type ActionKind = "jump" | "hit";
+export type ActionKind = "jump" | "hit" | "dive";
 export const JUMP_SECONDS = 0.68,
   HIT_SECONDS = 0.36;
-export const actionCooldown = { jump: 850, hit: 500 } as const;
+export const actionCooldown = { jump: 850, hit: 500, dive:450 } as const;
 export function jumpHeight(progress: number) {
   return progress < 0 || progress > 1 ? 0 : Math.sin(Math.PI * progress) * 0.55;
 }

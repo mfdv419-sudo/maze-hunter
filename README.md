@@ -1,3 +1,27 @@
+# Maze Hunter
+
+Browser-first family maze game with an original binturong mascot, Indonesian and English, Retro Journey and Adventure.
+
+## Applying the current changes
+
+Extract the changed-files package over the latest delivered project on `maze-1`, then run `npm run build`. The build first runs `scripts/clean-legacy.mjs`, which removes only the superseded files recorded in `maintenance/obsolete-files.json`. Modified legacy files are preserved and reported before any deletion. The same cleanup can be run directly with `node scripts/clean-legacy.mjs`. `FILE_REMOVALS.txt` lists the exact old paths. To remove them permanently from the source branch, commit those deletions after cleanup, or delete the listed paths in your repository. A Netlify build cleans its checkout and does not commit changes back to Git.
+
+Publish the frontend and Netlify functions together. There are no new environment variables or Firebase rule changes in this update. Keep the previously supplied rules and account configuration.
+
+- `CHANGELOG.md`: the only development-history document.
+- `docs/PROJECT_BRIEF.md`: project direction and agreed constraints.
+- `docs/SETUP.md`: setup and account configuration.
+- `src/game/retro-catalog.json`: the sole active Retro catalogue.
+- `scripts/generate-retro.py`, `scripts/retro-packing.cpp`, `scripts/retro-templates.json`: optional build-time maze authoring tools. Regenerating the catalogue requires Python 3 and a C++17 compiler; the normal application build uses the supplied JSON and does not require either.
+
+## Current interaction contracts
+
+Retro uses square cells at a shared scale for the viewport. It supports portrait and landscape, full maze visibility, manual zoom, three lives, free wall contact/finger release, and dead-end resets. Levels 5–100 use exact staged choices: 40 steps to the next decision/goal and 36 for each failed branch. At least 95% of the logical room grid is used, with no separate linking corridor. The countdown starts on level entry; times and map counts follow the agreed level table.
+
+Adventure supports landscape, left movement joystick, manual right-side camera, A for jump/climb and B for cakes/interactions. Deep water adds Dive/Surface (V), gradual swimming depth, islands, climbable coconut palms and underwater chests that require a matching depth. Solo pauses in portrait; online server time continues. The old Solo layout remains under Original Maze; the previous authored forest model remains in source and automated regression checks, without a separate demo action in the player menu.
+
+## Existing project notes
+
 # Maze Hunter — browser implementation on `maze-1`
 
 This source replaces the old action/combat gameplay with the agreed Retro trace-path and Modern 3D exploration design. The uploaded `maze-hunter-maze-1.zip` is the comparison baseline. No remote repository has been changed.
@@ -36,7 +60,7 @@ Only explicitly referenced browser fields are bundled; unrelated `VITE_` values 
 
 The supplied failed deploy's environment list did not include `VITE_FIREBASE_APP_ID`. Confirm it in the same **deploy-preview build** context; its value comes from the existing Firebase **Web app** configuration and is not the project ID or measurement ID. Rooms also require the actual `VITE_FIREBASE_DATABASE_URL` and the two server-side settings described below. `VITE_FIREBASE_CLIENT_EMAIL` is not used by the app and should not be supplied as browser configuration. Keep Admin credentials in `FIREBASE_SERVICE_ACCOUNT_JSON` with Functions scope.
 
-See `docs/NETLIFY_BUILD_FIX.md` for manual application and verification.
+See `docs/SETUP.md` for manual application and verification.
 
 ## Activate Google sign-in and family cloud saves
 
