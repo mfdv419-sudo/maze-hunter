@@ -100,13 +100,13 @@ export class RetroGame {
         const theme=Math.floor((state.level-1)/10)%3,wallColor=[0x556b68,0x5a8460,0x927052][theme];
         g.fillStyle(0x234c46).fillRoundedRect(ox-9,oy-9,n*scale+18,n*scale+18,16);
         for(let y=0;y<n;y++)for(let x=0;x<n;x++){
-          const px=ox+x*scale,py=oy+y*scale,known=state.explored.has(`${x},${y}`),walls=state.board.walls[y][x];
-          if(!known){g.fillStyle(0x294f43).fillRect(px,py,scale,scale);for(let i=0;i<3;i++){g.fillStyle([0x365e49,0x3e6a4e,0x345f4b][(x+y+i)%3],.8).fillCircle(px+scale*(.28+(i%2)*.42),py+scale*(.28+(i===2?.43:0)),scale*.29);}continue;}
+          const px=ox+x*scale,py=oy+y*scale,walls=state.board.walls[y][x];
+
           g.fillStyle(0xe5d8b1).fillRect(px,py,scale,scale);g.fillStyle(0xb3a887,.35).fillCircle(px+scale*.3,py+scale*.65,Math.max(.7,scale*.025));
           const edge=(ax:number,ay:number,bx:number,by:number)=>{g.lineStyle(Math.max(3,scale*.09),wallColor,1).lineBetween(ax,ay,bx,by);g.lineStyle(Math.max(1,scale*.025),theme===0?0xa9bbb0:theme===1?0x9ebc7d:0xc9a774,.8).lineBetween(ax+.8,ay+.8,bx+.8,by+.8);};
           if(walls&1)edge(px,py,px+scale,py);if(walls&8)edge(px,py,px,py+scale);
-          if((walls&2)&&(x===n-1||!state.explored.has(`${x+1},${y}`)))edge(px+scale,py,px+scale,py+scale);
-          if((walls&4)&&(y===n-1||!state.explored.has(`${x},${y+1}`)))edge(px,py+scale,px+scale,py+scale);
+          if((walls&2)&&x===n-1)edge(px+scale,py,px+scale,py+scale);
+          if((walls&4)&&y===n-1)edge(px,py+scale,px+scale,py+scale);
         }
         if (state.path.length > 1) {
           g.lineStyle(Math.max(3, scale * 0.2), 0x4caa94, 1);
@@ -118,9 +118,9 @@ export class RetroGame {
           );
           g.strokePath();
         }
-        this.game.canvas.dataset.goalRevealed=String(state.goalDiscovered);this.game.canvas.dataset.explored=String(state.explored.size);
+        this.game.canvas.dataset.goalRevealed='true';this.game.canvas.dataset.explored=String(state.explored.size);
         const f=state.board.finish,s=state.board.start;
-        if(state.goalDiscovered)drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);
+        drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);
         drawBinturong(g,ox+(s.x+.5)*scale,oy+(s.y+.5)*scale,scale*.65,.2);
         drawBinturong(g,ox+state.position.x*scale,oy+state.position.y*scale,scale*.65);
 

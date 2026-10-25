@@ -23,6 +23,7 @@ export class AdventureState {
  get zone(){return this.stage==='escape'?6:this.layout.zoneCells[Math.floor(this.position.y)]?.[Math.floor(this.position.x)]??0;}
  get limit(){return adventureRules[this.difficulty].seconds;}
  get bossCleared(){return this.guards.some(g=>g.boss&&g.dead);}
+ get bossRefilling(){return this.phase==='playing'&&this.stage!=='escape'&&this.seals.size===3&&this.guards.some(g=>g.boss&&!g.dead)&&Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<4.2;}
  get gateOpen(){return this.seals.size===3&&this.bossCleared;}
  get remaining(){return this.stage==='escape'?Math.max(0,this.escapeDuration-(this.elapsed-this.escapeAt)):Math.max(0,this.limit-this.elapsed);}
  get speedFactor(){return this.elapsed<this.stunUntil?0:(this.elapsed<this.slowUntil?.55:1)*(this.elapsed<this.buffUntil?1.3:1);}
@@ -91,7 +92,7 @@ export class AdventureState {
   pickup(this.layout.seals,this.seals,'seal');pickup(this.layout.stars,this.stars,'star');pickup(this.layout.chests,this.chests,'chest');
   if(movementOnly)return;
   const king=this.guards.find(g=>g.boss),inArena=Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<4.2;
-  if(king&&!king.dead&&inArena&&this.seals.size===3&&this.stage!=='escape'){if(this.stage!=='boss'){this.stage='boss';this.checkpoint={x:this.layout.fortress.x+2.5,y:this.layout.fortress.y+.5};if(this.grid[Math.floor(this.checkpoint.y)]?.[Math.floor(this.checkpoint.x)]!==0)this.checkpoint={...this.position};this.notify('fortress');}if(this.elapsed>=this.nextBossSkill){this.bossSkill(king);this.nextBossSkill=this.elapsed+(this.bossPhase===3?2.8:3.8);}if(this.elapsed%2<dt)this.ammo=Math.min(8,this.ammo+1);}
+  if(king&&inArena&&this.bossRefilling){if(this.stage!=='boss'){this.stage='boss';this.checkpoint={x:this.layout.fortress.x+2.5,y:this.layout.fortress.y+.5};if(this.grid[Math.floor(this.checkpoint.y)]?.[Math.floor(this.checkpoint.x)]!==0)this.checkpoint={...this.position};this.notify('fortress');}if(this.elapsed>=this.nextBossSkill){this.bossSkill(king);this.nextBossSkill=this.elapsed+(this.bossPhase===3?2.8:3.8);}if(this.elapsed%2<dt)this.ammo=Math.min(8,this.ammo+1);}
   if(this.bossCleared&&this.seals.size===3&&this.stage!=='escape')this.startEscape();
   if(this.stage==='escape'&&this.elapsed>=this.nextEscapeHazard){this.warn('branch',this.position,.65,1.7);this.nextEscapeHazard=this.elapsed+4;}
   this.updateHazards(jump);

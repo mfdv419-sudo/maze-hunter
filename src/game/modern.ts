@@ -490,7 +490,7 @@ export class ModernGame {
     ctx.setTransform(512/180,0,0,512/180,0,0);
     ctx.fillStyle='#102f3b';ctx.fillRect(0,0,180,180);ctx.save();ctx.beginPath();ctx.rect(0,0,180,180);ctx.clip();ctx.translate(-ox*unit,-oy*unit);
     for(const k of this.explored){const [x,y]=k.split(',').map(Number);ctx.fillStyle=this.maze.grid[y]?.[x]?'#536c69':this.current.has(k)?'#d4e1b3':'#709588';ctx.fillRect(x*unit,y*unit,Math.ceil(unit),Math.ceil(unit));}
-    for(const item of this.items)if(item.group.visible){ctx.fillStyle=item.kind==='seal'?'#67e4df':item.kind==='star'?'#ffdb7b':'#e8a669';ctx.fillRect((item.point.x+.2)*unit,(item.point.y+.2)*unit,Math.max(3,unit*.6),Math.max(3,unit*.6));}
+    for(const item of this.items)if(item.group.visible){ctx.fillStyle=item.kind==='seal'?'#67e4df':item.kind==='star'?'#ffdb7b':'#e8a669';if(item.kind==='seal'){const x=(item.point.x+.5)*unit,y=(item.point.y+.5)*unit,r=Math.max(3,unit*.35);ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();ctx.fill();}else ctx.fillRect((item.point.x+.2)*unit,(item.point.y+.2)*unit,Math.max(3,unit*.6),Math.max(3,unit*.6));}
     for(const g of this.adventure?.guards||[])if(!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)){ctx.fillStyle=g.boss?'#ffc363':'#e78b83';ctx.fillRect(g.position.x*unit-2,g.position.y*unit-2,4,4);}
     if(this.adventure?.gateOpen||this.explored.has(`${this.maze.finish.x},${this.maze.finish.y}`)){ctx.fillStyle='#ffcb67';ctx.fillRect(this.maze.finish.x*unit,this.maze.finish.y*unit,unit,unit);}
     if(this.adventure){const a=this.adventure;
@@ -650,8 +650,15 @@ export class ModernGame {
     this.renderer.domElement.remove();
   }
 }
-export function characterPreview(host: HTMLElement, outfit: string,color?:number,appearance?:Appearance,initialView:'front'|'back'|'tail'='front') {
-  host.dataset.view=initialView;host.dataset.appearance=JSON.stringify(appearance||{body:outfit});
+type PreviewFocus='full'|'head'|'face'|'body'|'back'|'tail'|'palette';
+function framePreview(camera:T.PerspectiveCamera,focus:PreviewFocus,aspect:number){
+ const y=focus==='head'?1.12:focus==='face'?.99:focus==='tail'?.58:focus==='back'?.65:.7;
+ const span=focus==='face'?1.02:focus==='head'?1.15:focus==='tail'?1.42:focus==='back'?1.18:focus==='body'?1.35:1.65;
+ const distance=span/(2*Math.tan(camera.fov*Math.PI/360)*Math.min(1,aspect))+(focus==='tail'||focus==='back'?.7:0);
+ camera.position.set(0,y+.05,distance);camera.lookAt(0,y,0);camera.aspect=aspect;camera.updateProjectionMatrix();
+}
+export function characterPreview(host: HTMLElement, outfit: string,color?:number,appearance?:Appearance,initialView:'front'|'back'|'tail'='front',focus:PreviewFocus='full') {
+  host.dataset.focus=focus;host.dataset.view=initialView;host.dataset.appearance=JSON.stringify(appearance||{body:outfit});
   const renderer = new T.WebGLRenderer({
     alpha: false,
     antialias: true,
@@ -677,8 +684,7 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
   scene.add(hero.root);
   const ro = new ResizeObserver(() => {
     renderer.setSize(host.clientWidth, host.clientHeight);
-    camera.aspect = host.clientWidth / host.clientHeight;
-    camera.updateProjectionMatrix();
+    framePreview(camera,focus,host.clientWidth / Math.max(1,host.clientHeight));
   });
   ro.observe(host);
   renderer.setAnimationLoop((t) => {
@@ -696,8 +702,9 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
 }
 
 const portraitCache=new Map<string,string>();
-export function avatarPortraits(outfit:string,appearances:Appearance[],view:'front'|'back'|'tail'='front'){
- const keys=appearances.map(a=>JSON.stringify({a,view}));if(keys.every(k=>portraitCache.has(k)))return keys.map(k=>portraitCache.get(k)!);
+export function avatarPortraits(outfit:string,appearances:Appearance[],view:'front'|'back'|'tail'='front',focus:PreviewFocus='full'){
+ const keys=appearances.map(a=>JSON.stringify({a,view,focus}));if(keys.every(k=>portraitCache.has(k)))return keys.map(k=>portraitCache.get(k)!);
  const renderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power'});renderer.setSize(160,190);renderer.setClearColor(0x000000,0);const scene=new T.Scene(),camera=new T.PerspectiveCamera(32,160/190,.1,15);camera.position.set(view==='front'?.18:1.8,.95,view==='front'?3.6:-3.2);camera.lookAt(0,.72,0);scene.add(new T.HemisphereLight(0xfff7e4,0x779986,2.8));const light=new T.DirectionalLight(0xffedc9,2);light.position.set(-2,4,3);scene.add(light);
- appearances.forEach((a,i)=>{if(portraitCache.has(keys[i]))return;const hero=createBinturong(outfit,undefined,a);hero.animate(0,0);scene.add(hero.root);renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));scene.remove(hero.root);hero.dispose();});renderer.dispose();renderer.forceContextLoss();const result=keys.map(k=>portraitCache.get(k)!);while(portraitCache.size>120)portraitCache.delete(portraitCache.keys().next().value!);return result;
+ framePreview(camera,focus,160/190);
+ appearances.forEach((a,i)=>{if(portraitCache.has(keys[i]))return;const hero=createBinturong(outfit,undefined,a);hero.animate(0,0);hero.root.rotation.y=view==='front'?0:Math.PI*.85;scene.add(hero.root);renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));scene.remove(hero.root);hero.dispose();});renderer.dispose();renderer.forceContextLoss();const result=keys.map(k=>portraitCache.get(k)!);while(portraitCache.size>120)portraitCache.delete(portraitCache.keys().next().value!);return result;
 }
