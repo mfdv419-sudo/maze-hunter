@@ -1297,3 +1297,9 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 .title-screen .mode-tile i{display:none!important}.quest-log{top:auto!important;bottom:max(18px,env(safe-area-inset-bottom));right:26px}.mode-tile[aria-pressed="true"]{border-color:#a9ccba}.mode-tile:focus-visible,.mode-tile:hover{border-color:#ffdc82}
 
 .loot-reveal p{color:#426f62}.expedition-task p{color:#d8e8cf}
+
+/* M14: keep Retro zoom controls in the HUD so they never cover a corridor. */
+#game[data-screen="retro"] .zoom-controls{position:static;display:flex;gap:5px;flex-shrink:0}
+#game[data-screen="retro"] .playbar>div:first-of-type{min-width:0}
+#game[data-screen="retro"] .playbar b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:600px){#game[data-screen="retro"] .playbar{gap:5px;padding:5px 7px}#game[data-screen="retro"] .playbar .icon-button{width:29px;height:32px;min-width:29px;font-size:18px}#game[data-screen="retro"] .playbar small{display:none}#game[data-screen="retro"] .hud-stats{gap:5px;font-size:12px}#game[data-screen="retro"] .lives{font-size:14px;letter-spacing:0}#game[data-screen="retro"] .playbar b{max-width:94px;font-size:10px}}

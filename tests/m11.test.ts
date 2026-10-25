@@ -17,7 +17,7 @@ it('audits every visible route, exact choice counts and a 90% failed route per d
    }
    if(i<decisions.length-1)expect(d.next).toEqual(decisions[i+1].point);
   }
-  let rooms=0,degree=0;for(let y=0;y<b.size;y++)for(let x=0;x<b.size;x++)if(b.walls[y][x]!==15){rooms++;degree+=neighbors(b,{x,y}).length;expect(claimed.has(`${x},${y}`)).toBe(true);}
+  let rooms=0,degree=0;for(let y=0;y<b.height;y++)for(let x=0;x<b.width;x++)if(b.walls[y][x]!==15){rooms++;degree+=neighbors(b,{x,y}).length;expect(claimed.has(`${x},${y}`)).toBe(true);}
   expect(degree/2).toBe(rooms-1);expect(claimed.size).toBe(rooms);expect(b.deadEnds).toHaveLength(failures);
  }
  expect(maps).toBe(176);expect(unique.size).toBe(maps);

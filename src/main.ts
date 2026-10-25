@@ -66,7 +66,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "25.10.26-M13";
+const buildLabel = "25.10.26-M14";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -478,7 +478,7 @@ async function playRetro(level: number) {
   zoom.innerHTML =
     button("−", "zoom-out", "icon-button") +
     button("+", "zoom-in", "icon-button");
-  el("game-stage").after(zoom);
+  el("pause-game").before(zoom);
   click("zoom-in", () => {
     (game as RetroGame)?.zoom(0.5);
     toast(

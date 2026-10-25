@@ -1,4 +1,4 @@
-import {retroViewport} from "./retro-board";
+import {retroViewport,retroToScreen,retroFromScreen,type RetroViewport} from "./retro-board";
 import {drawBinturong,drawFigs,drawMapGate} from "./retro-art";
 import Phaser from "phaser";
 import { RetroState } from "./retro-state";
@@ -14,7 +14,7 @@ export class RetroGame {
   private scene?: Phaser.Scene;
   private zoomLevel = 1;
   private observer: ResizeObserver;
-  private layout = { scale: 1, ox: 0, oy: 0 };
+  private layout?:RetroViewport;
   constructor(host: HTMLElement, options: RetroOptions) {
     const owner = this;
     const state = (this.state = new RetroState(options.level));
@@ -25,9 +25,8 @@ export class RetroGame {
       transitioning=false,
       renderedRevision=state.mapRevision,
       lastPan = { x: 0, y: 0 };
-    let scale = 1,
-      ox = 0,
-      oy = 0;
+    let scale = 1;
+    let view=retroViewport(host.clientWidth,host.clientHeight,state.board.width,state.board.height);
     const paint = { current: () => {} };
     class TraceScene extends Phaser.Scene {
       private gfx!: Phaser.GameObjects.Graphics;
@@ -49,7 +48,7 @@ export class RetroGame {
           )
             return;
           const world = this.cameras.main.getWorldPoint(p.x, p.y);
-          const q = { x: (world.x - ox) / scale, y: (world.y - oy) / scale };
+          const q = retroFromScreen(world,view);
           if (
             Math.hypot(q.x - state.position.x, q.y - state.position.y) < 0.6
           ) {
@@ -71,7 +70,7 @@ export class RetroGame {
           }
           if (!dragging || !p.isDown || state.phase !== "playing") return;
           const world = this.cameras.main.getWorldPoint(p.x, p.y);
-          const q = { x: (world.x - ox) / scale, y: (world.y - oy) / scale };
+          const q = retroFromScreen(world,view);
           const previousResets=state.resets,previousMap=state.mapRevision;
           state.trace(q);
           if(state.resets!==previousResets) {
@@ -104,43 +103,31 @@ export class RetroGame {
         this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,()=>{reveal();this.cameras.main.fadeIn(240,36,77,71);this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE,()=>{transitioning=false;banner.remove();});});this.cameras.main.fadeOut(170,36,77,71);
       }
       draw() {
-        const w = this.scale.width,
-          h = this.scale.height,
-          n = state.board.size;
-        const fit=retroViewport(w,h,n);scale=fit.scale;ox=fit.ox;oy=fit.oy;
-        owner.layout = { scale, ox, oy };renderedRevision=state.mapRevision;
-        if (owner.zoomLevel > 1) this.cameras.main.setBounds(0, 0, w, h);
-        const g = this.gfx;
-        g.clear();
-        const theme=Math.floor((state.level-1)/10)%3,wallColor=[0x556b68,0x5a8460,0x927052][theme];
-        g.fillStyle(0x234c46).fillRoundedRect(ox-9,oy-9,n*scale+18,n*scale+18,16);
-        for(let y=0;y<n;y++)for(let x=0;x<n;x++){
-          const px=ox+x*scale,py=oy+y*scale,walls=state.board.walls[y][x];
-
-          if(walls===15){g.fillStyle(0x46664c).fillRect(px,py,scale,scale);g.fillStyle(0x71915a,.7).fillCircle(px+scale*.5,py+scale*.5,scale*.35);continue;}
-          g.fillStyle(0xe5d8b1).fillRect(px,py,scale,scale);g.fillStyle(0xb3a887,.35).fillCircle(px+scale*.3,py+scale*.65,Math.max(.7,scale*.025));
-          const edge=(ax:number,ay:number,bx:number,by:number)=>{g.lineStyle(Math.max(3,scale*.09),wallColor,1).lineBetween(ax,ay,bx,by);g.lineStyle(Math.max(1,scale*.025),theme===0?0xa9bbb0:theme===1?0x9ebc7d:0xc9a774,.8).lineBetween(ax+.8,ay+.8,bx+.8,by+.8);};
-          if(walls&1)edge(px,py,px+scale,py);if(walls&8)edge(px,py,px,py+scale);
-          if((walls&2)&&x===n-1)edge(px+scale,py,px+scale,py+scale);
-          if((walls&4)&&y===n-1)edge(px,py+scale,px+scale,py+scale);
+        const w=this.scale.width,h=this.scale.height,board=state.board;
+        view=retroViewport(w,h,board.width,board.height);scale=view.scale;owner.layout=view;renderedRevision=state.mapRevision;
+        if(owner.zoomLevel>1)this.cameras.main.setBounds(0,0,w,h);
+        const g=this.gfx;g.clear();
+        const left=view.ox,top=view.oy,mw=view.cols*view.sx,mh=view.rows*view.sy,wallColor=0x315653;
+        g.fillStyle(0x122f35,.32).fillRoundedRect(left-9,top-5,mw+18,mh+18,12);
+        g.fillStyle(0x94b6a1).fillRoundedRect(left-7,top-7,mw+14,mh+14,10);
+        g.fillStyle(0xfff0cb).fillRect(left,top,mw,mh);
+        const screen=(x:number,y:number)=>retroToScreen({x,y},view);
+        for(let y=0;y<board.height;y++)for(let x=0;x<board.width;x++){
+          const walls=board.walls[y][x];
+          if(walls===15){const a=screen(x,y),b=screen(x+1,y+1);g.fillStyle(wallColor).fillRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));continue;}
+          const edge=(ax:number,ay:number,bx:number,by:number)=>{const a=screen(ax,ay),b=screen(bx,by);g.lineStyle(Math.max(1.6,Math.min(3.5,scale*.11)),wallColor,1).lineBetween(a.x,a.y,b.x,b.y);};
+          if(walls&1)edge(x,y,x+1,y);if(walls&8)edge(x,y,x,y+1);
+          if((walls&2)&&x===board.width-1)edge(x+1,y,x+1,y+1);
+          if((walls&4)&&y===board.height-1)edge(x,y+1,x+1,y+1);
         }
-        if (state.path.length > 1) {
-          g.lineStyle(Math.max(3, scale * 0.2), 0x4caa94, 1);
-          g.beginPath();
-          state.path.forEach((p, i) =>
-            i
-              ? g.lineTo(ox + p.x * scale, oy + p.y * scale)
-              : g.moveTo(ox + p.x * scale, oy + p.y * scale),
-          );
-          g.strokePath();
-        }
-        this.game.canvas.dataset.page=String(state.pageIndex+1);this.game.canvas.dataset.pages=String(state.boards.length);this.game.canvas.dataset.target=state.finalPage?'figs':'gate';this.game.canvas.dataset.goalRevealed='true';this.game.canvas.dataset.explored=String(state.explored.size);
-        const f=state.board.finish,s=state.board.start;
-        if(state.finalPage)drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);else drawMapGate(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.85);
-        drawBinturong(g,ox+(s.x+.5)*scale,oy+(s.y+.5)*scale,scale*.65,.2);
-        drawBinturong(g,ox+state.position.x*scale,oy+state.position.y*scale,scale*.65);
-
+        if(state.path.length>1){g.lineStyle(Math.max(3,scale*.18),0x63bba3,.85);g.beginPath();state.path.forEach((p,i)=>{const a=retroToScreen(p,view);i?g.lineTo(a.x,a.y):g.moveTo(a.x,a.y);});g.strokePath();}
+        const canvas=this.game.canvas;Object.assign(canvas.dataset,{page:String(state.pageIndex+1),pages:String(state.boards.length),target:state.finalPage?'figs':'gate',goalRevealed:'true',explored:String(state.explored.size),columns:String(board.width),rows:String(board.height),cellWidth:String(view.sx),cellHeight:String(view.sy),arenaWidth:String(mw),arenaHeight:String(mh),rotated:String(view.rotated)});
+        const f=screen(board.finish.x+.5,board.finish.y+.5),start=screen(board.start.x+.5,board.start.y+.5),hero=retroToScreen(state.position,view),icon=Math.min(30,Math.max(12,scale*.82));
+        g.fillStyle(0x5bbba2,.22).fillCircle(start.x,start.y,Math.min(scale*.44,24));
+        if(state.finalPage)drawFigs(g,f.x,f.y,Math.max(14,icon));else drawMapGate(g,f.x,f.y,Math.max(15,icon));
+        drawBinturong(g,start.x,start.y,icon,.15);drawBinturong(g,hero.x,hero.y,icon);
       }
+
       update() {
         if(!transitioning&&renderedRevision!==state.mapRevision)this.changeMap();
         const now = performance.now();
@@ -181,11 +168,11 @@ export class RetroGame {
     const cam = this.scene?.cameras.main;
     if (!cam) return;
     cam.setZoom(this.zoomLevel);
-    const { scale, ox, oy } = this.layout;
+    const view=this.layout;if(!view)return;
+    const focus=retroToScreen(this.state.position,view);
     cam.setBounds(0, 0, this.scene!.scale.width, this.scene!.scale.height);
     cam.centerOn(
-      ox + this.state.position.x * scale,
-      oy + this.state.position.y * scale,
+      focus.x,focus.y,
     );
   }
   setPaused(v: boolean) {

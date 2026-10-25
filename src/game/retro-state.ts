@@ -68,7 +68,7 @@ export class RetroState {
   }
   private resetPosition(){this.position=center(this.board.start);this.path=[{...this.position}];this.explored.clear();this.lastReveal='';this.reveal(this.position);}
   private reveal(p:Point){const key=`${Math.floor(p.x)},${Math.floor(p.y)}`;if(key===this.lastReveal)return;this.lastReveal=key;
-    for(let y=Math.max(0,Math.floor(p.y)-3);y<=Math.min(this.board.size-1,Math.floor(p.y)+3);y++)for(let x=Math.max(0,Math.floor(p.x)-3);x<=Math.min(this.board.size-1,Math.floor(p.x)+3);x++){
+    for(let y=Math.max(0,Math.floor(p.y)-3);y<=Math.min(this.board.height-1,Math.floor(p.y)+3);y++)for(let x=Math.max(0,Math.floor(p.x)-3);x<=Math.min(this.board.width-1,Math.floor(p.x)+3);x++){
       const target={x:x+.5,y:y+.5};if(Math.hypot(target.x-p.x,target.y-p.y)<=2.6&&boardSegment(this.board,p,target))this.explored.add(`${x},${y}`);
     }
     this.explored.add(key);

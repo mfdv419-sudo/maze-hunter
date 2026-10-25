@@ -1,8 +1,8 @@
 import {test,expect,type Page} from '@playwright/test';
-import {retroBoard,boardRoute,retroViewport} from '../../src/game/retro-board';
+import {retroBoard,boardRoute,retroViewport,retroToScreen} from '../../src/game/retro-board';
 async function trace(page:Page,level:number,map:number,wrong=false){
- const b=retroBoard(level,map),route=boardRoute(b,b.start,wrong?b.deadEnds[0]:b.finish),box=(await page.locator('#retro-qa canvas').boundingBox())!,fit=retroViewport(box.width,box.height,b.size);
- const xy=(p:{x:number;y:number})=>({x:box.x+fit.ox+(p.x+.5)*fit.scale,y:box.y+fit.oy+(p.y+.5)*fit.scale});const first=xy(route[0]);await page.mouse.move(first.x,first.y);await page.mouse.down();for(const p of route.slice(1)){const v=xy(p);await page.mouse.move(v.x,v.y,{steps:2});}await page.mouse.up();await expect(page.locator('.retro-page-banner')).toHaveCount(0);
+ const b=retroBoard(level,map),route=boardRoute(b,b.start,wrong?b.deadEnds[0]:b.finish),box=(await page.locator('#retro-qa canvas').boundingBox())!,fit=retroViewport(box.width,box.height,b.width,b.height);
+ const xy=(p:{x:number;y:number})=>{const q=retroToScreen({x:p.x+.5,y:p.y+.5},fit);return{x:box.x+q.x,y:box.y+q.y};};const first=xy(route[0]);await page.mouse.move(first.x,first.y);await page.mouse.down();for(const p of route.slice(1)){const v=xy(p);await page.mouse.move(v.x,v.y,{steps:2});}await page.mouse.up();await expect(page.locator('.retro-page-banner')).toHaveCount(0);
 }
 test('level 41 gates change maps, a later dead end resets to map 1 and only final figs award a win',async({page})=>{
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.evaluate(async()=>{const {RetroGame}=await import('/src/game/retro.ts' as string);const host=document.createElement('div');host.id='retro-qa';host.style.cssText='position:fixed;inset:0;z-index:50';document.body.append(host);(window as any).qaWins=0;(window as any).retroQA=new RetroGame(host,{level:41,language:'id',onTick:()=>{},onFinish:()=>{(window as any).qaWins++;}});});const canvas=page.locator('#retro-qa canvas');await expect(canvas).toHaveAttribute('data-page','1');await expect(canvas).toHaveAttribute('data-pages','2');await expect(canvas).toHaveAttribute('data-target','gate');await page.screenshot({path:'/workspace/scratch/0f24cdd6d8e3/qa/m11-retro-gate.png'});
