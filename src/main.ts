@@ -1,3 +1,4 @@
+import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
 import {appearanceOf,permittedAppearance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
 import {primaryObjective,areaInformation,nearbyInformation} from './game/navigation';
@@ -64,7 +65,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "25.10.26-M9";
+const buildLabel = "25.10.26-M10";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -338,11 +339,20 @@ function settings() {
   document.body.append(overlay);el<HTMLSelectElement>('fur-choice').value=profile?.appearance?(['charcoal','brown','silver'].includes(profile.appearance.palette)?profile.appearance.palette:'custom'):prefs.fur;el<HTMLSelectElement>('stick-choice').value=prefs.joystick;el<HTMLSelectElement>('camera-choice').value=prefs.camera;
   click('cancel-settings',()=>overlay.remove());click('save-settings',()=>{writePreferences({fur:(el<HTMLSelectElement>('fur-choice').value==='custom'?prefs.fur:el<HTMLSelectElement>('fur-choice').value) as typeof prefs.fur,joystick:el<HTMLSelectElement>('stick-choice').value as typeof prefs.joystick,controlScale:Number(el<HTMLInputElement>('control-size').value),left:Number(el<HTMLInputElement>('control-left').value),bottom:Number(el<HTMLInputElement>('control-bottom').value),camera:el<HTMLSelectElement>('camera-choice').value as typeof prefs.camera});if(profile?.appearance&&el<HTMLSelectElement>('fur-choice').value!=='custom'){profile.appearance.palette=el<HTMLSelectElement>('fur-choice').value;profile.updatedAt=Date.now();void save();}setAudioVolumes(Number(el<HTMLInputElement>('music-volume').value),Number(el<HTMLInputElement>('effects-volume').value));overlay.remove();home();});
 }
+function fieldGuide(){
+ if(document.getElementById('field-guide'))return;
+ const current=game,token=generation,wasRunning=!!game&&(screen==='retro'?(game as RetroGame).state.phase==='playing':screen==='modern'&&!(game as ModernGame).paused);
+ if(wasRunning)current?.setPaused(true);
+ const overlay=document.createElement('div');overlay.id='field-guide';overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal field-guide" role="dialog" aria-modal="true" aria-labelledby="field-guide-title"><div class="guide-heading"><div><div class="eyebrow">${tr('BUKU PENJELAJAH','EXPLORER HANDBOOK')}</div><h2 id="field-guide-title">${tr('Kenali benda di rimbamu','Know your forest items')}</h2></div>${button('×','close-field-guide','round-tool')}</div>${activeRoom?`<p class="guide-online">${tr('Pertandingan online tetap berjalan saat buku dibuka.','Online matches keep running while this book is open.')}</p>`:''}<div class="guide-grid">${fieldGuideContent(lang)}</div></section>`;document.body.append(overlay);el('close-field-guide').focus();
+ const close=()=>{overlay.remove();document.removeEventListener('keydown',escape,true);if(token===generation&&current===game&&wasRunning)current?.setPaused(false);el('item-guide')?.focus();};
+ const escape=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.stopImmediatePropagation();close();}};document.addEventListener('keydown',escape,true);click('close-field-guide',close);
+}
 function instructions() {
   const overlay = document.createElement("div");
   overlay.className = "modal-backdrop";
-  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Bantu binturong menemukan buah. Pilih cabang dengan teliti. Masuk jalan buntu mengurangi satu nyawa dan kembali ke Start. Menyentuh tembok atau mengangkat jari tidak mengurangi nyawa.", "Help the binturong find figs. Reaching a dead end costs a life and returns you to Start. Touching walls or lifting your finger costs no life.")}</p><p><b>Adventure:</b> ${tr("Joystick mengikuti arah layar. Karakter menghadap arah jalan. Geser kanan layar untuk kamera. Lompat ke tepian batu untuk berpegangan, lalu A untuk naik. Ambil tiga Segel Rimba berupa kristal toska melayang dengan mendekatinya. Di arena Raja, kue otomatis bertambah 1 tiap 2 detik (maksimal 8); hindari serangan saat menunggu. Hadapi Raja tiga fase, lalu berlomba melewati gerbang sebelum hitung mundur habis. A / Spasi: lompat sungai. B / J: lempar kue atau tebas pagar rumput. Minimap menyimpan area yang ditemukan. Kalah dari Raja pada Hard/Extreme menghapus penemuan peta, bukan segel.", "Joystick follows the screen; drag the right side to orbit. Jump toward marked ledges to grab, then A to climb. Walk into three floating turquoise crystals to collect Forest Seals. In the King arena, cakes refill by 1 every 2 seconds (maximum 8); dodge while waiting. Defeat the three-phase King, then escape before the countdown ends. A / Space: jump rivers. B / J: throw cake or cut grass. The minimap remembers discoveries. Losing to a King on Hard/Extreme resets discoveries, but preserves seals.")}</p>${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
+  overlay.innerHTML = `<section class="modal" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER</div><h2>${tr("Dua cara menemukan jalan.", "Two ways to find your path.")}</h2><p><b>Retro:</b> ${tr("Bantu binturong menemukan buah. Pilih cabang dengan teliti. Masuk jalan buntu mengurangi satu nyawa dan kembali ke Start. Menyentuh tembok atau mengangkat jari tidak mengurangi nyawa.", "Help the binturong find figs. Reaching a dead end costs a life and returns you to Start. Touching walls or lifting your finger costs no life.")}</p><p><b>Adventure:</b> ${tr("Joystick mengikuti arah layar. Karakter menghadap arah jalan. Geser kanan layar untuk kamera. Lompat ke tepian batu untuk berpegangan, lalu A untuk naik. Ambil tiga Segel Rimba berupa kristal toska melayang dengan mendekatinya. Di arena Raja, kue otomatis bertambah 1 tiap 2 detik (maksimal 8); hindari serangan saat menunggu. Hadapi Raja tiga fase, lalu berlomba melewati gerbang sebelum hitung mundur habis. A / Spasi: lompat sungai. B / J: lempar kue atau tebas pagar rumput. Minimap menyimpan area yang ditemukan. Kalah dari Raja pada Hard/Extreme menghapus penemuan peta, bukan segel.", "Joystick follows the screen; drag the right side to orbit. Jump toward marked ledges to grab, then A to climb. Walk into three floating turquoise crystals to collect Forest Seals. In the King arena, cakes refill by 1 every 2 seconds (maximum 8); dodge while waiting. Defeat the three-phase King, then escape before the countdown ends. A / Space: jump rivers. B / J: throw cake or cut grass. The minimap remembers discoveries. Losing to a King on Hard/Extreme resets discoveries, but preserves seals.")}</p>${button(tr("Panduan benda", "Item guide"), "help-items")}${button(tr("Mengerti", "Got it"), "close-help")}</section>`;
   document.body.append(overlay);
+  click("help-items",()=>{overlay.remove();fieldGuide();});
   el("close-help").focus();
   click("close-help", () => overlay.remove());
 }
@@ -440,7 +450,7 @@ function journey(region?: number) {
     click(`level-${id}`, () => playRetro(id));
 }
 function hud(title: string, sub: string, touch = false) {
-  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Lempar kue / tebas rumput", "Throw cake / cut grass")}"><b>B</b><small>${tr("KUE", "CAKE")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
+  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="item-guide" class="icon-button" aria-label="${tr("Panduan benda","Item guide")}" title="${tr("Panduan benda","Item guide")}">?</button><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Lempar kue / tebas rumput", "Throw cake / cut grass")}"><b>B</b><small>${tr("KUE", "CAKE")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
 }
 function pauseOverlay(online = false) {
   if (online) {
@@ -495,6 +505,7 @@ async function playRetro(level: number) {
     "Bantu binturong mencari buah · jalan buntu: kembali ke Start, −1 nyawa",
     "Help the binturong find figs · dead end: back to Start, −1 life",
   );
+  click("item-guide",fieldGuide);
   click("pause-game", () => pauseOverlay());
   click("exit-game", () => pauseOverlay());
   const { RetroGame } = await import("./game/retro");
@@ -599,6 +610,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
     "Joystick: arah layar · Geser kanan: kamera · A lompat / panjat · B interaksi",
     "Joystick: screen direction · Right drag: camera · A jump / climb · B interact",
   );
+  click("item-guide",fieldGuide);
   click("pause-game", () => pauseOverlay(!!room));
   click("exit-game", () => (room ? confirmLeave() : pauseOverlay()));
   const { ModernGame } = await import("./game/modern");

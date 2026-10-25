@@ -1,0 +1,28 @@
+type Language='id'|'en';
+export function guideIcon(kind:string){
+ const shapes:Record<string,string>={
+ seal:'<path d="M48 9 72 43 48 77 24 43Z" fill="#6ee1d1" stroke="#d8fff1" stroke-width="3"/><path d="m48 9-4 34 4 34 24-34Z" fill="#399b9c"/><path d="m24 43 20 0 4-34Z" fill="#b6fff0"/>',
+ star:'<path d="m48 12 10 22 24 3-18 17 4 24-20-12-21 12 4-24-18-17 25-3Z" fill="#ffd16c" stroke="#fff0b8" stroke-width="3"/>',
+ chest:'<rect x="18" y="35" width="60" height="38" rx="5" fill="#97734d" stroke="#553d35" stroke-width="3"/><path d="M18 38v-8c0-22 60-22 60 0v8Z" fill="#b18b58"/><path d="M30 20v53m36-53v53" stroke="#ffd16c" stroke-width="7"/><rect x="41" y="42" width="14" height="16" rx="2" fill="#ffd16c"/>',
+ key:'<circle cx="34" cy="30" r="15" fill="none" stroke="#ffd16c" stroke-width="8"/><path d="m45 41 26 26m-9-9-8 8m1-15-8 8" fill="none" stroke="#ffd16c" stroke-width="8" stroke-linecap="round"/>',
+ cake:'<path d="M22 37h52l-7 35H29Z" fill="#ad7756"/><ellipse cx="48" cy="36" rx="27" ry="16" fill="#ffe7db"/><path d="M26 36v15m14-12v10m17-10v16m12-19v10" stroke="#ffe7db" stroke-width="8" stroke-linecap="round"/><circle cx="48" cy="19" r="7" fill="#dc7d86"/>',
+ shield:'<path d="M48 11 73 23v25c0 16-25 31-25 31S23 64 23 48V23Z" fill="#a6dfdf" stroke="#e1fff5" stroke-width="3"/><path d="m48 24 13 21-13 20-13-20Z" fill="#4a9a9a"/>',
+ coin:'<circle cx="48" cy="45" r="29" fill="#f5c46b" stroke="#ffedaf" stroke-width="5"/><circle cx="48" cy="45" r="18" fill="none" stroke="#bd8a43" stroke-width="3"/>',
+ grass:'<path d="m18 75 8-45 13 20 5-35 14 35 18-26-4 51Z" fill="#91bb55"/><path d="m33 74 3-35 12 22 9-35 5 48Z" fill="#d1dc75"/>',
+ };
+ return `<svg viewBox="0 0 96 90" aria-hidden="true">${shapes[kind]||shapes.seal}</svg>`;
+}
+export function fieldGuideContent(lang:Language){
+ const en=lang==='en';
+ const entries=[
+ ['seal',en?'Forest Seal · ◆':'Segel Rimba · ◆',en?'A floating turquoise crystal. Walk into it to collect. Collect all 3 to weaken the King’s shield; they also save a checkpoint and add 2 cakes. Discovered seals appear as turquoise diamonds on the minimap. This is the “diamond” shape; it is not a separate currency.':'Kristal toska melayang. Dekati untuk mengambil. Kumpulkan 3 untuk melemahkan pelindung Raja. Setiap segel menyimpan checkpoint dan menambah 2 kue. Di minimap, segel yang ditemukan ditandai wajik toska. Bentuk “diamond” ini bukan mata uang terpisah.'],
+ ['star',en?'Stars · ★':'Bintang · ★',en?'Adventure: find up to 9 per map as an optional collection challenge; these are recorded in expedition progress. Retro: earn 1–3 stars from your level result. Retro stars unlock wardrobe items; Adventure stars currently do not unlock them.':'Adventure: cari hingga 9 per peta sebagai tantangan koleksi opsional; hasilnya tersimpan dalam progres ekspedisi. Retro: raih 1–3 bintang dari hasil level. Bintang Retro membuka kostum; bintang Adventure saat ini belum dipakai untuk membuka kostum.'],
+ ['chest',en?'Treasure Chest':'Peti Harta',en?'Walk into a closed chest: refill cakes to 8, recover 1 heart (maximum 3), gain 5 coins and 1 key. Each chest can be collected once per run.':'Dekati peti tertutup: kue diisi menjadi 8, pulih 1 nyawa (maksimal 3), serta mendapat 5 koin dan 1 kunci. Setiap peti hanya bisa diambil sekali dalam satu permainan.'],
+ ['key',en?'Key · ⚿':'Kunci · ⚿',en?'Obtained from chests and rare plants. One key opens the marked secret hedge route using B. Keys shown in the HUD are available for the current expedition.':'Didapat dari peti dan tanaman langka. Satu kunci membuka pagar jalur rahasia menggunakan B. Jumlah kunci di HUD berlaku untuk ekspedisi yang sedang dimainkan.'],
+ ['cake',en?'Cake · B / J':'Kue · B / J',en?'Throw at guardians or the King. Maximum supply: 8. Refill from chests, plants or checkpoints. In the active King arena with 3 seals: +1 cake every 2 seconds. Dodge while waiting.':'Dilempar ke penjaga atau Raja. Bekal maksimal 8. Isi dari peti, tanaman, atau checkpoint. Di arena Raja yang aktif setelah mendapat 3 segel: +1 kue setiap 2 detik. Menghindarlah saat menunggu.'],
+ ['shield',en?'Shield · ◇':'Pelindung · ◇',en?'A reward from rare plants. Absorbs one guard or King hit, then disappears. It does not protect you from falling into a river. The HUD diamond outline means an active shield, not another collectible crystal.':'Hadiah tanaman langka. Menahan satu serangan penjaga atau Raja, lalu habis. Tidak melindungi dari jatuh ke sungai. Wajik kosong di HUD berarti pelindung aktif, bukan kristal koleksi lain.'],
+ ['coin',en?'Coins · ◉':'Koin · ◉',en?'Earn from chests, plants, discovering zones and climbing ledges. Recorded in your collection as the best total per map. They are currently collection progress; a coin shop is not available yet.':'Didapat dari peti, tanaman, penemuan zona, dan memanjat tepian. Koleksi menyimpan jumlah terbaik per peta. Saat ini menjadi progres koleksi; toko dengan pembayaran koin belum tersedia.'],
+ ['grass',en?'Cuttable Grass · B':'Rumput Bisa Ditebas · B',en?'Lighter grass with visible stems and shoots can be cut using B nearby. Solid trimmed hedge walls cannot be cut. Jump over rivers with A / Space; jump toward mossy ledges to grab, then A again to climb.':'Rumput lebih terang dengan batang dan tunas terlihat dapat ditebas memakai B dari dekat. Pagar tanaman padat tidak bisa ditebas. Gunakan A / Spasi untuk melompati sungai; lompat ke tepian berlumut untuk berpegangan, lalu A lagi untuk naik.'],
+ ];
+ return entries.map(([kind,name,description])=>`<article class="guide-card" data-kind="${kind}"><div class="guide-illustration">${guideIcon(kind)}</div><div><h3>${name}</h3><p>${description}</p></div></article>`).join('');
+}

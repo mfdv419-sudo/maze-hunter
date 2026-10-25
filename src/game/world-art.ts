@@ -29,3 +29,16 @@ export function icing():T.Group {
  for(let i=0;i<9;i++){const a=i/9*Math.PI*2,m=new T.Mesh(geo,mat);m.position.set(Math.sin(a)*.24,.53+(i%3)*.15,Math.cos(a)*.22);m.scale.set(.09+(i%2)*.025,.05+(i%3)*.025,.035);m.rotation.y=a;g.add(m);}
  g.name='cake-icing';g.visible=false;return g;
 }
+
+/** Shared 256px leaf atlas: fine foliage rather than ground noise on hedge faces. */
+export function hedgeTexture(){
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=256;const c=canvas.getContext('2d')!;
+ c.fillStyle='#9ba98b';c.fillRect(0,0,256,256);let seed=7817;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
+ // Draw across tile boundaries to keep the repeat from making a visible border.
+ for(let i=0;i<560;i++){const x=rand()*256,y=rand()*256,a=rand()*Math.PI*2,len=4+rand()*7,w=2+rand()*3,shade=rand();for(const dx of [-256,0,256])for(const dy of [-256,0,256]){c.save();c.translate(x+dx,y+dy);c.rotate(a);c.fillStyle=shade<.28?'#718268':shade<.65?'#b7c5a0':'#d4dfb8';c.beginPath();c.ellipse(0,0,len,w,0,0,Math.PI*2);c.fill();c.strokeStyle='#e1e9cf88';c.lineWidth=.7;c.beginPath();c.moveTo(-len*.7,0);c.lineTo(len*.7,0);c.stroke();c.restore();}}
+ const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.anisotropy=4;return texture;
+}
+export function hedgeCrownGeometry(){
+ const s=new T.Shape(),h=.505,r=.045;s.moveTo(-h+r,-h);s.lineTo(h-r,-h);s.quadraticCurveTo(h,-h,h,-h+r);s.lineTo(h,h-r);s.quadraticCurveTo(h,h,h-r,h);s.lineTo(-h+r,h);s.quadraticCurveTo(-h,h,-h,h-r);s.lineTo(-h,-h+r);s.quadraticCurveTo(-h,-h,-h+r,-h);
+ const g=new T.ExtrudeGeometry(s,{depth:.13,bevelEnabled:true,bevelSize:.035,bevelThickness:.035,bevelSegments:2,steps:1,curveSegments:2});g.rotateX(-Math.PI/2);return g;
+}

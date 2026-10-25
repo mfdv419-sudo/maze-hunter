@@ -7,7 +7,7 @@ import {primaryObjective,nearbyInformation} from '../src/game/navigation';
 import {RetroState} from '../src/game/retro-state';
 import {boardRoute,neighbors} from '../src/game/retro-board';
 import {center} from '../src/game/maze';
-import catalog from '../src/game/retro-catalog-v8.json';
+import catalog from '../src/game/retro-catalog-v10.json';
 describe('M8 ledge movement',()=>{
  it('blocks walking through a rock, catches a jump, pulls up and falls off smoothly',()=>{
   const c=new Climber(),ledges=[{id:0,point:{x:3,y:3},height:1.15}];const start={x:2.8,y:3.5};
@@ -31,7 +31,7 @@ it('measures Retro decisions and terminal branch lengths from the actual graph, 
  for(let y=0;y<b.size;y++)for(let x=0;x<b.size;x++)if(b.walls[y][x]!==15)available++;
  for(const p of path)if(neighbors(b,p).length>=3)forks++;
  for(const leaf of b.deadEnds){let p=leaf,previous='';let length=0;while(true){length++;const options=neighbors(b,p).filter(q=>`${q.x},${q.y}`!==previous);const next=options[0];if(!next||pathKeys.has(`${next.x},${next.y}`)||neighbors(b,next).length!==2)break;previous=`${p.x},${p.y}`;p=next;}branches.push(length);}
- expect(forks).toBeGreaterThanOrEqual(8);expect(path.length/available).toBeGreaterThanOrEqual(.6);expect(Math.min(...branches)).toBeGreaterThanOrEqual(4);expect(branches.reduce((a,b)=>a+b,0)/branches.length).toBeGreaterThanOrEqual(4);
+ expect(forks).toBeGreaterThanOrEqual(8);expect(available/(b.size*b.size)).toBeGreaterThanOrEqual(.9);expect(Math.min(...branches)).toBeGreaterThanOrEqual(6);expect(branches.reduce((a,b)=>a+b,0)/branches.length).toBeGreaterThanOrEqual(4);
 }},30000);
 it('server movement accepts a ledge grab and blocks a ground-level shortcut through the same rock',()=>{const s=new AdventureState('medium',0),ledge=s.layout.ledges[0];expect(ledge).toBeDefined();s.position={x:ledge.point.x-.2,y:ledge.point.y+.5};s.acceptPosition({x:ledge.point.x+.3,y:ledge.point.y+.5},0);expect(s.position.x).toBeLessThan(ledge.point.x);s.position={x:ledge.point.x-.2,y:ledge.point.y+.5};s.acceptPosition({x:ledge.point.x-.15,y:ledge.point.y+.5},.4);expect(s.climber.state.phase).toBe('hanging');s.climber.up();s.guards.forEach(g=>g.dead=true);for(let i=0;i<15;i++)s.step(.04,.04,0,0,0);expect(s.climber.state.phase).toBe('top');expect(s.climbed.has(ledge.id)).toBe(true);});
 it('assigns each landmark to its own connected zone across all thirty Adventure maps',()=>{for(const d of ['medium','hard','extreme']as const)for(let map=0;map<10;map++){const s=new AdventureState(d,map,52);expect(s.zone).toBe(0);for(const area of s.layout.areas){expect(s.layout.zoneCells[area.point.y][area.point.x]).toBe(area.zone);}}},30000);

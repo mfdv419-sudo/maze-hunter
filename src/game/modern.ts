@@ -1,3 +1,4 @@
+import {hedgeTexture,hedgeCrownGeometry} from './world-art';
 import type {Appearance} from '../services/cosmetics';
 import {primaryObjective,areaInformation} from './navigation';
 import {screenMotion,dampAngle} from './movement';
@@ -228,15 +229,15 @@ export class ModernGame {
       n * n,
     );
     this.walls = new T.InstancedMesh(
-      new T.BoxGeometry(0.99, 0.58, 0.99),
-      new T.MeshLambertMaterial({ color: 0xffffff,map:groundTexture('leaf') }),
+      new T.BoxGeometry(1.005, 0.82, 1.005),
+      new T.MeshLambertMaterial({ color: 0xffffff,map:hedgeTexture() }),
       n * n,
     );
     this.walls.frustumCulled = false;
     this.floor.frustumCulled = false;
     this.world.add(this.floor, this.walls);
     const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,-.095,n/2);this.world.add(earth);
-    this.leaves=new T.InstancedMesh(new T.DodecahedronGeometry(.64,0),new T.MeshLambertMaterial({color:0x8db65d,flatShading:true}),n*n);this.leaves.frustumCulled=false;this.world.add(this.leaves);
+    this.leaves=new T.InstancedMesh(hedgeCrownGeometry(),new T.MeshLambertMaterial({color:0xffffff,map:hedgeTexture()}),n*n);this.leaves.frustumCulled=false;this.world.add(this.leaves);
     for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(this.maze.grid[y][x]===1&&((x*7+y*11)%13===0||(x===0&&y%5===0)))this.treePoints.push({x,y});
     this.treeTrunks=new T.InstancedMesh(new T.CylinderGeometry(.045,.07,1.7,5),new T.MeshLambertMaterial({color:0x8f7351}),this.treePoints.length);this.treeCrowns=new T.InstancedMesh(new T.IcosahedronGeometry(.43,1),new T.MeshLambertMaterial({color:0x609347,flatShading:true}),this.treePoints.length);this.world.add(this.treeTrunks,this.treeCrowns);
     this.dust=new T.InstancedMesh(new T.SphereGeometry(.065,6,4),new T.MeshBasicMaterial({color:0xffe5d4,transparent:true,opacity:.75}),160);this.dust.frustumCulled=false;this.dust.count=0;this.world.add(this.dust);
@@ -441,11 +442,11 @@ export class ModernGame {
         );
         if(this.maze.grid[y][x]!==1||this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y))continue;
         const wi=wallCount++;
-        this.matrix.position.set(x+.5,.29,y+.5);
+        this.matrix.position.set(x+.5,.41,y+.5);
         this.matrix.scale.setScalar(this.maze.grid[y][x]===1&&!this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y)?1:0);
         this.matrix.updateMatrix();this.walls.setMatrixAt(wi,this.matrix.matrix);
-        this.walls.setColorAt(wi,c.set(lit?(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge):seen?0x60865c:0x365c48));
-        if(this.leaves){this.matrix.position.set(x+.5+Math.sin(x*7+y)*.05,.65,y+.5+Math.cos(x+y*5)*.04);this.matrix.rotation.y=(x*17+y*7)%7;this.matrix.scale.set(.8+(x%3)*.07,.65+(y%3)*.05,.8+(y%2)*.1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(lit?(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge):seen?0x819d7e:0x4f7257));this.matrix.rotation.set(0,0,0);}
+        this.walls.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
+        if(this.leaves){this.matrix.position.set(x+.5,.79,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
 
 
       }

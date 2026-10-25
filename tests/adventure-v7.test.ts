@@ -5,7 +5,7 @@ import {adventureLayout} from '../src/game/adventure-layout';
 import {roomCapacity,loadAdventure,tickAdventureRoom} from '../src/game/adventure-room';
 import {createMatch,addPlayer,startMatch,movePlayer,performAction,type Player} from '../src/game/room-state';
 import {center,route,distances} from '../src/game/maze';
-import catalog from '../src/game/retro-catalog-v8.json';
+import catalog from '../src/game/retro-catalog-v10.json';
 function player(id:string):Player{return{uid:id,profileId:id,name:id,outfit:'classic',ready:true,online:true,x:1.5,y:1.5,angle:0,lastMove:0,seq:0,finishedAt:null,slot:0};}
 function room(d:'medium'|'hard'|'extreme'='medium',mode:'race'|'coop'='race'){const r=createMatch('ABC234','a',player('a'),mode,d,1000,52);r.adventure={version:2,map:0,states:{},tickAt:0,escapeAt:-1,escapeDuration:90,bossHP:0};addPlayer(r,'b',player('b'),1000);return startMatch(r,'a',1000);}
 describe('Screen-relative controls',()=>{
@@ -14,7 +14,7 @@ describe('Screen-relative controls',()=>{
 describe('Deceptive Retro acceptance',()=>{
  it('has 95 audited boards with a unique solution, long dead ends and interior routes',()=>{expect(catalog).toHaveLength(95);for(const [i,m]of catalog.entries()){
   const reachable=distances(m.grid,m.start);let edges=0;for(const k of reachable.keys()){const [x,y]=k.split(',').map(Number);if(m.grid[y]?.[x+1]===0)edges++;if(m.grid[y+1]?.[x]===0)edges++;}expect(edges).toBe(reachable.size-1);
-  expect(m.metrics.minDead).toBeGreaterThanOrEqual(4);expect(m.metrics.averageDead).toBeGreaterThanOrEqual(4);expect(m.metrics.forks).toBeGreaterThanOrEqual(8);expect(m.metrics.border).toBeLessThanOrEqual(.3);expect(m.metrics.ratio).toBeGreaterThanOrEqual(.6);expect(m.metrics.promising).toBeGreaterThanOrEqual(3);expect(m.metrics.approaches).toBeGreaterThanOrEqual(2);
+  expect(m.metrics.minDead).toBeGreaterThanOrEqual(4);expect(m.metrics.averageDead).toBeGreaterThanOrEqual(4);expect(m.metrics.forks).toBeGreaterThanOrEqual(8);expect(m.metrics.coverage).toBeGreaterThanOrEqual(.9);expect(m.metrics.majorDecoys).toBeGreaterThanOrEqual(3);expect(m.metrics.earlyLongDecoys).toBeGreaterThanOrEqual(2);expect(m.metrics.startChoices).toBeGreaterThanOrEqual(2);
  }});
 });
 describe('Adventure world and resources',()=>{

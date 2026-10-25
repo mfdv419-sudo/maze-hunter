@@ -102,6 +102,7 @@ export class RetroGame {
         for(let y=0;y<n;y++)for(let x=0;x<n;x++){
           const px=ox+x*scale,py=oy+y*scale,walls=state.board.walls[y][x];
 
+          if(walls===15){g.fillStyle(0x46664c).fillRect(px,py,scale,scale);g.fillStyle(0x71915a,.7).fillCircle(px+scale*.5,py+scale*.5,scale*.35);continue;}
           g.fillStyle(0xe5d8b1).fillRect(px,py,scale,scale);g.fillStyle(0xb3a887,.35).fillCircle(px+scale*.3,py+scale*.65,Math.max(.7,scale*.025));
           const edge=(ax:number,ay:number,bx:number,by:number)=>{g.lineStyle(Math.max(3,scale*.09),wallColor,1).lineBetween(ax,ay,bx,by);g.lineStyle(Math.max(1,scale*.025),theme===0?0xa9bbb0:theme===1?0x9ebc7d:0xc9a774,.8).lineBetween(ax+.8,ay+.8,bx+.8,by+.8);};
           if(walls&1)edge(px,py,px+scale,py);if(walls&8)edge(px,py,px,py+scale);
