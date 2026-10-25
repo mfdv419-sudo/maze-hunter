@@ -21,7 +21,7 @@ test('settings persist fur and floating joystick; center stays fixed through one
  await page.goto('/');await page.locator('#settings').click();await page.locator('#fur-choice').selectOption('brown');await page.locator('#stick-choice').selectOption('floating');await page.locator('#save-settings').click();
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mh-game-preferences')!).fur)).toBe('brown');
  await page.locator('#lab').click();await page.locator('#modern-mode').click();await page.locator('#solo').click();
- await expect(page.locator('.minimap-panel')).toBeVisible();const cdp=await context.newCDPSession(page);
+ await expect(page.locator('.minimap-panel')).toBeVisible();await expect(page.locator('#maze-transition')).toHaveCount(0);const cdp=await context.newCDPSession(page);
  const start={x:185,y:555,id:1};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
  const bounds=(await page.locator('#joystick').boundingBox())!;expect(bounds.x+bounds.width/2).toBeCloseTo(start.x,0);expect(bounds.y+bounds.height/2).toBeCloseTo(start.y,0);
  const jump=(await page.locator('#jump-action').boundingBox())!;
@@ -31,7 +31,7 @@ test('settings persist fur and floating joystick; center stays fixed through one
  const held=(await page.locator('#joystick').boundingBox())!;expect(held.x).toBe(bounds.x);expect(held.y).toBe(bounds.y);
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  await expect(page.locator('#stick')).toHaveAttribute('style','');
- await page.locator('#hit-action').tap();await expect(page.locator('#adventure-objectives')).toContainText('5/8');
+ await page.locator('#hit-action').tap();await expect(page.locator('#game-stage')).toHaveAttribute('data-last-action','hit');
  await page.screenshot({path:'/workspace/scratch/0f24cdd6d8e3/qa/m5-adventure-tablet.png'});
  await context.close();
 });

@@ -102,6 +102,7 @@ export interface RoomPlayer {
   profileId: string;
   name: string;
   outfit: string;
+  appearance?:import('./cosmetics').Appearance;
   ready: boolean;
   online: boolean;
   x: number;
@@ -111,6 +112,8 @@ export interface RoomPlayer {
   seq: number;
   finishedAt: number | null;
   slot: number;
+  elevation?:number;
+  climb?:import('../game/climbing').ClimbSave['phase'];
   jumpAt?: number;
   hitAt?: number;
 }

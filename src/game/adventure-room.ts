@@ -23,8 +23,8 @@ export function tickAdventureRoom(room:Match,now:number){if(!room.adventure||roo
   a.bossHP=Math.min(a.bossHP,boss.hp);if(a.bossHP<=0&&a.escapeAt<0){a.escapeAt=now;a.escapeDuration=s.escapeDuration;}
   if(room.mode==='coop'){room.explored??={};for(const k of visibleCells(s.grid,s.position,4))room.explored[k.replace(',','_')]=true;}
   if(room.mode==='coop')s.resetFogRevision=a.states[key].resetFogRevision;
-  Object.assign(p,s.position);if((s.phase as string)==='won'&&!p.finishedAt)p.finishedAt=now;
-  if(room.mode==='race'){for(const cake of s.projectiles){if(cake.owner!=='player')continue;for(const [other,otherPlayer]of Object.entries(room.players)){if(other===key||otherPlayer.finishedAt)continue;const otherState=loadAdventure(room,other);if(otherState.phase!=='playing')continue;const sx=cake.position.x-cake.velocity.x*Math.min(raw,3),sy=cake.position.y-cake.velocity.y*Math.min(raw,3),vx=cake.position.x-sx,vy=cake.position.y-sy,l=vx*vx+vy*vy,t=Math.max(0,Math.min(1,((otherState.position.x-sx)*vx+(otherState.position.y-sy)*vy)/(l||1)));if(Math.hypot(sx+vx*t-otherState.position.x,sy+vy*t-otherState.position.y)<.3&&clearSegment(s.grid,{x:sx,y:sy},otherState.position,.04)&&jumpHeight((now-(otherPlayer.jumpAt||0))/1000/JUMP_SECONDS)<.22){otherState.damage('guard');a.states[other]=otherState.save();Object.assign(otherPlayer,otherState.position);cake.ttl=0;break;}}}s.projectiles=s.projectiles.filter(c=>c.ttl>0);}
+  Object.assign(p,s.position,{elevation:s.climber.elevation,climb:s.climber.state.phase});if((s.phase as string)==='won'&&!p.finishedAt)p.finishedAt=now;
+  if(room.mode==='race'){for(const cake of s.projectiles){if(cake.owner!=='player')continue;for(const [other,otherPlayer]of Object.entries(room.players)){if(other===key||otherPlayer.finishedAt)continue;const otherState=loadAdventure(room,other);if(otherState.phase!=='playing')continue;const sx=cake.position.x-cake.velocity.x*Math.min(raw,3),sy=cake.position.y-cake.velocity.y*Math.min(raw,3),vx=cake.position.x-sx,vy=cake.position.y-sy,l=vx*vx+vy*vy,t=Math.max(0,Math.min(1,((otherState.position.x-sx)*vx+(otherState.position.y-sy)*vy)/(l||1)));if(Math.hypot(sx+vx*t-otherState.position.x,sy+vy*t-otherState.position.y)<.3&&clearSegment(s.grid,{x:sx,y:sy},otherState.position,.04)&&jumpHeight((now-(otherPlayer.jumpAt||0))/1000/JUMP_SECONDS)<.22){otherState.damage('guard');a.states[other]=otherState.save();Object.assign(otherPlayer,otherState.position,{elevation:otherState.climber.elevation,climb:otherState.climber.state.phase});cake.ttl=0;break;}}}s.projectiles=s.projectiles.filter(c=>c.ttl>0);}
   a.broken=[...new Set([...(a.broken||[]),...s.broken])];a.states[key]=s.save();
  }
  if(room.mode==='race'){const winners=Object.entries(room.players).filter(([,p])=>p.finishedAt).sort((a,b)=>a[1].finishedAt!-b[1].finishedAt!);if(winners.length){room.winner=winners[0][0];if(Object.values(a.states).every(s=>s.phase!=='playing')){room.state='finished';room.finishedAt=now;}}}
@@ -39,12 +39,13 @@ export function moveAdventurePlayer(room:Match,key:string,points:Point[],angle:n
  const seconds=Math.min(1.5,Math.max(0,(now-p.lastMove)/1000)),budget=seconds*2.7*s.speedFactor+.12;
  // Respawns are authoritative and discard stale prediction instead of accepting a teleport.
  if(length>budget){p.lastMove=now;p.seq=seq;room.revision++;return room;}
- for(const q of points){s.position={...q};s.step(0,0,0,0,jumpHeight((now-(p.jumpAt||0))/1000/JUMP_SECONDS));if(s.phase!=='playing')break;}
- Object.assign(p,s.position,{angle,lastMove:now,seq,online:true});room.adventure!.states[key]=s.save();
+ for(const q of points){s.acceptPosition(q,jumpHeight((now-(p.jumpAt||0))/1000/JUMP_SECONDS));if(s.phase!=='playing')break;}
+ Object.assign(p,s.position,{elevation:s.climber.elevation,climb:s.climber.state.phase,angle,lastMove:now,seq,online:true});room.adventure!.states[key]=s.save();
  if(room.mode==='coop'){room.explored??={};/* Discovery is merged by the server below. */}
  tickAdventureRoom(room,now+1);room.revision++;return room;
 }
 export function adventureAbility(room:Match,key:string,kind:'jump'|'hit',now:number){tickAdventureRoom(room,now);const p=room.players[key];if(!p||room.state!=='playing'||now<room.startsAt||p.finishedAt)throw Error('Match not active');
  const s=loadAdventure(room,key);if(s.phase!=='playing')throw Error('No lives left');const field=kind==='jump'?'jumpAt':'hitAt';if(now-(p[field]||0)<(kind==='jump'?800:650))throw Error('Action cooling down');
+ if(kind==='jump')s.climber.up();
  if(kind==='hit'&&!s.throwCake(p.angle))throw Error('Action unavailable');p[field]=now;room.adventure!.broken=[...new Set([...(room.adventure!.broken||[]),...s.broken])];room.adventure!.states[key]=s.save();room.revision++;return room;
 }

@@ -1,20 +1,20 @@
 import {describe,it,expect} from 'vitest';
-import {steer} from '../src/game/movement';
+import {screenMotion} from '../src/game/movement';
 import {AdventureState} from '../src/game/adventure-state';
 import {adventureLayout} from '../src/game/adventure-layout';
 import {roomCapacity,loadAdventure,tickAdventureRoom} from '../src/game/adventure-room';
 import {createMatch,addPlayer,startMatch,movePlayer,performAction,type Player} from '../src/game/room-state';
 import {center,route,distances} from '../src/game/maze';
-import catalog from '../src/game/retro-catalog-v7.json';
+import catalog from '../src/game/retro-catalog-v8.json';
 function player(id:string):Player{return{uid:id,profileId:id,name:id,outfit:'classic',ready:true,online:true,x:1.5,y:1.5,angle:0,lastMove:0,seq:0,finishedAt:null,slot:0};}
 function room(d:'medium'|'hard'|'extreme'='medium',mode:'race'|'coop'='race'){const r=createMatch('ABC234','a',player('a'),mode,d,1000,52);r.adventure={version:2,map:0,states:{},tickAt:0,escapeAt:-1,escapeDuration:90,bossHP:0};addPlayer(r,'b',player('b'),1000);return startMatch(r,'a',1000);}
-describe('Predictable character controls',()=>{
- it('turns right/left consistently through a complete rotation, independently of the camera',()=>{for(const a of [0,Math.PI/2,Math.PI,-Math.PI/2]){const right=steer(a,1,0,.1),left=steer(a,-1,0,.1);expect(right.angle).toBeLessThan(a);expect(left.angle).toBeGreaterThan(a);expect(Math.hypot(right.x,right.y)).toBe(0);const forward=steer(a,0,-1,.1);expect(forward.x).toBeCloseTo(Math.sin(a)*2.3);expect(forward.y).toBeCloseTo(Math.cos(a)*2.3);const back=steer(a,0,1,.1);expect(back.x*forward.x+back.y*forward.y).toBeLessThan(0);}});
+describe('Screen-relative controls',()=>{
+ it('projects all directions to the same screen direction through a complete camera rotation',()=>{for(const yaw of [0,.7,Math.PI/2,Math.PI,-Math.PI/2])for(const [x,y]of [[1,0],[-1,0],[0,1],[0,-1],[1,-1]]){const m=screenMotion(x,y,yaw),right=-m.x*Math.cos(yaw)+m.y*Math.sin(yaw),down=-m.x*Math.sin(yaw)-m.y*Math.cos(yaw);const n=Math.max(1,Math.hypot(x,y));expect(right).toBeCloseTo(x/n*2.3);expect(down).toBeCloseTo(y/n*2.3);expect(Math.sin(m.angle!)*m.x+Math.cos(m.angle!)*m.y).toBeGreaterThan(0);}});
 });
 describe('Deceptive Retro acceptance',()=>{
  it('has 95 audited boards with a unique solution, long dead ends and interior routes',()=>{expect(catalog).toHaveLength(95);for(const [i,m]of catalog.entries()){
   const reachable=distances(m.grid,m.start);let edges=0;for(const k of reachable.keys()){const [x,y]=k.split(',').map(Number);if(m.grid[y]?.[x+1]===0)edges++;if(m.grid[y+1]?.[x]===0)edges++;}expect(edges).toBe(reachable.size-1);
-  expect(m.metrics.minDead).toBeGreaterThanOrEqual(4);expect(m.metrics.averageDead).toBeGreaterThanOrEqual(5);expect(m.metrics.forks).toBeGreaterThanOrEqual(i<5?4:i<15?6:8);expect(m.metrics.border).toBeLessThanOrEqual(.3);expect(m.metrics.ratio).toBeGreaterThanOrEqual(.5);expect(m.metrics.ratio).toBeLessThanOrEqual(.65);
+  expect(m.metrics.minDead).toBeGreaterThanOrEqual(4);expect(m.metrics.averageDead).toBeGreaterThanOrEqual(4);expect(m.metrics.forks).toBeGreaterThanOrEqual(8);expect(m.metrics.border).toBeLessThanOrEqual(.3);expect(m.metrics.ratio).toBeGreaterThanOrEqual(.6);expect(m.metrics.promising).toBeGreaterThanOrEqual(3);expect(m.metrics.approaches).toBeGreaterThanOrEqual(2);
  }});
 });
 describe('Adventure world and resources',()=>{

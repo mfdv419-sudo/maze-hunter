@@ -1,7 +1,8 @@
-// Character-relative steering. Camera rotation never enters this calculation.
-export function steer(angle:number,x:number,y:number,dt:number) {
- const turn=Math.max(-1,Math.min(1,x)),forward=Math.max(-1,Math.min(1,-y));
- const heading=angle-turn*2.55*Math.max(0,dt);
- const speed=forward*2.3*(forward<0?.7:1);
- return{angle:heading,x:Math.sin(heading)*speed,y:Math.cos(heading)*speed};
+// A camera behind world -Z looking toward +Z has screen-right along world -X.
+// Re-evaluate the basis every frame, using the *rendered* camera direction.
+export function screenMotion(x:number,y:number,cameraYaw:number,speed=2.3){
+ const length=Math.hypot(x,y),n=Math.max(1,length);x/=n;y/=n;
+ const vx=-x*Math.cos(cameraYaw)-y*Math.sin(cameraYaw),vy=x*Math.sin(cameraYaw)-y*Math.cos(cameraYaw);
+ return{x:vx*speed,y:vy*speed,angle:length>.02?Math.atan2(vx,vy):null};
 }
+export function dampAngle(from:number,to:number,dt:number,rate=22){return from+Math.atan2(Math.sin(to-from),Math.cos(to-from))*(1-Math.exp(-Math.max(0,dt)*rate));}

@@ -1,3 +1,4 @@
+import type {Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {createBinturong} from './character';
 import {goldGate} from './adventure-props';
@@ -5,7 +6,8 @@ import {forestTree,groundTexture,riverTile} from './world-art';
 export type MenuMode='retro'|'modern';
 export interface MenuWorld {dispose:()=>void;setMode:(mode:MenuMode)=>void}
 /** Frontal outfit showcase in a small forest world, with a real 3D character. */
-export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='id',initialMode:MenuMode='retro',color?:number):MenuWorld {
+export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='id',initialMode:MenuMode='retro',color?:number,appearance?:Appearance):MenuWorld {
+ host.dataset.appearance=JSON.stringify(appearance||{body:outfit});
  const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.4));renderer.setClearColor(0xb8d8c1);host.append(renderer.domElement);
  const scene=new T.Scene();scene.fog=new T.Fog(0xb8d8c1,8,20);
  const camera=new T.PerspectiveCamera(34,1,.1,50);camera.position.set(0,1.5,5.2);camera.lookAt(0,.95,0);
@@ -18,7 +20,9 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  const gate=goldGate();gate.position.set(2.3,0,-4.2);gate.scale.setScalar(1.6);scene.add(gate);
  const hedgeMat=new T.MeshLambertMaterial({color:0x6c9950,map:groundTexture('leaf')});
  for(const [x,z,w]of [[-1,-4.2,2.3],[4,-4.2,2],[3,-7,4]]){const h=new T.Mesh(new T.BoxGeometry(w,.8,.6),hedgeMat);h.position.set(x,.35,z);scene.add(h);}
- const hero=createBinturong(outfit,color);hero.root.scale.setScalar(1.5);hero.root.position.y=.02;scene.add(hero.root);
+ const hero=createBinturong(outfit,color,appearance);hero.root.scale.setScalar(1.5);hero.root.position.y=.05;scene.add(hero.root);
+ const pedestal=new T.Mesh(new T.CylinderGeometry(.93,1.04,.16,12),new T.MeshLambertMaterial({color:0x8aaba0,flatShading:true}));pedestal.position.y=.015;scene.add(pedestal);const rim=new T.Mesh(new T.TorusGeometry(.92,.025,4,32),new T.MeshLambertMaterial({color:0xe6ce83}));rim.rotation.x=-Math.PI/2;rim.position.y=.105;scene.add(rim);
+ const butterflies:T.Mesh[]=[];for(let i=0;i<6;i++){const b=new T.Mesh(new T.PlaneGeometry(.09,.06),new T.MeshBasicMaterial({color:i%2?0xffd888:0xa7eee1,side:T.DoubleSide}));scene.add(b);butterflies.push(b);}
  const button=document.createElement('button');button.id='mascot-touch';button.className='mascot-touch';button.setAttribute('aria-label',language==='id'?'Sapa binturong':'Greet the binturong');host.append(button);
  let reaction=-Infinity;const greet=()=>{reaction=performance.now()/1000;button.dataset.reactions=String(Number(button.dataset.reactions||0)+1);};button.addEventListener('click',greet);
  const bounds=new T.Box3(),v=new T.Vector3();
@@ -27,6 +31,6 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  const ro=new ResizeObserver(resize);ro.observe(host);resize();const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  function setMode(mode:MenuMode){host.dataset.mode=mode;hedgeMat.color.set(mode==='modern'?0x709758:0x86a65d);}
  setMode(initialMode);
- renderer.setAnimationLoop(ms=>{if(document.hidden)return;const t=ms/1000,age=t-reaction,reacting=age>=0&&age<1.25;button.dataset.reacting=String(reacting);hero.root.rotation.y=reduced.matches?0:Math.sin(t*.45)*.055;hero.animate(reduced.matches?0:t,0,false,reacting?{hit:0,greet:age/1.25}:undefined);water.children.forEach((o,i)=>{if(o.name==='water-ripple')o.position.x=Math.sin(t*.7+i)*.08+(i-2)*.15;});renderer.render(scene,camera);});
- return{setMode,dispose(){ro.disconnect();renderer.setAnimationLoop(null);button.removeEventListener('click',greet);button.remove();const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});for(const g of geometries)g.dispose();for(const m of materials){(m as T.MeshLambertMaterial).map?.dispose();m.dispose();}renderer.dispose();renderer.domElement.remove();}};
+ renderer.setAnimationLoop(ms=>{if(document.hidden)return;const t=ms/1000,age=t-reaction,reacting=age>=0&&age<1.25;button.dataset.reacting=String(reacting);hero.root.rotation.y=reduced.matches?0:Math.sin(t*.45)*.055;butterflies.forEach((b,i)=>{b.position.set(Math.sin(t*.3+i)*2.6,1+Math.sin(t*.8+i)*.45,-1.2-Math.cos(t*.3+i)*1.6);b.rotation.y=Math.sin(t*10+i)*.8;});hero.animate(reduced.matches?0:t,0,false,reacting?{hit:0,greet:age/1.25}:undefined);water.children.forEach((o,i)=>{if(o.name==='water-ripple')o.position.x=Math.sin(t*.7+i)*.08+(i-2)*.15;});renderer.render(scene,camera);});
+ return{setMode,dispose(){ro.disconnect();renderer.setAnimationLoop(null);button.removeEventListener('click',greet);button.remove();const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});for(const g of geometries)g.dispose();for(const m of materials){(m as T.MeshLambertMaterial).map?.dispose();m.dispose();}renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();}};
 }

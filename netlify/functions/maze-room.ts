@@ -1,3 +1,5 @@
+import {permittedAppearance} from '../../src/services/cosmetics';
+import type {Profile} from '../../src/services/local';
 import {roomCapacity} from '../../src/game/adventure-room';
 import type { Handler } from "@netlify/functions";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
@@ -63,6 +65,7 @@ export const handler: Handler = async (event) => {
       outfit: ["classic", "explorer", "raincoat", "space"].includes(data.outfit)
         ? data.outfit
         : "classic",
+      appearance:permittedAppearance(data as Profile),
       ready: false,
       online: true,
       x: 1.5,

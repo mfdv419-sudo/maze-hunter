@@ -19,6 +19,7 @@ export interface Player {
   profileId: string;
   name: string;
   outfit: string;
+  appearance?:import('../services/cosmetics').Appearance;
   ready: boolean;
   online: boolean;
   x: number;
@@ -28,6 +29,8 @@ export interface Player {
   seq: number;
   finishedAt: number | null;
   slot: number;
+  elevation?:number;
+  climb?:import('./climbing').ClimbSave['phase'];
   jumpAt?: number;
   hitAt?: number;
 }

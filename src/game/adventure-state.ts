@@ -1,11 +1,12 @@
+import {Climber,type ClimbSave} from './climbing';
 import {adventureLayout,adventureRules} from './adventure-layout';
 import {center,clearSegment,moveSliding,route,type Point,type Difficulty} from './maze';
 export interface Guard {position:Point;patrol:Point[];step:number;direction:number;hp:number;boss:boolean;slowUntil:number;stunUntil:number;hits:number;lastHit:number;nextShot:number;telegraphUntil:number;aim:Point;dead:boolean;elite?:boolean;sapling?:boolean}
 export interface Cake {position:Point;velocity:Point;owner:'player'|'guard'|'boss';ttl:number}
 export interface Hazard {id:number;kind:'slam'|'seed'|'roots'|'spin'|'vine'|'cataclysm'|'branch'|'charge';point:Point;from:Point;at:number;end:number;radius:number;resolved:boolean}
-export interface AdventureSave {position:Point;checkpoint:Point;elapsed:number;lives:number;ammo:number;seals:number[];stars:number[];chests:number[];broken:string[];harvested:number[];coins:number;keys:number;buffUntil:number;shield:number;guards:Guard[];projectiles:Cake[];hazards:Hazard[];stage:'explore'|'boss'|'escape';escapeAt:number;escapeDuration:number;phase:'playing'|'won'|'lost';reason:'time'|'lives'|'escape'|null;resetFogRevision:number;respawns:number;revision:number;invulnerableUntil:number;slowUntil:number;stunUntil:number;hits:number;lastHit:number;lastThrow:number;lastJump:number;hazardId:number;nextBossSkill:number;nextEscapeHazard:number;message:string;messageAt:number}
+export interface AdventureSave {climb?:ClimbSave;climbed?:number[];visitedZones?:number[];position:Point;checkpoint:Point;elapsed:number;lives:number;ammo:number;seals:number[];stars:number[];chests:number[];broken:string[];harvested:number[];coins:number;keys:number;buffUntil:number;shield:number;guards:Guard[];projectiles:Cake[];hazards:Hazard[];stage:'explore'|'boss'|'escape';escapeAt:number;escapeDuration:number;phase:'playing'|'won'|'lost';reason:'time'|'lives'|'escape'|null;resetFogRevision:number;respawns:number;revision:number;invulnerableUntil:number;slowUntil:number;stunUntil:number;hits:number;lastHit:number;lastThrow:number;lastJump:number;hazardId:number;nextBossSkill:number;nextEscapeHazard:number;message:string;messageAt:number}
 export class AdventureState {
- readonly layout;readonly grid;guards:Guard[];
+ readonly layout;readonly grid;guards:Guard[];climber=new Climber();climbed=new Set<number>();visitedZones=new Set<number>();
  position:Point;checkpoint:Point;elapsed=0;lives=3;ammo=6;seals=new Set<number>();stars=new Set<number>();chests=new Set<number>();broken=new Set<string>();harvested=new Set<number>();projectiles:Cake[]=[];hazards:Hazard[]=[];
  coins=0;keys=0;buffUntil=0;shield=0;stage:'explore'|'boss'|'escape'='explore';escapeAt=-1;escapeDuration=90;nextEscapeHazard=0;nextBossSkill=0;hazardId=0;
  invulnerableUntil=0;slowUntil=0;stunUntil=0;hits=0;lastHit=-100;lastThrow=-100;lastJump=-100;resetFogRevision=0;respawns=0;revision=0;message='';messageAt=-10;
@@ -48,7 +49,7 @@ export class AdventureState {
   if(source==='guard') {if(this.elapsed-this.lastHit>7)this.hits=0;this.lastHit=this.elapsed;this.hits++;
    if(this.hits===1){this.slowUntil=this.elapsed+3;this.notify('slow');return;}
    if(this.hits===2){this.stunUntil=this.elapsed+1;this.notify('stun');return;}}
-  this.lives--;this.respawns++;this.hits=0;this.slowUntil=0;this.stunUntil=0;this.projectiles=[];
+  this.climber.reset();this.lives--;this.respawns++;this.hits=0;this.slowUntil=0;this.stunUntil=0;this.projectiles=[];
   const reset=source==='boss'&&this.difficulty!=='medium'&&this.stage!=='escape';
   this.position={...(reset?center(this.layout.maze.start):this.checkpoint)};
   if(reset)this.resetFogRevision++;
@@ -75,15 +76,20 @@ export class AdventureState {
    if(inside&&jump<.22){if(h.kind==='roots'){this.slowUntil=this.elapsed+2;this.notify('roots');}else this.damage(this.stage==='escape'?'guard':'boss');}}
   this.hazards=this.hazards.filter(h=>h.end>this.elapsed);
  }
- step(dt:number,raw:number,dx:number,dy:number,jump:number) {
+ step(dt:number,raw:number,dx:number,dy:number,jump:number,movementOnly=false) {
   if(this.phase!=='playing')return;this.elapsed+=Math.max(0,raw);
   if(this.stage==='escape'&&this.remaining<=0){this.phase='lost';this.reason='escape';return;}
   if(this.stage!=='escape'&&this.elapsed>=this.limit){this.phase='lost';this.reason='time';return;}
   if(this.elapsed-this.lastHit>7)this.hits=0;
-  this.position=moveSliding(this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor,.13);
+  const previous={...this.position},next=moveSliding(this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor,.13);
+  const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.layout.ledges);this.position=climbing.position;
+  if(climbing.reached!==null&&!this.climbed.has(climbing.reached)){this.climbed.add(climbing.reached);this.coins+=5;this.notify('climb');}
+  if(!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
+  jump=Math.max(jump,this.climber.elevation);
   if(jump<.08&&this.layout.rivers.some(p=>Math.floor(this.position.x)===p.x&&Math.floor(this.position.y)===p.y))this.damage('river');
   const pickup=(list:Point[],set:Set<number>,kind:string)=>list.forEach((p,i)=>{if(!set.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.48){set.add(i);this.revision++;this.notify(kind);if(kind==='seal'){this.checkpoint=center(p);this.ammo=Math.min(8,this.ammo+2);}if(kind==='chest'){this.ammo=8;this.lives=Math.min(3,this.lives+1);this.coins+=5;this.keys++;}}});
   pickup(this.layout.seals,this.seals,'seal');pickup(this.layout.stars,this.stars,'star');pickup(this.layout.chests,this.chests,'chest');
+  if(movementOnly)return;
   const king=this.guards.find(g=>g.boss),inArena=Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<4.2;
   if(king&&!king.dead&&inArena&&this.seals.size===3&&this.stage!=='escape'){if(this.stage!=='boss'){this.stage='boss';this.checkpoint={x:this.layout.fortress.x+2.5,y:this.layout.fortress.y+.5};if(this.grid[Math.floor(this.checkpoint.y)]?.[Math.floor(this.checkpoint.x)]!==0)this.checkpoint={...this.position};this.notify('fortress');}if(this.elapsed>=this.nextBossSkill){this.bossSkill(king);this.nextBossSkill=this.elapsed+(this.bossPhase===3?2.8:3.8);}if(this.elapsed%2<dt)this.ammo=Math.min(8,this.ammo+1);}
   if(this.bossCleared&&this.seals.size===3&&this.stage!=='escape')this.startEscape();
@@ -110,6 +116,7 @@ export class AdventureState {
   const finish=center(this.layout.maze.finish);
   if(Math.hypot(this.position.x-finish.x,this.position.y-finish.y)<.45){if(this.gateOpen)this.phase='won';else if(this.elapsed-this.messageAt>3)this.notify('gate');}
  }
- save():AdventureSave {const names=['position','checkpoint','elapsed','lives','ammo','coins','keys','buffUntil','shield','guards','projectiles','hazards','stage','escapeAt','escapeDuration','phase','reason','resetFogRevision','respawns','revision','invulnerableUntil','slowUntil','stunUntil','hits','lastHit','lastThrow','lastJump','hazardId','nextBossSkill','nextEscapeHazard','message','messageAt'] as const;const out:Record<string,unknown>={};for(const k of names)out[k]=this[k];return structuredClone({...out,seals:[...this.seals],stars:[...this.stars],chests:[...this.chests],broken:[...this.broken],harvested:[...this.harvested]}) as unknown as AdventureSave;}
- restore(s:AdventureSave){for(let y=0;y<this.layout.maze.grid.length;y++)this.grid[y]=[...this.layout.maze.grid[y]];const {seals,stars,chests,broken,harvested,...rest}=s;Object.assign(this,structuredClone(rest));this.seals=new Set(seals||[]);this.stars=new Set(stars||[]);this.chests=new Set(chests||[]);this.broken=new Set(broken||[]);this.projectiles=structuredClone(s.projectiles||[]);this.hazards=structuredClone(s.hazards||[]);this.harvested=new Set(harvested||[]);for(const p of this.layout.grass)this.grid[p.y][p.x]=this.broken.has(`${p.x},${p.y}`)?0:1;for(const k of this.broken){const [x,y]=k.split(',').map(Number);if(this.grid[y])this.grid[y][x]=0;}}
+ acceptPosition(target:Point,jump:number){const start={...this.position},steps=Math.max(1,Math.ceil(Math.hypot(target.x-start.x,target.y-start.y)/.08));for(let i=1;i<=steps;i++){const q={x:start.x+(target.x-start.x)*i/steps,y:start.y+(target.y-start.y)*i/steps},input={x:(q.x-this.position.x)*25,y:(q.y-this.position.y)*25};this.position=this.climber.step(this.position,q,input,jump,0,this.layout.ledges).position;if(this.climber.state.phase==='hanging'||this.climber.state.phase==='climbing')break;}this.step(0,0,0,0,jump,true);}
+ save():AdventureSave {const names=['position','checkpoint','elapsed','lives','ammo','coins','keys','buffUntil','shield','guards','projectiles','hazards','stage','escapeAt','escapeDuration','phase','reason','resetFogRevision','respawns','revision','invulnerableUntil','slowUntil','stunUntil','hits','lastHit','lastThrow','lastJump','hazardId','nextBossSkill','nextEscapeHazard','message','messageAt'] as const;const out:Record<string,unknown>={};for(const k of names)out[k]=this[k];return structuredClone({...out,climb:this.climber.state,climbed:[...this.climbed],visitedZones:[...this.visitedZones],seals:[...this.seals],stars:[...this.stars],chests:[...this.chests],broken:[...this.broken],harvested:[...this.harvested]}) as unknown as AdventureSave;}
+ restore(s:AdventureSave){for(let y=0;y<this.layout.maze.grid.length;y++)this.grid[y]=[...this.layout.maze.grid[y]];const {seals,stars,chests,broken,harvested,climb,climbed,visitedZones,...rest}=s;this.climber.reset();if(climb)this.climber.state=structuredClone(climb);this.climbed=new Set(climbed||[]);this.visitedZones=new Set(visitedZones||[]);Object.assign(this,structuredClone(rest));this.seals=new Set(seals||[]);this.stars=new Set(stars||[]);this.chests=new Set(chests||[]);this.broken=new Set(broken||[]);this.projectiles=structuredClone(s.projectiles||[]);this.hazards=structuredClone(s.hazards||[]);this.harvested=new Set(harvested||[]);for(const p of this.layout.grass)this.grid[p.y][p.x]=this.broken.has(`${p.x},${p.y}`)?0:1;for(const k of this.broken){const [x,y]=k.split(',').map(Number);if(this.grid[y])this.grid[y][x]=0;}}
 }

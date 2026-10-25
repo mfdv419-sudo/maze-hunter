@@ -102,6 +102,7 @@ test("title is a game scene without admin text; touch action buttons work with j
   await expect(page.locator("#joystick")).toBeVisible();
   await expect(page.locator("#jump-action")).toBeVisible();
   await expect(page.locator("#hit-action")).toBeVisible();
+  await expect(page.locator("#maze-transition")).toHaveCount(0);
   const cdp = await context.newCDPSession(page);
   const stick = await page.locator("#joystick").boundingBox(),
     jump = await page.locator("#jump-action").boundingBox();

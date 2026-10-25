@@ -1,8 +1,11 @@
+import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from "three";
 export interface CharacterAction {
   hit: number;
   greet?: number;
   lookUp?: boolean;
+  climb?:'hanging'|'climbing'|'top'|'ground';
+  climbProgress?:number;
 }
 export interface Character {
   root: T.Group;
@@ -19,7 +22,9 @@ export interface Character {
 export function createBinturong(
   outfit = "classic",
   color = 0x343c45,
+  appearance?:Appearance,
 ): Character {
+  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
   const root = new T.Group(),
     body = new T.Group();
   root.add(body);
@@ -235,7 +240,7 @@ export function createBinturong(
   const tailPieces:T.Mesh[]=[],tailDirection=new T.Vector3(),tailMid=new T.Vector3(),tailAxis=new T.Vector3(0,1,0);
   for(let i=0;i<tailRest.length-1;i++) {const m=new T.Mesh(tailGeo,i>13?grey:fur);tail.add(m);tailPieces.push(m);}
   let tailLag=0,previousTurn=root.rotation.y;
-  if (outfit === "explorer") {
+  if (!appearance&&outfit === "explorer") {
     box(0.72, 0.05, 0.51, gold, 0, 0.27, 0, head);
     chamfer(0.4, 0.17, 0.33, gold, 0, 0.35, 0, head);
     chamfer(0.29, 0.27, 0.13, gold, 0, 0.59, -0.24);
@@ -246,11 +251,28 @@ export function createBinturong(
     for (const a of arms) box(0.18, 0.21, 0.21, yellow, 0, -0.08, 0, a);
     box(0.13, 0.03, 0.025, teal, 0, 0.71, 0.21);
   }
-  if (outfit === "space") {
+  if (outfit === "space"||outfit==="aurora") {
     const suit = material(0xe8eff0);
     chamfer(0.49, 0.37, 0.36, suit, 0, 0.55, 0);
     box(0.17, 0.12, 0.025, teal, 0, 0.62, 0.21);
-    box(0.28, 0.28, 0.15, suit, 0, 0.59, -0.25);
+    if(!appearance)box(0.28, 0.28, 0.15, suit, 0, 0.59, -0.25);
+  }
+  const tailCharm=new T.Group();tail.add(tailCharm);
+  if(appearance){
+   const a=appearance,leaf=material(0x79b86b),pink=material(0xf19eac),moon=material(0xa6dfdf);
+   if(a.body==='explorer')chamfer(.49,.3,.36,gold,0,.55,0);
+   if(a.body==='aurora'){box(.2,.05,.025,moon,0,.7,.22);for(const side of [-1,1])cone(.06,.12,moon,side*.18,.52,.22);}
+   if(a.head==='explorer'){box(.72,.05,.51,gold,0,.27,0,head);chamfer(.4,.17,.33,gold,0,.35,0,head);}
+   if(a.head==='leaf')for(let i=0;i<5;i++){const q=cone(.17,.22,leaf,Math.sin(i*1.25)*.2,.32,Math.cos(i*1.25)*.12,head);q.rotation.z=(i-2)*.17;}
+   if(a.head==='crown'||a.head==='moon'){const mat=a.head==='moon'?moon:gold;box(.62,.08,.42,mat,0,.3,0,head);for(let i=0;i<5;i++)cone(.06,.22,mat,(i-2)*.12,.43,.17,head);}
+   if(a.face!=='bare'){const mat=a.face==='mask'?leaf:a.face==='star'?gold:moon;for(const side of [-1,1]){const rim=mesh(new T.TorusGeometry(.095,.018,4,10),mat,head,side*.16,.03,.275);if(a.face==='star')rim.rotation.z=.3;}
+    box(.12,.025,.03,mat,0,.04,.28,head);}
+   if(a.back==='pack')chamfer(.32,.35,.16,gold,0,.58,-.27);
+   if(a.back==='cape')for(let i=0;i<5;i++){const q=cone(.12,.55,leaf,(i-2)*.1,.48,-.24);q.rotation.x=-.15;}
+   if(a.back==='wings')for(const side of [-1,1]){const q=mesh(new T.IcosahedronGeometry(.28,0),moon,body,side*.34,.65,-.22);q.scale.set(1,.6,.2);q.rotation.z=side*.45;}
+   if(a.tail==='bow'){for(const side of [-1,1]){const q=mesh(new T.ConeGeometry(.1,.17,4),pink,tailCharm,side*.08,0,0);q.rotation.z=side*Math.PI/2;}}
+   if(a.tail==='leaf')mesh(new T.TorusGeometry(.09,.025,4,10),leaf,tailCharm,0,0,0).rotation.x=Math.PI/2;
+   if(a.tail==='star')mesh(new T.OctahedronGeometry(.1),gold,tailCharm,0,-.08,0);
   }
   let motion = 0,
     previous = 0;
@@ -269,6 +291,7 @@ export function createBinturong(
         ? Math.abs(Math.sin(time * 5)) * 0.13
         : Math.sin(time * (motion > 0.05 ? 24 : 2)) *
           (motion > 0.05 ? 0.02 : 0.008);
+      body.rotation.x=-Math.min(1,motion)*.12;
       head.rotation.z = Math.sin(time * 2) * 0.025;
       head.rotation.x=action?.lookUp?-.28:0;
       const turn=Math.atan2(Math.sin(root.rotation.y-previousTurn),Math.cos(root.rotation.y-previousTurn));
@@ -284,6 +307,7 @@ export function createBinturong(
         part.position.copy(tailMid);part.scale.set(r,tailDirection.length()+.025,r);
         part.quaternion.setFromUnitVectors(tailAxis,tailDirection.normalize());
       });
+      tailCharm.position.copy(tailLive[13]);
       tail.rotation.y = Math.sin(time * 2.6) * 0.06;
       tail.rotation.z = Math.sin(time * 2) * 0.035;
       const blink = time % 4.4 > 4.24 ? 0.1 : 1;
@@ -303,6 +327,9 @@ export function createBinturong(
         tail.rotation.z += Math.sin(greet * Math.PI * 6) * pulse * 0.25;
         body.position.y += Math.max(0, Math.sin(greet * Math.PI * 2)) * 0.15;
       } else head.rotation.y = 0;
+      if(action?.climb==='hanging'||action?.climb==='climbing'){
+       const p=action.climbProgress||0;arms.forEach(a=>{a.rotation.x=-2.6+p*.7;a.rotation.z=0;});legs.forEach((l,i)=>{l.rotation.x=-.7+Math.sin(time*3+i)*.08;});body.rotation.x=-.08;body.position.y=action.climb==='climbing'?Math.sin(p*Math.PI)*.05:Math.sin(time*2)*.012;
+      }
     },
     dispose() {
       for (const g of geometries) g.dispose();

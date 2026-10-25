@@ -1,17 +1,29 @@
 rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
+  function validAppearance(a) {
+   return a is map && a.keys().hasOnly(['head','face','body','back','tail','palette'])
+    && a.keys().hasAll(['head','face','body','back','tail','palette'])
+    && a.head in ['bare','leaf','explorer','crown','moon']
+    && a.face in ['bare','goggles','mask','star']
+    && a.body in ['classic','explorer','raincoat','space','aurora']
+    && a.back in ['bare','pack','cape','wings']
+    && a.tail in ['bare','bow','leaf','star']
+    && a.palette in ['charcoal','brown','silver','mint','gold'];
+  }
   match /families/{uid}/profiles/{profile} {
    allow read: if request.auth != null && request.auth.uid == uid;
    allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.data.keys().hasOnly(['id','name','language','outfit','retro','modernWins','updatedAt'])
+    && request.resource.data.keys().hasOnly(['id','name','language','outfit','retro','modernWins','updatedAt','appearance','adventures'])
     && request.resource.data.id == profile
     && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 24
     && request.resource.data.language in ['id','en']
     && request.resource.data.outfit in ['classic','explorer','raincoat','space']
     && request.resource.data.retro is map && request.resource.data.retro.size() <= 100
     && request.resource.data.modernWins is number && request.resource.data.modernWins >= 0
-    && request.resource.data.updatedAt is number;
+    && request.resource.data.updatedAt is number
+    && (!('appearance' in request.resource.data) || validAppearance(request.resource.data.appearance))
+    && (!('adventures' in request.resource.data) || (request.resource.data.adventures is map && request.resource.data.adventures.size() <= 30));
    allow delete: if false;
   }
   match /entitlements/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }

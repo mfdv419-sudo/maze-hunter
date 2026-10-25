@@ -1,8 +1,9 @@
+import type {Ledge} from './climbing';
 import {carve, distances, route, random, type Maze, type Difficulty, type Point} from './maze';
 import type {GrassKind} from './adventure-zones';
 export const adventureRules={medium:{size:43,seconds:720,guards:3,bosses:1,minPath:65},hard:{size:53,seconds:1080,guards:5,bosses:2,minPath:90},extreme:{size:63,seconds:1500,guards:7,bosses:3,minPath:120}} as const;
 export interface Vegetation extends Point {kind:GrassKind}
-export interface AdventureLayout {secret?:Point;escapeConnector:Point[];fastRiver:Point;areas:{point:Point;zone:number}[];zoneCells:number[][];vegetation:Vegetation[];starts:Point[];fortress:Point;escapeRoutes:Point[][];maze:Maze;index:number;seals:Point[];stars:Point[];chests:Point[];rivers:Point[];grass:Point[];patrols:Point[][];bosses:Point[];solution:Point[]}
+export interface AdventureLayout {ledges:Ledge[];secret?:Point;escapeConnector:Point[];fastRiver:Point;areas:{point:Point;zone:number}[];zoneCells:number[][];vegetation:Vegetation[];starts:Point[];fortress:Point;escapeRoutes:Point[][];maze:Maze;index:number;seals:Point[];stars:Point[];chests:Point[];rivers:Point[];grass:Point[];patrols:Point[][];bosses:Point[];solution:Point[]}
 const key=(p:Point)=>`${p.x},${p.y}`;
 const layoutCache=new Map<string,AdventureLayout>();
 export function adventureLayout(difficulty:Difficulty,index:number,variation=1):AdventureLayout {
@@ -86,8 +87,12 @@ export function adventureLayout(difficulty:Difficulty,index:number,variation=1):
  const bosses:Point[]=[fortress];
  // One main King. Additional elite guardians protect fortress approaches.
  for(let i=1;i<rules.bosses;i++)patrols.push([solution[Math.floor(solution.length*(.63+i*.04))]]);
- const fromStart=distances(grid,start),maxDistance=Math.max(...fromStart.values());
- const zoneCells=grid.map((row,y)=>row.map((_,x)=>{const d=fromStart.get(`${x},${y}`);if(d!==undefined)return Math.min(6,Math.floor(d/maxDistance*7));let closest=0,best=Infinity;areas.forEach((a,i)=>{const n=Math.hypot(a.point.x-x,a.point.y-y);if(n<best){best=n;closest=i;}});return closest;}));
+ // Connected regions grow from their actual landmark, rather than progress bands.
+ const zoneDistance=new Map<string,{zone:number;distance:number}>(),zoneQueue:{point:Point;zone:number;distance:number}[]=[];
+ zoneDistance.set(key(start),{zone:0,distance:0});zoneQueue.push({point:start,zone:0,distance:0});
+ for(const a of areas){zoneDistance.set(key(a.point),{zone:a.zone,distance:0});zoneQueue.push({point:a.point,zone:a.zone,distance:0});}
+ for(let i=0;i<zoneQueue.length;i++){const q=zoneQueue[i];for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1]]){const p={x:q.point.x+dx,y:q.point.y+dy},k=key(p);if(grid[p.y]?.[p.x]!==0||zoneDistance.has(k))continue;zoneDistance.set(k,{zone:q.zone,distance:q.distance+1});zoneQueue.push({point:p,zone:q.zone,distance:q.distance+1});}}
+ const zoneCells=grid.map((row,y)=>row.map((_,x)=>{const known=zoneDistance.get(`${x},${y}`);if(known)return known.zone;let closest=0,best=Infinity;areas.forEach((a,i)=>{const distance=Math.hypot(a.point.x-x,a.point.y-y);if(distance<best){best=distance;closest=i;}});return closest;}));
  const vegetation:Vegetation[]=pick(24,open.filter(p=>!rivers.some(q=>key(q)===key(p))&&Math.hypot(p.x-fortress.x,p.y-fortress.y)>5)).map((p,i)=>({...p,kind:i%8===0?'rare':i%7===0?'danger':i%3===0?'normal':'tall'}));
  // Starts are chosen by route cost to the shared fortress, with spatial separation.
  const fd=distances(grid,fortress),target=fd.get(key(start))||40;
@@ -100,7 +105,9 @@ export function adventureLayout(difficulty:Difficulty,index:number,variation=1):
  escapeGrid[fastRiver.y][fastRiver.x]=1;const safe=route(escapeGrid,fortress,finish);
  escapeGrid[fastRiver.y][fastRiver.x]=0;const fast=route(escapeGrid,fortress,finish);
  grass.push(secret);chests.push({x:oldN+8,y:cy-2});
- const result={maze,index,seals,stars,chests,rivers,grass,patrols,bosses,solution,areas,zoneCells,vegetation,starts,fortress,escapeRoutes:[safe,fast],secret,escapeConnector,fastRiver};if(layoutCache.size>40)layoutCache.clear();layoutCache.set(cacheKey,structuredClone(result));return result;
+ const ledges:Ledge[]=[];
+ for(const area of areas.filter(a=>[0,3,4].includes(a.zone))){const choices=[{x:area.point.x+1,y:area.point.y+1},{x:area.point.x-1,y:area.point.y+1},{x:area.point.x+1,y:area.point.y-1},{x:area.point.x,y:area.point.y}];const point=choices.find(p=>grid[p.y]?.[p.x]===0&&!used.has(key(p))&&Math.hypot(p.x-start.x,p.y-start.y)>1&&!grass.some(q=>key(q)===key(p)));if(point){ledges.push({id:ledges.length,point,height:1.15});used.add(key(point));}}
+ const result={ledges,maze,index,seals,stars,chests,rivers,grass,patrols,bosses,solution,areas,zoneCells,vegetation,starts,fortress,escapeRoutes:[safe,fast],secret,escapeConnector,fastRiver};if(layoutCache.size>40)layoutCache.clear();layoutCache.set(cacheKey,structuredClone(result));return result;
 }
 export function nextMap(difficulty:Difficulty) {
  const k=`mh-adventure-map:${difficulty}`;let previous=-1;

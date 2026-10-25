@@ -1,3 +1,5 @@
+import type {Appearance} from './cosmetics';
+export interface ExpeditionRecord {coins:number;stars:number;chests:number;zones:number[]}
 export interface LevelResult {
   seconds: number;
   stars: number;
@@ -8,6 +10,8 @@ export interface Profile {
   name: string;
   language: "id" | "en";
   outfit: string;
+  appearance?:Appearance;
+  adventures?:Record<string,ExpeditionRecord>;
   retro: Record<string, LevelResult>;
   modernWins: number;
   updatedAt: number;
@@ -74,6 +78,8 @@ export function mergeProfile(a: Profile, b: Profile): Profile {
         }
       : r;
   }
+  out.adventures={...a.adventures};
+  for(const [id,r]of Object.entries(b.adventures||{})){const old=out.adventures[id];out.adventures[id]=old?{coins:Math.max(old.coins,r.coins),stars:Math.max(old.stars,r.stars),chests:Math.max(old.chests,r.chests),zones:[...new Set([...old.zones,...r.zones])].sort()}:r;}
   return out;
 }
 export function unlocked(p: Profile) {
@@ -92,3 +98,5 @@ export function recordLevel(p: Profile, id: number, r: LevelResult) {
     : r;
   p.updatedAt = Date.now();
 }
+
+export function recordExpedition(p:Profile,id:string,r:ExpeditionRecord){const old=p.adventures?.[id];p.adventures??={};p.adventures[id]=old?{coins:Math.max(old.coins,r.coins),stars:Math.max(old.stars,r.stars),chests:Math.max(old.chests,r.chests),zones:[...new Set([...old.zones,...r.zones])].sort()}:r;p.updatedAt=Date.now();}
