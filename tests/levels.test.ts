@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  retroConfig,
+  retroConfig,retroPageCount,retroDecisions,
   retroMaze,
   modernMaze,
   modernSettings,
@@ -28,13 +28,9 @@ describe("Retro 100-level campaign", () => {
     }
     expect(layouts.size).toBe(100);
   });
-  it("grows maze size each region and rejects out-of-range levels", () => {
-    for (let r = 1; r < 10; r++)
-      expect(retroMaze(r * 10 + 1).grid.length).toBeGreaterThan(
-        retroMaze((r - 1) * 10 + 1).grid.length,
-      );
-    expect(() => retroMaze(0)).toThrow();
-    expect(() => retroMaze(101)).toThrow();
+  it("grows staged choices and adds maps while rejecting out-of-range levels", () => {
+    for(const [level,choices,pages]of [[5,[2],1],[11,[3],1],[21,[3,2],1],[31,[3,3],1],[41,[3,3,2],2],[51,[3,3,3],2],[61,[3,3,3,2],2],[71,[3,3,3,3],2],[81,[3,3,3,3,2],3],[91,[3,3,3,3,3],3]]as const){expect(retroPageCount(level)).toBe(pages);expect(Array.from({length:pages},(_,i)=>retroDecisions(level,i)).flat().map(d=>d.choices.length)).toEqual(choices);}
+    expect(() => retroMaze(0)).toThrow();expect(() => retroMaze(101)).toThrow();
   });
 });
 describe("Modern fair entrances", () => {

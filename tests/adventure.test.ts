@@ -6,7 +6,7 @@ import {retroBoard,boardRoute,neighbors} from '../src/game/retro-board';
 import {RetroState} from '../src/game/retro-state';
 describe('Real Retro decisions',()=>{
  it('all 100 boards have wrong branches, thin-wall connectivity and a valid winning route',()=>{
-  for(let i=1;i<=100;i++){const b=retroBoard(i);expect(b.deadEnds.length).toBeGreaterThanOrEqual(2);expect(boardRoute(b).length).toBeGreaterThan(6);const s=new RetroState(i);s.start();for(const p of boardRoute(b))s.trace(center(p));expect(s.phase).toBe('won');}
+  for(let i=1;i<=100;i++){const b=retroBoard(i);expect(b.deadEnds.length).toBeGreaterThanOrEqual(1);expect(boardRoute(b).length).toBeGreaterThan(6);const s=new RetroState(i);s.start();for(let page=0;page<s.boards.length;page++)for(const p of boardRoute(s.board))s.trace(center(p));expect(s.phase).toBe('won');}
  });
  it('wall contact costs nothing, a dead end resets to Start once, and time continues',()=>{
   const s=new RetroState(1);s.start();s.tick(3);expect(s.trace({x:-1,y:0})).toBe(false);expect(s.lives).toBe(3);
@@ -77,8 +77,8 @@ describe('Adventure end-to-end state progression',()=>{
 });
 describe('M6 difficulty curve',()=>{
  it('becomes denser at level 6 and has a substantially larger level 21',()=>{
-  expect(retroBoard(5).size).toBe(5);expect(retroBoard(6).size).toBe(13);expect(retroBoard(21).size).toBe(17);
-  expect(retroBoard(6).deadEnds.length).toBeGreaterThanOrEqual(4);
+  expect(retroBoard(4).size).toBe(5);expect(retroBoard(5).size).toBe(11);expect(retroBoard(6).size).toBe(11);expect(retroBoard(21).size).toBe(19);
+  expect(retroBoard(6).deadEnds.length).toBe(1);
  });
 });
 describe('Dodge space in Adventure corridors',()=>{

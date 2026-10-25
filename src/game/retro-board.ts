@@ -1,8 +1,8 @@
 import {retroConfig, type Point} from './maze';
 export const directions=[{x:0,y:-1,bit:1},{x:1,y:0,bit:2},{x:0,y:1,bit:4},{x:-1,y:0,bit:8}];
 export interface RetroBoard {size:number; walls:number[][];start:Point;finish:Point;deadEnds:Point[]}
-export function retroBoard(level:number):RetroBoard {
- const m=retroConfig(level).maze,n=(m.grid.length-1)/2;
+export function retroBoard(level:number,page=0):RetroBoard {
+ const m=retroConfig(level).maps[page],n=(m.grid.length-1)/2;
  const walls=Array.from({length:n},()=>Array(n).fill(0));
  for(let y=0;y<n;y++)for(let x=0;x<n;x++)for(const d of directions)
   if(m.grid[y*2+1+d.y]?.[x*2+1+d.x]!==0)walls[y][x]|=d.bit;

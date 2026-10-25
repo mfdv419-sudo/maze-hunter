@@ -21,3 +21,10 @@ export function drawFigs(g:Phaser.GameObjects.Graphics,x:number,y:number,s:numbe
   g.fillStyle(0x5c9858).fillTriangle(x+dx*s,y+dy*s-s*.19,x+(dx+.17)*s,y+(dy-.34)*s,x+(dx+.12)*s,y+(dy-.13)*s);
  }
 }
+
+export function drawMapGate(g:Phaser.GameObjects.Graphics,x:number,y:number,s:number){
+ g.fillStyle(0x163d3c,.3).fillEllipse(x,y+s*.35,s*.9,s*.22);g.fillStyle(0x244f50).fillRoundedRect(x-s*.28,y-s*.34,s*.56,s*.72,s*.15);
+ g.lineStyle(Math.max(2,s*.07),0xe0ac4c).strokeRoundedRect(x-s*.29,y-s*.35,s*.58,s*.72,s*.15);
+ g.fillStyle(0xffe3a0).fillRect(x-s*.35,y-s*.39,s*.7,s*.1);for(const side of [-1,1]){g.fillStyle(0xe3ba61).fillRect(x+side*s*.29-s*.055,y-s*.38,s*.11,s*.76);g.fillStyle(0xffe6a5).fillRect(x+side*s*.29-s*.08,y+s*.31,s*.16,s*.08);}
+ g.lineStyle(Math.max(2,s*.055),0x8ce6cb).lineBetween(x-s*.13,y,x+s*.13,y).lineBetween(x+s*.13,y,x+s*.02,y-s*.1).lineBetween(x+s*.13,y,x+s*.02,y+s*.1);
+}

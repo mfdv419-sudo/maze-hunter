@@ -2,7 +2,11 @@ import {retroBoard, boardSegment} from "./retro-board";
 import { center, retroConfig, stars, type Point } from "./maze";
 export class RetroState {
   readonly config;
-  readonly board;
+  readonly boards;
+  pageIndex=0;
+  mapRevision=0;
+  get board(){return this.boards[this.pageIndex];}
+  get finalPage(){return this.pageIndex===this.boards.length-1;}
   resets = 0;
   readonly explored=new Set<string>();
   private lastReveal='';
@@ -15,7 +19,7 @@ export class RetroState {
   reason: "time" | "lives" | null = null;
   constructor(readonly level: number) {
     this.config = retroConfig(level);
-    this.board = retroBoard(level);
+    this.boards = Array.from({length:this.config.pageCount},(_,page)=>retroBoard(level,page));
     this.position = center(this.board.start);
     this.path = [{ ...this.position }];
     this.reveal(this.position);
@@ -47,21 +51,22 @@ export class RetroState {
     this.reveal(p);
     this.path.push({ ...p });
     const f = center(this.board.finish);
-    if (Math.hypot(p.x - f.x, p.y - f.y) < 0.3) this.phase = "won";
+    if (Math.hypot(p.x - f.x, p.y - f.y) < 0.3){if(this.finalPage)this.phase="won";else{this.pageIndex++;this.mapRevision++;this.resetPosition();}}
     return true;
   }
   mistake() {
     if (this.phase !== "playing") return;
     this.errors++;
     this.resets++;
-    this.position=center(this.board.start);
-    this.path=[{...this.position}];
+    if(this.pageIndex!==0){this.pageIndex=0;this.mapRevision++;}
+    this.resetPosition();
     this.lives = Math.max(0, this.lives - 1);
     if (!this.lives) {
       this.phase = "lost";
       this.reason = "lives";
     }
   }
+  private resetPosition(){this.position=center(this.board.start);this.path=[{...this.position}];this.explored.clear();this.lastReveal='';this.reveal(this.position);}
   private reveal(p:Point){const key=`${Math.floor(p.x)},${Math.floor(p.y)}`;if(key===this.lastReveal)return;this.lastReveal=key;
     for(let y=Math.max(0,Math.floor(p.y)-3);y<=Math.min(this.board.size-1,Math.floor(p.y)+3);y++)for(let x=Math.max(0,Math.floor(p.x)-3);x<=Math.min(this.board.size-1,Math.floor(p.x)+3);x++){
       const target={x:x+.5,y:y+.5};if(Math.hypot(target.x-p.x,target.y-p.y)<=2.6&&boardSegment(this.board,p,target))this.explored.add(`${x},${y}`);

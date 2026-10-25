@@ -1,9 +1,10 @@
 import {retroViewport} from "./retro-board";
-import {drawBinturong,drawFigs} from "./retro-art";
+import {drawBinturong,drawFigs,drawMapGate} from "./retro-art";
 import Phaser from "phaser";
 import { RetroState } from "./retro-state";
 export interface RetroOptions {
   level: number;
+  language?:'id'|'en';
   onTick: (state: RetroState) => void;
   onFinish: (state: RetroState) => void;
 }
@@ -21,6 +22,8 @@ export class RetroGame {
       dragging = false,
 
       panning = false,
+      transitioning=false,
+      renderedRevision=state.mapRevision,
       lastPan = { x: 0, y: 0 };
     let scale = 1,
       ox = 0,
@@ -36,6 +39,7 @@ export class RetroGame {
         owner.scene = this;
         this.gfx = this.add.graphics();
         this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+          if (transitioning)return;
           if (
             state.phase === "won" ||
             state.phase === "lost" ||
@@ -56,6 +60,7 @@ export class RetroGame {
           }
         });
         this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+          if(transitioning)return;
           if (panning && p.isDown) {
             this.cameras.main.scrollX -= (p.x - lastPan.x) / owner.zoomLevel;
             this.cameras.main.scrollY -= (p.y - lastPan.y) / owner.zoomLevel;
@@ -65,12 +70,13 @@ export class RetroGame {
           if (!dragging || !p.isDown || state.phase !== "playing") return;
           const world = this.cameras.main.getWorldPoint(p.x, p.y);
           const q = { x: (world.x - ox) / scale, y: (world.y - oy) / scale };
-          const previousResets=state.resets;
+          const previousResets=state.resets,previousMap=state.mapRevision;
           state.trace(q);
           if(state.resets!==previousResets) {
             dragging=false;
             this.cameras.main.flash(140,255,180,90);
           }
+          if(state.mapRevision!==previousMap){this.changeMap();return;}
           paint.current();
         });
         const release = () => {
@@ -88,12 +94,19 @@ export class RetroGame {
         paint.current = () => this.draw();
         paint.current();
       }
+      changeMap(){
+        dragging=false;panning=false;transitioning=true;
+        const banner=document.createElement('div');banner.className='retro-page-banner';banner.textContent=`${options.language==='en'?'MAP':'PETA'} ${state.pageIndex+1}/${state.boards.length}`;host.append(banner);
+        const reveal=()=>{owner.zoomLevel=1;this.cameras.main.setZoom(1).setScroll(0,0);paint.current();};
+        if(matchMedia('(prefers-reduced-motion: reduce)').matches){reveal();transitioning=false;banner.remove();return;}
+        this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,()=>{reveal();this.cameras.main.fadeIn(240,36,77,71);this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_IN_COMPLETE,()=>{transitioning=false;banner.remove();});});this.cameras.main.fadeOut(170,36,77,71);
+      }
       draw() {
         const w = this.scale.width,
           h = this.scale.height,
           n = state.board.size;
         const fit=retroViewport(w,h,n);scale=fit.scale;ox=fit.ox;oy=fit.oy;
-        owner.layout = { scale, ox, oy };
+        owner.layout = { scale, ox, oy };renderedRevision=state.mapRevision;
         if (owner.zoomLevel > 1) this.cameras.main.setBounds(0, 0, w, h);
         const g = this.gfx;
         g.clear();
@@ -119,14 +132,15 @@ export class RetroGame {
           );
           g.strokePath();
         }
-        this.game.canvas.dataset.goalRevealed='true';this.game.canvas.dataset.explored=String(state.explored.size);
+        this.game.canvas.dataset.page=String(state.pageIndex+1);this.game.canvas.dataset.pages=String(state.boards.length);this.game.canvas.dataset.target=state.finalPage?'figs':'gate';this.game.canvas.dataset.goalRevealed='true';this.game.canvas.dataset.explored=String(state.explored.size);
         const f=state.board.finish,s=state.board.start;
-        drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);
+        if(state.finalPage)drawFigs(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.75);else drawMapGate(g,ox+(f.x+.5)*scale,oy+(f.y+.5)*scale,scale*.85);
         drawBinturong(g,ox+(s.x+.5)*scale,oy+(s.y+.5)*scale,scale*.65,.2);
         drawBinturong(g,ox+state.position.x*scale,oy+state.position.y*scale,scale*.65);
 
       }
       update() {
+        if(!transitioning&&renderedRevision!==state.mapRevision)this.changeMap();
         const now = performance.now();
         state.tick((now - this.lastTick) / 1000);
         this.lastTick = now;

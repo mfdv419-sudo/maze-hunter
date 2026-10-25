@@ -75,8 +75,8 @@ export class ModernGame {
   private world=new T.Group();
   private cameraYaw=0;
   private desiredCameraYaw=0;
-  private cameraPitch=38*Math.PI/180;
-  private desiredPitch=38*Math.PI/180;
+  private cameraPitch=22*Math.PI/180;
+  private desiredPitch=22*Math.PI/180;
   private cameraDirection=new T.Vector3();
   private lookY=0;
   private ledgeModels:T.Group[]=[];
@@ -213,7 +213,7 @@ export class ModernGame {
     this.world.scale.set(U,1,U);this.scene.add(this.world);
     host.append(this.renderer.domElement);
     this.camera = new T.PerspectiveCamera(52,1,.08,160);
-    if(this.cameraMode==='overview')this.cameraPitch=this.desiredPitch=44*Math.PI/180;
+    if(this.cameraMode==='overview')this.cameraPitch=this.desiredPitch=55*Math.PI/180;else if(this.cameraMode==='level')this.cameraPitch=this.desiredPitch=0;
     const startX=Math.floor(this.position.x),startY=Math.floor(this.position.y);
     this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;
@@ -291,7 +291,7 @@ export class ModernGame {
           return;
         }
         if (
-          ["q","e","Q","E",
+          ["q","e","Q","E","r","f","R","F",
             "ArrowUp",
             "ArrowDown",
             "ArrowLeft",
@@ -323,7 +323,7 @@ export class ModernGame {
     });
     host.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.abort.signal});
     host.addEventListener('pointerdown',e=>{const r=host.getBoundingClientRect();if(this.expandedMap||document.getElementById('maze-transition')||this.lookPointer!==null||e.clientX<r.left+r.width*.5||e.clientY<r.top+130||this.paused)return;this.lookPointer=e.pointerId;this.lookX=e.clientX;this.lookY=e.clientY;host.setPointerCapture(e.pointerId);},{signal:this.abort.signal});
-    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){this.desiredCameraYaw-=(e.clientX-this.lookX)*.006;this.desiredPitch=Math.max(35*Math.PI/180,Math.min(45*Math.PI/180,this.desiredPitch+(e.clientY-this.lookY)*.003));this.lookX=e.clientX;this.lookY=e.clientY;this.lastLook=this.time;}},{signal:this.abort.signal});
+    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){this.desiredCameraYaw-=(e.clientX-this.lookX)*.006;this.desiredPitch=Math.max(0,Math.min(65*Math.PI/180,this.desiredPitch+(e.clientY-this.lookY)*.003));this.lookX=e.clientX;this.lookY=e.clientY;this.lastLook=this.time;}},{signal:this.abort.signal});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
@@ -331,6 +331,7 @@ export class ModernGame {
     this.updateVision();
     this.renderer.setAnimationLoop((t) => this.frame(t));
   }
+  cycleCameraView(){const degrees=this.desiredPitch*180/Math.PI;const next=degrees<10?22:degrees<40?55:0;this.desiredPitch=next*Math.PI/180;return next;}
   private resize() {
     const w = this.host.clientWidth,
       h = this.host.clientHeight;
@@ -614,15 +615,24 @@ export class ModernGame {
       (glow.material as T.MeshBasicMaterial).opacity=a.gateOpen?.65+Math.sin(this.time*3)*.18:.12;this.marker.scale.set(a.gateOpen?1.45:1,a.gateOpen?1.8:1.4,a.gateOpen?1.45:1);
       this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
     }
-    if(!this.paused){if(this.keys.has('q'))this.desiredCameraYaw+=dt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=dt*1.7;}
+    if(!this.paused){if(this.keys.has('q'))this.desiredCameraYaw+=dt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=dt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(65*Math.PI/180,this.desiredPitch+dt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(0,this.desiredPitch-dt*.8);}
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
     const mode=this.cameraMode;
-    const target=new T.Vector3(this.position.x*U,1+(this.adventure?.climber.elevation||0),this.position.y*U);
+    const target=new T.Vector3(this.position.x*U,1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     const distance=mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(this.cameraPitch);
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
+    // A low camera must keep the torso visible, not merely clear the hedge with a head-height ray.
+    // In open ground the requested 0-degree view is exact; a foreground hedge gently lifts/shortens the arm.
+    if(this.cameraPitch<15*Math.PI/180){
+      const torso=target.clone();torso.y-=.55;const line=desired.clone().sub(torso),samples=Math.ceil(line.length()/.16);let blocked=false;
+      for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<1.05)||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
+      if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+1.35),target.z-Math.cos(this.cameraYaw)*near);}
+    }
     // Shorten the camera arm before it enters a hedge; never clip through terrain.
     const arm=desired.clone().sub(target),steps=Math.ceil(arm.length()/.15);
-    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<1.2&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.22,(i-1)/steps));desired.y=Math.max(desired.y,1.55);break;}}
+    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<1.08&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.03,(i-1)/steps));desired.y=Math.max(desired.y,target.y+.1);break;}}
+    // At a close obstacle, lift the short camera arm above it instead of filling the screen with the hero's head.
+    if(desired.distanceTo(target)<1.6){desired.copy(target).addScaledVector(arm,Math.min(1,1.6/arm.length()));desired.y=Math.max(desired.y,target.y+.65);}
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*9));this.lookAt.lerp(target,1-Math.exp(-dt*12));}
     this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*1.0,this.lookAt.y,this.lookAt.z+Math.cos(this.cameraYaw)*1.0);
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
@@ -636,7 +646,7 @@ export class ModernGame {
       this.options.onTick(this.elapsed, this.explored.size);
       if(this.adventure)this.options.onAdventure?.(this.adventure);
     }
-    this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);
+    this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {

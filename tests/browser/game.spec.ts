@@ -67,7 +67,7 @@ test("Modern renders 3D, keyboard moves and rotate/resize preserves session", as
 });
 test("phone trace: wall contact is free, dead end resets and orientation preserves lives",async({browser})=>{
  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});const page=await context.newPage();
- await page.goto('/');await page.locator('#lab').click();await page.locator('#retro-mode').click();await page.locator('#level-1').click();
+ await page.goto('/');await page.locator('#lab').click();await page.locator('#retro-mode').click();await page.locator('#level-1').click();await expect(page.locator('#maze-transition')).toHaveCount(0);
  const cdp=await context.newCDPSession(page),board=retroBoard(1);
  async function point(x:number,y:number){const b=(await page.locator('#game-stage canvas').boundingBox())!;const fit=retroViewport(b.width,b.height,board.size);return{x:b.x+fit.ox+x*fit.scale,y:b.y+fit.oy+y*fit.scale};}
  const start=center(board.start);

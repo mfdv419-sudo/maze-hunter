@@ -1,4 +1,4 @@
-import retroCatalog from "./retro-catalog-v10.json" with {type:"json"};
+import retroCatalog from "./retro-catalog-v11.json" with {type:"json"};
 export interface Point {
   x: number;
   y: number;
@@ -115,9 +115,12 @@ export function retroDifficulty(grid:Grid,start:Point,finish:Point) {
  return{length:(path.length-1)/2,choices,misleading,deadEnds};
 }
 const regionCache=new Map<string,Maze[]>();
-export function retroMaze(level:number):Maze {
+export function retroPageCount(level:number){if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');return level<5?1:retroCatalog[level-5].pages.length;}
+export interface RetroDecision {point:Point;next:Point;length:number;choices:{end:Point;length:number;correct:boolean}[]}
+export function retroDecisions(level:number,page=0):RetroDecision[]{return level<5?[]:structuredClone(retroCatalog[level-5].pages[page].decisions);}
+export function retroMaze(level:number,page=0):Maze {
  if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');
- if(level>=6){const {grid,start,finish,seed}=retroCatalog[level-6];return structuredClone({grid,start,finish,seed,entrances:[start]});}
+ if(level>=5){const entry=retroCatalog[level-5].pages[page];if(!entry)throw Error('Invalid Retro map');const {grid,start,finish,seed}=entry;return structuredClone({grid,start,finish,seed,entrances:[start]});}if(page!==0)throw Error('Invalid Retro map');
  const region=Math.floor((level-1)/10),intro=level<=5,band=intro?'intro':`region-${region}`;
  const rooms=intro?5:9+region*2+(region>=2?2:0),count=intro||region===0?5:10;
  if(!regionCache.has(band)) {
@@ -136,13 +139,14 @@ export function retroMaze(level:number):Maze {
  return structuredClone(regionCache.get(band)![index]);
 }
 export function retroConfig(level: number) {
-  const maze = retroMaze(level),
-    length = route(maze.grid, maze.start, maze.finish).length;
+  const pageCount=retroPageCount(level),maps=Array.from({length:pageCount},(_,page)=>retroMaze(level,page)),maze=maps[0],
+    length = maps.reduce((n,m)=>n+route(m.grid,m.start,m.finish).length,0);
   return {
     level,
     region: Math.floor((level - 1) / 10),
     lives: 3,
-    seconds: Math.ceil(35 + length * (level < 21 ? 1.7 : 1.25)),
+    seconds: Math.ceil(35 + length * (level < 21 ? 1.7 : 1.25)+(pageCount-1)*8),
+    maps,pageCount,
     maze,
     length,
   };
