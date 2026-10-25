@@ -65,7 +65,7 @@ let cleanup: () => void = () => {},
   screen = "home",
   generation = 0,
   saving = 0;
-const buildLabel = "25.10.26-M11";
+const buildLabel = "25.10.26-M12";
 let homeMode: "retro" | "modern" = "retro";
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
@@ -144,7 +144,7 @@ function showError(error: unknown) {
 function header() {
   return `<header><a href="#" id="brand" aria-label="Maze Hunter home"><span class="brand-mark">▥</span> MAZE<span>HUNTER</span></a><div class="header-right">${profile ? `<button class="profile-pill" id="profiles">${esc(profile.name)} <span>⌄</span></button>` : ""}<button class="quiet" id="sound-toggle" aria-label="${tr("Suara", "Sound")}">${isMuted() ? "♪ ×" : "♪"}</button><button class="language" id="language" aria-label="Change language">${lang === "id" ? "ID / EN" : "EN / ID"}</button>${uid && !lab ? `<button class="quiet" id="logout">${tr("Keluar akun", "Sign out")}</button>` : ""}</div></header>`;
 }
-function rememberAdventure(){const state=(game as ModernGame|null)?.adventure;if(!state||!profile)return;recordExpedition(profile,`${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});void save();}
+function rememberAdventure(){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample)return;recordExpedition(profile,`${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});void save();}
 function begin(name: string, html: string) {
   mazeTransition(root,root.dataset.screen||'',name);rememberAdventure();
   generation++;
@@ -565,13 +565,14 @@ function setup() {
   if (!profile) return home();
   begin(
     "setup",
-    `<main class="page narrow adventure-select"><div class="eyebrow">ADVENTURE</div><h1>${tr("Rimba menyimpan<br>banyak rahasia.", "The forest holds<br>many secrets.")}</h1><p class="lead">${tr("Tiga segel. Penjaga hutan. Gerbang emas. Temukan jalanmu.", "Three seals. Forest guardians. A golden gate. Find your way.")}</p><div class="difficulty">${(["medium","hard","extreme"] as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?"selected":""}"><b>${d.toUpperCase()}</b><small>${adventureRules[d].size} × ${adventureRules[d].size} · ${tr("1 Raja + penjaga benteng", "1 King + fortress guards")}</small></button>`).join("")}</div><div class="adventure-brief"><span><i class="seal-example" aria-hidden="true"></i> ${tr("3 Segel Rimba: kristal toska melayang. Dekati untuk mengambil; simbol ◆ di minimap menandakan segel yang ditemukan.", "3 Forest Seals: floating turquoise crystals. Walk into them to collect; ◆ on the minimap marks discovered seals.")}</span><span>★ ${tr("Bintang & peti rahasia", "Stars & hidden chests")}</span><span>♛ ${tr("Kalahkan Raja gerbang", "Defeat a gate King")}</span></div>${currentDifficulty!=="medium"?`<p class="boss-rule">${tr("Kalah melawan Raja: kembali ke Start dan minimap tertutup. Segel tetap tersimpan.","Losing to a King: back to Start and minimap resets. Seals are kept.")}</p>`:""}<div class="setup-actions">${button(tr("SOLO", "SOLO"),"solo")}${button(tr("ONLINE · BETA", "ONLINE · BETA"),"online-menu","secondary")}</div></main>`,
+    `<main class="page narrow adventure-select"><div class="eyebrow">ADVENTURE</div><h1>${tr("Rimba menyimpan<br>banyak rahasia.", "The forest holds<br>many secrets.")}</h1><p class="lead">${tr("Tiga segel. Penjaga hutan. Gerbang emas. Temukan jalanmu.", "Three seals. Forest guardians. A golden gate. Find your way.")}</p><div class="difficulty">${(["medium","hard","extreme"] as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?"selected":""}"><b>${d.toUpperCase()}</b><small>${adventureRules[d].size} × ${adventureRules[d].size} · ${tr("1 Raja + penjaga benteng", "1 King + fortress guards")}</small></button>`).join("")}</div><div class="adventure-brief"><span><i class="seal-example" aria-hidden="true"></i> ${tr("3 Segel Rimba: kristal toska melayang. Dekati untuk mengambil; simbol ◆ di minimap menandakan segel yang ditemukan.", "3 Forest Seals: floating turquoise crystals. Walk into them to collect; ◆ on the minimap marks discovered seals.")}</span><span>★ ${tr("Bintang & peti rahasia", "Stars & hidden chests")}</span><span>♛ ${tr("Kalahkan Raja gerbang", "Defeat a gate King")}</span></div>${currentDifficulty!=="medium"?`<p class="boss-rule">${tr("Kalah melawan Raja: kembali ke Start dan minimap tertutup. Segel tetap tersimpan.","Losing to a King: back to Start and minimap resets. Seals are kept.")}</p>`:""}<div class="setup-actions">${button(tr("HUTAN RIMBUN · CONTOH","FOREST GROVE · SAMPLE"),"forest-sample","forest-sample-button")}${button(tr("SOLO", "SOLO"),"solo")}${button(tr("ONLINE · BETA", "ONLINE · BETA"),"online-menu","secondary")}</div></main>`,
   );
   for (const d of ["medium", "hard", "extreme"] as Difficulty[])
     click(`difficulty-${d}`, () => {
       currentDifficulty = d;
       setup();
     });
+  click("forest-sample",()=>playModern("medium",undefined,false,true));
   click("solo", () => playModern(currentDifficulty));
   click('online-menu',()=>{
    if(lab||!multiplayerConfigured()){toast(tr('Main online memerlukan login Google dan koneksi server.','Online play needs Google login and a configured server.'));return;}
@@ -584,10 +585,11 @@ function setup() {
   });
 
 }
-let currentAdventure:{difficulty:Difficulty;map:number;seed:number}|undefined;
+let currentAdventure:{difficulty:Difficulty;map:number;seed:number;sample?:boolean}|undefined;
 let modernTimer: ReturnType<typeof setInterval> | null = null;
-async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
+async function playModern(difficulty: Difficulty, room?: Room, reuse=false,forestSample=false) {
   if (!profile) return;
+  const sample=!room&&(forestSample||(reuse&&!!currentAdventure?.sample));
   currentDifficulty = difficulty;
   if (!navigator.onLine && !lab) {
     toast(
@@ -601,7 +603,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
   begin(
     "modern",
     hud(
-      room ? `${room.mode.toUpperCase()} · ${room.id}` : "ADVENTURE · SOLO",
+      room ? `${room.mode.toUpperCase()} · ${room.id}` : sample?tr("HUTAN RIMBUN · SOLO","FOREST GROVE · SOLO"):"ADVENTURE · SOLO",
       difficulty.toUpperCase(),
       true,
     ),
@@ -617,11 +619,11 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
   const { ModernGame } = await import("./game/modern");
   if (token !== generation) return;
   const me = room?.players[playerKey];
-  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty))currentAdventure={difficulty,map:nextMap(difficulty),seed:crypto.getRandomValues(new Uint32Array(1))[0]};
+  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample))currentAdventure={difficulty,map:sample?0:nextMap(difficulty),seed:sample?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample};
   const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);
-  let feedbackAt=-1,lastZone=-1;
+  let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
-    difficulty,
+    forestSample:sample,difficulty,
     seed: room?.seed ?? currentAdventure!.seed,
     adventureMap:room?room.adventure?.map:currentAdventure!.map,
     color:furColors[readPreferences().fur],
@@ -656,14 +658,15 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
     onAdventure:(state)=>{
       el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
+      if(sample){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${tr('RAJA RIMBUN','FOREST KING')} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:tr('Hindari buah ungu · cari celah serangan','Dodge purple fruit · find your opening')}</small>`;}}
       tracker.textContent=primaryObjective(state,lang);const info=areaInformation(state,lang);area.innerHTML=`<strong>${esc(info.name)} · ${tr('Bahaya','Danger')}: ${esc(info.danger)}</strong><small>${esc(info.description)}</small>`;area.dataset.danger=String(info.level);area.title=info.description;interaction.textContent=nearbyInformation(state,lang);
       if(lastZone!==state.zone){lastZone=state.zone;const discovery=document.createElement('div');discovery.className='zone-discovery';discovery.innerHTML=`<strong>${esc(info.name)}</strong><span>${esc(info.description)}</span><small>${tr('Bahaya','Danger')}: ${esc(info.danger)} · +3 ${tr('koin penemuan pertama','coins on first discovery')}</small>`;document.querySelector('.zone-discovery')?.remove();el('game-stage').parentElement!.append(discovery);setTimeout(()=>discovery.remove(),3200);}
       objectives.classList.toggle('escape-active',state.stage==='escape');
       el('play-hint').textContent=state.stage==='escape'?tr('LARI! Gerbang terbuka — pilih jalurmu.','RUN! The gate is open — choose your route.'):state.stage==='boss'?`${tr('RAJA RIMBUN · FASE','FOREST KING · PHASE')} ${state.bossPhase}`:zones[state.zone][lang==='id'?'idName':'enName'];
       const jumpButton=el('jump-action');const jumpCaption=jumpButton.querySelector('small');if(jumpCaption)jumpCaption.textContent=state.climber.state.phase==='hanging'?tr('NAIK','CLIMB'):tr('LOMPAT','JUMP');
       const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
-      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.mapIndex+1}/10 · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja Rimbun bangkit. Perhatikan tanda serangannya!','The Forest King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Temukan tiga segel untuk melemahkan pelindung Raja.','Find three seals to weaken the King’s shield.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena kue! Melambat sebentar.','Cake hit! Slowed briefly.'],stun:['Lengket! Berhenti sesaat.','Sticky! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
+      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/3   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${tr('RAJA RIMBUN','FOREST KING')} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja Rimbun bangkit. Perhatikan tanda serangannya!','The Forest King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Temukan tiga segel untuk melemahkan pelindung Raja.','Find three seals to weaken the King’s shield.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
       if(modern.adventure)return;
@@ -678,7 +681,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false) {
     },
     onFinish: (won) => {
       rememberAdventure();tone(won ? 720 : 120, 0.18, "sine", 0.025);
-      if (won && profile) {
+      if (won && profile&&!sample) {
         profile.modernWins++;
         if(modern.adventure)recordRun(uid,{profileId:profile.id,name:profile.name,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
         void save();

@@ -1,3 +1,4 @@
+import {batchStatic} from './static-model';
 import * as T from 'three';
 export const WORLD_UNIT=2.2;
 export function groundTexture(kind:'path'|'leaf'|'stone'='path') {
@@ -12,7 +13,7 @@ export function forestTree(seed=0):T.Group {
  const trunk=new T.Mesh(new T.CylinderGeometry(.065,.11,1.2,6),wood);trunk.position.y=.6;g.add(trunk);
  const geo=new T.IcosahedronGeometry(1,1);
  for(const [x,y,z,s] of [[0,1.4,0,.43],[-.23,1.2,.1,.34],[.2,1.17,-.1,.32],[.03,1.72,.02,.3]]){const m=new T.Mesh(geo,leaf);m.position.set(x,y,z);m.scale.set(s,.7*s,s);g.add(m);}
- return g;
+ return batchStatic(g);
 }
 export function riverTile(horizontalCrossing:boolean) {
  const g=new T.Group();const shape=new T.Shape();

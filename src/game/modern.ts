@@ -1,3 +1,4 @@
+import {forestWorld} from './forest-world';
 import {hedgeTexture,hedgeCrownGeometry} from './world-art';
 import type {Appearance} from '../services/cosmetics';
 import {primaryObjective,areaInformation} from './navigation';
@@ -33,6 +34,7 @@ import {
   type Point,
 } from "./maze";
 export interface ModernOptions {
+  forestSample?:boolean;
   difficulty: Difficulty;
   seed: number;
   entrance: number;
@@ -51,6 +53,9 @@ export interface ModernOptions {
 export class ModernGame {
   readonly maze;
   readonly adventure?:AdventureState;
+  private forestScene?:ReturnType<typeof forestWorld>;
+  private poison?:T.InstancedMesh;
+  private poisonLeaves?:T.InstancedMesh;
   private minimap?:HTMLCanvasElement;
   private expandedMap=false;
   private mapPanel?:HTMLDivElement;
@@ -200,7 +205,7 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    if(options.adventureMap!==undefined)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed);
+    if(options.adventureMap!==undefined)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample);
     this.maze = this.adventure ? {...this.adventure.layout.maze,grid:this.adventure.grid} : modernMaze(options.difficulty, options.seed);
     this.position = this.adventure ? {...this.adventure.position} : center(this.maze.entrances[options.entrance % 4]);
     this.renderer = new T.WebGLRenderer({
@@ -216,7 +221,7 @@ export class ModernGame {
     if(this.cameraMode==='overview')this.cameraPitch=this.desiredPitch=55*Math.PI/180;else if(this.cameraMode==='level')this.cameraPitch=this.desiredPitch=0;
     const startX=Math.floor(this.position.x),startY=Math.floor(this.position.y);
     this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
-    this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;
+    this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
     this.daylight=new T.HemisphereLight(0xf9ffe4,0x6c8b80,2.4);this.scene.add(this.daylight);
     const light = new T.DirectionalLight(0xffe7bd, 2.2);
     light.position.set(-4, 10, 7);
@@ -229,7 +234,7 @@ export class ModernGame {
       n * n,
     );
     this.walls = new T.InstancedMesh(
-      new T.BoxGeometry(1.005, 0.82, 1.005),
+      new T.BoxGeometry(1.005, this.adventure?.sample?1.95:.82, 1.005),
       new T.MeshLambertMaterial({ color: 0xffffff,map:hedgeTexture() }),
       n * n,
     );
@@ -250,6 +255,7 @@ export class ModernGame {
     this.shrubMesh.frustumCulled = false;
     this.world.add(this.shrubMesh);
 
+    if(this.adventure?.sample){this.scene.fog=new T.Fog(0xc3ded4,22,42);this.forestScene=forestWorld(this.scene,this.world,this.adventure.layout);}
     this.hero = createBinturong(options.outfit,options.color,options.appearance);
     this.hero.root.scale.set(.95/U,.95,.95/U);
     this.hero.root.add(this.heroIcing);
@@ -263,9 +269,10 @@ export class ModernGame {
         const points=kind==='seal'?a.layout.seals:kind==='star'?a.layout.stars:a.layout.chests;
         points.forEach((p,index)=>{const group=collectible(kind);group.position.set(p.x+.5,0,p.y+.5);this.world.add(group);this.items.push({kind,index,point:p,group});});
       }
+      this.poison=new T.InstancedMesh(new T.SphereGeometry(.11,9,6),new T.MeshLambertMaterial({color:0xa267b6}),80);this.poisonLeaves=new T.InstancedMesh(new T.ConeGeometry(.06,.12,4),new T.MeshLambertMaterial({color:0x83b95c}),80);this.poison.count=this.poisonLeaves.count=0;this.poison.frustumCulled=this.poisonLeaves.frustumCulled=false;this.world.add(this.poison,this.poisonLeaves);
       this.ensureGuardModels();
       a.layout.areas.forEach(({point,zone})=>{const group=landmark(zone);group.position.set(point.x+.5,0,point.y+.5);if(zone!==5)group.position.x+=.65;this.world.add(group);this.landmarkModels.push({point,group});});
-      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,0,l.point.y+.5);group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
+      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.44,.56,l.height,7):new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.48,.5,.05,7):new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,0,l.point.y+.5);group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
       a.layout.vegetation.forEach(p=>{const group=vegetation(p.kind);group.position.set(p.x+.5,0,p.y+.5);this.world.add(group);this.vegetationModels.push(group);});
       for(const p of a.layout.rivers) {
         const group=riverTile(!this.maze.grid[p.y][p.x-1]&&!this.maze.grid[p.y][p.x+1]);
@@ -323,7 +330,7 @@ export class ModernGame {
     });
     host.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.abort.signal});
     host.addEventListener('pointerdown',e=>{const r=host.getBoundingClientRect();if(this.expandedMap||document.getElementById('maze-transition')||this.lookPointer!==null||e.clientX<r.left+r.width*.5||e.clientY<r.top+130||this.paused)return;this.lookPointer=e.pointerId;this.lookX=e.clientX;this.lookY=e.clientY;host.setPointerCapture(e.pointerId);},{signal:this.abort.signal});
-    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){this.desiredCameraYaw-=(e.clientX-this.lookX)*.006;this.desiredPitch=Math.max(0,Math.min(65*Math.PI/180,this.desiredPitch+(e.clientY-this.lookY)*.003));this.lookX=e.clientX;this.lookY=e.clientY;this.lastLook=this.time;}},{signal:this.abort.signal});
+    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){this.desiredCameraYaw-=(e.clientX-this.lookX)*.006;this.desiredPitch=Math.max(-25*Math.PI/180,Math.min(75*Math.PI/180,this.desiredPitch+(e.clientY-this.lookY)*.003));this.lookX=e.clientX;this.lookY=e.clientY;this.lastLook=this.time;}},{signal:this.abort.signal});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
@@ -428,7 +435,7 @@ export class ModernGame {
     let floorCount=0,wallCount=0;
     for (let y = 0; y < n; y++)
       for (let x = 0; x < n; x++) {
-        if(Math.hypot(x+.5-this.position.x,y+.5-this.position.y)>12)continue;
+        if(Math.hypot(x+.5-this.position.x,y+.5-this.position.y)>(this.adventure?.sample||this.cameraPitch>55*Math.PI/180?18:12))continue;
         const i = floorCount++,
           key = `${x},${y}`,
           seen = this.explored.has(key),
@@ -443,11 +450,11 @@ export class ModernGame {
         );
         if(this.maze.grid[y][x]!==1||this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y))continue;
         const wi=wallCount++;
-        this.matrix.position.set(x+.5,.41,y+.5);
+        this.matrix.position.set(x+.5,this.adventure?.sample?.975:.41,y+.5);
         this.matrix.scale.setScalar(this.maze.grid[y][x]===1&&!this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y)?1:0);
         this.matrix.updateMatrix();this.walls.setMatrixAt(wi,this.matrix.matrix);
         this.walls.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
-        if(this.leaves){this.matrix.position.set(x+.5,.79,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
+        if(this.leaves){this.matrix.position.set(x+.5,this.adventure?.sample?1.92:.79,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
 
 
       }
@@ -468,7 +475,7 @@ export class ModernGame {
       }
     });
     if(this.leaves){this.leaves.instanceMatrix.needsUpdate=true;if(this.leaves.instanceColor)this.leaves.instanceColor.needsUpdate=true;}
-    this.treePoints.forEach((p,i)=>{const seen=this.explored.has(`${p.x},${p.y}`);this.matrix.position.set(p.x+.5,.85,p.y+.5);this.matrix.scale.setScalar(seen?1:0);this.matrix.updateMatrix();this.treeTrunks!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=1.8;this.matrix.scale.y=seen?1.4:0;this.matrix.updateMatrix();this.treeCrowns!.setMatrixAt(i,this.matrix.matrix);});
+    this.treePoints.forEach((p,i)=>{const seen=this.adventure?.sample?Math.hypot(p.x-this.position.x,p.y-this.position.y)<19:this.explored.has(`${p.x},${p.y}`);this.matrix.position.set(p.x+.5,this.adventure?.sample?1.6:.85,p.y+.5);this.matrix.scale.set(1, this.adventure?.sample?1.9:1,1).multiplyScalar(seen?1:0);this.matrix.updateMatrix();this.treeTrunks!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=this.adventure?.sample?3.6:1.8;this.matrix.scale.setScalar(seen?(this.adventure?.sample?2:1):0);this.matrix.scale.y*=1.4;this.matrix.updateMatrix();this.treeCrowns!.setMatrixAt(i,this.matrix.matrix);});
     if(this.treeTrunks){this.treeTrunks.instanceMatrix.needsUpdate=true;this.treeCrowns!.instanceMatrix.needsUpdate=true;}
     this.shrubMesh.instanceMatrix.needsUpdate = true;
     this.floor.instanceMatrix.needsUpdate = true;
@@ -579,7 +586,7 @@ export class ModernGame {
     this.stepDistance+=actual*dt;
     if(actual>.2&&this.stepDistance>.32&&!this.paused){this.stepDistance=0;sfx('step');this.splats.push({point:{...this.position},at:this.time,color:0xe6d2a5});}
     this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {
-      climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
+      lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
       hit: Math.max(
         0,
         Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
@@ -599,42 +606,47 @@ export class ModernGame {
     }
     if(this.adventure) {
       const a=this.adventure;this.ensureGuardModels();
-      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=(2.4*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);
+      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=(2.4*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);if(a.sample){fog.near=22;fog.far=42;}
       setAudioScene(a.stage==='escape'?'escape':a.stage==='boss'?'boss':a.zone>=4?'deep':'modern');
       this.heroIcing.visible=a.hits>0&&a.elapsed-a.lastHit<7;this.heroIcing.children.forEach((m,i)=>m.visible=i<(a.hits>=2?9:4));
-      for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
-      this.guardModels.forEach((m,i)=>{const g=a.guards[i];if(!g){m.visible=false;this.warningModels[i].visible=false;return;}this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`);m.position.set(g.position.x,Math.sin(this.time*5+i)*.025,g.position.y);m.rotation.y=Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y);m.rotation.z=g.telegraphUntil?Math.sin(this.time*15)*.08:0;if(g.boss){m.rotation.y+=a.hazards.some(h=>h.kind==='spin'&&!h.resolved)?Math.sin(this.time*12)*.4:0;m.traverse(o=>{if(o.name==='king-eye'&&o instanceof T.Mesh)(o.material as T.MeshBasicMaterial).color.set(a.bossPhase===3?0xffd67f:0xb7f5be);});}const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
+      for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:a.sample&&event.source!=='cake'?0xc08dd1:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
+      this.guardModels.forEach((m,i)=>{const g=a.guards[i];if(!g){m.visible=false;this.warningModels[i].visible=false;return;}this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`);const previous=m.userData.previousPosition as Point|undefined;const vx=previous?g.position.x-previous.x:0,vy=previous?g.position.y-previous.y:0;
+      const moving=Math.hypot(vx,vy)/Math.max(.001,dt),heading=g.boss||g.telegraphUntil?Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y):moving>.02?Math.atan2(vx,vy):m.rotation.y;
+      m.position.set(g.position.x,0,g.position.y);m.rotation.y=dampAngle(m.rotation.y,heading,dt,10);m.userData.previousPosition={...g.position};const windup=g.telegraphUntil?Math.max(0,1-(g.telegraphUntil-a.elapsed)/(g.boss?1:1.2)):0;m.userData.animate?.(this.time,moving,windup,a.elapsed<g.stunUntil,a.elapsed-g.lastHit,a.bossPhase);
+      const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
       for(const {mesh} of this.grassModels){const ring=mesh.getObjectByName('interaction-ring');if(ring)ring.visible=mesh.position.distanceTo(this.hero.root.position)<1.4;mesh.rotation.z=Math.sin(this.time*2+mesh.position.x)*.025;}
       this.vegetationModels.forEach((m,i)=>{m.rotation.z=Math.sin(this.time*2+i)*.035;const ring=m.getObjectByName('interaction-ring');if(ring)ring.visible=a.layout.vegetation[i].kind!=='normal'&&m.position.distanceTo(this.hero.root.position)<1.1;const glow=m.getObjectByName('rare-glow');if(glow)glow.position.y=.12+Math.sin(this.time*2)*.06;});
       const alive=new Set(a.hazards.map(h=>h.id));for(const [id,g]of this.hazardModels)if(!alive.has(id)){this.world.remove(g);g.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();(o.material as T.Material).dispose();}});this.hazardModels.delete(id);}
-      for(const h of a.hazards){let g=this.hazardModels.get(h.id);if(!g){g=new T.Group();const mat=new T.MeshBasicMaterial({color:h.kind==='roots'?0x91d599:0xffa77a,transparent:true,opacity:.65,side:T.DoubleSide});const m=new T.Mesh(new T.RingGeometry(h.radius*.83,h.radius,28),mat);m.rotation.x=-Math.PI/2;g.add(m);if(h.kind==='charge'||h.kind==='vine'){const length=Math.hypot(h.point.x-h.from.x,h.point.y-h.from.y),line=new T.Mesh(new T.BoxGeometry(h.radius*2,.015,length),mat.clone());line.position.set((h.from.x-h.point.x)/2,.01,(h.from.y-h.point.y)/2);line.rotation.y=Math.atan2(h.point.x-h.from.x,h.point.y-h.from.y);g.add(line);}const impact=new T.Mesh(new T.ConeGeometry(.12,1,5),new T.MeshLambertMaterial({color:0x89674d}));impact.name='impact';g.add(impact);this.world.add(g);this.hazardModels.set(h.id,g);}g.position.set(h.point.x,.04,h.point.y);g.visible=this.current.has(`${Math.floor(h.point.x)},${Math.floor(h.point.y)}`);const impact=g.getObjectByName('impact')!;impact.visible=h.resolved;impact.position.y=h.resolved?.3:3;g.children[0].scale.setScalar(1+Math.sin(this.time*10)*.04);}
+      for(const h of a.hazards){let g=this.hazardModels.get(h.id);if(!g){g=new T.Group();const mat=new T.MeshBasicMaterial({color:h.kind==='lightning'?0xa1d7f5:h.kind==='roots'?0x91d599:0xffa77a,transparent:true,opacity:.65,side:T.DoubleSide});const m=new T.Mesh(new T.RingGeometry(h.radius*.83,h.radius,28),mat);m.rotation.x=-Math.PI/2;g.add(m);const fill=new T.Mesh(new T.CircleGeometry(h.radius,28),mat.clone());(fill.material as T.MeshBasicMaterial).opacity=.12;fill.rotation.x=-Math.PI/2;fill.position.y=-.005;g.add(fill);if(h.kind==='charge'||h.kind==='vine'){const length=Math.hypot(h.point.x-h.from.x,h.point.y-h.from.y),line=new T.Mesh(new T.BoxGeometry(h.radius*2,.015,length),mat.clone());line.position.set((h.from.x-h.point.x)/2,.01,(h.from.y-h.point.y)/2);line.rotation.y=Math.atan2(h.point.x-h.from.x,h.point.y-h.from.y);g.add(line);}const impact=h.kind==='lightning'?new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0,5,0),new T.Vector3(.22,3,0),new T.Vector3(-.14,2.6,0),new T.Vector3(.12,1.1,0),new T.Vector3(0,0,0)]),8,.045,5,false),new T.MeshBasicMaterial({color:0xe5f5ff})):new T.Mesh(new T.ConeGeometry(.12,1,5),new T.MeshLambertMaterial({color:0x89674d}));impact.name='impact';g.add(impact);this.world.add(g);this.hazardModels.set(h.id,g);}g.position.set(h.point.x,.04,h.point.y);g.visible=this.current.has(`${Math.floor(h.point.x)},${Math.floor(h.point.y)}`);const impact=g.getObjectByName('impact')!;impact.visible=h.resolved;impact.position.y=h.kind==='lightning'?0:h.resolved?.3:3;g.children[0].scale.setScalar(1+Math.sin(this.time*10)*.04);}
       this.items.forEach(item=>{if(item.kind!=='chest')item.group.rotation.y=this.time*.7;});
       this.riverModels.forEach(({mesh})=>mesh.children.forEach((r,i)=>{if(r.name==='water-ripple'){r.position.x=(i-3)*.15+Math.sin(this.time*1.3+i)*.07;}}));
-      if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,.42,cake.position.y);this.matrix.scale.setScalar(this.current.has(`${Math.floor(cake.position.x)},${Math.floor(cake.position.y)}`)?(cake.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
+      if(this.cakes){this.cakes.count=Math.min(80,a.projectiles.length);a.projectiles.slice(0,80).forEach((cake,i)=>{this.matrix.position.set(cake.position.x,.42,cake.position.y);this.matrix.scale.setScalar(this.current.has(`${Math.floor(cake.position.x)},${Math.floor(cake.position.y)}`)&&cake.owner==='player'?1:0);this.matrix.updateMatrix();this.cakes!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y=.5;this.matrix.updateMatrix();this.cakeTops!.setMatrixAt(i,this.matrix.matrix);});this.cakes.instanceMatrix.needsUpdate=true;this.cakeTops!.count=this.cakes.count;this.cakeTops!.instanceMatrix.needsUpdate=true;}
+      if(this.poison&&this.poisonLeaves){const fruits=a.projectiles.filter(p=>p.owner!=='player').slice(0,80);this.poison.count=this.poisonLeaves.count=fruits.length;fruits.forEach((fruit,i)=>{this.matrix.position.set(fruit.position.x,fruit.owner==='boss'?1.2:.62,fruit.position.y);this.matrix.rotation.set(0,this.time*5,0);this.matrix.scale.setScalar(this.current.has(`${Math.floor(fruit.position.x)},${Math.floor(fruit.position.y)}`)?(fruit.owner==='boss'?1.4:1):0);this.matrix.updateMatrix();this.poison!.setMatrixAt(i,this.matrix.matrix);this.matrix.position.y+=.15;this.matrix.updateMatrix();this.poisonLeaves!.setMatrixAt(i,this.matrix.matrix);});this.poison.instanceMatrix.needsUpdate=this.poisonLeaves.instanceMatrix.needsUpdate=true;this.matrix.rotation.set(0,0,0);}
       const glow=this.marker.getObjectByName('portal-glow') as T.Mesh;
       (glow.material as T.MeshBasicMaterial).opacity=a.gateOpen?.65+Math.sin(this.time*3)*.18:.12;this.marker.scale.set(a.gateOpen?1.45:1,a.gateOpen?1.8:1.4,a.gateOpen?1.45:1);
       this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
     }
-    if(!this.paused){if(this.keys.has('q'))this.desiredCameraYaw+=dt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=dt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(65*Math.PI/180,this.desiredPitch+dt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(0,this.desiredPitch-dt*.8);}
+    const cameraInputDt=Math.min(raw,.2);
+    if(!this.paused){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(75*Math.PI/180,this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(-25*Math.PI/180,this.desiredPitch-cameraInputDt*.8);}
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
     const mode=this.cameraMode;
     const target=new T.Vector3(this.position.x*U,1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
-    const distance=mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(this.cameraPitch);
+    const distance=mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
     // A low camera must keep the torso visible, not merely clear the hedge with a head-height ray.
     // In open ground the requested 0-degree view is exact; a foreground hedge gently lifts/shortens the arm.
     if(this.cameraPitch<15*Math.PI/180){
       const torso=target.clone();torso.y-=.55;const line=desired.clone().sub(torso),samples=Math.ceil(line.length()/.16);let blocked=false;
-      for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<1.05)||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
-      if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+1.35),target.z-Math.cos(this.cameraYaw)*near);}
+      for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<(this.adventure?.sample?2.15:1.05))||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
+      if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+(this.adventure?.sample?2.1:1.35)),target.z-Math.cos(this.cameraYaw)*near);}
     }
     // Shorten the camera arm before it enters a hedge; never clip through terrain.
     const arm=desired.clone().sub(target),steps=Math.ceil(arm.length()/.15);
-    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<1.08&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.03,(i-1)/steps));desired.y=Math.max(desired.y,target.y+.1);break;}}
+    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<(this.adventure?.sample?2.18:1.08)&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.03,(i-1)/steps));desired.y=Math.max(desired.y,target.y+.1);break;}}
     // At a close obstacle, lift the short camera arm above it instead of filling the screen with the hero's head.
     if(desired.distanceTo(target)<1.6){desired.copy(target).addScaledVector(arm,Math.min(1,1.6/arm.length()));desired.y=Math.max(desired.y,target.y+.65);}
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*9));this.lookAt.lerp(target,1-Math.exp(-dt*12));}
-    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*1.0,this.lookAt.y,this.lookAt.z+Math.cos(this.cameraYaw)*1.0);
+    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*1.0,this.lookAt.y+(this.cameraPitch<0?(distance+1)*Math.tan(-this.cameraPitch):0),this.lookAt.z+Math.cos(this.cameraYaw)*1.0);
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
       const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;
     }this.dust.count=count;this.dust.instanceMatrix.needsUpdate=true;if(this.dust.instanceColor)this.dust.instanceColor.needsUpdate=true;}
@@ -646,10 +658,13 @@ export class ModernGame {
       this.options.onTick(this.elapsed, this.explored.size);
       if(this.adventure)this.options.onAdventure?.(this.adventure);
     }
+    if(!this.adventure?.sample){const rise=Math.max(0,this.camera.position.y-target.y-10);const fog=this.scene.fog as T.Fog;fog.near=10+rise;fog.far=24+rise;}
+    this.forestScene?.update(this.time,this.camera);
     this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {
+    this.forestScene?.dispose();
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.abort.abort();
@@ -657,7 +672,7 @@ export class ModernGame {
     const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();
     this.scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);if(o instanceof T.InstancedMesh)o.dispose();}});
     for(const g of geometries)g.dispose();for(const m of materials){if((m as T.MeshLambertMaterial).map)(m as T.MeshLambertMaterial).map!.dispose();m.dispose();}
-    this.renderer.dispose();
+    this.renderer.dispose();this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 }
@@ -700,14 +715,14 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
   ro.observe(host);
   renderer.setAnimationLoop((t) => {
     const dt=lastTime?Math.min(.1,(t-lastTime)/1000):.016;lastTime=t;yaw=dampAngle(yaw,desiredYaw,dt,16);hero.root.rotation.y=yaw+(pointer===null?Math.sin(t*.0003)*.035:0);
-    hero.animate(t/1000,0);
+    hero.animate(t/1000,0,false,{hit:0,showBack:focus==='back'});
     renderer.render(scene, camera);
   });
   return () => {
     dragController.abort();ro.disconnect();
     renderer.setAnimationLoop(null);
     const geos=new Set<T.BufferGeometry>(),mats=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh){geos.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])mats.add(m);}});for(const g of geos)g.dispose();for(const m of mats){(m as T.MeshLambertMaterial).map?.dispose();m.dispose();}
-    renderer.dispose();
+    renderer.dispose();renderer.forceContextLoss();
     renderer.domElement.remove();
   };
 }
@@ -717,5 +732,5 @@ export function avatarPortraits(outfit:string,appearances:Appearance[],view:'fro
  const keys=appearances.map(a=>JSON.stringify({a,view,focus}));if(keys.every(k=>portraitCache.has(k)))return keys.map(k=>portraitCache.get(k)!);
  const renderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power'});renderer.setSize(160,190);renderer.setClearColor(0x000000,0);const scene=new T.Scene(),camera=new T.PerspectiveCamera(32,160/190,.1,15);camera.position.set(view==='front'?.18:1.8,.95,view==='front'?3.6:-3.2);camera.lookAt(0,.72,0);scene.add(new T.HemisphereLight(0xfff7e4,0x779986,2.8));const light=new T.DirectionalLight(0xffedc9,2);light.position.set(-2,4,3);scene.add(light);
  framePreview(camera,focus,160/190);
- appearances.forEach((a,i)=>{if(portraitCache.has(keys[i]))return;const hero=createBinturong(outfit,undefined,a);hero.animate(0,0);hero.root.rotation.y=view==='front'?0:Math.PI*.85;scene.add(hero.root);renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));scene.remove(hero.root);hero.dispose();});renderer.dispose();renderer.forceContextLoss();const result=keys.map(k=>portraitCache.get(k)!);while(portraitCache.size>120)portraitCache.delete(portraitCache.keys().next().value!);return result;
+ appearances.forEach((a,i)=>{if(portraitCache.has(keys[i]))return;const hero=createBinturong(outfit,undefined,a);hero.animate(0,0,false,{hit:0,showBack:focus==='back'});hero.root.rotation.y=view==='front'?0:Math.PI*.85;scene.add(hero.root);renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));scene.remove(hero.root);hero.dispose();});renderer.dispose();renderer.forceContextLoss();const result=keys.map(k=>portraitCache.get(k)!);while(portraitCache.size>120)portraitCache.delete(portraitCache.keys().next().value!);return result;
 }

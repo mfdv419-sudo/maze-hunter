@@ -1,339 +1,90 @@
 import {paletteColors,type Appearance} from '../services/cosmetics';
-import * as T from "three";
-export interface CharacterAction {
-  hit: number;
-  greet?: number;
-  lookUp?: boolean;
-  climb?:'hanging'|'climbing'|'top'|'ground';
-  climbProgress?:number;
-}
-export interface Character {
-  root: T.Group;
-  animate: (
-    time: number,
-    speed: number,
-    celebrate?: boolean,
-    action?: CharacterAction,
-  ) => void;
-  dispose: () => void;
-}
-/** An original, deliberately simple binturong: tapering muzzle, tufted ears,
- * three long whiskers each side, stocky body and an unmistakable prehensile tail. */
-export function createBinturong(
-  outfit = "classic",
-  color = 0x343c45,
-  appearance?:Appearance,
-): Character {
-  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
-  const root = new T.Group(),
-    body = new T.Group();
-  root.add(body);
-  const materials: T.Material[] = [],
-    geometries: T.BufferGeometry[] = [];
-  const material = (c: number) => {
-    const m = new T.MeshLambertMaterial({ color: c, flatShading: true });
-    materials.push(m);
-    return m;
-  };
-  const fur = material(color),
-    grey = material(0x85918b),
-    muzzle = material(0x626d6b),
-    black = material(0x152b30),
-    cream = material(0xf5edcd),
-    teal = material(0x39c7ac),
-    gold = material(0xf8bd4d);
-  function mesh(
-    g: T.BufferGeometry,
-    m: T.Material,
-    parent: T.Object3D,
-    x: number,
-    y: number,
-    z: number,
-  ) {
-    geometries.push(g);
-    const a = new T.Mesh(g, m);
-    a.position.set(x, y, z);
-    parent.add(a);
-    return a;
-  }
-  const box = (
-    w: number,
-    h: number,
-    d: number,
-    m: T.Material,
-    x: number,
-    y: number,
-    z: number,
-    parent: T.Object3D = body,
-  ) => mesh(new T.BoxGeometry(w, h, d), m, parent, x, y, z);
-  const cone = (
-    r: number,
-    h: number,
-    m: T.Material,
-    x: number,
-    y: number,
-    z: number,
-    parent: T.Object3D = body,
-  ) => mesh(new T.ConeGeometry(r, h, 4), m, parent, x, y, z);
-  // Low face count chamfers, not detailed fur or a smooth teddy bear sculpture.
-  function chamfer(
-    w: number,
-    h: number,
-    d: number,
-    m: T.Material,
-    x: number,
-    y: number,
-    z: number,
-    parent: T.Object3D = body,
-  ) {
-    const r = 0.045,
-      s = new T.Shape();
-    s.moveTo(-w / 2 + r, -h / 2);
-    s.lineTo(w / 2 - r, -h / 2);
-    s.lineTo(w / 2, -h / 2 + r);
-    s.lineTo(w / 2, h / 2 - r);
-    s.lineTo(w / 2 - r, h / 2);
-    s.lineTo(-w / 2 + r, h / 2);
-    s.lineTo(-w / 2, h / 2 - r);
-    s.lineTo(-w / 2, -h / 2 + r);
-    s.closePath();
-    const g = new T.ExtrudeGeometry(s, {
-      depth: d - 0.05,
-      bevelEnabled: true,
-      bevelSize: 0.025,
-      bevelThickness: 0.025,
-      bevelSegments: 1,
-      steps: 1,
-    });
-    g.translate(0, 0, -(d - 0.05) / 2);
-    return mesh(g, m, parent, x, y, z);
-  }
-  const shg = new T.CircleGeometry(0.28, 12);
-  geometries.push(shg);
-  const shm = new T.MeshBasicMaterial({
-    color: 0x163c36,
-    transparent: true,
-    opacity: 0.16,
-    depthWrite: false,
-  });
-  materials.push(shm);
-  const shadow = new T.Mesh(shg, shm);
-  shadow.name = "ground-shadow";
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = 0.005;
-  root.add(shadow);
-  chamfer(0.46, 0.48, 0.34, fur, 0, 0.58, 0);
-  box(0.2, 0.24, 0.02, muzzle, 0, 0.58, 0.19);
-  const head = new T.Group();
-  head.position.set(0, 0.99, 0.01);
-  body.add(head);
-  chamfer(0.62, 0.43, 0.43, fur, 0, 0, 0, head);
-  // A narrow projecting snout, rather than a broad cream square bear muzzle.
-  const noseBridge = mesh(
-    new T.CylinderGeometry(0.1, 0.2, 0.26, 5),
-    muzzle,
-    head,
-    0,
-    -0.095,
-    0.3,
-  );
-  noseBridge.rotation.x = Math.PI / 2;
-  const nose = mesh(
-    new T.SphereGeometry(0.065, 6, 4),
-    black,
-    head,
-    0,
-    -0.075,
-    0.45,
-  );
-  nose.scale.set(1, 0.65, 0.6);
-  const mouth = box(0.1, 0.012, 0.016, black, 0, -0.16, 0.4, head);
-  mouth.rotation.z = -0.05;
-  const eyes: T.Mesh[] = [];
-  for (const side of [-1, 1]) {
-    const e = mesh(
-      new T.CylinderGeometry(0.077, 0.065, 0.09, 6),
-      fur,
-      head,
-      side * 0.245,
-      0.265,
-      -0.015,
-    );
-    e.rotation.z = -side * 0.28;
-    cone(0.055, 0.13, fur, side * 0.27, 0.36, -0.015, head);
-    cone(0.045, 0.085, grey, side * 0.285, 0.305, 0.025, head);
-    const brow = box(0.12, 0.033, 0.035, grey, side * 0.168, 0.1, 0.23, head);
-    brow.rotation.z = side * 0.15;
-    const eye = mesh(
-      new T.SphereGeometry(0.055, 8, 5),
-      cream,
-      head,
-      side * 0.16,
-      0.025,
-      0.235,
-    );
-    eye.scale.set(1, 1.15, 0.25);
-    eyes.push(eye);
-    const iris = mesh(
-      new T.SphereGeometry(0.043, 8, 5),
-      black,
-      head,
-      side * 0.16,
-      0.02,
-      0.252,
-    );
-    iris.scale.z = 0.3;
-    eyes.push(iris);
-    box(0.014, 0.019, 0.01, cream, side * 0.15, 0.038, 0.265, head);
-    // Whiskers remain separate straight geometry: no dense strand rendering.
-    for (let i = 0; i < 3; i++) {
-      const whisker = box(
-        0.2,
-        0.012,
-        0.014,
-        cream,
-        side * 0.27,
-        -0.09 - i * 0.045,
-        0.29,
-        head,
-      );
-      whisker.rotation.z = side * (0.16 - i * 0.17);
-    }
-    cone(0.07, 0.12, fur, side * 0.285, -0.18, 0.06, head);
-  }
-  cone(0.055, 0.1, fur, -0.05, 0.265, 0.05, head);
-  cone(0.04, 0.08, grey, 0.02, 0.245, 0.035, head);
-  // Short teal neckerchief + tiny labyrinth badge form the original game identity.
-  box(0.34, 0.07, 0.36, teal, 0, 0.81, 0.01);
-  const scarf = cone(0.09, 0.17, teal, 0.1, 0.69, 0.23);
-  scarf.rotation.z = -0.2;
-  box(0.1, 0.11, 0.023, gold, -0.095, 0.59, 0.2);
-  box(0.045, 0.055, 0.014, fur, -0.09, 0.6, 0.22);
-  const arms: T.Group[] = [],
-    legs: T.Group[] = [];
-  for (const side of [-1, 1]) {
-    const a = new T.Group();
-    a.position.set(side * 0.3, 0.76, 0);
-    body.add(a);
-    chamfer(0.15, 0.29, 0.17, fur, 0, -0.12, 0, a);
-    box(0.16, 0.11, 0.19, fur, 0, -0.27, 0.025, a);
-    arms.push(a);
-    const l = new T.Group();
-    l.position.set(side * 0.14, 0.35, 0);
-    body.add(l);
-    box(0.16, 0.21, 0.18, fur, 0, -0.1, 0, l);
-    chamfer(0.19, 0.1, 0.26, fur, 0, -0.24, 0.055, l);
-    legs.push(l);
-  }
-  // The tail curls beside the silhouette and is visible from the menu camera.
-  const tail = new T.Group();
-  body.add(tail);
-  const points = [
-    new T.Vector3(0,.43,-.18),new T.Vector3(-.08,.33,-.44),
-    new T.Vector3(-.25,.27,-.7),new T.Vector3(-.48,.3,-.91),
-    new T.Vector3(-.63,.43,-1.07),new T.Vector3(-.64,.65,-1.2),
-    new T.Vector3(-.48,.78,-1.28),new T.Vector3(-.31,.76,-1.25),
-  ];
-  const tailCurve=new T.CatmullRomCurve3(points);
-  const tailRest=tailCurve.getPoints(16),tailLive=tailRest.map(p=>p.clone());
-  const tailGeo=new T.CylinderGeometry(1,1,1,6);geometries.push(tailGeo);
-  const tailPieces:T.Mesh[]=[],tailDirection=new T.Vector3(),tailMid=new T.Vector3(),tailAxis=new T.Vector3(0,1,0);
-  for(let i=0;i<tailRest.length-1;i++) {const m=new T.Mesh(tailGeo,i>13?grey:fur);tail.add(m);tailPieces.push(m);}
-  let tailLag=0,previousTurn=root.rotation.y;
-  if (!appearance&&outfit === "explorer") {
-    box(0.72, 0.05, 0.51, gold, 0, 0.27, 0, head);
-    chamfer(0.4, 0.17, 0.33, gold, 0, 0.35, 0, head);
-    chamfer(0.29, 0.27, 0.13, gold, 0, 0.59, -0.24);
-  }
-  if (outfit === "raincoat") {
-    const yellow = material(0xf4c94d);
-    chamfer(0.49, 0.37, 0.36, yellow, 0, 0.55, 0);
-    for (const a of arms) box(0.18, 0.21, 0.21, yellow, 0, -0.08, 0, a);
-    box(0.13, 0.03, 0.025, teal, 0, 0.71, 0.21);
-  }
-  if (outfit === "space"||outfit==="aurora") {
-    const suit = material(0xe8eff0);
-    chamfer(0.49, 0.37, 0.36, suit, 0, 0.55, 0);
-    box(0.17, 0.12, 0.025, teal, 0, 0.62, 0.21);
-    if(!appearance)box(0.28, 0.28, 0.15, suit, 0, 0.59, -0.25);
-  }
-  const tailCharm=new T.Group();tail.add(tailCharm);
-  if(appearance){
-   const a=appearance,leaf=material(0x79b86b),pink=material(0xf19eac),moon=material(0xa6dfdf);
-   if(a.body==='explorer')chamfer(.49,.3,.36,gold,0,.55,0);
-   if(a.body==='aurora'){box(.2,.05,.025,moon,0,.7,.22);for(const side of [-1,1])cone(.06,.12,moon,side*.18,.52,.22);}
-   if(a.head==='explorer'){box(.72,.05,.51,gold,0,.27,0,head);chamfer(.4,.17,.33,gold,0,.35,0,head);}
-   if(a.head==='leaf')for(let i=0;i<5;i++){const q=cone(.17,.22,leaf,Math.sin(i*1.25)*.2,.32,Math.cos(i*1.25)*.12,head);q.rotation.z=(i-2)*.17;}
-   if(a.head==='crown'||a.head==='moon'){const mat=a.head==='moon'?moon:gold;box(.62,.08,.42,mat,0,.3,0,head);for(let i=0;i<5;i++)cone(.06,.22,mat,(i-2)*.12,.43,.17,head);}
-   if(a.face!=='bare'){const mat=a.face==='mask'?leaf:a.face==='star'?gold:moon;for(const side of [-1,1]){const rim=mesh(new T.TorusGeometry(.095,.018,4,10),mat,head,side*.16,.03,.275);if(a.face==='star')rim.rotation.z=.3;}
-    box(.12,.025,.03,mat,0,.04,.28,head);}
-   if(a.back==='pack')chamfer(.32,.35,.16,gold,0,.58,-.27);
-   if(a.back==='cape')for(let i=0;i<5;i++){const q=cone(.12,.55,leaf,(i-2)*.1,.48,-.24);q.rotation.x=-.15;}
-   if(a.back==='wings')for(const side of [-1,1]){const q=mesh(new T.IcosahedronGeometry(.28,0),moon,body,side*.34,.65,-.22);q.scale.set(1,.6,.2);q.rotation.z=side*.45;}
-   if(a.tail==='bow'){for(const side of [-1,1]){const q=mesh(new T.ConeGeometry(.1,.17,4),pink,tailCharm,side*.08,0,0);q.rotation.z=side*Math.PI/2;}}
-   if(a.tail==='leaf')mesh(new T.TorusGeometry(.09,.025,4,10),leaf,tailCharm,0,0,0).rotation.x=Math.PI/2;
-   if(a.tail==='star')mesh(new T.OctahedronGeometry(.1),gold,tailCharm,0,-.08,0);
-  }
-  let motion = 0,
-    previous = 0;
-  return {
-    root,
-    animate(time, speed, celebrate = false, action) {
-      const dt = Math.max(0, Math.min(0.05, time - previous));
-      previous = time;
-      motion += (speed - motion) * (1 - Math.exp(-dt * 20));
-      const stride = Math.sin(time * 12) * Math.min(1, motion) * 0.62;
-      arms[0].rotation.x = stride;
-      arms[1].rotation.x = -stride;
-      legs[0].rotation.x = -stride;
-      legs[1].rotation.x = stride;
-      body.position.y = celebrate
-        ? Math.abs(Math.sin(time * 5)) * 0.13
-        : Math.sin(time * (motion > 0.05 ? 24 : 2)) *
-          (motion > 0.05 ? 0.02 : 0.008);
-      body.rotation.x=-Math.min(1,motion)*.12;
-      head.rotation.z = Math.sin(time * 2) * 0.025;
-      head.rotation.x=action?.lookUp?-.28:0;
-      const turn=Math.atan2(Math.sin(root.rotation.y-previousTurn),Math.cos(root.rotation.y-previousTurn));
-      previousTurn=root.rotation.y;
-      tailLag+=(Math.max(-.5,Math.min(.5,-turn*7))-tailLag)*(1-Math.exp(-dt*7));
-      tailLive.forEach((p,i)=>{
-        const u=i/(tailLive.length-1),base=tailRest[i];
-        p.set(base.x+Math.sin(time*2.4-u*3.8)*.055*u+tailLag*u*u,base.y+Math.sin(time*2-u*3)*.035*u,base.z+Math.sin(time*2.1-u*4)*.085*u);
-      });
-      tailPieces.forEach((part,i)=>{
-        const a=tailLive[i],b=tailLive[i+1],r=.085-i*.003;
-        tailDirection.copy(b).sub(a);tailMid.copy(a).add(b).multiplyScalar(.5);
-        part.position.copy(tailMid);part.scale.set(r,tailDirection.length()+.025,r);
-        part.quaternion.setFromUnitVectors(tailAxis,tailDirection.normalize());
-      });
-      tailCharm.position.copy(tailLive[13]);
-      tail.rotation.y = Math.sin(time * 2.6) * 0.06;
-      tail.rotation.z = Math.sin(time * 2) * 0.035;
-      const blink = time % 4.4 > 4.24 ? 0.1 : 1;
-      for (const eye of eyes) eye.scale.y = blink;
-      const hit = action?.hit || 0;
-      if (hit > 0) {
-        arms[1].rotation.x = -Math.sin(hit * Math.PI) * 2.2;
-        body.rotation.y = Math.sin(hit * Math.PI) * 0.18;
-      } else body.rotation.y = 0;
-      arms[0].rotation.z = celebrate ? -2.2 : 0.08;
-      arms[1].rotation.z = celebrate ? 2.2 : -0.08;
-      const greet = action?.greet;
-      if (greet !== undefined) {
-        const pulse = Math.sin(greet * Math.PI);
-        arms[1].rotation.z = -0.08 + pulse * (2.1 + Math.sin(greet * Math.PI * 8) * 0.35);
-        head.rotation.y = Math.sin(greet * Math.PI * 2) * 0.25;
-        tail.rotation.z += Math.sin(greet * Math.PI * 6) * pulse * 0.25;
-        body.position.y += Math.max(0, Math.sin(greet * Math.PI * 2)) * 0.15;
-      } else head.rotation.y = 0;
-      if(action?.climb==='hanging'||action?.climb==='climbing'){
-       const p=action.climbProgress||0;arms.forEach(a=>{a.rotation.x=-2.6+p*.7;a.rotation.z=0;});legs.forEach((l,i)=>{l.rotation.x=-.7+Math.sin(time*3+i)*.08;});body.rotation.x=-.08;body.position.y=action.climb==='climbing'?Math.sin(p*Math.PI)*.05:Math.sin(time*2)*.012;
-      }
-    },
-    dispose() {
-      for (const g of geometries) g.dispose();
-      for (const m of materials) m.dispose();
-    },
-  };
+import * as T from 'three';
+import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
+export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean}
+export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
+/** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
+export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appearance):Character{
+ if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-12';const body=joint(root,0,0,0,'body');
+ const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
+ const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
+ const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
+ const chest=box(body,.46,.49,.35,fur,0,.59,0,.12);
+ const head=joint(body,0,1.0,.015,'head');const skull=box(head,.64,.49,.45,fur,0,0,0,.14);skull.scale.y=.96;
+ const snout=addMesh(head,new T.CylinderGeometry(.075,.16,.3,10),muzzle,0,-.1,.3);snout.rotation.x=Math.PI/2;
+ ell(head,ink,0,-.095,.465,.078,.052,.049);
+ const smile=addMesh(head,new T.TorusGeometry(.065,.009,4,12,Math.PI),ink,0,-.16,.4);smile.rotation.z=Math.PI;
+ const eyes:T.Group[]=[],brows:T.Mesh[]=[];
+ for(const side of [-1,1]){
+  const ear=addMesh(head,new T.ConeGeometry(.085,.17,5),fur,side*.265,.27,-.025);ear.scale.z=.65;ear.rotation.z=-side*.23;
+  const inner=addMesh(head,new T.ConeGeometry(.044,.09,5),muzzle,side*.27,.27,.024);inner.scale.z=.4;
+  for(let i=0;i<2;i++){const tuft=addMesh(head,new T.ConeGeometry(.023,.105-i*.02,5),i?grey:fur,side*(.28+i*.03),.36-i*.015,-.03);tuft.rotation.z=-side*(.2+i*.3);}
+  ell(head,muzzle,side*.17,.015,.209,.12,.12,.035);
+  const eye=joint(head,side*.168,.022,.244,'eye');eyes.push(eye);ell(eye,cream,0,0,0,.068,.08,.022);ell(eye,ink,0,-.002,.018,.047,.057,.015);ell(eye,cream,-side*.013,.025,.031,.016,.019,.007);
+  const brow=box(head,.13,.025,.024,grey,side*.17,.135,.23,.01);brow.rotation.z=side*.13;brows.push(brow);
+  for(let i=0;i<3;i++){const curve=new T.QuadraticBezierCurve3(new T.Vector3(side*.115,-.095-i*.025,.32),new T.Vector3(side*.29,-.08-i*.05,.33),new T.Vector3(side*.43,-.055-i*.07,.31));addMesh(head,new T.TubeGeometry(curve,5,.005,4,false),cream);}
+  const cheek=addMesh(head,new T.ConeGeometry(.06,.12,6),fur,side*.28,-.18,.04);cheek.rotation.z=side*2.1;
+ }
+ // Two-joint limbs retain volume at elbows and knees.
+ const arms:T.Group[]=[],elbows:T.Group[]=[],legs:T.Group[]=[],knees:T.Group[]=[];
+ for(const side of [-1,1]){
+  const arm=joint(body,side*.29,.78,0,'shoulder');arms.push(arm);addMesh(arm,new T.CapsuleGeometry(.077,.14,3,8),fur,0,-.095,0);
+  const elbow=joint(arm,0,-.22,0,'elbow');elbows.push(elbow);addMesh(elbow,new T.CapsuleGeometry(.073,.1,3,8),fur,0,-.055,0);ell(elbow,fur,0,-.15,.025,.09,.075,.09);
+  const leg=joint(body,side*.14,.35,0,'hip');legs.push(leg);addMesh(leg,new T.CapsuleGeometry(.082,.09,3,8),fur,0,-.055,0);const knee=joint(leg,0,-.14,0,'knee');knees.push(knee);addMesh(knee,new T.CapsuleGeometry(.075,.06,3,8),fur,0,-.035,0);box(knee,.18,.1,.25,fur,0,-.11,.05,.045);
+  for(let i=0;i<3;i++)ell(knee,muzzle,(i-1)*.043,-.105,.16,.013,.012,.015);
+ }
+ // Brand signature, visible on every body outfit.
+ box(body,.36,.07,.37,teal,0,.82,.015,.025);const scarf=addMesh(body,new T.ConeGeometry(.095,.19,3),teal,.105,.7,.23);scarf.rotation.z=-.2;
+ const a=appearance||{head:outfit==='explorer'?'explorer':'bare',face:'bare',body:outfit,back:outfit==='explorer'||outfit==='space'?'pack':'bare',tail:'bare',palette:'charcoal'};
+ if(a.body!=='classic'){
+  const coat=satin(a.body==='raincoat'?0xefc559:a.body==='space'?0xdde9df:a.body==='aurora'?0x7fbfc0:0xc9a35f);box(body,.49,.36,.37,coat,0,.56,0,.08);
+  for(const side of [-1,1]){box(body,.13,.11,.045,gold,side*.14,.52,.2,.02);box(body,.025,.32,.025,ink,side*.19,.63,.2,.01);}
+  if(a.body==='raincoat'){box(body,.52,.09,.4,coat,0,.37,0,.035);box(body,.18,.05,.035,teal,0,.72,.22,.02);}
+  if(a.body==='space'||a.body==='aurora'){box(body,.19,.12,.035,teal,0,.65,.215,.02);for(const side of [-1,1])box(legs[side===-1?0:1],.19,.06,.2,moon,0,-.12,0,.02);}
+ }
+ box(body,.075,.095,.025,gold,-.085,.6,.218,.015);box(body,.034,.045,.012,teal,-.08,.605,.235,.004);
+ if(a.head==='explorer'){box(head,.74,.045,.54,gold,0,.27,0,.02);box(head,.4,.15,.34,gold,0,.35,0,.055);box(head,.42,.045,.35,teal,0,.3,0,.014);}
+ if(a.head==='leaf'){const band=addMesh(head,new T.TorusGeometry(.265,.026,5,18),teal,0,.25,0);band.rotation.x=Math.PI/2;for(let i=0;i<5;i++){const q=ell(head,leaf,(i-2)*.09,.3+Math.sin(i)*.025,.13,.045,.1,.025);q.rotation.z=(i-2)*-.3;}}
+ if(a.head==='crown'||a.head==='moon'){const m=a.head==='moon'?moon:gold;box(head,.55,.07,.37,m,0,.27,0,.02);for(let i=0;i<5;i++)addMesh(head,new T.ConeGeometry(.05,.15+i%2*.025,5),m,(i-2)*.105,.37,.12);}
+ if(a.face==='mask'){
+  const mask=ell(head,leaf,0,-.12,.425,.19,.095,.06);mask.name='leaf-mask';for(const side of [-1,1])box(head,.018,.035,.27,teal,side*.29,-.06,.12,.008);box(head,.12,.015,.02,gold,0,-.1,.48,.005);
+ }else if(a.face!=='bare'){
+  const m=a.face==='star'?gold:moon;
+  for(const side of [-1,1]){const frame=addMesh(head,new T.TorusGeometry(.099,.02,6,16),m,side*.168,.025,.287);frame.name='glasses-frame';const lens=new T.MeshPhongMaterial({color:0xb7e1dd,transparent:true,opacity:.16,shininess:85,depthWrite:false});addMesh(head,new T.CircleGeometry(.082,16),lens,side*.168,.025,.289);box(head,.018,.025,.24,m,side*.29,.035,.13,.005);if(a.face==='star')for(let i=0;i<5;i++){const q=addMesh(head,new T.ConeGeometry(.025,.045,4),m,side*.168+Math.sin(i*1.256)*.107,.025+Math.cos(i*1.256)*.107,.29);q.rotation.z=-i*1.256;}}
+  box(head,.14,.022,.025,m,0,.035,.29,.006);
+ }
+ if(a.back==='pack'){
+  const pack=joint(body,0,.6,-.265,'explorer-pack');box(pack,.33,.37,.19,teal,0,0,0,.055);box(pack,.35,.105,.21,gold,0,.14,-.015,.035);box(pack,.21,.13,.06,gold,0,-.065,-.12,.025);box(pack,.045,.1,.025,ink,0,.08,-.13,.007);for(const side of [-1,1])box(body,.04,.32,.035,gold,side*.2,.67,.19,.01);const roll=addMesh(pack,new T.CylinderGeometry(.065,.065,.37,10),cream,0,-.22,0);roll.rotation.z=Math.PI/2;
+ }
+ let cape:T.Mesh|undefined,capeRest:Float32Array|undefined;
+ if(a.back==='cape'){
+  const geo=new T.PlaneGeometry(.62,.58,7,7);const pos=geo.attributes.position;for(let i=0;i<pos.count;i++){const v=(pos.getY(i)+.29)/.58;pos.setX(i,pos.getX(i)*(.65+.35*(1-v)));pos.setY(i,pos.getY(i)+.46);pos.setZ(i,-.29-.08*(1-v));}geo.computeVertexNormals();capeRest=new Float32Array(pos.array);cape=addMesh(body,geo,new T.MeshLambertMaterial({color:0x649950,side:T.DoubleSide}));cape.name='leaf-cape';
+ }
+ if(a.back==='wings')for(const side of [-1,1]){const wing=ell(body,moon,side*.34,.65,-.23,.3,.14,.045);wing.rotation.z=side*.4;for(let i=0;i<3;i++)ell(body,cream,side*(.23+i*.09),.65-i*.04,-.27,.11,.04,.022);}
+ // One continuous tapered tube; no detached cylinder segments while the tail bends.
+ const tail=joint(body,0,0,0,'prehensile-tail');const rest=new T.CatmullRomCurve3([new T.Vector3(0,.43,-.19),new T.Vector3(-.13,.3,-.44),new T.Vector3(-.4,.29,-.74),new T.Vector3(-.6,.44,-.88),new T.Vector3(-.58,.65,-.84),new T.Vector3(-.4,.75,-.72)]).getPoints(28);
+ const centers=rest.map(v=>v.clone()),geo=new T.BufferGeometry(),positions=new Float32Array(29*9*3),normals=new Float32Array(positions.length),indices:number[]=[];
+ for(let i=0;i<28;i++)for(let j=0;j<8;j++){const k=i*9+j;indices.push(k,k+9,k+1,k+1,k+9,k+10);}geo.setIndex(indices);geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setAttribute('normal',new T.BufferAttribute(normals,3));geo.boundingSphere=new T.Sphere(new T.Vector3(-.3,.5,-.5),1.1);addMesh(tail,geo,fur);
+ const charm=joint(tail,0,0,0,'tail-charm');if(a.tail==='bow')for(const side of [-1,1]){const q=addMesh(charm,new T.ConeGeometry(.075,.12,5),pink,side*.06,0,0);q.rotation.z=side*Math.PI/2;}if(a.tail==='leaf')addMesh(charm,new T.TorusGeometry(.065,.018,5,12),leaf).rotation.x=Math.PI/2;if(a.tail==='star')addMesh(charm,new T.OctahedronGeometry(.075),gold,0,-.055,0);
+ const shadow=addMesh(root,new T.CircleGeometry(.29,16),new T.MeshBasicMaterial({color:0x183e39,transparent:true,opacity:.17,depthWrite:false}),0,.005,0);shadow.rotation.x=-Math.PI/2;shadow.name='ground-shadow';
+ const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
+ function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
+  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion),stride=Math.sin(time*11)*walk*.5;
+  body.position.y=celebrate?Math.abs(Math.sin(time*5))*.1:Math.sin(time*(walk>.05?22:2))*(walk>.05?.014:.006);body.rotation.x=-walk*.085;chest.scale.y=1+Math.sin(time*2)*.012;
+  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?-.08:.08));elbows[i].rotation.x=-.12-Math.max(0,swing)*.35;legs[i].rotation.x=-swing;knees[i].rotation.x=Math.max(0,swing)*.65;}
+  head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
+  const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
+  const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
+  if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms[1].rotation.z=-p*2.1;elbows[1].rotation.x=-.5-Math.sin(time*15)*.3;head.rotation.z=p*.11;}
+  if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?-1:1)*1.8);
+  if(action?.climb==='hanging'||action?.climb==='climbing'){body.position.y-=.1;arms.forEach(arm=>{arm.rotation.x=-2.35;arm.rotation.z=0;});elbows.forEach(e=>e.rotation.x=-.15);legs.forEach(l=>l.rotation.x=-.6);knees.forEach(k=>k.rotation.x=.6);}
+  const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
+  centers.forEach((p,i)=>{const u=i/28,b=rest[i];p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,b.y+Math.sin(time*2-u*3)*.025*u,b.z+Math.sin(time*2.3-u*4)*.045*u);});
+  for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();normal.crossVectors(tangent,up).normalize();if(normal.lengthSq()<.1)normal.set(1,0,0);binormal.crossVectors(tangent,normal).normalize();const radius=.075*(1-i/28*.65);
+   for(let j=0;j<9;j++){const a=j/8*Math.PI*2,c=Math.cos(a),s=Math.sin(a),k=(i*9+j)*3;for(let axis=0;axis<3;axis++){const v=normal.getComponent(axis)*c+binormal.getComponent(axis)*s;positions[k+axis]=centers[i].getComponent(axis)+v*radius;normals[k+axis]=v;}}}
+  geo.attributes.position.needsUpdate=geo.attributes.normal.needsUpdate=true;charm.position.copy(centers[24]);
+  if(cape&&capeRest){const p=cape.geometry.attributes.position;for(let i=0;i<p.count;i++){const fall=(.75-capeRest[i*3+1])/.58;p.setZ(i,capeRest[i*3+2]-Math.sin(time*3+fall*3)*.035*fall-walk*.06*fall);}p.needsUpdate=true;cape.geometry.computeVertexNormals();}
+ }
+ animate(0,0);return{root,animate,dispose:()=>disposeModel(root)};
 }

@@ -1,3 +1,4 @@
+import {batchStatic} from './static-model';
 import * as T from 'three';
 import type {GrassKind} from './adventure-zones';
 const material=(color:number)=>new T.MeshLambertMaterial({color,flatShading:true});
@@ -8,7 +9,7 @@ export function vegetation(kind:GrassKind|'shortcut'){
  if(kind==='rare'||kind==='danger'){const flower=material(kind==='rare'?0xffe394:0xf3a196);for(let i=0;i<3;i++){const m=new T.Mesh(kind==='rare'?new T.OctahedronGeometry(.055):new T.ConeGeometry(.055,.16,4),flower);m.position.set(Math.sin(i*2)*.2,.65,Math.cos(i*2)*.2);group.add(m);}}
  if(kind==='rare'){const g=new T.Mesh(new T.TorusGeometry(.28,.012,3,16),new T.MeshBasicMaterial({color:0xffe5a4}));g.rotation.x=Math.PI/2;g.position.y=.08;g.name='rare-glow';group.add(g);}
  const ring=new T.Mesh(new T.RingGeometry(.3,.34,18),new T.MeshBasicMaterial({color:0xffe6a1,transparent:true,opacity:.8,side:T.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.y=.025;ring.name='interaction-ring';ring.visible=false;group.add(ring);
- return group;
+ return batchStatic(group);
 }
 export function landmark(zone:number){
  const g=new T.Group(),wood=material(0x8e7052),stone=material(zone===5?0x82949e:0x9dafa0),gold=material(0xf3ce7b),leaf=material(0x659a6c);
@@ -27,5 +28,5 @@ export function landmark(zone:number){
  }else {
   for(let i=0;i<7;i++){const a=i*2.4;add(new T.CylinderGeometry(.025,.04,.25,4),leaf,Math.cos(a)*.4,.14,Math.sin(a)*.4);add(new T.IcosahedronGeometry(.1,0),i%2?gold:material(0xe4a2a9),Math.cos(a)*.4,.3,Math.sin(a)*.4);}
  }
- g.name='landmark-'+zone;return g;
+ g.name='landmark-'+zone;return batchStatic(g);
 }

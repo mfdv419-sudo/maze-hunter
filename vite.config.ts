@@ -26,6 +26,7 @@ function offlineRetro(): Plugin {
 }
 export default defineConfig({
   base: "/",
+  optimizeDeps:{include:["three","three/addons/geometries/RoundedBoxGeometry.js","three/addons/utils/BufferGeometryUtils.js"]},
   plugins: [offlineRetro()],
   build: {
     target: "es2020",
