@@ -1,4 +1,4 @@
-import retroCatalog from "./retro-catalog-v14.json" with {type:"json"};
+import retroCatalog from "./retro-catalog-v15.json" with {type:"json"};
 export interface Point {
   x: number;
   y: number;
@@ -114,15 +114,29 @@ export function retroDifficulty(grid:Grid,start:Point,finish:Point) {
  }
  return{length:(path.length-1)/2,choices,misleading,deadEnds};
 }
+const regionCache=new Map<string,Maze[]>();
 export function retroPageCount(level:number){if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');return level<5?1:retroCatalog[level-5].pages.length;}
 export interface RetroDecision {point:Point;next:Point;length:number;hall?:boolean;hallCells?:Point[];choices:{end:Point;length:number;correct:boolean}[]}
 export function retroDecisions(level:number,page=0):RetroDecision[]{return level<5?[]:structuredClone(retroCatalog[level-5].pages[page].decisions);}
 export function retroMaze(level:number,page=0):Maze {
  if(!Number.isInteger(level)||level<1||level>100)throw Error('Invalid level');
  if(level>=5){const entry=retroCatalog[level-5].pages[page];if(!entry)throw Error('Invalid Retro map');const {grid,start,finish,seed}=entry;return structuredClone({grid,start,finish,seed,entrances:[start]});}if(page!==0)throw Error('Invalid Retro map');
- const [cols,rows]=[[19,9],[21,9],[23,11],[25,11]][level-1],seed=140013+level*7919,grid=carve(cols,rows,seed),start={x:1,y:1};
- let finish=start,best=0;for(const [key,d]of distances(grid,start))if(d>best){const [x,y]=key.split(',').map(Number);finish={x,y};best=d;}
- return {grid,start,finish,entrances:[start],seed};
+ const region=Math.floor((level-1)/10),intro=level<=5,band=intro?'intro':`region-${region}`;
+ const rooms=intro?5:9+region*2+(region>=2?2:0),count=intro||region===0?5:10;
+ if(!regionCache.has(band)) {
+  const candidates:{maze:Maze;score:number}[]=[];
+  for(let attempt=0;candidates.length<count&&attempt<1800;attempt++) {
+   const seed=43013+region*100003+attempt*7919+(intro?0:9173),grid=carve(rooms*2+1,rooms*2+1,seed),start={x:1,y:1};
+   let finish=start,best=0;for(const [k,d]of distances(grid,start))if(d>best){const [x,y]=k.split(',').map(Number);finish={x,y};best=d;}
+   const m=retroDifficulty(grid,start,finish);
+   if(m.choices<(intro?2:Math.floor(rooms*.65))||m.misleading<(intro?1:Math.floor(rooms/3))||m.length<(intro?10:rooms*rooms*.28)||m.deadEnds<(intro?4:rooms))continue;
+   candidates.push({maze:{grid,start,finish,entrances:[start],seed},score:m.length+m.choices*5+m.misleading*12});
+  }
+  if(candidates.length<count)throw Error('Retro difficulty criteria could not be met');
+  candidates.sort((a,b)=>a.score-b.score);regionCache.set(band,candidates.map(c=>c.maze));
+ }
+ const index=intro?level-1:region===0?level-6:(level-1)%10;
+ return structuredClone(regionCache.get(band)![index]);
 }
 export function retroConfig(level: number) {
   const pageCount=retroPageCount(level),maps=Array.from({length:pageCount},(_,page)=>retroMaze(level,page)),maze=maps[0],

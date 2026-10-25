@@ -23,7 +23,7 @@ service cloud.firestore {
     && request.resource.data.modernWins is number && request.resource.data.modernWins >= 0
     && request.resource.data.updatedAt is number
     && (!('appearance' in request.resource.data) || validAppearance(request.resource.data.appearance))
-    && (!('adventures' in request.resource.data) || (request.resource.data.adventures is map && request.resource.data.adventures.size() <= 30));
+    && (!('adventures' in request.resource.data) || (request.resource.data.adventures is map && request.resource.data.adventures.size() <= 210));
    allow delete: if false;
   }
   match /entitlements/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }

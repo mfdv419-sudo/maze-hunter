@@ -37,6 +37,7 @@ export interface Player {
   hitAt?: number;
 }
 export interface Match {
+  area?:import('./areas').AdventureArea;
   adventure?:AdventureRoom;
   public?:boolean;
   id: string;

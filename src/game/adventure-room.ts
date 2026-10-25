@@ -1,3 +1,4 @@
+import {areaTime} from './areas';
 import {AdventureState,type AdventureSave} from './adventure-state';
 import {adventureRules} from './adventure-layout';
 import {center,clearSegment,visibleCells,type Point} from './maze';
@@ -5,10 +6,10 @@ import {airborneHeight,nextJump} from './actions';
 import type {Match} from './room-state';
 export interface AdventureRoom {version:2;map:number;states:Record<string,AdventureSave>;tickAt:number;escapeAt:number;escapeDuration:number;bossHP:number;questSlots?:number[];broken?:string[]}
 export const roomCapacity={medium:4,hard:8,extreme:10} as const;
-export function loadAdventure(room:Match,key:string){const a=room.adventure!;const state=new AdventureState(room.difficulty,a.map,room.seed,false,a.questSlots?{slots:a.questSlots,slot:room.players[key].slot,shared:room.mode==='coop'}:undefined);if(a.states[key])state.restore(a.states[key]);for(const k of a.broken||[]){state.broken.add(k);const [x,y]=k.split(',').map(Number);if(state.grid[y])state.grid[y][x]=0;}return state;}
-export function startAdventureRoom(room:Match,now:number){const a=room.adventure!,base=new AdventureState(room.difficulty,a.map,room.seed);a.questSlots=Object.values(room.players).map(p=>p.slot);a.states={};a.bossHP=base.bossMaxHP;a.escapeAt=-1;a.tickAt=room.startsAt;a.escapeDuration=90;
- for(const [k,p]of Object.entries(room.players)){const s=new AdventureState(room.difficulty,a.map,room.seed,false,{slots:a.questSlots!,slot:p.slot,shared:room.mode==='coop'});const start=s.layout.starts[p.slot];if(!start)throw Error('Map does not have enough distinct starts');s.position=center(start);s.checkpoint={...s.position};Object.assign(p,s.position,{seq:0,lastMove:room.startsAt,finishedAt:null});a.states[k]=s.save();}
- room.expiresAt=now+(adventureRules[room.difficulty].seconds+180)*1000;
+export function loadAdventure(room:Match,key:string){const a=room.adventure!;const state=new AdventureState(room.difficulty,a.map,room.seed,false,a.questSlots?{slots:a.questSlots,slot:room.players[key].slot,shared:room.mode==='coop'}:undefined,room.area||'classic');if(a.states[key])state.restore(a.states[key]);for(const k of a.broken||[]){state.broken.add(k);const [x,y]=k.split(',').map(Number);if(state.grid[y])state.grid[y][x]=0;}return state;}
+export function startAdventureRoom(room:Match,now:number){const a=room.adventure!,base=new AdventureState(room.difficulty,a.map,room.seed,false,undefined,room.area||'classic');a.questSlots=Object.values(room.players).map(p=>p.slot);a.states={};a.bossHP=base.bossMaxHP;a.escapeAt=-1;a.tickAt=room.startsAt;a.escapeDuration=90;
+ for(const [k,p]of Object.entries(room.players)){const s=new AdventureState(room.difficulty,a.map,room.seed,false,{slots:a.questSlots!,slot:p.slot,shared:room.mode==='coop'},room.area||'classic');const start=s.layout.starts[p.slot];if(!start)throw Error('Map does not have enough distinct starts');s.position=center(start);s.checkpoint={...s.position};Object.assign(p,s.position,{seq:0,lastMove:room.startsAt,finishedAt:null});a.states[k]=s.save();}
+ room.expiresAt=now+(areaTime(room.area||'classic',room.difficulty)+180)*1000;
 }
 export function tickAdventureRoom(room:Match,now:number){if(!room.adventure||room.state!=='playing'||now<room.startsAt)return;
  const a=room.adventure,raw=Math.max(0,(now-a.tickAt)/1000);if(!raw)return;a.tickAt=now;

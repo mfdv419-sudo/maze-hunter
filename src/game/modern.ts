@@ -1,3 +1,8 @@
+import {roundBox} from './model-parts';
+import {aquaticGuardian} from './aquatic-guardian';
+import {biomeWorld} from './biome-world';
+import {biomeElevation} from './biome-layout';
+import {areaThemes,type AdventureArea} from './areas';
 import {forestElevation,inCave} from './forest-layout';
 import {airborneHeight,nextJump} from './actions';
 import {forestWorld} from './forest-world';
@@ -37,6 +42,8 @@ import {
   type Point,
 } from "./maze";
 export interface ModernOptions {
+  area?:AdventureArea;
+  enforceLandscape?:boolean;
   questTeam?:import('./quest-seals').QuestTeam;
   forestSample?:boolean;
   difficulty: Difficulty;
@@ -58,6 +65,9 @@ export class ModernGame {
   readonly maze;
   readonly adventure?:AdventureState;
   private forestScene?:ReturnType<typeof forestWorld>;
+  private biomeScene?:ReturnType<typeof biomeWorld>;
+  private orientationBlocked=false;
+  private previewMode=false;
   private poison?:T.InstancedMesh;
   private poisonLeaves?:T.InstancedMesh;
   private minimap?:HTMLCanvasElement;
@@ -146,8 +156,9 @@ export class ModernGame {
   private jumpStarted = -1000;
   private jumpBase=0;
   private jumpCount=0;
-  private worldVisible(p:Point,r=16){return this.current.has(`${Math.floor(p.x)},${Math.floor(p.y)}`)||(!!this.adventure?.sample&&Math.hypot(p.x-this.position.x,p.y-this.position.y)<r&&clearSight(this.maze.grid,this.position,{x:p.x+.01,y:p.y+.01},.01));}
-  private terrain(x:number,y:number){return this.adventure?.sample?forestElevation(x,y):0;}
+  private worldVisible(p:Point,r=16){return this.current.has(`${Math.floor(p.x)},${Math.floor(p.y)}`)||(!!this.adventure?.expedition&&Math.hypot(p.x-this.position.x,p.y-this.position.y)<r&&clearSight(this.maze.grid,this.position,{x:p.x+.01,y:p.y+.01},.01));}
+  private terrain(x:number,y:number){return this.adventure?.sample?forestElevation(x,y):this.adventure?.expedition?biomeElevation(this.adventure.area,x,y,this.adventure.layout):0;}
+  private get wallHeight(){return this.adventure?.sample?1.95:this.adventure?.expedition?(this.adventure.area==='gorge'?4.5:this.adventure.area==='mountain'?2.8:2.05):.82;}
   private jumpAt(time:number){return airborneHeight({at:this.jumpStarted,base:this.jumpBase,count:this.jumpCount},time);}
   private hitStarted = -1000;
   private broken: Record<string, boolean> = {};
@@ -163,7 +174,7 @@ export class ModernGame {
     };
   }
   useAction(kind: ActionKind) {
-    if (this.paused || this.ended||this.expandedMap||document.getElementById('maze-transition')) return false;
+    if (this.orientationBlocked||this.paused || this.ended||this.expandedMap||document.getElementById('maze-transition')) return false;
     const field = kind === "jump" ? "jumpStarted" : "hitStarted";
     if (kind==="hit"&&(this.elapsed - this[field]) * 1000 < actionCooldown[kind])
       return false;
@@ -218,7 +229,7 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    if(options.adventureMap!==undefined)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample,options.questTeam);
+    if(options.adventureMap!==undefined)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample,options.questTeam,options.area||'classic');
     this.maze = this.adventure ? {...this.adventure.layout.maze,grid:this.adventure.grid} : modernMaze(options.difficulty, options.seed);
     this.position = this.adventure ? {...this.adventure.position} : center(this.maze.entrances[options.entrance % 4]);
     this.renderer = new T.WebGLRenderer({
@@ -235,6 +246,7 @@ export class ModernGame {
     const startX=Math.floor(this.position.x),startY=Math.floor(this.position.y);
     this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
+    if(this.adventure?.expedition&&!this.adventure.sample){const path=this.adventure.layout.solution,target=path[Math.min(10,path.length-1)];if(target)this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.atan2(target.x+.5-this.position.x,target.y+.5-this.position.y);}
     this.daylight=new T.HemisphereLight(0xf9ffe4,0x6c8b80,2.4);this.scene.add(this.daylight);
     const light = new T.DirectionalLight(0xffe7bd, 2.2);
     light.position.set(-4, 10, 7);
@@ -247,18 +259,18 @@ export class ModernGame {
       n * n,
     );
     this.walls = new T.InstancedMesh(
-      new T.BoxGeometry(1.005, this.adventure?.sample?1.95:.82, 1.005),
-      new T.MeshLambertMaterial({ color: 0xffffff,map:hedgeTexture() }),
+      this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?roundBox(1.04,this.wallHeight,1.04,.12):new T.BoxGeometry(1.005,this.wallHeight,1.005),
+      new T.MeshLambertMaterial({ color: 0xffffff,map:this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?groundTexture('stone'):hedgeTexture() }),
       n * n,
     );
     this.walls.frustumCulled = false;
     this.floor.frustumCulled = false;
     this.world.add(this.floor, this.walls);
-    if(this.adventure?.sample){this.rockWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0x83958b,map:groundTexture('stone')}),n*n);this.lodgeWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0xa17d53,map:groundTexture('path')}),n*n);this.rockWalls.frustumCulled=this.lodgeWalls.frustumCulled=false;this.world.add(this.rockWalls,this.lodgeWalls);}
+    if(this.adventure?.expedition){this.rockWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0x83958b,map:groundTexture('stone')}),n*n);this.lodgeWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0xa17d53,map:groundTexture('path')}),n*n);this.rockWalls.frustumCulled=this.lodgeWalls.frustumCulled=false;this.world.add(this.rockWalls,this.lodgeWalls);}
 
-    const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,-.095,n/2);this.world.add(earth);
+    const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,this.adventure?.expedition?-8:-.095,n/2);this.world.add(earth);
     this.leaves=new T.InstancedMesh(hedgeCrownGeometry(),new T.MeshLambertMaterial({color:0xffffff,map:hedgeTexture()}),n*n);this.leaves.frustumCulled=false;this.world.add(this.leaves);
-    for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(this.maze.grid[y][x]===1&&((x*7+y*11)%13===0||(x===0&&y%5===0)))this.treePoints.push({x,y});
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++)if((!this.adventure?.expedition||this.adventure.area==='forest'||this.adventure.sample)&&this.maze.grid[y][x]===1&&((x*7+y*11)%13===0||(x===0&&y%5===0)))this.treePoints.push({x,y});
     this.treeTrunks=new T.InstancedMesh(new T.CylinderGeometry(.045,.07,1.7,5),new T.MeshLambertMaterial({color:0x8f7351}),this.treePoints.length);this.treeCrowns=new T.InstancedMesh(new T.IcosahedronGeometry(.43,1),new T.MeshLambertMaterial({color:0x609347,flatShading:true}),this.treePoints.length);this.world.add(this.treeTrunks,this.treeCrowns);
     this.dust=new T.InstancedMesh(new T.SphereGeometry(.065,6,4),new T.MeshBasicMaterial({color:0xffe5d4,transparent:true,opacity:.75}),160);this.dust.frustumCulled=false;this.dust.count=0;this.world.add(this.dust);
     this.shrubPoints = this.adventure?[]:shrubs(this.maze);
@@ -270,6 +282,7 @@ export class ModernGame {
     this.shrubMesh.frustumCulled = false;
     this.world.add(this.shrubMesh);
 
+    if(this.adventure?.expedition&&!this.adventure.sample){this.scene.fog=new T.Fog(areaThemes[this.adventure.area].sky,22,42);this.biomeScene=biomeWorld(this.scene,this.world,this.adventure.layout,this.adventure.area);}
     if(this.adventure?.sample){this.scene.fog=new T.Fog(0xc3ded4,22,42);this.forestScene=forestWorld(this.scene,this.world,this.adventure.layout);}
     this.hero = createBinturong(options.outfit,options.color,options.appearance);
     this.hero.root.scale.set(.95/U,.95,.95/U);
@@ -286,8 +299,8 @@ export class ModernGame {
       }
       this.poison=new T.InstancedMesh(new T.SphereGeometry(.11,9,6),new T.MeshLambertMaterial({color:0xa267b6}),80);this.poisonLeaves=new T.InstancedMesh(new T.ConeGeometry(.06,.12,4),new T.MeshLambertMaterial({color:0x83b95c}),80);this.poison.count=this.poisonLeaves.count=0;this.poison.frustumCulled=this.poisonLeaves.frustumCulled=false;this.world.add(this.poison,this.poisonLeaves);
       this.ensureGuardModels();
-      a.layout.areas.forEach(({point,zone})=>{const group=landmark(zone);group.position.set(point.x+.5,this.terrain(point.x+.5,point.y+.5),point.y+.5);if(zone!==5)group.position.x+=.65;this.world.add(group);this.landmarkModels.push({point,group});});
-      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.44,.56,l.height,7):new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.48,.5,.05,7):new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,this.terrain(l.point.x+.5,l.point.y+.5),l.point.y+.5);group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
+      a.layout.areas.forEach(({point,zone})=>{const group=landmark(a.expedition&&!a.sample&&a.area!=='forest'?(zone===5?5:1):zone);group.position.set(point.x+.5,this.terrain(point.x+.5,point.y+.5),point.y+.5);if(zone!==5)group.position.x+=.65;this.world.add(group);this.landmarkModels.push({point,group});});
+      a.layout.ledges.forEach(l=>{const group=new T.Group(),stone=new T.MeshLambertMaterial({color:0x91a49d,flatShading:true}),root=new T.MeshLambertMaterial({color:0x8f7456});const rock=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.44,.56,l.height,7):new T.BoxGeometry(.94,l.height,.94),stone);rock.position.y=l.height/2;group.add(rock);for(const side of [-1,1]){const rung=new T.Mesh(new T.BoxGeometry(.12,.065,1.02),root);rung.position.set(side*.28,l.height-.08,0);group.add(rung);}const rim=new T.Mesh(this.adventure?.sample?new T.CylinderGeometry(.48,.5,.05,7):new T.BoxGeometry(1,.05,1),new T.MeshLambertMaterial({color:this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?areaThemes[this.adventure.area].floor:0x9cce92}));rim.position.y=l.height;group.add(rim);group.position.set(l.point.x+.5,this.terrain(l.point.x+.5,l.point.y+.5),l.point.y+.5);group.name='climbable-ledge';this.world.add(group);this.ledgeModels.push(group);});
       a.layout.vegetation.forEach(p=>{const group=vegetation(p.kind);group.position.set(p.x+.5,this.terrain(p.x+.5,p.y+.5),p.y+.5);this.world.add(group);this.vegetationModels.push(group);});
       for(const p of a.layout.rivers) {
         const group=riverTile(!this.maze.grid[p.y][p.x-1]&&!this.maze.grid[p.y][p.x+1]);
@@ -353,10 +366,12 @@ export class ModernGame {
     this.updateVision();
     this.renderer.setAnimationLoop((t) => this.frame(t));
   }
+  captureBackdrop(){this.previewMode=true;this.paused=true;if(this.adventure){const p=this.adventure.layout.areas[2].point;this.position={x:p.x+.5,y:p.y+2.5};this.adventure.position={...this.position};}this.cameraYaw=this.desiredCameraYaw=Math.PI+.2;this.cameraPitch=this.desiredPitch=.95;this.acc=0;this.updateVision();this.frame(performance.now());this.renderer.render(this.scene,this.camera);return this.renderer.domElement.toDataURL('image/png');}
   cycleCameraView(){const degrees=this.desiredPitch*180/Math.PI;const next=degrees<10?22:degrees<40?55:0;this.desiredPitch=next*Math.PI/180;return next;}
   private resize() {
     const w = this.host.clientWidth,
       h = this.host.clientHeight;
+    this.orientationBlocked=!!this.options.enforceLandscape&&h>w;if(this.orientationBlocked)this.clearInput();
     this.renderer.setSize(w, h);
     this.camera.aspect=w/h;
     this.camera.fov=w<h?57:50;
@@ -365,7 +380,7 @@ export class ModernGame {
   beginMovement(){}
   endMovement(){}
   syncAdventure(save:AdventureSave){if(!this.adventure)return;const before=this.adventure.resetFogRevision,predicted={...this.position},respawns=this.adventure.respawns,phase=this.adventure.climber.state.phase,elapsed=this.elapsed;this.adventure.restore(save);const keep=save.phase==='playing'&&save.respawns===respawns&&save.climb?.phase===phase&&Math.hypot(predicted.x-save.position.x,predicted.y-save.position.y)<.6&&fits(this.adventure.grid,predicted,.13);if(keep)this.adventure.position=predicted;this.elapsed=this.adventure.elapsed=Math.max(elapsed,save.elapsed);this.position={...this.adventure.position};if(before!==save.resetFogRevision)this.explored.clear();this.visionAcc=1;}
-  private ensureGuardModels(){if(!this.adventure)return;while(this.guardModels.length<this.adventure.guards.length){const g=this.adventure.guards[this.guardModels.length],model=seedGuardian(g.boss);const k=g.boss?1.35:g.sapling?.65:g.elite?1.15:1;model.scale.set(k/U,k,k/U);const cream=icing();model.add(cream);this.guardIcing.push(cream);this.world.add(model);this.guardModels.push(model);const warning=new T.Mesh(new T.RingGeometry(.2,.3,16),new T.MeshBasicMaterial({color:0xffbc7c,side:T.DoubleSide,transparent:true,opacity:.8}));warning.rotation.x=-Math.PI/2;this.world.add(warning);this.warningModels.push(warning);}}
+  private ensureGuardModels(){if(!this.adventure)return;while(this.guardModels.length<this.adventure.guards.length){const g=this.adventure.guards[this.guardModels.length],model=this.adventure.area==='sea'?aquaticGuardian(g.boss):seedGuardian(g.boss);if(this.adventure.expedition&&!this.adventure.sample&&this.adventure.area!=='sea'&&this.adventure.area!=='forest'){const theme=areaThemes[this.adventure.area];model.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.MeshLambertMaterial){const color=o.material.color.getHex();if([0x815a3e,0xa58256,0xbb9565].includes(color))o.material.color.set(theme.wall);if([0x396c49,0x75a456].includes(color))o.material.color.set(this.adventure!.area==='desert'?0xa8ad76:this.adventure!.area==='mountain'?0xd8e8e6:0x80b8b0);}});}const k=g.boss?1.35:g.sapling?.65:g.elite?1.15:1;model.scale.set(k/U,k,k/U);const cream=icing();model.add(cream);this.guardIcing.push(cream);this.world.add(model);this.guardModels.push(model);const warning=new T.Mesh(new T.RingGeometry(.2,.3,16),new T.MeshBasicMaterial({color:0xffbc7c,side:T.DoubleSide,transparent:true,opacity:.8}));warning.rotation.x=-Math.PI/2;this.world.add(warning);this.warningModels.push(warning);}}
 
   clearInput() {
     this.lookPointer=null;
@@ -450,7 +465,7 @@ export class ModernGame {
     let floorCount=0,wallCount=0,rockCount=0,lodgeCount=0;
     for (let y = 0; y < n; y++)
       for (let x = 0; x < n; x++) {
-        if(Math.hypot(x+.5-this.position.x,y+.5-this.position.y)>(this.adventure?.sample||this.cameraPitch>55*Math.PI/180?18:12))continue;
+        if(Math.hypot(x+.5-this.position.x,y+.5-this.position.y)>(this.adventure?.expedition||this.cameraPitch>55*Math.PI/180?18:12))continue;
         const i = floorCount++,
           key = `${x},${y}`,
           seen = this.explored.has(key),
@@ -464,18 +479,18 @@ export class ModernGame {
           c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x6db2b2:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].ground) : seen ? 0xa6b698 : 0x557b59),
         );
         if(this.maze.grid[y][x]!==1||this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y))continue;
-        const lodge=!!this.adventure?.sample&&x>=9&&x<=17&&y>=21&&y<=29,rock=!!this.adventure?.sample&&x>=55&&x<=71&&y>=54&&y<=71;
+        const cabin=this.adventure?.layout.forest?.cabin,lodge=!!this.adventure?.sample&&x>=9&&x<=17&&y>=21&&y<=29||!!this.adventure?.expedition&&!this.adventure.sample&&['forest','coast'].includes(this.adventure.area)&&!!cabin&&Math.abs(x-cabin.x)<=2&&Math.abs(y-cabin.y)<=2,rock=!!this.adventure?.sample&&x>=55&&x<=71&&y>=54&&y<=71;
         if(lodge||rock){this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+(rock?2:.975),y+.5);this.matrix.scale.set(1,rock?2.05:1,1);this.matrix.updateMatrix();if(lodge)this.lodgeWalls!.setMatrixAt(lodgeCount++,this.matrix.matrix);else this.rockWalls!.setMatrixAt(rockCount++,this.matrix.matrix);continue;}
         const wi=wallCount++;
-        this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+(this.adventure?.sample?.975:.41),y+.5);
+        this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+this.wallHeight/2,y+.5);
         this.matrix.scale.setScalar(this.maze.grid[y][x]===1&&!this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y)?1:0);
         this.matrix.updateMatrix();this.walls.setMatrixAt(wi,this.matrix.matrix);
-        this.walls.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
-        if(this.leaves){this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+(this.adventure?.sample?1.92:.79),y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
+        this.walls.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
+        if(this.leaves){this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+this.wallHeight-.03,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
 
 
       }
-    this.floor.count=this.adventure?.sample?0:floorCount;if(this.rockWalls){this.rockWalls.count=rockCount;this.lodgeWalls!.count=lodgeCount;this.rockWalls.instanceMatrix.needsUpdate=this.lodgeWalls!.instanceMatrix.needsUpdate=true;}this.walls.count=wallCount;if(this.leaves)this.leaves.count=wallCount;
+    this.floor.count=this.adventure?.expedition?0:floorCount;if(this.rockWalls){this.rockWalls.count=rockCount;this.lodgeWalls!.count=lodgeCount;this.rockWalls.instanceMatrix.needsUpdate=this.lodgeWalls!.instanceMatrix.needsUpdate=true;}this.walls.count=wallCount;if(this.leaves)this.leaves.count=this.adventure?.expedition&&!this.adventure.sample&&this.adventure.area!=='forest'?0:wallCount;
     this.shrubPoints.forEach((p, index) => {
       const visible =
         this.explored.has(`${Math.floor(p.x)},${Math.floor(p.y)}`) &&
@@ -538,7 +553,7 @@ export class ModernGame {
     const action = this.actionState;
     this.options.onActionChange?.("jump", action.jumping);
     this.options.onActionChange?.("hit", action.hitting);
-    if (!this.paused && !this.ended&&(!this.expandedMap||this.options.online)) {
+    if (!this.orientationBlocked&&!this.paused && !this.ended&&(!this.expandedMap||this.options.online)) {
       this.elapsed += raw;
       let dx =
         (this.keys.has("d") || this.keys.has("arrowright") ? 1 : 0) -
@@ -592,7 +607,7 @@ export class ModernGame {
     this.drawnAngle=dampAngle(this.drawnAngle,this.angle,dt,28);
     this.hero.root.rotation.y = this.drawnAngle;
     const climbingPose=this.adventure?.climber.state.phase==='hanging'||this.adventure?.climber.state.phase==='climbing';
-    const elevation=this.terrain(this.position.x,this.position.y)+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed));
+    const elevation=this.terrain(this.position.x,this.position.y)+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed))+(this.adventure?.area==='sea'?.22:0);
     const drawnElevation=climbingPose?this.hero.root.position.y+(elevation-this.hero.root.position.y)*(1-Math.exp(-dt*20)):elevation;
     this.hero.root.position.set(this.position.x,drawnElevation,this.position.y);
     const shadow = this.hero.root.getObjectByName("ground-shadow");
@@ -603,7 +618,7 @@ export class ModernGame {
     this.stepDistance+=actual*dt;
     if(actual>.2&&this.stepDistance>.32&&!this.paused){this.stepDistance=0;sfx('step');this.splats.push({point:{...this.position},at:this.time,color:0xe6d2a5});}
     this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {
-      jump:this.jumpAt(this.elapsed),pole:!!this.adventure?.sample&&this.elapsed-this.hitStarted>HIT_SECONDS,lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
+      jump:this.jumpAt(this.elapsed),swim:this.adventure?.area==='sea',pole:!!this.adventure?.expedition&&this.adventure.area!=='sea'&&this.elapsed-this.hitStarted>HIT_SECONDS,lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/.55,
       hit: Math.max(
         0,
         Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
@@ -623,11 +638,11 @@ export class ModernGame {
     }
     if(this.adventure) {
       const a=this.adventure;this.ensureGuardModels();
-      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=(2.4*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);if(a.sample){fog.near=22;fog.far=42;}
+      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=(2.4*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);if(a.expedition){fog.near=22;fog.far=42;if(!a.sample)fog.color.set(areaThemes[a.area].sky);}
       setAudioScene(a.stage==='escape'?'escape':a.stage==='boss'?'boss':a.zone>=4?'deep':'modern');
       this.heroIcing.visible=a.hits>0&&a.elapsed-a.lastHit<7;this.heroIcing.children.forEach((m,i)=>m.visible=i<(a.hits>=2?9:4));
-      for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:a.sample&&event.source!=='cake'?0xc08dd1:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
-      this.guardModels.forEach((m,i)=>{const g=a.guards[i];if(!g){m.visible=false;this.warningModels[i].visible=false;return;}this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&(this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)||((g.boss||a.sample)&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<(g.boss?18:12)&&clearSight(this.maze.grid,this.position,g.position)));const previous=m.userData.previousPosition as Point|undefined;const vx=previous?g.position.x-previous.x:0,vy=previous?g.position.y-previous.y:0;
+      for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='river'?0x9de7e2:a.expedition&&event.source!=='cake'?0xc08dd1:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;
+      this.guardModels.forEach((m,i)=>{const g=a.guards[i];if(!g){m.visible=false;this.warningModels[i].visible=false;return;}this.guardIcing[i].visible=g.hits>0&&a.elapsed-g.lastHit<7;this.guardIcing[i].children.forEach((m,j)=>m.visible=j<(g.hits%3===1?4:9));this.previousGuardHits[i]=g.hits;m.visible=!g.dead&&(this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)||((g.boss||a.expedition)&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<(g.boss?18:12)&&clearSight(this.maze.grid,this.position,g.position)));const previous=m.userData.previousPosition as Point|undefined;const vx=previous?g.position.x-previous.x:0,vy=previous?g.position.y-previous.y:0;
       const moving=Math.hypot(vx,vy)/Math.max(.001,dt),heading=g.boss||g.telegraphUntil?Math.atan2(this.position.x-g.position.x,this.position.y-g.position.y):moving>.02?Math.atan2(vx,vy):m.rotation.y;
       m.position.set(g.position.x,this.terrain(g.position.x,g.position.y),g.position.y);m.rotation.y=dampAngle(m.rotation.y,heading,dt,10);m.userData.previousPosition={...g.position};const upcoming=g.boss?a.hazards.find(h=>!h.resolved):undefined;const windup=upcoming?Math.max(0,1-(upcoming.at-a.elapsed)/1.8):g.telegraphUntil?Math.max(0,1-(g.telegraphUntil-a.elapsed)/(g.boss?1:1.2)):0;const armor=m.getObjectByName('king-armor');if(armor)armor.visible=g.boss&&(a.seals.size<a.sealGoal||!a.bossVulnerable);m.userData.animate?.(this.time,moving,windup,a.elapsed<g.stunUntil,a.elapsed-g.lastHit,a.bossPhase);
       const warning=this.warningModels[i];warning.visible=!!g.telegraphUntil&&m.visible;warning.position.set(g.aim.x,.04,g.aim.y);});
@@ -648,18 +663,18 @@ export class ModernGame {
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
     const mode=this.cameraMode;
     const target=new T.Vector3(this.position.x*U,this.terrain(this.position.x,this.position.y)+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
-    const distance=mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.cameraPitch));
+    const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
     // A low camera must keep the torso visible, not merely clear the hedge with a head-height ray.
     // In open ground the requested 0-degree view is exact; a foreground hedge gently lifts/shortens the arm.
-    if(this.cameraPitch<(this.adventure?.sample?35:15)*Math.PI/180){
+    if(this.cameraPitch<(this.adventure?.expedition?35:15)*Math.PI/180){
       const torso=target.clone();torso.y-=.55;const line=desired.clone().sub(torso),samples=Math.ceil(line.length()/.16);let blocked=false;
-      for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<this.terrain(x+.5,y+.5)+(this.adventure?.sample?(x>=55&&x<=71&&y>=54&&y<=71?4.2:2.15):1.05))||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
-      if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+(this.adventure?.sample?2.1:1.35)),target.z-Math.cos(this.cameraYaw)*near);}
+      for(let i=1;i<samples;i++){const p=torso.clone().addScaledVector(line,i/samples),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((this.maze.grid[y]?.[x]===1&&p.y<this.terrain(x+.5,y+.5)+(this.adventure?.sample?(x>=55&&x<=71&&y>=54&&y<=71?4.2:2.15):this.wallHeight+.2))||this.adventure?.layout.ledges.some(l=>x===l.point.x&&y===l.point.y&&p.y<l.height+.1)){blocked=true;break;}}
+      if(blocked){const near=Math.min(distance,3.6);desired.set(target.x-Math.sin(this.cameraYaw)*near,Math.max(desired.y,target.y+(this.adventure?.expedition?this.wallHeight+.15:1.35)),target.z-Math.cos(this.cameraYaw)*near);}
     }
     // Shorten the camera arm before it enters a hedge; never clip through terrain.
     const arm=desired.clone().sub(target),steps=Math.ceil(arm.length()/.15);
-    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<this.terrain(x+.5,y+.5)+(this.adventure?.sample?(x>=55&&x<=71&&y>=54&&y<=71?4.2:2.18):1.08)&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.03,(i-1)/steps));desired.y=Math.max(desired.y,target.y+.1);break;}}
+    for(let i=1;i<=steps;i++){const p=target.clone().addScaledVector(arm,i/steps),x=Math.floor(p.x/U),y=Math.floor(p.z/U);if((p.y<this.terrain(x+.5,y+.5)+(this.adventure?.sample?(x>=55&&x<=71&&y>=54&&y<=71?4.2:2.18):this.wallHeight+.23)&&this.maze.grid[y]?.[x]===1)||this.adventure?.layout.ledges.some(l=>p.y<l.height+.12&&x===l.point.x&&y===l.point.y)){desired.copy(target).addScaledVector(arm,Math.max(.03,(i-1)/steps));desired.y=Math.max(desired.y,target.y+.1);break;}}
     // At a close obstacle, lift the short camera arm above it instead of filling the screen with the hero's head.
     if(desired.distanceTo(target)<1.6){desired.copy(target).addScaledVector(arm,Math.min(1,1.6/arm.length()));desired.y=Math.max(desired.y,target.y+.65);}
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*9));this.lookAt.lerp(target,1-Math.exp(-dt*12));}
@@ -675,13 +690,13 @@ export class ModernGame {
       this.options.onTick(this.elapsed, this.explored.size);
       if(this.adventure)this.options.onAdventure?.(this.adventure);
     }
-    if(!this.adventure?.sample){const rise=Math.max(0,this.camera.position.y-target.y-10);const fog=this.scene.fog as T.Fog;fog.near=10+rise;fog.far=24+rise;}
-    this.forestScene?.update(this.time,this.camera,this.position);
-    this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
+    if(!this.adventure?.expedition){const rise=Math.max(0,this.camera.position.y-target.y-10);const fog=this.scene.fog as T.Fog;fog.near=10+rise;fog.far=24+rise;}
+    this.forestScene?.update(this.time,this.camera,this.position);this.biomeScene?.update(this.time,this.camera,this.position);
+    this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {
-    this.forestScene?.dispose();
+    this.forestScene?.dispose();this.biomeScene?.dispose();
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.abort.abort();

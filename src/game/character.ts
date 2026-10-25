@@ -1,7 +1,7 @@
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
-export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean}
+export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appearance):Character{
@@ -86,6 +86,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
 
   if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
   if(action?.climb==='hanging'||action?.climb==='climbing'){body.position.y-=.1;arms.forEach(arm=>{arm.rotation.x=-2.35;arm.rotation.z=0;});elbows.forEach(e=>e.rotation.x=-.15);legs.forEach(l=>l.rotation.x=-.6);knees.forEach(k=>k.rotation.x=.6);}
+  if(action?.swim){body.rotation.x=-.72;body.position.y=.18;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
   centers.forEach((p,i)=>{const u=i/28,b=rest[i];p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,b.y+Math.sin(time*2-u*3)*.025*u,b.z+Math.sin(time*2.3-u*4)*.045*u);});
   for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();normal.crossVectors(tangent,up).normalize();if(normal.lengthSq()<.1)normal.set(1,0,0);binormal.crossVectors(tangent,normal).normalize();const radius=.075*(1-i/28*.65);

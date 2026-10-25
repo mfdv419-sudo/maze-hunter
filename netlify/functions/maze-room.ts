@@ -1,3 +1,4 @@
+import {validArea} from '../../src/game/areas';
 import {permittedAppearance} from '../../src/services/cosmetics';
 import type {Profile} from '../../src/services/local';
 import {roomCapacity} from '../../src/game/adventure-room';
@@ -85,13 +86,14 @@ export const handler: Handler = async (event) => {
           ? body.difficulty
           : "medium",
         mode = body.mode === "coop" ? "coop" : "race";
-      const queue=getDatabase().ref(`mazeMatchQueue/${difficulty}/${mode}`);
+      const area=body.area===undefined?'classic':body.area;if(!validArea(area))throw Error('Invalid adventure area');
+      const queue=getDatabase().ref(`mazeMatchQueue/${area}/${difficulty}/${mode}`);
       if(action==='random'){
         const candidates=((await queue.get()).val()||{}) as Record<string,number>;
         for(const code of Object.keys(candidates).slice(-20)){
           if(now-candidates[code]>600000){await queue.child(code).remove();continue;}
           const joined=await getDatabase().ref(`mazeRooms/${code}`).transaction((r:Match|null)=>{
-            if(!r||r.state!=='lobby'||!r.public||r.expiresAt<now||Object.keys(r.players||{}).length>=roomCapacity[difficulty])return;
+            if(!r||(r.area||'classic')!==area||r.difficulty!==difficulty||r.mode!==mode||r.state!=='lobby'||!r.public||r.expiresAt<now||Object.keys(r.players||{}).length>=roomCapacity[difficulty])return;
             try{return addPlayer(r,key,player,now);}catch{return;}
           });
           if(joined.committed)return{statusCode:200,headers,body:JSON.stringify({room:joined.snapshot.val(),playerKey:key,serverTime:now})};
@@ -118,7 +120,7 @@ export const handler: Handler = async (event) => {
           now,
           crypto.getRandomValues(new Uint32Array(1))[0],
         );
-        room.adventure={version:2,map:room.seed%10,states:{},tickAt:0,escapeAt:-1,escapeDuration:90,bossHP:0};room.public=action==='random';
+        room.area=area;room.adventure={version:2,map:room.seed%10,states:{},tickAt:0,escapeAt:-1,escapeDuration:90,bossHP:0};room.public=action==='random';
         const saved = await getDatabase()
           .ref(`mazeRooms/${id}`)
           .transaction((old) =>

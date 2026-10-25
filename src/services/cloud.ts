@@ -120,6 +120,7 @@ export interface RoomPlayer {
   hitAt?: number;
 }
 export interface Room {
+  area?:import('../game/areas').AdventureArea;
   adventure?:import('../game/adventure-room').AdventureRoom;
   public?:boolean;
   id: string;

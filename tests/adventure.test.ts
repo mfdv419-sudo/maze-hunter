@@ -77,7 +77,7 @@ describe('Adventure end-to-end state progression',()=>{
 });
 describe('M6 difficulty curve',()=>{
  it('becomes denser at level 6 and has a substantially larger level 21',()=>{
-  expect(retroBoard(4).width).toBeGreaterThan(retroBoard(4).height);expect(retroBoard(5).width).toBeGreaterThan(retroBoard(5).height);expect(retroBoard(21).width).toBeGreaterThan(retroBoard(6).width);
+  expect(retroBoard(4).size).toBe(5);expect(retroBoard(5).size).toBe(11);expect(retroBoard(21).width).toBeGreaterThan(retroBoard(6).width);
   expect(retroBoard(6).deadEnds.length).toBe(1);
  });
 });

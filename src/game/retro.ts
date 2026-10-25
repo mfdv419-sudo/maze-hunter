@@ -107,15 +107,15 @@ export class RetroGame {
         view=retroViewport(w,h,board.width,board.height);scale=view.scale;owner.layout=view;renderedRevision=state.mapRevision;
         if(owner.zoomLevel>1)this.cameras.main.setBounds(0,0,w,h);
         const g=this.gfx;g.clear();
-        const left=view.ox,top=view.oy,mw=view.cols*view.sx,mh=view.rows*view.sy,wallColor=0x315653;
+        const left=view.ox,top=view.oy,mw=view.cols*view.sx,mh=view.rows*view.sy,theme=Math.floor((state.level-1)/10)%3,wallColor=[0x556b68,0x5a8460,0x927052][theme];
         g.fillStyle(0x122f35,.32).fillRoundedRect(left-9,top-5,mw+18,mh+18,12);
-        g.fillStyle(0x94b6a1).fillRoundedRect(left-7,top-7,mw+14,mh+14,10);
-        g.fillStyle(0xfff0cb).fillRect(left,top,mw,mh);
+        g.fillStyle(0xb9c9a3).fillRoundedRect(left-7,top-7,mw+14,mh+14,10);
+        g.fillStyle(0xe5d8b1).fillRect(left,top,mw,mh);
         const screen=(x:number,y:number)=>retroToScreen({x,y},view);
         for(let y=0;y<board.height;y++)for(let x=0;x<board.width;x++){
           const walls=board.walls[y][x];
-          if(walls===15){const a=screen(x,y),b=screen(x+1,y+1);g.fillStyle(wallColor).fillRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));continue;}
-          const edge=(ax:number,ay:number,bx:number,by:number)=>{const a=screen(ax,ay),b=screen(bx,by);g.lineStyle(Math.max(1.6,Math.min(3.5,scale*.11)),wallColor,1).lineBetween(a.x,a.y,b.x,b.y);};
+          if(walls===15){const a=screen(x,y),b=screen(x+1,y+1);g.fillStyle(0x46664c).fillRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));continue;}
+          const edge=(ax:number,ay:number,bx:number,by:number)=>{const a=screen(ax,ay),b=screen(bx,by);g.lineStyle(Math.max(2.2,Math.min(4,scale*.11)),wallColor,1).lineBetween(a.x,a.y,b.x,b.y);g.lineStyle(Math.max(.7,scale*.018),theme===0?0xa9bbb0:theme===1?0x9ebc7d:0xc9a774,.8).lineBetween(a.x+.7,a.y+.7,b.x+.7,b.y+.7);};
           if(walls&1)edge(x,y,x+1,y);if(walls&8)edge(x,y,x,y+1);
           if((walls&2)&&x===board.width-1)edge(x+1,y,x+1,y+1);
           if((walls&4)&&y===board.height-1)edge(x,y+1,x+1,y+1);
