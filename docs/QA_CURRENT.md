@@ -1,16 +1,12 @@
-# Online Sync & Chat — QA
+# Current verification — 27 October 2026
 
-- 134 Vitest tests / 22 files: PASS. Complete output: TEST_RESULTS.txt.
-- Authoritative starting position applied to render and simulation, including second member: PASS.
-- Two clients with interleaved own acknowledgements and teammate snapshots, Race and Co-op, using ModernGame.syncAdventure: PASS. Audio is mocked only to import the rendering class in Node; no WebGL render is claimed.
-- Reconnect sequence continuation, rejected movement correction, true respawn and bounded pending queues: PASS.
-- Prediction cannot award pickups, take environmental damage or reset to a checkpoint: PASS.
-- Co-op Classic refill per member, no duplicate refill in the same two-second tick, no super auto-refill: PASS.
-- Chat membership, validation, retry deduplication, send rate and bounded history: PASS.
-- Handler chat uses server identity; nonmembers rejected: PASS.
-- Lobby markup escapes names and contains fixed ten-slot structure and footer controls: PASS.
-- Browser observed at 844×390 and 740×360: ten visible slots; Guide/Leave/Ready/Start inside viewport. Short frame footer button bottom: 344px within 360px; stage bottom 292px, footer top 300px (8px gap). Panels end at stage boundary.
-- Browser local-only chat: “Hello team” renders from form submission. No Firebase message or external communication sent.
-- Existing Retro, terrain, Easy, Volcano, costume, quest and server contracts: PASS.
-- Frontend production build, Node Function bundle and delta overlay build: verified at packaging.
-- NOT VERIFIED: physical phones, live two-device Firebase play and WebGL gameplay render in the available browser. No prior release browser-test counts are reused.
+- PASS: 145 Vitest tests, 23 files. Full output in TEST_RESULTS.txt.
+- PASS: TypeScript and production Vite build. Existing vendor chunk-size warnings remain non-blocking.
+- PASS: Netlify maze-room Function esbuild bundle, external packages retained.
+- PASS: simultaneous Race and Co-op prediction/acknowledgements with 1.8–3 second round trips; lost-response retry; legal slow path validation and wall/speed rejection.
+- PASS: camera occlusion fades, restores materials, preserves camera pose and handles rebuilt instanced wall bounds.
+- PASS: all 10 sea slots share three ships; thirty unique diamonds lie on decks; shared renderer/swimming surfaces; underwater chest preserved; King remains aquatic.
+- PASS: high cascades, lava contact damage, above-cliff falling rocks, charge/roll/bubbles, single shared Co-op awakening and six-second protection, old payment receipts and real progression.
+- Browser: local CPU/SVG rendering of source geometry inspected. UI camera fixture showed opacity 0.08 then 1.00 and unchanged camera coordinates. Fixtures removed before packaging.
+- LIMIT: browser WebGL is disabled; full in-game visual rendering, physical-device audio, live two-device Firebase multiplayer and production deployment were not verified.
+- No mock data was written to production. No Firebase configuration, database, rules or deployment modified.

@@ -2,9 +2,9 @@ import type {Profile} from './local';
 export const slots=['head','face','body','back','tail','palette','hands','feet'] as const;
 export type Slot=typeof slots[number];
 export type Appearance=Record<Exclude<Slot,'hands'|'feet'>,string>&Partial<Record<'hands'|'feet',string>>;
-export type Rarity='common'|'rare'|'epic'|'legendary'|'mythic';
+export type Rarity='common'|'uncommon'|'rare'|'epic'|'legendary'|'mythic';
 export interface Cosmetic {id:string;slot:Slot;name:[string,string];rarity:Rarity;stars:number;zones?:number;wins?:number}
-export const cosmetics:Cosmetic[]=[
+const legacyCatalogue:Cosmetic[]=[
  {id:'bare',slot:'head',name:['Jambul Rimba','Forest Tuft'],rarity:'common',stars:0},
  {id:'leaf',slot:'head',name:['Topi Daun','Leaf Hat'],rarity:'rare',stars:5},
  {id:'explorer',slot:'head',name:['Topi Penjelajah','Explorer Hat'],rarity:'epic',stars:10},
@@ -31,15 +31,17 @@ export const cosmetics:Cosmetic[]=[
  ...(['hands','feet'] as const).flatMap(slot=>(['bare','trail','climber','desert','diver'] as const).map((id,i)=>({id,slot,name:([['Tanpa perlengkapan','Bare'],['Jelajah Rimba','Forest Trail'],['Pendaki Tebing','Cliff Climber'],['Penjelajah Gurun','Desert Explorer'],['Penyelam Karang','Reef Diver']][i].map((n,j)=>n+(i?(j===0?(slot==='hands'?' · Sarung tangan':' · Sepatu'):(slot==='hands'?' · Gloves':' · Boots')):''))) as [string,string],rarity:(i>2?'epic':i?'rare':'common') as Rarity,stars:i===0?0:slot==='hands'?i*2+1:i*2+3}))),
  ...(['climber','desert','diver'] as const).flatMap((id,i)=>(['head','body','back',...(id==='climber'?[]:['face'])] as Slot[]).map(slot=>({id,slot,name:([['Pendaki Tebing','Cliff Climber'],['Penjelajah Gurun','Desert Explorer'],['Penyelam Karang','Reef Diver']][i]) as [string,string],rarity:'epic' as Rarity,stars:slot==='body'?12+i*3:6+i*2}))),
 ];
+/** Price fixed by rarity; original unlocks and recorded payments keep their historical values. */
+export const cosmetics:Cosmetic[]=legacyCatalogue.map(c=>{if(!c.stars)return{...c};const rarity:Rarity=c.stars<=5?'common':c.stars<=10?'uncommon':c.stars<=20?'rare':c.stars<=50?'epic':'legendary';const base={common:50,uncommon:75,rare:125,epic:250,legendary:500,mythic:500}[rarity];const extra=c.slot==='body'?25:['back','feet'].includes(c.slot)?(base%10===0?10:25):0;return{...c,rarity,stars:base+extra};});
 export const paletteColors:Record<string,number>={charcoal:0x343c45,brown:0x735947,silver:0x8a969b,mint:0x4a8275,gold:0x98723f};
 export const defaults:Appearance={head:'bare',face:'bare',body:'classic',back:'bare',tail:'bare',palette:'charcoal',hands:'bare',feet:'bare'};
-export function stats(p:Profile){const runs=Object.values(p.adventures||{});return{stars:Object.values(p.retro||{}).reduce((n,r)=>n+(Number.isFinite(r.stars)?Math.max(0,Math.min(3,r.stars)):0),0),coins:runs.reduce((n,r)=>n+r.coins,0),wins:p.modernWins||0,zones:new Set(runs.flatMap(r=>r.zones)).size,chests:runs.reduce((n,r)=>n+r.chests,0)};}
+export function stats(p:Profile){const runs=Object.values(p.adventures||{});return{stars:Object.values(p.retro||{}).reduce((n,r)=>n+(Number.isFinite(r.stars)?Math.max(0,Math.min(3,r.stars)):0),0)+runs.reduce((n,r)=>n+(Number.isFinite(r.stars)?Math.max(0,Math.min(9,r.stars)):0),0),coins:runs.reduce((n,r)=>n+r.coins,0),wins:p.modernWins||0,zones:new Set(runs.flatMap(r=>r.zones)).size,chests:runs.reduce((n,r)=>n+r.chests,0)};}
 export interface WardrobeWallet {version:1;legacy:string[];purchases:string[];pending:string[];paid:Record<string,number>}
 export const cosmeticKey=(c:Pick<Cosmetic,'slot'|'id'>)=>`${c.slot}:${c.id}`;
 const newItems=new Set(cosmetics.filter(c=>['hands','feet'].includes(c.slot)||['climber','desert','diver'].includes(c.id)).map(cosmeticKey));
-export function ensureWallet(p:Profile){if(!p.wardrobe){const st=stats(p);p.wardrobe={version:1,legacy:p.wardrobeSchema===1?[]:cosmetics.filter(c=>!newItems.has(cosmeticKey(c))&&st.stars>=c.stars&&st.wins>=(c.wins||0)).map(cosmeticKey).concat(p.outfit==='explorer'?['hands:trail','feet:trail']:[]),purchases:[],pending:[],paid:{}};p.wardrobeSchema=1;}return p.wardrobe;}
+export function ensureWallet(p:Profile){if(!p.wardrobe){const st={...stats(p),stars:Object.values(p.retro||{}).reduce((n,r)=>n+Math.max(0,Math.min(3,r.stars||0)),0)};p.wardrobe={version:1,legacy:p.wardrobeSchema===1?[]:legacyCatalogue.filter(c=>!newItems.has(cosmeticKey(c))&&st.stars>=c.stars&&st.wins>=(c.wins||0)).map(cosmeticKey).concat(p.outfit==='explorer'?['hands:trail','feet:trail']:[]),purchases:[],pending:[],paid:{}};p.wardrobeSchema=1;}return p.wardrobe;}
 export function owns(p:Profile,c:Cosmetic){const w=ensureWallet(p),k=cosmeticKey(c);return c.stars===0||w.legacy.includes(k)||w.purchases.includes(k)||w.pending.includes(k);}
-export function starBalance(p:Profile){const w=ensureWallet(p);return Math.max(0,stats(p).stars-[...new Set([...w.purchases,...w.pending])].filter(k=>!w.legacy.includes(k)).reduce((n,k)=>n+(w.paid[k]??cosmetics.find(c=>cosmeticKey(c)===k)?.stars??0),0));}
+export function starBalance(p:Profile){const w=ensureWallet(p);return Math.max(0,stats(p).stars-[...new Set([...w.purchases,...w.pending])].filter(k=>!w.legacy.includes(k)).reduce((n,k)=>n+(w.paid[k]??legacyCatalogue.find(c=>cosmeticKey(c)===k)?.stars??0),0));}
 export function available(p:Profile,item:Cosmetic){return owns(p,item);}
 export function redeem(p:Profile,item:Cosmetic){if(owns(p,item))return true;if(starBalance(p)<item.stars||stats(p).wins<(item.wins||0))return false;const w=ensureWallet(p),key=cosmeticKey(item);w.pending.push(key);w.paid[key]=item.stars;p.updatedAt=Date.now();return true;}
 /** Server settles fixed-catalogue item IDs; receipts retain price paid across future price changes. */

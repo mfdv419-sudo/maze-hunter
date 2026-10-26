@@ -19,5 +19,7 @@ export function dormantBoss(area:AdventureArea){
   if(area!=='sea')for(let i=0;i<5;i++){const a=i*Math.PI*2/5;add(root,new T.IcosahedronGeometry(.16,0),area==='desert'?stone:moss,Math.sin(a)*.35,.12,Math.cos(a)*.35).scale.y=.2;}
   add(root,new T.OctahedronGeometry(.12),glow,0,area==='sea'?1.4:1.25,.5);
  }
- const ring=add(root,new T.TorusGeometry(.7,.025,5,32),glow,0,.055,0);ring.rotation.x=-Math.PI/2;ring.name='awakening-ring';root.userData.awaken=(progress:number)=>{const p=Math.max(0,Math.min(1,progress));glow.opacity=p*.8;ring.scale.setScalar(.8+p*.6);root.rotation.z=Math.sin(p*Math.PI*10)*Math.sin(p*Math.PI)*.012;};return root;
+ const cracks=new T.Group();cracks.name='awakening-cracks';root.add(cracks);const fragments:T.Mesh[]=[];
+ for(let i=0;i<9;i++){const a=i*2.4,curve=new T.CatmullRomCurve3([new T.Vector3(Math.sin(a)*.3,.25,Math.cos(a)*.35),new T.Vector3(Math.sin(a+.25)*.43,.7,Math.cos(a+.25)*.43),new T.Vector3(Math.sin(a)*.35,1.3,Math.cos(a)*.35)]);const crack=add(cracks,new T.TubeGeometry(curve,7,.012,4,false),glow,0,0,0);crack.name='glowing-statue-fracture';const q=add(root,new T.DodecahedronGeometry(.09+i%3*.03),stone,0,0,0);q.visible=false;fragments.push(q);}
+ const ring=add(root,new T.TorusGeometry(.7,.025,5,32),glow,0,.055,0);ring.rotation.x=-Math.PI/2;ring.name='awakening-ring';root.userData.awaken=(progress:number)=>{const p=Math.max(0,Math.min(1,progress));glow.opacity=p*.9;ring.scale.setScalar(.8+p*.6);root.rotation.z=Math.sin(p*Math.PI*10)*Math.sin(p*Math.PI)*.012;fragments.forEach((q,i)=>{const a=i*2.4,t=Math.max(0,(p-.55)/.45);q.visible=t>0;q.position.set(Math.sin(a)*t*1.8,.6+Math.sin(t*Math.PI)*.8,Math.cos(a)*t*1.8);q.rotation.set(t*i,t*3,t*2);});};return root;
 }

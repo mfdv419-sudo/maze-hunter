@@ -1,39 +1,39 @@
-# Online Sync & Chat — pemasangan
+# Online Smoothness & Living Biomes — 27 October 2026
 
-Ini **delta setelah paket Terrain & Online yang berisi 42 file**, dengan source lengkap pendamping `maze-hunter-terrain-online-source.zip`. Terapkan pada branch terbaru yang sudah menjalankan revisi itu.
+Paket ini melanjutkan **Online Sync & Chat (delta 22 file)**, bukan ZIP awal.
 
-1. Ekstrak seluruh isi ZIP delta ke root repository, timpa path yang sama. Tidak ada penghapusan tambahan.
-2. Commit/push frontend dan `netlify/functions/maze-room.ts` bersama, lalu deploy ulang. Node 24, `npm run build`, publish `dist` dan directory Functions tetap sama. Jangan hanya memperbarui dist: handler chat dan perubahan simulasi server harus ikut di-deploy.
-3. Tidak ada environment variable atau rules baru. Pertahankan konfigurasi Firebase dan rules yang sudah digunakan pada revisi 42 file.
-4. Buka room baru setelah deploy. Jangan melanjutkan room pertandingan yang dibuat sebelum perubahan simulasi ini. Muat ulang kedua perangkat agar memakai frontend yang sama.
+## Cara memasang
+1. Cadangkan source existing. Salin isi delta ke root repository, pertahankan struktur folder. Tidak ada penghapusan file tambahan.
+2. Deploy frontend **dan Netlify Functions** dalam revisi yang sama. Jangan melakukan drag-and-drop folder dist saja: perubahan aturan movement, harga dan multiplayer berada di Functions juga.
+3. Pertahankan proyek Firebase, environment variables, Auth, RTDB dan rules existing. Tidak perlu variabel atau rules baru; jangan menaruh service-account JSON ke browser.
+4. Setelah deploy selesai, refresh kedua perangkat dan **buat room baru**. Hindari meneruskan room/run yang dibuat dengan layout atau harga lama.
+5. Bila urutan delta sebelumnya belum pasti, gunakan source lengkap rilis ini sebagai source konsolidasi.
 
-## Yang diperbaiki
+## Online
+Penyebab jeda: antrean 24 sampel dan respons lebih dari 1,2 detik otomatis menghentikan prediksi. Kini jalur berurutan mempertahankan tikungan, menyederhanakan segmen lurus, menampung hingga 160 titik, dan mengirim batch maksimal 24 titik. Respons 1,8–3 detik tidak menghentikan gerak. Koneksi lambat diberi status tanpa langsung menjeda. Pada putus koneksi atau respons di atas 8 detik, prediksi tetap dibatasi; request gerak timeout 10 detik. Ini bukan janji tetap bisa bermain ketika koneksi terputus.
 
-Posisi Online sebelumnya diubah pada objek tampilan saja, sementara simulasi masih memakai Start bawaan. Pembaruan room juga dapat mengembalikan gerakan lokal yang belum dikonfirmasi, dan nomor urut reconnect dimulai ulang. Sekarang kedua posisi diinisialisasi dari snapshot server, gerakan menunggu ack milik pemain sendiri, dan nomor urut melanjutkan server. Koreksi nyata saat jatuh, respawn atau lintasan ditolak tetap berlaku.
+Packet yang kehilangan acknowledgement diulang dengan sequence sama (idempoten), tanpa membuang gerak baru. Server menerima waktu gerak legal hingga 10 detik sambil tetap memvalidasi setiap segmen terhadap tembok, kecepatan, checkpoint dan respawn. Clock offset menggunakan perkiraan tengah round trip. Kegagalan transport tidak langsung mengembalikan posisi ke snapshot lama.
 
-Pada koneksi lambat, prediksi dibatasi dan indikator “Menunggu koneksi” tampil. Permainan server tetap berjalan; ini tidak membekukan waktu pertandingan. Callback dari room/halaman yang sudah ditinggalkan diabaikan.
+## Kamera dan lingkungan
+- Kamera mempertahankan sudut dan jarak yang dipilih pemain. Penghalang yang memotong garis pandang menjadi transparan sementara, lalu pulih. Collision fisik pemain terhadap dinding tetap berlaku.
+- Siluet gunung tajam/bersalju, undakan sandstone gurun, tebing pantai tererosi, akar hutan, karang laut dan kolom basalt dibedakan melalui geometri dan relief, bukan tekstur saja.
+- Dua air terjun ngarai dan dua lava terjun: kolam, partikel air/kabut atau bara, retakan pijar dan suara berdasarkan jarak. Kolam lava melukai pemain.
+- Batu lingkungan turun dari ketinggian 12 unit, di atas dinding, dengan tanda, suara jatuh dan benturan; tidak melukai sebelum mendekati tanah.
+- Tiga kapal besar sebagai area diamond, dengan dek dan ramp yang memakai aturan permukaan yang sama pada renderer, berenang, pickup dan server. Sepuluh slot memakai kapal yang sama; tiga puluh diamond pribadi ditempatkan di dek tanpa duplikasi.
 
-Lobby memakai grid tetap 4/8/10 slot dan footer terpisah. Anggota yang bergabung mengisi slot, bukan menambah tinggi halaman. Kode room bisa disalin. Error indikator hidden setelah dialog ditutup telah diperbaiki. Informasi HUD permainan memakai satu stack dengan jarak yang konsisten.
+## Penjaga dan kebangkitan
+Kambing mengambil ancang-ancang lalu menyeruduk; trenggiling menggulung/menggelinding; kepiting pantai/ngarai menggunakan gelembung. Penjaga volcano menggunakan model kadal, bukan kepiting yang hanya diganti warna. Penjaga laut memakai bentuk bersirip di air dan bentuk kadal laut saat naik ke dek, dengan transisi ukuran; Raja pari dibatasi ke habitat air.
 
-## Kue
+Semua seal memicu timeline kebangkitan enam detik: kamera mendekati Raja, patung retak dan melepas serpihan, Raja hidup, tiga pelindung datang menuju Raja. Cuplikan lokal dapat dilewati; durasi perlindungan dan penghentian gerakan tetap berasal dari server untuk semua pemain Co-op. Sudut pilihan pemain dipertahankan; akhir adegan memakai fade singkat untuk menghindari gerakan kamera melintasi seluruh peta. Race tetap memiliki seal dan Raja pribadi.
 
-| Sumber | Classic | Super merah/kuning/hijau |
-|---|---|---|
-| Checkpoint/wilayah segel | +1 setiap 2 detik, maksimal 8 | Tidak otomatis |
-| Arena boss aktif, segel lengkap | +1 setiap 2 detik, maksimal 8 | Tidak otomatis |
-| Tanaman tertentu saat memakai B | +2, maksimal 8 | Tidak menambah |
-| Segel | +2, maksimal 8 | Tidak menambah |
-| Penjaga dikalahkan | +3, maksimal 8 | Tidak menambah |
-| Peti | Diisi hingga 8 | +1 setiap warna, maksimal 5 |
+## Audio dan redeem
+Efek sintesis asli untuk langkah, serangan, warning, jatuh, benturan, pickup, air terjun, lava dan kebangkitan. Volume musik dan efek terpisah. Tidak ada rekaman eksternal baru; lihat docs/AUDIO_SOURCES.md.
 
-Stok awal super tetap 3 tiap warna. Menembakkan super menggunakan 1 bekal Classic dan 1 muatan warna. Isi ulang Classic kini juga berjalan pada server untuk setiap anggota Co-op; tidak lagi terlewati oleh jalur simulasi pemain bersama.
+Barang bawaan tetap gratis. Redeem berbayar mulai 50 bintang: Common 50–60, Uncommon 75–100, Rare 125–150, Epic 250–275, Legendary 500–525. Harga memakai kelipatan 10 atau 25. Pembelian/legacy unlock lama dipertahankan dan receipt tetap memakai harga yang dibayar. Bintang Retro serta hasil terbaik Adventure kampanye membentuk saldo; mengulang peta tidak menggandakan bintang. Forest sample tidak memberi progres akun.
 
-## Chat
+Chat teks dan pesan cepat dari rilis sebelumnya tetap tersedia; live voice belum diimplementasikan. Aturan refill cake tidak berubah dari rilis Online Sync & Chat.
 
-Tombol Chat room tersedia di lobby dan tombol gelembung chat di permainan. Ada pesan teks (maksimal 180 karakter) dan empat pesan cepat: Tunggu, Bantu aku, Ayo ke Raja, Terima kasih. Chat terlihat oleh anggota room; pertandingan tetap berjalan. Tersimpan 30 pesan terakhir; batas kirim satu pesan per detik. Mengetik tidak memicu WASD/lompat/lempar. Live suara belum tersedia dan tidak ada pengambilan izin mikrofon pada paket ini.
+## Verifikasi dan batasnya
+145 tes dalam 23 file lulus, TypeScript + build produksi lulus, Netlify Function berhasil dibundle. Termasuk dua klien bergerak bersamaan di Race/Co-op dengan delay 1,8 dan 3 detik, retry acknowledgement, validasi tembok/kecepatan, satu terrain kapal untuk 10 slot, perlindungan Co-op dan riwayat pembayaran.
 
-## Verifikasi
-
-134 tes Vitest / 22 file dan TypeScript lulus. Tes dua klien memakai fungsi sinkronisasi runtime yang sama, bergerak bersamaan dalam simulasi Race dan Co-op, menerima snapshot anggota lain, serta memeriksa ack, reconnect, respawn dan batas prediksi. Handler chat diuji untuk identitas dan keanggotaan.
-
-UI lobby diperiksa pada frame 844×390 dan 740×360 dengan 10 anggota: seluruh tombol footer terlihat dan halaman tidak bertambah tinggi. Chat dikirim pada fixture lokal tanpa koneksi Firebase. Render WebGL dan sesi nyata dua perangkat pada deployment Anda belum diverifikasi. Build frontend, bundel Function dan pemasangan ulang delta diperiksa sebelum pengiriman.
+Browser lokal: model kapal, air terjun, lava dan kambing diperiksa melalui renderer CPU/SVG yang menggunakan geometri source asli; penghalang turun ke opacity 0,08 dan kembali ke 1,00 dengan posisi kamera tetap. Pratinjau ini bukan bukti visual penuh WebGL. Browser QA menonaktifkan WebGL; runtime 3D penuh, kualitas suara pada perangkat fisik dan koneksi Firebase produksi melalui dua perangkat belum diverifikasi. Tidak ada deploy produksi atau perubahan data Firebase yang dilakukan.

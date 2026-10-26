@@ -1,3 +1,4 @@
+import {AWAKEN_SECONDS} from './awakening';
 import {areaTime} from './areas';
 import {AdventureState,type AdventureSave} from './adventure-state';
 import {adventureRules} from './adventure-layout';
@@ -30,9 +31,9 @@ function tickCoop(room:Match,now:number){
   const active=[...states.values()].filter(s=>s.phase==='playing');if(!active.length)break;
   const king=world.guards.find(g=>g.boss)!,target=active.filter(s=>Math.hypot(s.position.x-world.layout.fortress.x-.5,s.position.y-world.layout.fortress.y-.5)<world.arenaRadius).sort((a,b)=>Math.hypot(a.position.x-king.position.x,a.position.y-king.position.y)-Math.hypot(b.position.x-king.position.x,b.position.y-king.position.y))[0]||active[0];
   world.position={...target.position};world.depth=target.depth;world.checkpoint={...target.checkpoint};world.step(dt,raw/frames,0,0,1);for(const reward of world.rewardEvents.splice(0)){const member=states.get(reward.player);if(member)member.ammo=Math.min(8,member.ammo+reward.cakes);}
-  for(const [key,p]of entries){const s=states.get(key)!;if(s.phase!=='playing')continue;const jump=airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000);
+  for(const [key,p]of entries){const s=states.get(key)!;s.bossAwakeAt=world.bossAwakeAt;if(s.phase!=='playing')continue;const jump=airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000);
    for(const cake of world.projectiles){if(cake.ttl<=0||cake.owner==='player'||jump>=.22||Math.abs((cake.depth||0)-s.depth)>=.75)continue;const from={x:cake.position.x-cake.velocity.x*dt,y:cake.position.y-cake.velocity.y*dt},vx=cake.position.x-from.x,vy=cake.position.y-from.y,t=Math.max(0,Math.min(1,((s.position.x-from.x)*vx+(s.position.y-from.y)*vy)/(vx*vx+vy*vy||1)));if(Math.hypot(s.position.x-from.x-vx*t,s.position.y-from.y-vy*t)<.26){s.damage(cake.owner);cake.ttl=0;}}
-   for(const g of world.guards)if(!g.dead&&(!g.boss||world.bossAwake&&world.elapsed>=world.bossAwakeAt+1.8)&&jump<.22&&Math.abs(s.depth-(g.depth||0))<.75&&Math.hypot(g.position.x-s.position.x,g.position.y-s.position.y)<(g.boss?.55:.3))s.damage(g.boss?'boss':'guard');
+   for(const g of world.guards)if(!g.dead&&(!g.boss||world.bossAwake&&world.elapsed>=world.bossAwakeAt+AWAKEN_SECONDS)&&jump<.22&&Math.abs(s.depth-(g.depth||0))<.75&&Math.hypot(g.position.x-s.position.x,g.position.y-s.position.y)<(g.boss?.55:.3))s.damage(g.boss?'boss':'guard');
    for(const h of world.hazards)if(h.resolved&&h.at>world.elapsed-dt-.0001&&jump<.22&&s.depth<.75){let inside=Math.hypot(s.position.x-h.point.x,s.position.y-h.point.y)<h.radius;if(h.kind==='charge'||h.kind==='vine'){const vx=h.point.x-h.from.x,vy=h.point.y-h.from.y,t=Math.max(0,Math.min(1,((s.position.x-h.from.x)*vx+(s.position.y-h.from.y)*vy)/(vx*vx+vy*vy||1)));inside=Math.hypot(s.position.x-h.from.x-vx*t,s.position.y-h.from.y-vy*t)<h.radius;}if(inside){if(h.kind==='roots')s.slowUntil=s.elapsed+2;else s.damage(world.stage==='escape'?'guard':'boss');}}
   }
   world.projectiles=world.projectiles.filter(c=>c.ttl>0);
@@ -70,7 +71,7 @@ export function moveAdventurePlayer(room:Match,key:string,points:Point[],angle:n
  tickAdventureRoom(room,now);if(room.state!=='playing'||now<room.startsAt||p.finishedAt||seq<=p.seq)return room;
  const s=loadAdventure(room,key);if(s.phase!=='playing')return room;let position={...s.position},length=0;
  for(const q of points){if(!Number.isFinite(q.x)||!Number.isFinite(q.y)||!clearSegment(s.grid,position,q,.13))throw Error('Movement crosses a wall');length+=Math.hypot(q.x-position.x,q.y-position.y);position=q;}
- const seconds=Math.min(1.5,Math.max(0,(now-p.lastMove)/1000)),budget=seconds*2.7*s.speedFactor+.12;
+ const seconds=Math.min(10,Math.max(0,(now-p.lastMove)/1000)),budget=seconds*2.7*s.speedFactor+.12;
  // Respawns are authoritative and discard stale prediction instead of accepting a teleport.
  if(length>budget){p.lastMove=now;p.seq=seq;room.revision++;return room;}
  for(const q of points){s.acceptPosition(q,airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));if(s.phase!=='playing')break;}

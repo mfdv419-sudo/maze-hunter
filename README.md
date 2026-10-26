@@ -1,3 +1,5 @@
+> Current release: **Online Smoothness & Living Biomes**. Read [UPDATE_INSTRUCTIONS.md](UPDATE_INSTRUCTIONS.md) before deploying; frontend and Netlify Functions must match.
+
 # Maze Hunter
 
 Browser-first family maze game with an original fantasy binturong, Indonesian and English, Retro Journey and Adventure. This is a playable browser project; app stores and commercial services are not final.

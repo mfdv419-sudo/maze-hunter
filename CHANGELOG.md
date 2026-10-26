@@ -1,3 +1,7 @@
+# Online Smoothness & Living Biomes — 27 October 2026
+
+Gerakan online dengan penyanggaan koneksi lambat dan retry sequence; kamera transparansi penghalang; siluet biome, air/lava terjun dan kapal diamond walkable; charge/roll/bubble; kebangkitan Raja tersinkron; audio sintesis; redeem mulai 50 dengan preservasi receipt. Baca UPDATE_INSTRUCTIONS.md untuk penerapan dan batas verifikasi.
+
 # Changelog
 
 ## Online movement, viewport lobby and room chat

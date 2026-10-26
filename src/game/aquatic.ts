@@ -1,3 +1,4 @@
+import {shipSurface} from './expedition-landmarks';
 import type {AdventureLayout} from './adventure-layout';
 import type {AdventureArea} from './areas';
 import type {Point} from './maze';
@@ -6,6 +7,7 @@ export const aquaticArea=(area:AdventureArea)=>area==='sea'||area==='coast';
 export function aquaticGround(area:AdventureArea,x:number,y:number,layout:AdventureLayout):number{
  const f=layout.forest!;
  if(area==='sea'){
+  const deck=shipSurface(x,y,layout);if(deck!==null)return deck;
   const islands=[layout.maze.start,f.cabin,layout.maze.finish];
   if(Math.hypot(x-layout.fortress.x-.5,y-layout.fortress.y-.5)<4.5)return -3.4;
   const d=Math.min(...islands.map(p=>Math.hypot(x-p.x-.5,y-p.y-.5)));

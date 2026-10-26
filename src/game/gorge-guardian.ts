@@ -39,7 +39,7 @@ export function gorgeGuardian(boss=false){
  }
  const armor=new T.Group();armor.name='king-armor';rig.add(armor);
  if(boss)for(let i=0;i<3;i++){const panel=add(armor,new T.DodecahedronGeometry(.16),edge,Math.sin(i*2.1)*.58,.95,Math.cos(i*2.1)*.47);panel.name='orbiting-stone';}
- const fruit=add(arms[1],new T.SphereGeometry(.09,7,5),satin(0x986b9e),0,boss?-.58:.07,.23);fruit.name='held-poison-fruit';
+ const fruit=add(arms[1],new T.SphereGeometry(.09,7,5),boss?satin(0x986b9e):new T.MeshPhongMaterial({color:0x9be8ed,transparent:true,opacity:.48,shininess:100}),0,boss?-.58:.07,.23);fruit.name=boss?'held-poison-fruit':'held-bubble';
  root.userData.animate=(time:number,speed:number,windup:number,stunned:boolean,reaction:number,phase:number)=>{
   const moving=Math.min(1,speed),stride=Math.sin(time*(boss?5:10))*moving;
   body.position.y=(boss?.91:.44)+Math.sin(time*2.3)*.012+Math.abs(stride)*.025;

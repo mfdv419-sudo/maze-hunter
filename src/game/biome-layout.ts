@@ -12,13 +12,14 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
  for(let y=0;y<coarse;y++)for(let x=0;x<coarse;x++)if(small[y][x]===0)for(let b=0;b<3;b++)for(let a=0;a<3;a++)grid[y*3+b][x*3+a]=0;
  const p=(x:number,y:number)=>({x,y}),start=p(4,4);let fortress=start,max=0;for(const[k,d]of distances(grid,start))if(d>max){const[x,y]=k.split(',').map(Number);fortress=p(x,y);max=d;}
  const initial=route(grid,start,fortress),areas=[.01,.2,.37,.54,.7,.99].map((r,zone)=>({point:initial[Math.floor((initial.length-1)*r)],zone}));areas[0].point=start;areas[5].point=fortress;
+ if(area==='sea'&&areas.slice(1,4).some((a,i,all)=>all.some((b,j)=>j>i&&Math.hypot(a.point.x-b.point.x,a.point.y-b.point.y)<12)))return biomeLayout(area,difficulty,index,variation,attempt+1);
  const clear=(q:Point,r:number)=>{for(let y=q.y-r;y<=q.y+r;y++)for(let x=q.x-r;x<=q.x+r;x++)if(x>0&&y>0&&x<n-1&&y<n-1)grid[y][x]=0;};
  for(const a of areas)clear(a.point,a.zone===5?8:a.zone===0?3:3);
  // Place the gate in a reachable corner of the boss arena; collection and victory conditions still gate it.
  const finish=p(Math.max(2,Math.min(n-3,fortress.x+5)),Math.max(2,Math.min(n-3,fortress.y+5)));clear(finish,1);areas.push({point:finish,zone:6});
  if(area==='forest'||area==='coast'||area==='desert'){const c=areas[2].point;for(let y=c.y-2;y<=c.y+2;y++)for(let x=c.x-2;x<=c.x+2;x++)if(x===c.x-2||x===c.x+2||y===c.y-2||y===c.y+2)grid[y][x]=1;grid[c.y+2][c.x]=0;}
  const testedPath=route(grid,start,fortress);if(testedPath.length<({easy:90,medium:140,hard:220,extreme:300}[difficulty])||Math.hypot(fortress.x-start.x,fortress.y-start.y)<n*.5)return biomeLayout(area,difficulty,index,variation,attempt+1);
- const seals=[areas[1].point,areas[2].point,areas[3].point].map(q=>({...q})),chests=[areas[1],areas[2],areas[4]].map(a=>p(a.point.x+1,a.point.y+1)),used=new Set([...seals,...chests,start,finish,fortress].map(q=>`${q.x},${q.y}`));
+ const seals=[areas[1].point,areas[2].point,areas[3].point].map(q=>({...q})),chests=[areas[1],areas[2],areas[4]].map((a,i)=>p(a.point.x+(area==='sea'&&i===0?3:1),a.point.y+(area==='sea'&&i===0?2:1))),used=new Set([...seals,...chests,start,finish,fortress].map(q=>`${q.x},${q.y}`));
  const open:Point[]=[];for(let y=1;y<n-1;y++)for(let x=1;x<n-1;x++)if(!grid[y][x]&&!used.has(`${x},${y}`))open.push(p(x,y));
  const choose=(count:number,spacing=4)=>{const out:Point[]=[];for(const q of [...open].sort((a,b)=>((a.x*71+a.y*193+variation)%997)-((b.x*71+b.y*193+variation)%997))){if(used.has(`${q.x},${q.y}`)||out.some(t=>Math.hypot(q.x-t.x,q.y-t.y)<spacing))continue;out.push(q);used.add(`${q.x},${q.y}`);if(out.length===count)break;}return out;};
  const stars=choose(9,8),vegetation=choose(30,4).map((q,i)=>({...q,kind:(i%7===0?'rare':i%5===0?'danger':i%3?'tall':'normal')as'rare'|'danger'|'tall'|'normal'}));

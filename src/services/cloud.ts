@@ -157,9 +157,10 @@ export async function roomAction(
   payload: Record<string, unknown>,
 ) {
   if (!auth?.currentUser) throw Error("Login required");
+  const requestedAt=Date.now();
   const response = await fetch("/.netlify/functions/maze-room", {
     method: "POST",
-    signal:AbortSignal.timeout(20000),
+    signal:AbortSignal.timeout(action==='move'?10000:20000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
@@ -168,7 +169,7 @@ export async function roomAction(
   });
   const data=await serverJSON(response);
   if (typeof data.serverTime === "number")
-    clockOffset = data.serverTime - Date.now();
+    clockOffset = data.serverTime - (requestedAt+Date.now())/2;
   if (!response.ok) throw Error(`${data.error || "Room request failed"} (HTTP ${response.status})`);
   return data as { room: Room; playerKey: string };
 }
