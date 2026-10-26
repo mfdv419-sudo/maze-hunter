@@ -129,7 +129,7 @@ export interface RoomPlayer {
   jumpCount?:number;
   hitAt?: number;
 }
-export interface Room {
+export interface Room {chat?:Record<string,import('../game/room-chat').RoomMessage>;chatLast?:Record<string,number>;
   area?:import('../game/areas').AdventureArea;
   adventure?:import('../game/adventure-room').AdventureRoom;
   public?:boolean;

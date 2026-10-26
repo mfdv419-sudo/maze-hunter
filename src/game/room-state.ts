@@ -36,7 +36,7 @@ export interface Player {depth?:number;swimming?:boolean;
   jumpCount?:number;
   hitAt?: number;
 }
-export interface Match {
+export interface Match {chat?:Record<string,import('./room-chat').RoomMessage>;chatLast?:Record<string,number>;
   area?:import('./areas').AdventureArea;
   adventure?:AdventureRoom;
   public?:boolean;

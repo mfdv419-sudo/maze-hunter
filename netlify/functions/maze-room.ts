@@ -1,3 +1,4 @@
+import {postRoomMessage} from '../../src/game/room-chat';
 import {validArea} from '../../src/game/areas';
 import {permittedAppearance,settleWardrobe,type WardrobeWallet} from '../../src/services/cosmetics';
 import type {Profile} from '../../src/services/local';
@@ -161,6 +162,7 @@ export const handler: Handler = async (event) => {
             room.owners ??= {};
             if (action === "join") return addPlayer(room, key, player, now);
             if (!room.players[key]) throw Error("Not a room member");
+            if(action==='chat')return postRoomMessage(room,key,body.text,body.messageId,now);
             if(action==='reconnect'){room.players[key].online=true;room.revision++;return room;}
             if (action === "ready") {
               if (room.state !== "lobby") throw Error("Match already started");

@@ -1,5 +1,16 @@
 # Changelog
 
+## Online movement, viewport lobby and room chat
+
+- Fixed online spawn initialization: both rendered and simulated positions restore the member's authoritative starting state before the first frame, including distinct starts and reconnect sequence numbers.
+- Added own-sequence movement acknowledgement tracking. Teammate snapshots preserve pending local motion; rejected paths and real respawns still correct from the server. Prediction is bounded during slow requests; late responses cannot resurrect departed rooms. Local movement prediction no longer simulates authoritative damage, pickups, rewards or checkpoint resets. Projectile motion remains visual; actual hits stay server-owned.
+- Fixed detached dialog progress references causing the screenshot error “Cannot set properties of null (setting hidden)”. Added generation guards for obsolete game callbacks and a lobby leave-confirmation layer.
+- Replaced the vertical lobby with a dedicated viewport layout: fixed 4/8/10 slot grid, visible host/ready state, copyable room code, anchored separated footer actions and inline errors. Browser checked ten slots at 844×390 and 740×360; all footer buttons remained inside the frame. HUD metadata now flows in one spaced stack instead of overlapping absolute boxes.
+- Added authenticated room text chat and four quick phrases, available in lobby and match. Thirty-message history, 180 characters, one send per second and duplicate-ID protection. Sender identity comes from membership. Text is rendered as textContent; typing does not move or attack. No microphone or live voice feature is included.
+- Unified Classic cake refill at +1 per two-second tick, including individual Co-op members. Super charges never auto-refill. Shared-world keeper kills credit the firing member's Classic supplies. Plant +2, seal +2, keeper +3 and chest refill behavior is preserved; chests also replenish super charges.
+- 134 tests / 22 files and TypeScript pass. Concurrent movement tests exercise the actual runtime sync method with two simulated clients against authoritative Race and Co-op simulation. Handler tests cover authenticated chat. Browser UI fixture sends local-only chat and verifies viewport bounds; no live Firebase messages were sent. Production build and Function bundle verified during release packaging. Live two-device Firebase sessions and WebGL gameplay remain unverified in this environment.
+- Delta baseline: the delivered 42-file Terrain & Online update. No new environment variables, Firestore rules or RTDB rules; deploy frontend and Function together.
+
 ## Terrain & Online — continued from the delivered 49-file update
 
 - Replaced remaining non-sample biome hedge blocks with high continuous native wall geometry: forest root/earth buttresses, sandstone strata, mountain crags/snow, limestone coast, reef fingers, and volcanic basalt. Heights are relative to terrain and comparable to the accepted canyon; camera collision uses the same wall-top function. Static silhouette details are batched.

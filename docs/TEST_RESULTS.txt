@@ -6,49 +6,51 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 
  RUN  v3.2.7 /workspace/scratch/0f24cdd6d8e3/work/maze-hunter
 
- ✓ tests/avatar-progression.test.ts (10 tests) 1565ms
-   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  1314ms
- ✓ tests/adventure-lifecycle.test.ts (10 tests) 1746ms
-   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  1496ms
- ✓ tests/forest-models.test.ts (6 tests) 1786ms
-   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  1632ms
- ✓ tests/retro-branching.test.ts (6 tests) 2701ms
-   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  2366ms
- ✓ tests/aquatic.test.ts (5 tests) 790ms
-   ✓ requires a real descent to collect an underwater chest, then surfaces without a height teleport  379ms
- ✓ tests/escape-routes.test.ts (1 test) 1304ms
-   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  1303ms
- ✓ tests/adventure.test.ts (13 tests) 3276ms
-   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  598ms
-   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  2482ms
- ✓ tests/expedition-update.test.ts (9 tests) 1230ms
-   ✓ every seal region requires all three large and both small keepers, in every biome  800ms
- ✓ tests/gorge.test.ts (5 tests) 645ms
-   ✓ stone monarch moves and uses its own warned attacks with recovery windows and ammunition refill  347ms
- ✓ tests/expedition-mechanics.test.ts (7 tests) 570ms
- ✓ tests/retro-viewport.test.ts (3 tests) 396ms
-   ✓ Retro boards retain valid bounds while square and rectangular layouts retain their natural proportions  324ms
- ✓ tests/levels.test.ts (4 tests) 459ms
-   ✓ Retro 100-level campaign > has 100 unique deterministic solvable levels in 10 regions  430ms
- ✓ tests/room-function.test.ts (6 tests) 158ms
- ✓ tests/room.test.ts (5 tests) 38ms
- ✓ tests/gameplay.test.ts (8 tests) 30ms
- ✓ tests/auth-errors.test.ts (9 tests) 15ms
+ ✓ tests/adventure-lifecycle.test.ts (10 tests) 1617ms
+   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  1429ms
+ ✓ tests/forest-models.test.ts (6 tests) 1678ms
+   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  1537ms
+ ✓ tests/online-motion.test.ts (6 tests) 1781ms
+   ✓ two clients move concurrently through own acknowledgements and teammate snapshots without returning to Start  1364ms
+ ✓ tests/retro-branching.test.ts (6 tests) 2674ms
+   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  2314ms
+ ✓ tests/adventure.test.ts (13 tests) 3153ms
+   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  487ms
+   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  2448ms
+ ✓ tests/escape-routes.test.ts (1 test) 1513ms
+   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  1511ms
+ ✓ tests/avatar-progression.test.ts (10 tests) 1460ms
+   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  1180ms
+ ✓ tests/aquatic.test.ts (5 tests) 751ms
+   ✓ requires a real descent to collect an underwater chest, then surfaces without a height teleport  306ms
+ ✓ tests/expedition-update.test.ts (9 tests) 1412ms
+   ✓ every seal region requires all three large and both small keepers, in every biome  893ms
+ ✓ tests/gorge.test.ts (5 tests) 699ms
+   ✓ stone monarch moves and uses its own warned attacks with recovery windows and ammunition refill  353ms
+ ✓ tests/expedition-mechanics.test.ts (7 tests) 600ms
+ ✓ tests/retro-viewport.test.ts (3 tests) 382ms
+ ✓ tests/levels.test.ts (4 tests) 426ms
+   ✓ Retro 100-level campaign > has 100 unique deterministic solvable levels in 10 regions  392ms
+ ✓ tests/room.test.ts (5 tests) 28ms
+ ✓ tests/room-function.test.ts (7 tests) 175ms
+ ✓ tests/gameplay.test.ts (8 tests) 28ms
+ ✓ tests/auth-errors.test.ts (9 tests) 17ms
+ ✓ tests/actions.test.ts (3 tests) 14ms
  ✓ tests/item-handbook.test.ts (1 test) 4ms
- ✓ tests/actions.test.ts (3 tests) 16ms
- ✓ tests/terrain-update.test.ts (8 tests) 6523ms
-   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  5101ms
-   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  518ms
-   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  619ms
- ✓ tests/biome-expeditions.test.ts (5 tests) 11459ms
-   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  441ms
-   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  8601ms
-   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  902ms
-   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  870ms
-   ✓ every new Medium area can be physically traversed through its three quests and final escape  642ms
+ ✓ tests/room-chat.test.ts (3 tests) 7ms
+ ✓ tests/terrain-update.test.ts (8 tests) 6269ms
+   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  5098ms
+   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  436ms
+   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  488ms
+ ✓ tests/biome-expeditions.test.ts (5 tests) 10655ms
+   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  409ms
+   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  8074ms
+   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  735ms
+   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  811ms
+   ✓ every new Medium area can be physically traversed through its three quests and final escape  623ms
 
- Test Files  20 passed (20)
-      Tests  124 passed (124)
-   Start at  23:58:40
-   Duration  12.01s (transform 1.27s, setup 0ms, collect 3.10s, tests 34.71s, environment 4ms, prepare 1.53s)
+ Test Files  22 passed (22)
+      Tests  134 passed (134)
+   Start at  00:42:04
+   Duration  11.33s (transform 1.86s, setup 0ms, collect 4.56s, tests 35.34s, environment 5ms, prepare 1.70s)
 

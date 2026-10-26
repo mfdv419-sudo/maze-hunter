@@ -1,48 +1,39 @@
-# Maze Hunter — Terrain & Online delta
+# Online Sync & Chat — pemasangan
 
-## Baseline dan pemasangan
+Ini **delta setelah paket Terrain & Online yang berisi 42 file**, dengan source lengkap pendamping `maze-hunter-terrain-online-source.zip`. Terapkan pada branch terbaru yang sudah menjalankan revisi itu.
 
-Paket ini adalah **delta terhadap paket 49 file terakhir** (`maze-hunter-changes.zip`, source lengkap pendamping `maze-hunter-source-complete.zip`). Terapkan setelah paket tersebut, pada branch `maze-1` yang sedang Anda pakai. Bukan delta terhadap source awal.
+1. Ekstrak seluruh isi ZIP delta ke root repository, timpa path yang sama. Tidak ada penghapusan tambahan.
+2. Commit/push frontend dan `netlify/functions/maze-room.ts` bersama, lalu deploy ulang. Node 24, `npm run build`, publish `dist` dan directory Functions tetap sama. Jangan hanya memperbarui dist: handler chat dan perubahan simulasi server harus ikut di-deploy.
+3. Tidak ada environment variable atau rules baru. Pertahankan konfigurasi Firebase dan rules yang sudah digunakan pada revisi 42 file.
+4. Buka room baru setelah deploy. Jangan melanjutkan room pertandingan yang dibuat sebelum perubahan simulasi ini. Muat ulang kedua perangkat agar memakai frontend yang sama.
 
-1. Ekstrak seluruh isi ZIP delta ke root repository dan timpa path yang sama.
-2. Tidak ada penghapusan file baru pada revisi ini. Pembersih file warisan dari revisi sebelumnya tetap dipertahankan.
-3. Publish isi `firestore.rules` yang disertakan melalui Firebase Console → Firestore Database → Rules. Batas catatan Adventure menjadi 320 untuk 8 area × 4 kesulitan × 10 peta. Jangan membuat ulang database/Auth/profil.
-4. Commit/push frontend dan `netlify/functions/maze-room.ts` bersama. Netlify: Node 24, `npm run build`, publish `dist`, Functions `netlify/functions`.
-5. Deploy ulang agar frontend, Function dan offline cache memakai revisi yang sama. Jangan hanya mengunggah folder dist karena itu tidak memperbarui Function Online.
+## Yang diperbaiki
 
-## Online: bug kode dan konfigurasi nyata
+Posisi Online sebelumnya diubah pada objek tampilan saja, sementara simulasi masih memakai Start bawaan. Pembaruan room juga dapat mengembalikan gerakan lokal yang belum dikonfirmasi, dan nomor urut reconnect dimulai ulang. Sekarang kedua posisi diinisialisasi dari snapshot server, gerakan menunggu ack milik pemain sendiri, dan nomor urut melanjutkan server. Koreksi nyata saat jatuh, respawn atau lintasan ditolak tetap berlaku.
 
-Bug pada source telah diperbaiki: callback transaksi Join/Random sebelumnya membatalkan pembacaan awal kosong sebelum mendapatkan room nyata dari Realtime Database. Handler sekarang membolehkan retry dan memeriksa hasil akhir. Create/Join/Random/Ready/Start serta kesalahan konfigurasi/token diuji memakai Firebase terkontrol. Ini belum memverifikasi setting project online Anda.
+Pada koneksi lambat, prediksi dibatasi dan indikator “Menunggu koneksi” tampil. Permainan server tetap berjalan; ini tidak membekukan waktu pertandingan. Callback dari room/halaman yang sudah ditinggalkan diabaikan.
 
-Pastikan variabel yang sejak awal diperlukan ini sudah terpasang pada konteks deployment/branch Netlify yang digunakan:
+Lobby memakai grid tetap 4/8/10 slot dan footer terpisah. Anggota yang bergabung mengisi slot, bukan menambah tinggi halaman. Kode room bisa disalin. Error indikator hidden setelah dialog ditutup telah diperbaiki. Informasi HUD permainan memakai satu stack dengan jarak yang konsisten.
 
-| Variabel | Tempat | Isi |
+## Kue
+
+| Sumber | Classic | Super merah/kuning/hijau |
 |---|---|---|
-| `VITE_FIREBASE_DATABASE_URL` | Build frontend | URL persis Realtime Database existing dari Firebase Console |
-| `FIREBASE_DATABASE_URL` | Netlify Functions | URL database yang sama |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | Netlify Functions saja | Kredensial Admin JSON yang valid untuk project existing |
+| Checkpoint/wilayah segel | +1 setiap 2 detik, maksimal 8 | Tidak otomatis |
+| Arena boss aktif, segel lengkap | +1 setiap 2 detik, maksimal 8 | Tidak otomatis |
+| Tanaman tertentu saat memakai B | +2, maksimal 8 | Tidak menambah |
+| Segel | +2, maksimal 8 | Tidak menambah |
+| Penjaga dikalahkan | +3, maksimal 8 | Tidak menambah |
+| Peti | Diisi hingga 8 | +1 setiap warna, maksimal 5 |
 
-Public Web identifiers lainnya tetap memakai konfigurasi existing atau variabel VITE_ yang sudah digunakan. Jangan menaruh service account/private key dalam VITE_, repository, chat, atau screenshot.
+Stok awal super tetap 3 tiap warna. Menembakkan super menggunakan 1 bekal Classic dan 1 muatan warna. Isi ulang Classic kini juga berjalan pada server untuk setiap anggota Co-op; tidak lagi terlewati oleh jalur simulasi pemain bersama.
 
-`database.rules.json` existing tetap berlaku: hanya anggota room boleh membaca room; penulisan world melalui server. Jika rules belum pernah dipasang, gunakan file existing pada Realtime Database Rules. Firestore Rules dan Realtime Database Rules adalah dua tempat berbeda.
+## Chat
 
-Dialog kini menampilkan error asli dan kode HTTP. HTTP 503 “Room server is not configured” berarti konfigurasi Function belum tersedia; HTTP 401 menunjukkan autentikasi/token; HTTP 404/non-JSON menunjukkan layanan Function belum tersedia pada deployment itu. Pesan izin Firestore/RTDB menunjukkan aturan/akses yang perlu diperiksa. Jangan menganggap semua kegagalan berasal dari UI.
-
-Random matching mempertemukan pemain dengan area, kesulitan dan mode yang sama. Bila belum ada pemain lain, sistem membuat lobby publik untuk menunggu; tidak menambahkan pemain palsu. Semua anggota harus Siap dan host menekan Mulai.
-
-## Yang dapat dimainkan
-
-- Easy tersedia untuk Solo dan Online; arena lebih kecil, waktu lebih longgar, penjaga/boss lebih lemah dan ancang-ancang lebih lama.
-- Gunung Bara / Ember Volcano tersedia sebagai area tambahan dengan medan basalt dan rintangan bara.
-- Dinding area memiliki bentuk native dan tinggi mendekati Ngarai. Dinding labirin tetap tidak bisa dipanjat. Benda mandiri yang dapat dicapai di jalur memiliki titik panjat bercincin, termasuk pohon, batang tumbang, batu dan kendaraan/kapal rusak. Pohon di puncak dinding merupakan bagian batas dunia, bukan rute panjat menembus labirin.
-- Penjaga berpatroli di beberapa tikungan di luar wilayah segel. Setiap wilayah segel tetap dijaga 3 besar + 2 kecil.
-- Jembatan Ngarai sempit; keluar dari tepi mengurangi satu hati dan mengembalikan pemain ke checkpoint terakhir. Kedua pendekatan jembatan menyediakan checkpoint aman. Lompatan dapat menyelamatkan penyeberangan; jatuh tidak dibatalkan pelindung.
-- Bahaya memiliki peringatan sebelum aktif: batu jatuh Gunung/Ngarai, tumbuhan bergulir Gurun, kayu Hutan, gelombang Pantai, sampah mengapung/terendam Laut, dan bara Volcano. Berlari keluar lintasan, lompat atau ubah kedalaman untuk menghindar. Kontak yang valid mengurangi hati dan kembali ke checkpoint.
-- Boss Laut berada di air; patung dorman di dasar laut bangkit menjadi pari. Boss Ngarai memakai rig batu, Gurun memakai rig sphinx.
-- Pilih kue di deretan warna bawah: merah = 2 damage; kuning = stun; hijau = perlambatan. Tersedia 3 stok awal tiap jenis; peti menambah stok sampai batas 5. Kue asli memakai bekal reguler. Warna proyektil dan icing mengikuti pilihan; boss tetap hanya dapat diserang pada waktu rentan.
+Tombol Chat room tersedia di lobby dan tombol gelembung chat di permainan. Ada pesan teks (maksimal 180 karakter) dan empat pesan cepat: Tunggu, Bantu aku, Ayo ke Raja, Terima kasih. Chat terlihat oleh anggota room; pertandingan tetap berjalan. Tersimpan 30 pesan terakhir; batas kirim satu pesan per detik. Mengetik tidak memicu WASD/lompat/lempar. Live suara belum tersedia dan tidak ada pengambilan izin mikrofon pada paket ini.
 
 ## Verifikasi
 
-124 tes Vitest / 20 file lulus, TypeScript dan build frontend lulus, bundel Function lulus. Pemasangan delta ke source lengkap revisi 49 file diperiksa identik secara byte dan dibangun kembali.
+134 tes Vitest / 22 file dan TypeScript lulus. Tes dua klien memakai fungsi sinkronisasi runtime yang sama, bergerak bersamaan dalam simulasi Race dan Co-op, menerima snapshot anggota lain, serta memeriksa ack, reconnect, respawn dan batas prediksi. Handler chat diuji untuk identitas dan keanggotaan.
 
-UI dialog diperiksa di browser dengan markup yang sama seperti game. Easy/Volcano muncul pada menu. Browser di lingkungan pemeriksaan tidak menyediakan WebGL, sehingga render 3D terbaru, kelancaran HP fisik dan koneksi Firebase Online multi-perangkat belum dinyatakan lulus. Tidak ada deploy langsung ke website Anda.
+UI lobby diperiksa pada frame 844×390 dan 740×360 dengan 10 anggota: seluruh tombol footer terlihat dan halaman tidak bertambah tinggi. Chat dikirim pada fixture lokal tanpa koneksi Firebase. Render WebGL dan sesi nyata dua perangkat pada deployment Anda belum diverifikasi. Build frontend, bundel Function dan pemasangan ulang delta diperiksa sebelum pengiriman.

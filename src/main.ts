@@ -1,3 +1,7 @@
+import {roomCapacity} from './game/adventure-room';
+import {roomChatPanel,type ChatPanel} from './ui/room-chat';
+import {lobbyMarkup,partyMarkup} from './ui/lobby';
+import {OnlineMotion} from './game/online-motion';
 import {onlineDialog} from './ui/online-dialog';
 import {cakeKinds,cakeNames} from './game/cake-powers';
 import {levelArt} from './game/level-art';
@@ -154,7 +158,7 @@ function header() {
 function rememberAdventure(){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample)return;recordExpedition(profile,state.area==='classic'?`${state.difficulty}-${state.mapIndex}`:`${state.area}-${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});void save();}
 function begin(name: string, html: string) {
   mazeTransition(root,root.dataset.screen||'',name);rememberAdventure();
-  generation++;
+  generation++;chatPanel?.destroy();chatPanel=undefined;
   setAudioScene(name);
   cleanup();
   cleanup = () => {};
@@ -582,12 +586,15 @@ function setup(){
   const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=onlineDialog(selectedArea,currentDifficulty,lang);document.body.append(overlay);
   const resume=sessionStorage.getItem('mh-active-room');if(resume){const b=document.createElement('button');b.textContent=tr('LANJUTKAN ROOM ','RECONNECT ROOM ')+resume;b.onclick=()=>{void roomAction('reconnect',{profileId:profile!.id,code:resume}).then(r=>enterRoom(r.room,r.playerKey)).then(()=>overlay.remove()).catch(showError);};overlay.querySelector('section')!.prepend(b);}
   const mode=()=>el<HTMLSelectElement>('online-mode').value as 'race'|'coop';let busy=false;
-  const run=async(action:()=>Promise<void>)=>{if(busy)return;busy=true;const err=el('online-error');err.hidden=true;el('online-progress').hidden=false;const buttons=overlay.querySelectorAll<HTMLButtonElement>('button');buttons.forEach(b=>b.disabled=true);overlay.setAttribute('aria-busy','true');try{await action();overlay.remove();}catch(e){err.textContent=(e instanceof Error?e.message:String(e));err.hidden=false;err.focus();}finally{busy=false;el('online-progress').hidden=true;buttons.forEach(b=>b.disabled=false);overlay.removeAttribute('aria-busy');}};
+  const run=async(action:()=>Promise<void>)=>{if(busy)return;busy=true;const err=overlay.querySelector<HTMLElement>('#online-error')!,progress=overlay.querySelector<HTMLElement>('#online-progress')!;err.hidden=true;progress.hidden=false;const buttons=overlay.querySelectorAll<HTMLButtonElement>('button');buttons.forEach(b=>b.disabled=true);overlay.setAttribute('aria-busy','true');try{await action();overlay.remove();}catch(e){err.textContent=(e instanceof Error?e.message:String(e));err.hidden=false;err.focus();}finally{busy=false;progress.hidden=true;buttons.forEach(b=>b.disabled=false);overlay.removeAttribute('aria-busy');}};
   const codeInput=el<HTMLInputElement>('join-code');codeInput.addEventListener('input',()=>{codeInput.value=codeInput.value.toUpperCase().replace(/[^A-Z2-9]/g,'').slice(0,6);});codeInput.addEventListener('keydown',e=>{if(e.key==='Enter')el<HTMLButtonElement>('join-room').click();});
   click('random-room',()=>run(async()=>{await save(true);const r=await roomAction('random',{profileId:profile!.id,difficulty:currentDifficulty,mode:mode(),area:selectedArea});await enterRoom(r.room,r.playerKey);}));click('private-room',()=>run(()=>createRoom(mode())));click('join-room',()=>run(async()=>{const code=codeInput.value.trim();if(!/^[A-Z2-9]{6}$/.test(code))throw Error(tr('Masukkan kode room 6 karakter.','Enter the six-character room code.'));await joinRoom(code);}));click('close-online',()=>overlay.remove());
  });
 }
 let currentAdventure:{difficulty:Difficulty;map:number;seed:number;sample?:boolean;area?:AdventureArea}|undefined;
+let chatPanel:ChatPanel|undefined;
+function mountChat(room:Room){const b=el<HTMLButtonElement>('room-chat-open');if(!b)return;chatPanel?.destroy();chatPanel=roomChatPanel(root,b,room,playerKey,lang,async(text,messageId)=>{const r=await roomAction('chat',{profileId:profile!.id,code:room.id,text,messageId});if(activeRoom?.id===room.id)applyRoom(r.room);return r.room;});}
+let onlineMotion:OnlineMotion|undefined;
 let modernTimer: ReturnType<typeof setInterval> | null = null;
 async function playModern(difficulty: Difficulty, room?: Room, reuse=false,forestSample=false,areaChoice:AdventureArea='classic') {
   if (!profile) return;
@@ -623,7 +630,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if (token !== generation) return;
   const me = room?.players[playerKey];
   if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea))currentAdventure={difficulty,map:sample?0:nextMap(difficulty),seed:sample?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,area:activeArea};
-  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);
+  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
   const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
   const cakePicker=document.createElement('div');cakePicker.className='cake-picker';cakePicker.setAttribute('aria-label',tr('Pilihan kue','Cake selection'));cakePicker.innerHTML=cakeKinds.map(k=>`<button type="button" data-cake="${k}" title="${cakeNames[k][lang==='id'?0:1]}" aria-label="${cakeNames[k][lang==='id'?0:1]}" aria-pressed="${k==='normal'}"><span></span><small>${k==='normal'?'∞':'3'}</small></button>`).join('');el('game-stage').after(cakePicker);cakePicker.addEventListener('click',async e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-cake]');if(!b)return;try{if(room){const r=await roomAction('ability',{profileId:profile!.id,code:room.id,kind:'cake-'+b.dataset.cake});applyRoom(r.room);}else modern.adventure?.selectCake(b.dataset.cake!);toast(cakeNames[b.dataset.cake as typeof cakeKinds[number]][lang==='id'?0:1]);}catch(e){showError(e);}});
   const shownLoot=new Set<number>();
@@ -664,6 +671,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         }
       : undefined,
     onAdventure:(state)=>{
+      if(token!==generation||screen!=='modern')return;
       const bossName=areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1];
       if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
        const loot=state.lastLoot;shownLoot.add(loot.id);const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal loot-reveal center" role="dialog" aria-modal="true"><div class="loot-emblem">✦</div><div class="eyebrow">${tr('HARTA DITEMUKAN','TREASURE FOUND')}</div><h2>${tr('Bekal petualanganmu','Supplies for your journey')}</h2><div class="loot-items"><span>◉ <b>+${loot.coins}</b>${tr('Koin','Coins')}</span><span>⚿ <b>+${loot.keys}</b>${tr('Kunci','Key')}</span><span>▰ <b>+${loot.cakes}</b>${tr('Kue','Cakes')}</span><span>♥ <b>+${loot.hearts}</b>${tr('Nyawa','Hearts')}</span></div><p>${tr('Kue maksimal 8 · Nyawa maksimal 3','Maximum 8 cakes · Maximum 3 hearts')}</p>${button(tr('AMBIL & LANJUTKAN','COLLECT & CONTINUE'),'loot-close')}</section></div>`;click('loot-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});
@@ -682,6 +690,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'trash-hit':['Sampah melukai! Kembali ke checkpoint.','Trash hit! Returned to checkpoint.'],'obstacle-hit':['Terkena rintangan! Kembali ke checkpoint.','Obstacle hit! Returned to checkpoint.'],'super-empty':['Kue super habis. Pilih kue asli atau cari peti.','No super cakes left. Choose classic or find a chest.'],'king-dormant':['Raja masih tertidur. Lengkapi segel tim.','The King is dormant. Complete the seal goal.'],'king-awakening':['Raja bangkit! Bersiap menghindar.','The King awakens! Get ready to dodge.'],'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja penjaga bangkit. Perhatikan tanda serangannya!','The gate King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Lengkapi semua segel pada penghitung untuk membangunkan Raja.','Complete the seal counter to awaken the King.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(state.message!=='chest')toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
+      if(token!==generation||screen!=='modern')return;
       if(modern.adventure)return;
       const elapsed = room
         ? Math.max(
@@ -693,6 +702,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         `${Math.max(0, Math.ceil((room?modernSettings[difficulty].seconds:adventureRules[difficulty].seconds) - elapsed))}s · ${explored} ${tr("area", "tiles")}`;
     },
     onFinish: (won) => {
+      if(token!==generation)return;
       rememberAdventure();tone(won ? 720 : 120, 0.18, "sine", 0.025);
       if (won && profile&&!sample) {
         profile.modernWins++;
@@ -727,19 +737,20 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
   cleanup=unbind;
   if (room) {
-    modern.position = { x: me!.x, y: me!.y };
+    const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
+    const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
+    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
     modern.paused = true;
-    let inFlight = false,
-      seq = 0,
-      buffer: Point[] = [];
+
     let sample = 0;
     modernTimer = setInterval(() => {
       if (screen !== "modern" || !activeRoom) return;
       const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
-      modern.paused = !started||!!(modern.adventure&&modern.adventure.phase!=='playing');
+      const waiting=!navigator.onLine||motion.blocked(performance.now());networkStatus.style.display=waiting?'block':'none';networkStatus.textContent=waiting?tr('Menunggu koneksi…','Waiting for connection…'):'';
+      modern.paused = !started||waiting||!!(modern.adventure&&modern.adventure.phase!=='playing');
       if(!room.adventure||!started)el("play-hint").textContent = started
         ? tr("Jelajahi labirin", "Explore the maze")
-        : String(
+        : !navigator.onLine?tr("Koneksi terputus — menunggu tersambung.","Connection lost — reconnecting."):String(
             Math.max(1, Math.ceil((activeRoom.startsAt - serverNow()) / 1000)),
           );
       if (started&&!room.adventure)
@@ -749,39 +760,33 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         );
       if (!started || modern.ended) return;
       sample++;
-      if (buffer.length < 20) buffer.push({ ...modern.position });
-      if (inFlight || sample % 10) return;
-      inFlight = true;
-      const points = buffer;
-      buffer = [];
+      motion.sample(modern.position);
+      if (motion.inFlight || sample % 6) return;
+      const packet=motion.packet(performance.now());if(!packet)return;
       void roomAction("move", {
         code: room.id,
         profileId: profile!.id,
-        points,
+        points:packet.points,
         angle: modern.angle,
-        seq: ++seq,
+        seq:packet.seq,
       })
-        .then(({ room: r }) => applyRoom(r))
+        .then(({ room: r }) => {if(token===generation&&activeRoom?.id===room.id)applyRoom(r);})
         .catch((e) => {
-          modern.position = {
-            x: activeRoom!.players[playerKey].x,
-            y: activeRoom!.players[playerKey].y,
-          };
-          buffer = [];
-          modern.clearInput();
+          if(token!==generation||activeRoom?.id!==room.id)return;
+          const own=activeRoom.players[playerKey],snapshot=activeRoom.adventure?.states?.[playerKey];if(snapshot)modern.syncAdventure(snapshot,'snap');else modern.position={x:own.x,y:own.y};motion.reset(modern.position);
           toast(
             tr("Posisi disinkronkan ulang: ", "Position resynchronized: ") +
               (e instanceof Error ? e.message : ""),
           );
         })
-        .finally(() => (inFlight = false));
+        .finally(() => motion.complete());
     }, 50);
     cleanup = () => {
-      unbind();
+      chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
       if (modernTimer) clearInterval(modernTimer);
       modernTimer = null;
     };
-    applyRoom(room);
+    applyRoom(activeRoom?.id===room.id?activeRoom:room);
   }
 }
 let wardrobeSlot:Slot='head';
@@ -843,47 +848,45 @@ function lobby() {
   const room = activeRoom;
   begin(
     "lobby",
-    `<main class="page narrow"><div class="eyebrow">${areaName(room.area||'classic',lang)} · ${room.mode.toUpperCase()} · ${room.difficulty.toUpperCase()}</div><h1>${tr("Berkumpul sebelum<br>berpetualang.", "Gather your<br>fellow explorers.")}</h1><div class="room-code">${room.id}</div><p>${tr("Bagikan kode ini kepada teman atau keluarga.", "Share this code with friends or family.")}</p><div id="room-players"></div>${button(tr("Panduan Adventure","Adventure guide"),"lobby-guide","secondary")}<div class="input-row">${button(tr("Siap / batal siap", "Ready / unready"), "ready")}${button(tr("Mulai pertandingan", "Start match"), "start-match", "secondary", room.host !== playerKey)}</div>${button(tr("Tinggalkan room", "Leave room"), "leave", "quiet")}<p class="small">${tr("Semua pemain harus siap. Pemain terputus dapat kembali selama pertandingan masih berjalan.", "All players must be ready. Disconnected players can return while the match is active.")}</p></main>`,
+    lobbyMarkup(room,lang),
   );
-  updateLobby();click("lobby-guide",adventureHelp);
-  click("ready", async () => {
+  updateLobby();mountChat(room);click("lobby-guide",adventureHelp);click('copy-room-code',async()=>{try{await navigator.clipboard.writeText(room.id);toast(tr('Kode room disalin.','Room code copied.'));}catch{toast(room.id);}});
+  let lobbyBusy=false;const lobbyAction=async(action:()=>Promise<void>)=>{if(lobbyBusy)return;lobbyBusy=true;const error=el('lobby-error'),toolbar=el('ready').closest<HTMLElement>('.lobby-actions')!;toolbar.setAttribute('aria-busy','true');error.hidden=true;const controls=['ready','start-match','leave'].map(id=>el<HTMLButtonElement>(id));controls.forEach(b=>b.disabled=true);try{await action();}catch(e){if(error.isConnected){error.textContent=e instanceof Error?e.message:String(e);error.hidden=false;}}finally{lobbyBusy=false;toolbar.removeAttribute('aria-busy');if(screen==='lobby'&&activeRoom?.id===room.id)updateLobby();}};
+  click("ready", () => lobbyAction(async () => {
     const { room: r } = await roomAction("ready", {
       profileId: profile!.id,
       code: room.id,
       ready: !activeRoom!.players[playerKey].ready,
     });
     applyRoom(r);
-  });
-  click("start-match", async () => {
+  }));
+  click("start-match", () => lobbyAction(async () => {
     const { room: r } = await roomAction("start", {
       profileId: profile!.id,
       code: room.id,
     });
     applyRoom(r);
-  });
-  click("leave", async () => {
+  }));
+  click("leave", () => lobbyAction(async () => {
     await leaveRoom();
     setup();
-  });
+  }));
 }
 function updateLobby() {
   if (!activeRoom || !el("room-players")) return;
   const r = activeRoom;
-  el("room-players").innerHTML = Object.entries(r.players)
-    .map(
-      ([k, p]) =>
-        `<div class="room-player"><span class="avatar">${esc(p.name.slice(0, 1))}</span><b>${esc(p.name)} ${k === r.host ? "♛" : ""}</b><span>${p.ready ? tr("Siap ✓", "Ready ✓") : tr("Menunggu", "Waiting")}</span></div>`,
-    )
-    .join("");
+  el('room-players').innerHTML=partyMarkup(r,lang,playerKey);
+  const players=Object.values(r.players),ready=players.filter(p=>p.ready).length;el('lobby-count').textContent=`${players.length}/${roomCapacity[r.difficulty]} · ${ready} ${tr('siap','ready')}`;el('lobby-status').textContent=players.length<2?tr('Menunggu anggota lain bergabung.','Waiting for another player to join.'):players.some(p=>!p.ready)?tr('Setiap anggota menekan Siap. Host memulai pertandingan.','Everyone selects Ready. The host starts the match.'):tr('Semua siap — host dapat mulai.','Everyone ready — the host can start.');el<HTMLButtonElement>('ready').disabled=!!document.querySelector('.lobby-actions[aria-busy=true]');el('ready').textContent=r.players[playerKey]?.ready?tr('Batal siap','Unready'):tr('Siap bermain','Ready to play');el<HTMLButtonElement>('leave').disabled=!!document.querySelector('.lobby-actions[aria-busy=true]');
   el<HTMLButtonElement>("start-match").disabled =
-    r.host !== playerKey ||
+    !!document.querySelector('.lobby-actions[aria-busy=true]')||r.host !== playerKey ||
     Object.keys(r.players).length < 2 ||
     Object.values(r.players).some((p) => !p.ready);
 }
 function applyRoom(r: Room) {
+  if(!activeRoom||activeRoom.id!==r.id)return;
   if (activeRoom && activeRoom.id === r.id && r.revision < activeRoom.revision)
     return;
-  activeRoom = r;
+  activeRoom = r;chatPanel?.update(r);
   if (r.state === "lobby") {
     updateLobby();
     return;
@@ -896,7 +899,7 @@ function applyRoom(r: Room) {
     const m = game as ModernGame;
     m.setPeers(r.players, playerKey, r.mode === "coop");
     m.syncActions(r.players, playerKey, r.broken || {}, serverNow());
-    const state=r.adventure?.states?.[playerKey];if(state){m.syncAdventure(state);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}
+    const state=r.adventure?.states?.[playerKey];if(state){const own=r.players[playerKey],policy=onlineMotion?.reconcile(state.position,own.seq||0,state.respawns,state.phase==='playing');m.syncAdventure(state,policy);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}
     if (r.mode === "coop")
       m.reveal(
         Object.keys(

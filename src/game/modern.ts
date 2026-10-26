@@ -342,6 +342,7 @@ export class ModernGame {
     window.addEventListener(
       "keydown",
       (e) => {
+        if((e.target as HTMLElement)?.closest?.('input,textarea,select,[contenteditable=true],.room-chat-panel'))return;
         if(this.expandedMap||document.getElementById('maze-transition'))return;
         if (["v","V"].includes(e.key)){e.preventDefault();if(!e.repeat)this.useAction("dive");return;}
         if ([" ", "j", "J", "b", "B"].includes(e.key)) {
@@ -412,7 +413,7 @@ export class ModernGame {
   }
   beginMovement(){}
   endMovement(){}
-  syncAdventure(save:AdventureSave){if(!this.adventure)return;const before=this.adventure.resetFogRevision,predicted={...this.position},respawns=this.adventure.respawns,phase=this.adventure.climber.state.phase,elapsed=this.elapsed;this.adventure.restore(save);const keep=save.phase==='playing'&&save.respawns===respawns&&save.climb?.phase===phase&&Math.hypot(predicted.x-save.position.x,predicted.y-save.position.y)<.6&&fits(this.adventure.grid,predicted,.13);if(keep)this.adventure.position=predicted;this.elapsed=this.adventure.elapsed=Math.max(elapsed,save.elapsed);this.position={...this.adventure.position};if(before!==save.resetFogRevision)this.explored.clear();this.visionAcc=1;}
+  syncAdventure(save:AdventureSave,policy?:'keep'|'snap'){if(!this.adventure)return;const before=this.adventure.resetFogRevision,predicted={...this.position},respawns=this.adventure.respawns,phase=this.adventure.climber.state.phase,elapsed=this.elapsed;this.adventure.restore(save);const keep=policy!=='snap'&&save.phase==='playing'&&save.respawns===respawns&&save.climb?.phase===phase&&(policy==='keep'||Math.hypot(predicted.x-save.position.x,predicted.y-save.position.y)<.6)&&fits(this.adventure.grid,predicted,.13);if(keep)this.adventure.position=predicted;this.elapsed=this.adventure.elapsed=Math.max(elapsed,save.elapsed);this.position={...this.adventure.position};if(before!==save.resetFogRevision)this.explored.clear();this.visionAcc=1;}
   private ensureGuardModels(){if(!this.adventure)return;while(this.guardModels.length<this.adventure.guards.length){const g=this.adventure.guards[this.guardModels.length],model=biomeGuardian(this.adventure.sample?'forest':this.adventure.area,g.boss);const k=g.boss?(this.adventure.area==='gorge'?1.5:1.35):g.size==='large'?1.25:(g.size==='small'||g.sapling)?.65:g.elite?1.15:1;model.scale.set(k/U,k,k/U);const cream=icing();if(g.boss)cream.scale.setScalar(1.8);model.add(cream);this.guardIcing.push(cream);this.world.add(model);this.guardModels.push(model);const warning=new T.Mesh(new T.RingGeometry(.2,.3,16),new T.MeshBasicMaterial({color:0xffbc7c,side:T.DoubleSide,transparent:true,opacity:.8}));warning.rotation.x=-Math.PI/2;this.world.add(warning);this.warningModels.push(warning);}
     if(this.adventure.expedition&&!this.dormantModel){this.dormantModel=dormantBoss(this.adventure.sample?'forest':this.adventure.area);this.dormantModel.scale.set(1.5/U,1.5,1.5/U);this.world.add(this.dormantModel);}
   }
@@ -611,7 +612,7 @@ export class ModernGame {
       this.velocity.x=movement.x;this.velocity.y=movement.y;
       if(this.adventure) {
         const simulation=Math.min(raw,.2),steps=Math.max(1,Math.ceil(simulation/.025));
-        for(let i=0;i<steps&&this.adventure.phase==='playing';i++)this.adventure.step(simulation/steps,raw/steps,this.velocity.x,this.velocity.y,this.jumpAt(this.adventure.elapsed+raw/steps));
+        for(let i=0;i<steps&&this.adventure.phase==='playing';i++)this.adventure.step(simulation/steps,raw/steps,this.velocity.x,this.velocity.y,this.jumpAt(this.adventure.elapsed+raw/steps),!!this.options.online,!!this.options.online);
         this.elapsed=this.adventure.elapsed;this.position={...this.adventure.position};
         if(this.previousRespawns!==this.adventure.respawns){this.previousRespawns=this.adventure.respawns;this.acc=0;this.velocity={x:0,y:0};this.jumpStarted=-1000;this.jumpBase=0;this.jumpCount=0;}
         if(this.fogRevision!==this.adventure.resetFogRevision){this.fogRevision=this.adventure.resetFogRevision;this.explored.clear();}
@@ -621,19 +622,19 @@ export class ModernGame {
           Math.min(raw,.2)
         : 0;
       if(this.adventure&&this.adventure.phase!=='playing'&&!this.options.online) {
-        this.ended=true;this.outcome=this.adventure.phase==='won'?'won':'lost';this.options.onFinish(this.outcome==='won');
+        this.ended=true;this.outcome=this.adventure.phase==='won'?'won':'lost';this.options.onFinish(this.outcome==='won');return;
       } else if (!this.options.online&&!this.adventure) {
         const f = center(this.maze.finish);
         if (Math.hypot(this.position.x - f.x, this.position.y - f.y) < 0.3) {
           this.ended = true;
           this.outcome = "won";
-          this.options.onFinish(true);
+          this.options.onFinish(true);return;
         } else if (
           this.elapsed >= modernSettings[this.options.difficulty].seconds
         ) {
           this.ended = true;
           this.outcome = "lost";
-          this.options.onFinish(false);
+          this.options.onFinish(false);return;
         }
       }
     }
