@@ -15,7 +15,7 @@ export class Climber {
   if(s.phase==='top'&&ledge){if(Math.abs(next.x-s.anchor.x)<.55&&Math.abs(next.y-s.anchor.y)<.55){s.elevation=ledge.height;return{position:next,reached};}s.phase='falling';s.elapsed=0;s.cooldown=.45;}
   if(s.phase==='falling'){s.elapsed+=dt;s.elevation=Math.max(0,s.elevation-(.6+s.elapsed*5)*dt);if(!s.elevation)s.phase='ground';}
   for(const l of ledges){const c={x:l.point.x+.5,y:l.point.y+.5},vx=next.x-c.x,vy=next.y-c.y;
-   if(s.cooldown===0&&jump>.15&&s.phase==='ground'&&Math.hypot(vx,vy)<.99&&(input.x*(c.x-previous.x)+input.y*(c.y-previous.y))>.05){const horizontal=Math.abs(vx)>Math.abs(vy);s.phase='hanging';s.ledge=l.id;s.elapsed=0;s.anchor=c;s.edge=horizontal?{x:c.x+Math.sign(vx||1)*.65,y:Math.max(c.y-.55,Math.min(c.y+.55,next.y))}:{x:Math.max(c.x-.55,Math.min(c.x+.55,next.x)),y:c.y+Math.sign(vy||1)*.65};s.elevation=l.kind==='palm'?.18:l.height-.93;return{position:{...s.edge},reached};}
+   if(s.cooldown===0&&jump>(l.kind==='palm'?.15:Math.max(.15,l.height-.93))&&s.phase==='ground'&&Math.hypot(vx,vy)<.99&&(input.x*(c.x-previous.x)+input.y*(c.y-previous.y))>.05){const horizontal=Math.abs(vx)>Math.abs(vy);s.phase='hanging';s.ledge=l.id;s.elapsed=0;s.anchor=c;s.edge=horizontal?{x:c.x+Math.sign(vx||1)*.65,y:Math.max(c.y-.55,Math.min(c.y+.55,next.y))}:{x:Math.max(c.x-.55,Math.min(c.x+.55,next.x)),y:c.y+Math.sign(vy||1)*.65};s.elevation=l.kind==='palm'?.18:l.height-.93;return{position:{...s.edge},reached};}
    if(Math.abs(vx)<.63&&Math.abs(vy)<.63&&s.elevation<l.height-.1){
     // Slide along a climbable rock; maze hedges remain ordinary solid walls.
     if(Math.abs(previous.x-c.x)>=.63)next={x:previous.x,y:next.y};else if(Math.abs(previous.y-c.y)>=.63)next={x:next.x,y:previous.y};else next={...previous};

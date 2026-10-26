@@ -44,5 +44,5 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173 },
+  server: { port: 5173, allowedHosts: ["terminal.local"] },
 });

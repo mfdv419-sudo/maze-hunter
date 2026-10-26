@@ -1,3 +1,4 @@
+import {ensureWallet} from './cosmetics';
 import type {Appearance} from './cosmetics';
 export interface ExpeditionRecord {coins:number;stars:number;chests:number;zones:number[]}
 export interface LevelResult {
@@ -5,7 +6,7 @@ export interface LevelResult {
   stars: number;
   errors: number;
 }
-export interface Profile {
+export interface Profile {wardrobeSchema?:1;wardrobe?:import('./cosmetics').WardrobeWallet;
   id: string;
   name: string;
   language: "id" | "en";
@@ -53,10 +54,11 @@ export function writeFamily(uid: string, f: Family) {
 }
 export function newProfile(name: string, language: "id" | "en"): Profile {
   return {
-    id: crypto.randomUUID(),
+    id: typeof crypto.randomUUID==='function'?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join(''),
     name: name.trim().slice(0, 24),
     language,
     outfit: "classic",
+    wardrobeSchema:1,wardrobe:{version:1,legacy:[],purchases:[],pending:[],paid:{}},
     retro: {},
     modernWins: 0,
     updatedAt: Date.now(),
@@ -80,6 +82,7 @@ export function mergeProfile(a: Profile, b: Profile): Profile {
   }
   out.adventures={...a.adventures};
   for(const [id,r]of Object.entries(b.adventures||{})){const old=out.adventures[id];out.adventures[id]=old?{coins:Math.max(old.coins,r.coins),stars:Math.max(old.stars,r.stars),chests:Math.max(old.chests,r.chests),zones:[...new Set([...old.zones,...r.zones])].sort()}:r;}
+  const wa=ensureWallet(a),wb=ensureWallet(b);out.wardrobe={version:1,legacy:[...new Set([...wa.legacy,...wb.legacy])],purchases:[...new Set([...wa.purchases,...wb.purchases])],pending:[...new Set([...wa.pending,...wb.pending])].filter(k=>!wa.purchases.includes(k)&&!wb.purchases.includes(k)),paid:{...wa.paid,...wb.paid}};out.wardrobeSchema=1;
   return out;
 }
 export function unlocked(p: Profile) {
@@ -88,6 +91,7 @@ export function unlocked(p: Profile) {
   return n;
 }
 export function recordLevel(p: Profile, id: number, r: LevelResult) {
+  ensureWallet(p);
   const old = p.retro[String(id)];
   p.retro[String(id)] = old
     ? {

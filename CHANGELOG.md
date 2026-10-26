@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-26 — Six biome identities, family quests, personal Race and wardrobe redemption
+
+- Continued the uploaded maze-1 source and recovered saved work. Preserved original Solo routes, authored Forest layout, existing account progress, timers and map/life rules.
+- Six biome scene identities, landmark illustrations, distinct enemy rigs and dormant boss monuments; Verdant Gorge has green cliff shelves. Desktop click-once free look with Escape release and optional drag mode; touch controls remain separate.
+- Each of three quest regions requires 3 large and 2 small keepers. Co-op uses 3 times the starting roster, one shared enemy/world simulation, contribution credit and scaled shared boss health, without friendly fire. Race has three private seals and a private boss/escape. Disconnects retain the initial target; remaining members can collect every team seal.
+- High terrace rewards require a real double jump and pull-up. Ground-level collection cannot claim elevated stars. Other ledges and palms retain their own interactions.
+- Independent gloves and boots plus forest/climber/desert/diver gear. Retro achievement stars remain unchanged when spending the wardrobe balance. Server-owned transactional receipts prevent repeat charges and concurrent overspending; legacy unlocks are migrated.
+- Every Retro level has its own illustrated destination; area cards have distinct compositions. Regenerated 170 of 176 catalogue maps, including repacked four-choice templates and endpoint-biased wrong paths. Counts, exact 40/36 lengths and at least 95% density remain verified. Wrong-tip mean Manhattan distance to the next goal fell from 10.51 to 9.21 cells. This is a layout improvement, not proof of subjective difficulty.
+- Validation: 110 tests / 18 files pass. TypeScript, production frontend build and Netlify function bundle pass. Browser UI checked Home fallback, area navigation, illustrated level selection, Retro canvas and pause. WebGL is disabled in the available browser, so fresh 3D screenshots, physical-phone performance and live Firebase multi-device play are NOT verified.
+- Deployment includes updated firestore.rules for appearance slots and a server-owned wardrobe receipt collection. No new environment variables. Deploy rules and frontend/functions together; see UPDATE_INSTRUCTIONS.md.
+
 ## 2026-10-26 — Ngarai visual example and readable phone Retro
 
 - Retro now fits the actual board with one proportional cell scale. Early mazes grow substantially on phones; dense boards begin at a readable enlarged view, retain free pan/lift, and have a full-map button beside zoom. Darker continuous walls and proportional mascot/finish icons remove the previous thin highlight noise. The catalogue, branch counts, exact 90% arm ratio, lives, timers and map transitions are unchanged. Deceptive route design remains pending.

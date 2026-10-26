@@ -2,19 +2,22 @@ rules_version = '2';
 service cloud.firestore {
  match /databases/{database}/documents {
   function validAppearance(a) {
-   return a is map && a.keys().hasOnly(['head','face','body','back','tail','palette'])
+   return a is map && a.keys().hasOnly(['head','face','body','back','tail','palette','hands','feet'])
     && a.keys().hasAll(['head','face','body','back','tail','palette'])
-    && a.head in ['bare','leaf','explorer','crown','moon']
-    && a.face in ['bare','goggles','mask','star']
-    && a.body in ['classic','explorer','raincoat','space','aurora']
-    && a.back in ['bare','pack','cape','wings']
+    && a.head in ['bare','leaf','explorer','crown','moon','climber','desert','diver']
+    && a.face in ['bare','goggles','mask','star','desert','diver']
+    && a.body in ['classic','explorer','raincoat','space','aurora','climber','desert','diver']
+    && a.back in ['bare','pack','cape','wings','climber','desert','diver']
     && a.tail in ['bare','bow','leaf','star']
+    && (!('hands' in a)||a.hands in ['bare','trail','climber','desert','diver'])
+    && (!('feet' in a)||a.feet in ['bare','trail','climber','desert','diver'])
     && a.palette in ['charcoal','brown','silver','mint','gold'];
   }
   match /families/{uid}/profiles/{profile} {
    allow read: if request.auth != null && request.auth.uid == uid;
    allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.data.keys().hasOnly(['id','name','language','outfit','retro','modernWins','updatedAt','appearance','adventures'])
+    && request.resource.data.keys().hasOnly(['id','name','language','outfit','retro','modernWins','updatedAt','appearance','adventures','wardrobeSchema'])
+    && (!('wardrobeSchema' in request.resource.data)||request.resource.data.wardrobeSchema==1)
     && request.resource.data.id == profile
     && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 24
     && request.resource.data.language in ['id','en']
@@ -26,6 +29,7 @@ service cloud.firestore {
     && (!('adventures' in request.resource.data) || (request.resource.data.adventures is map && request.resource.data.adventures.size() <= 210));
    allow delete: if false;
   }
+  match /families/{uid}/wardrobes/{profile} {allow read: if request.auth != null && request.auth.uid == uid;allow write: if false;}
   match /entitlements/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
  }
 }

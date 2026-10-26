@@ -1,9 +1,3 @@
-Superseded files to remove after applying this package.
-
-Automatic local cleanup: node scripts/clean-legacy.mjs
-The same check runs before npm run build. Commit the deletions to clean the source branch permanently.
-A Netlify build cleans its checkout only.
-
 LOGIN_DIAGNOSTIC_UPDATE.md
 QA_REPORT.md
 docs/GAME_UI_UPDATE.md
@@ -30,9 +24,6 @@ scripts/generate-retro-v13.py
 scripts/generate-retro-v14.py
 scripts/generate-retro-v15.py
 scripts/generate-retro-v8.py
-src/game/retro-catalog-fast.json
-src/game/retro-catalog-final.json
-src/game/retro-catalog-refined.json
 src/game/retro-catalog-v10.json
 src/game/retro-catalog-v11.json
 src/game/retro-catalog-v13.json

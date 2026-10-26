@@ -1,5 +1,5 @@
 import {validArea} from '../../src/game/areas';
-import {permittedAppearance} from '../../src/services/cosmetics';
+import {permittedAppearance,settleWardrobe,type WardrobeWallet} from '../../src/services/cosmetics';
 import type {Profile} from '../../src/services/local';
 import {roomCapacity} from '../../src/game/adventure-room';
 import type { Handler } from "@netlify/functions";
@@ -59,6 +59,13 @@ export const handler: Handler = async (event) => {
     const now = Date.now(),
       action = String(body.action),
       data = profile.data()!;
+    const wardrobeRef=getFirestore().doc(`families/${identity.uid}/wardrobes/${profileId}`);
+    if(action==='wardrobe'){
+      if(!Array.isArray(body.pending)||body.pending.length>80||body.pending.some((k:unknown)=>typeof k!=='string'||k.length>80))throw Error('Invalid wardrobe request');
+      const settled=await getFirestore().runTransaction(async tx=>{const [current,wallet]=await Promise.all([tx.get(profile.ref),tx.get(wardrobeRef)]);const result=settleWardrobe(current.data() as Profile,wallet.exists?wallet.data() as WardrobeWallet:undefined,body.pending);tx.set(wardrobeRef,result.wallet);return result;});
+      return{statusCode:200,headers,body:JSON.stringify(settled)};
+    }
+    const storedWallet=await wardrobeRef.get();if(storedWallet.exists)data.wardrobe=storedWallet.data();
     const player: Player = {
       uid: identity.uid,
       profileId,

@@ -1,12 +1,14 @@
+import {gloveModel,bootModel,expeditionWearables} from './gear-model';
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
+export type CharacterAppearance=Appearance & {hands?:string;feet?:string};
 export interface CharacterAction {hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
-export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appearance):Character{
+export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-12';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='expedition-gear';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
@@ -37,8 +39,9 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
  // Brand signature, visible on every body outfit.
  box(body,.36,.07,.37,teal,0,.82,.015,.025);const scarf=addMesh(body,new T.ConeGeometry(.095,.19,3),teal,.105,.7,.23);scarf.rotation.z=-.2;
  const a=appearance||{head:outfit==='explorer'?'explorer':'bare',face:'bare',body:outfit,back:outfit==='explorer'||outfit==='space'?'pack':'bare',tail:'bare',palette:'charcoal'};
+ const gear=a as typeof a & {hands?:string;feet?:string};
  if(a.body!=='classic'){
-  const coat=satin(a.body==='raincoat'?0xefc559:a.body==='space'?0xdde9df:a.body==='aurora'?0x7fbfc0:0xc9a35f);box(body,.49,.36,.37,coat,0,.56,0,.08);
+  const coat=satin(a.body==='raincoat'?0xefc559:a.body==='space'?0xdde9df:a.body==='aurora'?0x7fbfc0:a.body==='climber'?0xc76c4b:a.body==='desert'?0xd5bd8d:a.body==='diver'?0x2d4d5c:0xc9a35f);box(body,.49,.36,.37,coat,0,.56,0,.08);
   for(const side of [-1,1]){box(body,.13,.11,.045,gold,side*.14,.52,.2,.02);box(body,.025,.32,.025,ink,side*.19,.63,.2,.01);}
   if(a.body==='raincoat'){box(body,.52,.09,.4,coat,0,.37,0,.035);box(body,.18,.05,.035,teal,0,.72,.22,.02);}
   if(a.body==='space'||a.body==='aurora'){box(body,.19,.12,.035,teal,0,.65,.215,.02);for(const side of [-1,1])box(legs[side===-1?0:1],.19,.06,.2,moon,0,-.12,0,.02);}
@@ -49,7 +52,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
  if(a.head==='crown'||a.head==='moon'){const m=a.head==='moon'?moon:gold;box(head,.55,.07,.37,m,0,.27,0,.02);for(let i=0;i<5;i++)addMesh(head,new T.ConeGeometry(.05,.15+i%2*.025,5),m,(i-2)*.105,.37,.12);}
  if(a.face==='mask'){
   const mask=ell(head,leaf,0,-.12,.425,.19,.095,.06);mask.name='leaf-mask';for(const side of [-1,1])box(head,.018,.035,.27,teal,side*.29,-.06,.12,.008);box(head,.12,.015,.02,gold,0,-.1,.48,.005);
- }else if(a.face!=='bare'){
+ }else if(a.face!=='bare'&&a.face!=='desert'&&a.face!=='diver'){
   const m=a.face==='star'?gold:moon;
   for(const side of [-1,1]){const frame=addMesh(head,new T.TorusGeometry(.099,.02,6,16),m,side*.168,.025,.287);frame.name='glasses-frame';const lens=new T.MeshPhongMaterial({color:0xb7e1dd,transparent:true,opacity:.16,shininess:85,depthWrite:false});addMesh(head,new T.CircleGeometry(.082,16),lens,side*.168,.025,.289);box(head,.018,.025,.24,m,side*.29,.035,.13,.005);if(a.face==='star')for(let i=0;i<5;i++){const q=addMesh(head,new T.ConeGeometry(.025,.045,4),m,side*.168+Math.sin(i*1.256)*.107,.025+Math.cos(i*1.256)*.107,.29);q.rotation.z=-i*1.256;}}
   box(head,.14,.022,.025,m,0,.035,.29,.006);
@@ -62,6 +65,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
   const geo=new T.PlaneGeometry(.62,.58,7,7);const pos=geo.attributes.position;for(let i=0;i<pos.count;i++){const v=(pos.getY(i)+.29)/.58;pos.setX(i,pos.getX(i)*(.65+.35*(1-v)));pos.setY(i,pos.getY(i)+.46);pos.setZ(i,-.29-.08*(1-v));}geo.computeVertexNormals();capeRest=new Float32Array(pos.array);cape=addMesh(body,geo,new T.MeshLambertMaterial({color:0x649950,side:T.DoubleSide}));cape.name='leaf-cape';
  }
  if(a.back==='wings')for(const side of [-1,1]){const wing=ell(body,moon,side*.34,.65,-.23,.3,.14,.045);wing.rotation.z=side*.4;for(let i=0;i<3;i++)ell(body,cream,side*(.23+i*.09),.65-i*.04,-.27,.11,.04,.022);}
+ expeditionWearables(body,head,arms,legs,a);
  // One continuous tapered tube; no detached cylinder segments while the tail bends.
  const tail=joint(body,0,0,0,'prehensile-tail');const rest=new T.CatmullRomCurve3([new T.Vector3(0,.43,-.19),new T.Vector3(-.13,.3,-.44),new T.Vector3(-.4,.29,-.74),new T.Vector3(-.6,.44,-.88),new T.Vector3(-.58,.65,-.84),new T.Vector3(-.4,.75,-.72)]).getPoints(28);
  const centers=rest.map(v=>v.clone()),geo=new T.BufferGeometry(),positions=new Float32Array(29*9*3),normals=new Float32Array(positions.length),indices:number[]=[];
@@ -69,8 +73,9 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Appe
  const charm=joint(tail,0,0,0,'tail-charm');if(a.tail==='bow')for(const side of [-1,1]){const q=addMesh(charm,new T.ConeGeometry(.075,.12,5),pink,side*.06,0,0);q.rotation.z=side*Math.PI/2;}if(a.tail==='leaf')addMesh(charm,new T.TorusGeometry(.065,.018,5,12),leaf).rotation.x=Math.PI/2;if(a.tail==='star')addMesh(charm,new T.OctahedronGeometry(.075),gold,0,-.055,0);
  const shadow=addMesh(root,new T.CircleGeometry(.29,16),new T.MeshBasicMaterial({color:0x183e39,transparent:true,opacity:.17,depthWrite:false}),0,.005,0);shadow.rotation.x=-Math.PI/2;shadow.name='ground-shadow';
  const pole=joint(elbows[0],0,-.13,.04,'trekking-pole');addMesh(pole,new T.CylinderGeometry(.011,.014,.66,7),satin(0xc2d3cf),0,-.26,0);box(pole,.045,.11,.045,ink,0,.02,0,.012);addMesh(pole,new T.CylinderGeometry(.03,.04,.035,7),ink,0,-.55,0);pole.visible=false;
- // Gloves and boots are part of the selected full outfit, preserving existing account slots.
- if(a.body!=='classic')for(let i=0;i<2;i++){box(elbows[i],.17,.08,.17,a.body==='raincoat'?gold:teal,0,-.11,.02,.025);box(knees[i],.19,.13,.27,a.body==='raincoat'?gold:ink,0,-.1,.055,.035);box(knees[i],.2,.035,.28,cream,0,-.165,.055,.012);for(let j=0;j<2;j++)box(knees[i],.12,.015,.02,cream,0,-.075+j*.035,.195,.005);}
+ // Explicit hands/feet choices are independent; missing slots preserve legacy outfit gear.
+ const legacyGear=a.body==='classic'?'bare':a.body==='climber'?'climber':a.body==='desert'?'desert':a.body==='diver'?'diver':'trail';
+ for(let i=0;i<2;i++){gloveModel(elbows[i],gear.hands??legacyGear,i?-1:1);bootModel(knees[i],gear.feet??legacyGear,i?1:-1);}
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion),stride=Math.sin(time*11)*walk*.5;

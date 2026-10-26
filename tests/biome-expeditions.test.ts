@@ -19,7 +19,7 @@ it('each new area scales with difficulty, has distant reachable quests, multiple
  }
 },60000);
 it('new expedition seal locks, terrain and thirty-player-objective sites remain connected',()=>{
- for(const area of ['forest','desert','gorge','mountain','coast','sea']as const){const s=new AdventureState('medium',0,52,false,undefined,area);expect(s.expedition).toBe(true);expect(s.sealUnlocked(0)).toBe(false);s.guards[0].dead=true;expect(s.sealUnlocked(0)).toBe(true);const p=s.layout.forest!.highland;expect(Number.isFinite(biomeElevation(area,p.x,p.y,s.layout))).toBe(true);const sites=teamSealSites(s.layout,{slots:Array.from({length:10},(_,i)=>i),slot:0,shared:true});expect(sites).toHaveLength(30);expect(new Set(sites.map(p=>`${p.x},${p.y}`)).size).toBe(30);}
+ for(const area of ['forest','desert','gorge','mountain','coast','sea']as const){const s=new AdventureState('medium',0,52,false,undefined,area);expect(s.expedition).toBe(true);expect(s.sealUnlocked(0)).toBe(false);s.guards.filter(g=>g.quest===0).forEach(g=>g.dead=true);expect(s.sealUnlocked(0)).toBe(true);const p=s.layout.forest!.highland;expect(Number.isFinite(biomeElevation(area,p.x,p.y,s.layout))).toBe(true);const sites=teamSealSites(s.layout,{slots:Array.from({length:10},(_,i)=>i),slot:0,shared:true});expect(sites).toHaveLength(30);expect(new Set(sites.map(p=>`${p.x},${p.y}`)).size).toBe(30);}
 });
 it('online rooms reconstruct the selected area identically on the authoritative server for all capacity bands',()=>{
  const player=(id:string):Player=>({uid:id,profileId:id,name:id,outfit:'classic',ready:true,online:true,x:1.5,y:1.5,angle:0,lastMove:0,seq:0,finishedAt:null,slot:0});

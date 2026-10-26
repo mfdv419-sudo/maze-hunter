@@ -1,3 +1,4 @@
+import {permittedAppearance} from './cosmetics';
 import { initializeApp } from "firebase/app";
 import { firebaseWebConfig } from "./firebase-web-config";
 import {
@@ -78,18 +79,26 @@ export async function logout() {
 export async function getProfiles(uid: string) {
   if (!db) throw Error("Cloud unavailable");
   const snaps = await getDocs(collection(db, "families", uid, "profiles"));
-  return snaps.docs.map((d) => d.data()).filter(validProfile);
+  return Promise.all(snaps.docs.map(d=>d.data()).filter(validProfile).map(async p=>{const w=await getDoc(doc(db!,'families',uid,'wardrobes',p.id));if(w.exists())p.wardrobe=w.data() as import('./cosmetics').WardrobeWallet;return p;}));
 }
 export async function syncProfile(uid: string, p: Profile) {
   if (!db) throw Error("Cloud unavailable");
   const target = doc(db, "families", uid, "profiles", p.id);
-  return runTransaction(db, async (tx) => {
+  // Initialize the server-owned migration receipt while the old profile still has its original schema.
+  const existing=await getDoc(target);
+  if(existing.exists()&&auth?.currentUser){
+    const init=await fetch('/.netlify/functions/maze-room',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:[]})});
+    if(!init.ok)throw Error('Wardrobe migration failed');
+  }
+  const merged = await runTransaction(db, async (tx) => {
     const snap = await tx.get(target),
       old = snap.data();
     const merged = validProfile(old) ? mergeProfile(p, old) : p;
-    tx.set(target, merged);
+    const {wardrobe,...publicProfile}=merged;tx.set(target, publicProfile);
     return merged;
   });
+  if(auth?.currentUser){const response=await fetch('/.netlify/functions/maze-room',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:merged.wardrobe?.pending||[]})});const result=await response.json();if(!response.ok)throw Error(result.error||'Wardrobe sync failed');merged.wardrobe=result.wallet;merged.appearance=permittedAppearance(merged);if(result.rejected?.length)window.dispatchEvent(new CustomEvent('wardrobe-rejected'));}
+  return merged;
 }
 export async function getEntitlement(uid: string) {
   if (!db) return false;

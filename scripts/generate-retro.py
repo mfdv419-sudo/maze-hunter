@@ -39,16 +39,28 @@ def build(counts,seed,templates,binary):
   if key not in templates:
    templates[key]=packed(count,w,h,cy,L,gy,seed+variant*104729,binary);Path('scripts/retro-templates.json').write_text(json.dumps(templates))
   m=json.loads(json.dumps(templates[key]));m['arms']=[[tuple(p)for p in a]for a in m['arms']]
-  # Backbite changes the interior of a failed path while preserving its root and exact length.
+  # Equal-length wrong routes stay plausible: mix their interior and pull dead ends toward the next decision.
+  goal=m['arms'][0][-1]
+  def difficulty_score(a):
+   turns=sum((b[0]-a[0],b[1]-a[1])!=(c[0]-b[0],c[1]-b[1])for a,b,c in zip(a,a[1:],a[2:]))
+   longest=run=1
+   for a0,b,c in zip(a,a[1:],a[2:]):
+    run=run+1 if (b[0]-a0[0],b[1]-a0[1])==(c[0]-b[0],c[1]-b[1])else 1
+    longest=max(longest,run)
+   return abs(a[-1][0]-goal[0])+abs(a[-1][1]-goal[1])+max(0,longest-4)*3+max(0,10-turns)*2
   for a in m['arms'][1:]:
-   for _ in range(150):
+   for _ in range(600):
     q=a[-1];near=[j for j,p in enumerate(a[:-2])if j>4 and abs(q[0]-p[0])+abs(q[1]-p[1])==1]
-    if near:j=r.choice(near);a[j+1:]=reversed(a[j+1:])
+    if near:
+     j=r.choice(near);candidate=a[:j+1]+list(reversed(a[j+1:]))
+     if difficulty_score(candidate)<=difficulty_score(a) or r.random()<.08:a[:]=candidate
   for a in m['arms']:
-   for _ in range(200):
+   for _ in range(400):
     if len(a)<8:continue
     i=r.randrange(5,len(a)-2);p=a[i];near=[j for j in range(i+2,len(a)-1)if abs(p[0]-a[j][0])+abs(p[1]-a[j][1])==1 and abs(a[i+1][0]-a[j+1][0])+abs(a[i+1][1]-a[j+1][1])==1]
-    if near:j=r.choice(near);a[i+1:j+1]=reversed(a[i+1:j+1])
+    if near:
+     j=r.choice(near);candidate=a[:i+1]+list(reversed(a[i+1:j+1]))+a[j+1:]
+     if difficulty_score(candidate)<=difficulty_score(a) or r.random()<.08:a[:]=candidate
   modules.append(m);cy=m['gy']
  width=sum(m['w']for m in modules);edges=set();used=set();ds=[];offset=0
  for i,m in enumerate(modules):
