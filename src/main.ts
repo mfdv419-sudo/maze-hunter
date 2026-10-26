@@ -484,8 +484,10 @@ async function playRetro(level: number) {
   zoom.className = "zoom-controls";
   zoom.innerHTML =
     button("−", "zoom-out", "icon-button") +
-    button("+", "zoom-in", "icon-button");
+    button("+", "zoom-in", "icon-button") + button("⊡", "zoom-fit", "icon-button");
   el("pause-game").before(zoom);
+  el("zoom-fit").setAttribute("aria-label",tr("Lihat seluruh peta","View full map"));
+  click("zoom-fit",()=>{(game as RetroGame)?.overview();});
   click("zoom-in", () => {
     (game as RetroGame)?.zoom(0.5);
     toast(
@@ -662,7 +664,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       }
       el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
-      if(state.expedition){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1]} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:state.bossVulnerable?tr('PELIN­DUNG PADAM · SERANG!','SHIELD DOWN · ATTACK!'):tr('PELIN­DUNG AKTIF · HINDARI','SHIELD ACTIVE · DODGE')}</small>`;}}
+      if(state.expedition){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1]} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='rockfall'?tr('RUNTUHAN BATU','FALLING ROCKS'):warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:state.bossVulnerable?tr('PELIN­DUNG PADAM · SERANG!','SHIELD DOWN · ATTACK!'):tr('PELIN­DUNG AKTIF · HINDARI','SHIELD ACTIVE · DODGE')}</small>`;}}
       tracker.textContent=primaryObjective(state,lang);const info=areaInformation(state,lang);area.innerHTML=`<strong>${esc(info.name)} · ${tr('Bahaya','Danger')}: ${esc(info.danger)}</strong><small>${esc(info.description)}</small>`;area.dataset.danger=String(info.level);area.title=info.description;interaction.textContent=nearbyInformation(state,lang);
       if(lastZone!==state.zone){lastZone=state.zone;const discovery=document.createElement('div');discovery.className='zone-discovery';discovery.innerHTML=`<strong>${esc(info.name)}</strong><span>${esc(info.description)}</span><small>${tr('Bahaya','Danger')}: ${esc(info.danger)} · +3 ${tr('koin penemuan pertama','coins on first discovery')}</small>`;document.querySelector('.zone-discovery')?.remove();el('game-stage').parentElement!.append(discovery);setTimeout(()=>discovery.remove(),3200);}
       objectives.classList.toggle('escape-active',state.stage==='escape');

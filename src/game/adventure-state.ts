@@ -1,3 +1,4 @@
+import {gorgeRiver} from './gorge-terrain';
 import {aquaticSwimming,aquaticGround,aquaticChestDepth} from './aquatic';
 import {biomeLayout,biomeElevation} from './biome-layout';
 import {areaTime,type AdventureArea} from './areas';
@@ -6,9 +7,9 @@ import {teamSealSites,type QuestTeam} from './quest-seals';
 import {Climber,type ClimbSave} from './climbing';
 import {adventureLayout,adventureRules} from './adventure-layout';
 import {center,clearSegment,moveSliding,route,type Point,type Difficulty} from './maze';
-export interface Guard {position:Point;patrol:Point[];step:number;direction:number;hp:number;boss:boolean;slowUntil:number;stunUntil:number;hits:number;lastHit:number;nextShot:number;telegraphUntil:number;aim:Point;dead:boolean;vulnerableAt?:number;vulnerableUntil?:number;elite?:boolean;sapling?:boolean}
+export interface Guard {dash?:{from:Point;to:Point;at:number;until:number};position:Point;patrol:Point[];step:number;direction:number;hp:number;boss:boolean;slowUntil:number;stunUntil:number;hits:number;lastHit:number;nextShot:number;telegraphUntil:number;aim:Point;dead:boolean;vulnerableAt?:number;vulnerableUntil?:number;elite?:boolean;sapling?:boolean}
 export interface Cake {depth?:number;position:Point;velocity:Point;owner:'player'|'guard'|'boss';ttl:number}
-export interface Hazard {id:number;kind:'slam'|'seed'|'roots'|'spin'|'vine'|'cataclysm'|'branch'|'charge'|'lightning';point:Point;from:Point;at:number;end:number;radius:number;resolved:boolean}
+export interface Hazard {id:number;kind:'slam'|'seed'|'roots'|'spin'|'vine'|'cataclysm'|'branch'|'charge'|'lightning'|'rockfall';point:Point;from:Point;at:number;end:number;radius:number;resolved:boolean}
 export interface AdventureSave {depth?:number;diving?:boolean;lastDive?:number;lastLoot?:AdventureState['lastLoot'];climb?:ClimbSave;climbed?:number[];visitedZones?:number[];position:Point;checkpoint:Point;elapsed:number;lives:number;ammo:number;seals:number[];stars:number[];chests:number[];broken:string[];harvested:number[];coins:number;keys:number;buffUntil:number;shield:number;guards:Guard[];projectiles:Cake[];hazards:Hazard[];stage:'explore'|'boss'|'escape';escapeAt:number;escapeDuration:number;phase:'playing'|'won'|'lost';reason:'time'|'lives'|'escape'|null;resetFogRevision:number;respawns:number;revision:number;invulnerableUntil:number;slowUntil:number;stunUntil:number;hits:number;lastHit:number;lastThrow:number;lastJump:number;hazardId:number;nextBossSkill:number;nextEscapeHazard:number;message:string;messageAt:number}
 export class AdventureState {
  depth=0;diving=false;lastDive=-10;
@@ -40,7 +41,7 @@ export class AdventureState {
  get bossRefilling(){return this.phase==='playing'&&this.stage!=='escape'&&this.seals.size===this.sealGoal&&this.guards.some(g=>g.boss&&!g.dead)&&Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<this.arenaRadius;}
  get gateOpen(){return this.seals.size===this.sealGoal&&this.bossCleared;}
  get remaining(){return this.stage==='escape'?Math.max(0,this.escapeDuration-(this.elapsed-this.escapeAt)):Math.max(0,this.limit-this.elapsed);}
- get speedFactor(){return this.elapsed<this.stunUntil?0:(this.elapsed<this.slowUntil?.55:1)*(this.elapsed<this.buffUntil?1.3:1)*(this.sample&&inCave(this.position.x,this.position.y)&&forestElevation(this.position.x,this.position.y)<-.15?.68:1);}
+ get speedFactor(){return this.elapsed<this.stunUntil?0:(this.elapsed<this.slowUntil?.55:1)*(this.elapsed<this.buffUntil?1.3:1)*(this.area==='gorge'&&gorgeRiver(this.position.x,this.position.y,this.layout).wet>.55?.72:1)*(this.sample&&inCave(this.position.x,this.position.y)&&forestElevation(this.position.x,this.position.y)<-.15?.68:1);}
  get interaction(){if(this.layout.vegetation.some((p,i)=>p.kind!=='normal'&&!this.harvested.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.6))return'harvest';if(this.layout.grass.some(p=>!this.broken.has(`${p.x},${p.y}`)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<1.35))return'cut';if(this.layout.vegetation.some((p,i)=>p.kind!=='normal'&&!this.harvested.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<1.1))return'harvest';return'cake';}
  notify(message:string){this.message=message;this.messageAt=this.elapsed;}
  startEscape(){if(this.stage==='escape')return;this.stage='escape';for(const p of this.layout.escapeConnector){this.grid[p.y][p.x]=0;this.broken.add(`${p.x},${p.y}`);}this.escapeAt=this.elapsed;const safe=this.layout.escapeRoutes[0].length;this.escapeDuration=Math.max(45,Math.min(90,Math.ceil(safe/1.5+22)));this.nextEscapeHazard=this.elapsed+4;this.hazards=[];this.projectiles=[];this.notify('escape');this.revision++;}
@@ -85,6 +86,14 @@ export class AdventureState {
  private bossSkill(g:Guard){if(this.expedition){
   const phase=this.bossPhase,k=(this.hazardId+Math.floor(this.elapsed*13)+this.variation)%5,delay=phase===3?1.1:1.55;
   g.vulnerableAt=this.elapsed+delay;g.vulnerableUntil=this.elapsed+delay+(phase===3?1.4:1.9);
+  if(this.area==='gorge'){
+   // Stone monarch: readable slams, a charge and staggered falling rocks, no forest roots or lightning.
+   const attack=Math.floor(this.elapsed/4.6)%3;
+   if(attack===0)this.warn('slam',g.position,3.5,delay);
+   else if(attack===1)this.warn('charge',this.position,.85,delay,g.position);
+   else for(let i=0;i<phase+1;i++)this.warn('rockfall',{x:this.position.x+Math.sin(i*2.4)*i*.8,y:this.position.y+Math.cos(i*2.4)*i*.8},.85,delay+i*.3);
+   return;
+  }
   if(k===0)this.warn('slam',g.position,3.6,delay);
   else if(k===1){this.warn('lightning',this.position,1.05,delay);if(phase>1)this.warn('lightning',{x:this.position.x-1.6,y:this.position.y+1.2},.9,delay+.35);}
   else if(k===2){for(let i=0;i<3+phase;i++){const a=(this.hazardId+i*2.4)*1.71,r=i?1.4+(i%2)*1.2:0;this.warn('roots',{x:this.position.x+Math.sin(a)*r,y:this.position.y+Math.cos(a)*r},.7,delay+i*.12);}}
@@ -96,7 +105,7 @@ export class AdventureState {
   else if(phase===2){if(k===0)this.warn('roots',this.position,.8,1.6);else if(k===1)this.warn('spin',g.position,2,1.6);else{this.warn('vine',this.position,.55,1.6,g.position);if(this.difficulty!=='medium')this.spawnSapling({x:Math.floor(g.position.x),y:Math.floor(g.position.y)});}}
   else {if(k===0)this.warn('cataclysm',g.position,3.7,2.2);else if(k===1){this.warn('branch',this.position,.8,1.7);this.spawnSapling({x:Math.floor(g.position.x),y:Math.floor(g.position.y)});}else this.warn('charge',this.position,.65,1.9,g.position);}
  }
- private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g)g.position=moveSliding(this.grid,g.position,h.point.x-g.position.x,h.point.y-g.position.y,.4);}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
+ private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g){const dx=h.point.x-g.position.x,dy=h.point.y-g.position.y,d=Math.hypot(dx,dy),k=this.area==='gorge'?Math.max(0,d-1.55)/(d||1):1;if(this.area==='gorge')g.dash={from:{...g.position},to:moveSliding(this.grid,g.position,dx*k,dy*k,.4),at:this.elapsed,until:this.elapsed+.36};else g.position=moveSliding(this.grid,g.position,dx*k,dy*k,.4);}}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
    if(h.kind==='charge'||h.kind==='vine'){const vx=h.point.x-h.from.x,vy=h.point.y-h.from.y,l=vx*vx+vy*vy,t=Math.max(0,Math.min(1,((this.position.x-h.from.x)*vx+(this.position.y-h.from.y)*vy)/(l||1)));inside=Math.hypot(this.position.x-h.from.x-vx*t,this.position.y-h.from.y-vy*t)<h.radius;}
    if(inside&&jump<.22&&this.depth<.75){if(h.kind==='roots'){this.slowUntil=this.elapsed+2;this.notify('roots');}else this.damage(this.stage==='escape'?'guard':'boss');}}
   this.hazards=this.hazards.filter(h=>h.end>this.elapsed);
@@ -124,12 +133,15 @@ export class AdventureState {
   this.updateHazards(jump);
   for(const g of this.guards) {
    if(g.dead||this.stage==='escape')continue;
+   const dashing=!!g.dash;
+   if(g.dash){const dash=g.dash,t=Math.min(1,(this.elapsed-dash.at)/(dash.until-dash.at)),ease=t*t*(3-2*t),target={x:dash.from.x+(dash.to.x-dash.from.x)*ease,y:dash.from.y+(dash.to.y-dash.from.y)*ease};g.position=moveSliding(this.grid,g.position,target.x-g.position.x,target.y-g.position.y,.4);if(t>=1)delete g.dash;}
+
    if(this.expedition&&!g.boss&&this.elapsed>=g.stunUntil&&!g.telegraphUntil&&this.elapsed%1<dt&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<5&&clearSegment(this.grid,g.position,this.position,.05)){g.patrol=route(this.grid,{x:Math.floor(g.position.x),y:Math.floor(g.position.y)},{x:Math.floor(this.position.x),y:Math.floor(this.position.y)});g.step=Math.min(1,g.patrol.length-1);g.direction=1;}
    if(!g.boss&&g.patrol.length>1&&this.elapsed>=g.stunUntil&&(!this.expedition||!g.telegraphUntil)) {const target=center(g.patrol[Math.min(g.step,g.patrol.length-1)]),d=Math.hypot(target.x-g.position.x,target.y-g.position.y),speed=this.elapsed<g.slowUntil?.45:g.elite?1.05:.85;
     if(d<.06){if(g.step===g.patrol.length-1)g.direction=-1;if(g.step===0)g.direction=1;g.step+=g.direction;}else g.position=moveSliding(this.grid,g.position,(target.x-g.position.x)/d*speed*dt,(target.y-g.position.y)/d*speed*dt,.16);}
-   if(g.boss&&this.stage==='boss'&&this.seals.size===this.sealGoal&&(!this.expedition||!this.bossVulnerable)){
+   if(g.boss&&!dashing&&this.stage==='boss'&&this.seals.size===this.sealGoal&&(!this.expedition||!this.bossVulnerable)){
     const dx=this.position.x-g.position.x,dy=this.position.y-g.position.y,d=Math.hypot(dx,dy),speed=this.expedition?(this.bossPhase===3?1.6:1.2):.65;
-    if(d>.8){const tx=dx/d+(d<2.5?dy/d*.7:0),ty=dy/d-(d<2.5?dx/d*.7:0),next=moveSliding(this.grid,g.position,tx*speed*dt,ty*speed*dt,.4);if(Math.hypot(next.x-this.layout.fortress.x-.5,next.y-this.layout.fortress.y-.5)<this.arenaRadius-.9)g.position=next;}
+    if(d>(this.area==='gorge'?1.65:.8)){const tx=dx/d+(d<2.5?dy/d*.7:0),ty=dy/d-(d<2.5?dx/d*.7:0),next=moveSliding(this.grid,g.position,tx*speed*dt,ty*speed*dt,.4);if(Math.hypot(next.x-this.layout.fortress.x-.5,next.y-this.layout.fortress.y-.5)<this.arenaRadius-.9)g.position=next;}
    }
    const d=Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y);
    if(d<(g.boss?.55:.3)&&jump<.2&&Math.abs(this.depth-(this.area==='sea'&&aquaticSwimming(this.area,g.position,this.layout)?.4:0))<.75)this.damage(g.boss?'boss':'guard');

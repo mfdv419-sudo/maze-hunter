@@ -13,6 +13,7 @@ export class RetroGame {
   private game: Phaser.Game;
   private scene?: Phaser.Scene;
   private zoomLevel = 1;
+  private viewportKey="";
   private observer: ResizeObserver;
   private layout?:RetroViewport;
   constructor(host: HTMLElement, options: RetroOptions) {
@@ -105,9 +106,11 @@ export class RetroGame {
       draw() {
         const w=this.scale.width,h=this.scale.height,board=state.board;
         view=retroViewport(w,h,board.width,board.height);scale=view.scale;owner.layout=view;renderedRevision=state.mapRevision;
+        const key=`${w}:${h}:${state.pageIndex}:${board.width}:${board.height}`;
+        if(key!==owner.viewportKey){owner.viewportKey=key;owner.zoomLevel=Math.min(w,h)<600?Math.max(1,Math.min(2,28/scale)):1;this.cameras.main.setBounds(0,0,w,h).setZoom(owner.zoomLevel);const focus=retroToScreen(state.position,view);this.cameras.main.centerOn(focus.x,focus.y);}
         if(owner.zoomLevel>1)this.cameras.main.setBounds(0,0,w,h);
         const g=this.gfx;g.clear();
-        const left=view.ox,top=view.oy,mw=view.cols*view.sx,mh=view.rows*view.sy,theme=Math.floor((state.level-1)/10)%3,wallColor=[0x3a475e,0x46566b,0x675747][theme];
+        const left=view.ox,top=view.oy,mw=view.cols*view.sx,mh=view.rows*view.sy,theme=Math.floor((state.level-1)/10)%3,wallColor=[0x24334b,0x2d3c50,0x493d35][theme];
         g.fillStyle(0x122f35,.32).fillRoundedRect(left-9,top-5,mw+18,mh+18,12);
         g.fillStyle(0xbda575).fillRoundedRect(left-7,top-7,mw+14,mh+14,10);
         g.fillStyle(0xf2ead9).fillRect(left,top,mw,mh);
@@ -115,21 +118,22 @@ export class RetroGame {
         for(let y=0;y<board.height;y++)for(let x=0;x<board.width;x++){
           const walls=board.walls[y][x];
           if(walls===15){const a=screen(x,y),b=screen(x+1,y+1);g.fillStyle(0x192438).fillRect(Math.min(a.x,b.x),Math.min(a.y,b.y),Math.abs(b.x-a.x),Math.abs(b.y-a.y));continue;}
-          const edge=(ax:number,ay:number,bx:number,by:number)=>{const a=screen(ax,ay),b=screen(bx,by);g.lineStyle(Math.max(2.2,Math.min(4,scale*.11)),wallColor,1).lineBetween(a.x,a.y,b.x,b.y);g.lineStyle(Math.max(.7,scale*.018),theme===0?0xa9bbb0:theme===1?0x9ebc7d:0xc9a774,.8).lineBetween(a.x+.7,a.y+.7,b.x+.7,b.y+.7);};
+          const edge=(ax:number,ay:number,bx:number,by:number)=>{const a=screen(ax,ay),b=screen(bx,by);g.lineStyle(Math.max(2.4,scale*.105),wallColor,1).lineBetween(a.x,a.y,b.x,b.y);};
           if(walls&1)edge(x,y,x+1,y);if(walls&8)edge(x,y,x,y+1);
           if((walls&2)&&x===board.width-1)edge(x+1,y,x+1,y+1);
           if((walls&4)&&y===board.height-1)edge(x,y+1,x+1,y+1);
         }
         if(state.path.length>1){g.lineStyle(Math.max(3,scale*.18),0x63bba3,.85);g.beginPath();state.path.forEach((p,i)=>{const a=retroToScreen(p,view);i?g.lineTo(a.x,a.y):g.moveTo(a.x,a.y);});g.strokePath();}
         const canvas=this.game.canvas;Object.assign(canvas.dataset,{page:String(state.pageIndex+1),pages:String(state.boards.length),target:state.finalPage?'figs':'gate',goalRevealed:'true',explored:String(state.explored.size),columns:String(board.width),rows:String(board.height),cellWidth:String(view.sx),cellHeight:String(view.sy),arenaWidth:String(mw),arenaHeight:String(mh),rotated:String(view.rotated)});
-        const f=screen(board.finish.x+.5,board.finish.y+.5),start=screen(board.start.x+.5,board.start.y+.5),hero=retroToScreen(state.position,view),icon=Math.min(30,Math.max(12,scale*.82));
+        const f=screen(board.finish.x+.5,board.finish.y+.5),start=screen(board.start.x+.5,board.start.y+.5),hero=retroToScreen(state.position,view),icon=scale*.87;
         g.fillStyle(0x5bbba2,.22).fillCircle(start.x,start.y,Math.min(scale*.44,24));
-        if(state.finalPage)drawFigs(g,f.x,f.y,Math.max(14,icon));else drawMapGate(g,f.x,f.y,Math.max(15,icon));
+        if(state.finalPage)drawFigs(g,f.x,f.y,icon);else drawMapGate(g,f.x,f.y,icon);
         drawBinturong(g,start.x,start.y,icon,.15);drawBinturong(g,hero.x,hero.y,icon);
       }
 
       update() {
         if(!transitioning&&renderedRevision!==state.mapRevision)this.changeMap();
+        this.game.canvas.dataset.zoom=String(owner.zoomLevel);this.game.canvas.dataset.effectiveCell=String(scale*owner.zoomLevel);
         const now = performance.now();
         state.tick((now - this.lastTick) / 1000);
         this.lastTick = now;
@@ -175,6 +179,7 @@ export class RetroGame {
       focus.x,focus.y,
     );
   }
+  overview(){this.zoomLevel=1;this.scene?.cameras.main.setZoom(1).setScroll(0,0);}
   setPaused(v: boolean) {
     if (v && this.state.phase === "playing") this.state.phase = "paused";
     else if (!v && this.state.phase === "paused") this.state.phase = "playing";

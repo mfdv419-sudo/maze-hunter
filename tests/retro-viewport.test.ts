@@ -7,8 +7,10 @@ it('Retro boards retain valid bounds while square and rectangular layouts retain
   const open=b.walls.flat().filter(w=>w!==15).length;if(level>=41)expect(open/(b.width*b.height)).toBeGreaterThan(.6);expect(boardRoute(b).length).toBeGreaterThan(2);
  }
 });
-it('uses a consistent square cell size across levels without stretching to fill the viewport',()=>{
- for(const [width,height]of [[844,390],[1920,900],[390,844]]){const baseline=retroViewport(width,height,9,9).scale;for(const level of [1,6,11,21,31,41,51,71,91,100]){const b=retroBoard(level),v=retroViewport(width,height,b.width,b.height);expect(v.sx).toBe(v.sy);expect(v.scale).toBe(baseline);expect(v.ox).toBeGreaterThanOrEqual(17);expect(v.oy).toBeGreaterThanOrEqual(78);expect(v.oy+v.rows*v.sy).toBeLessThanOrEqual(height-17);}}
+it('fits each board with uniform proportional cells and enlarges early phone mazes',()=>{
+ for(const [width,height]of [[844,390],[1920,900],[390,844]])for(const level of [1,6,11,21,31,41,51,71,91,100]){const b=retroBoard(level),v=retroViewport(width,height,b.width,b.height);expect(v.sx).toBe(v.sy);expect(v.ox).toBeGreaterThanOrEqual(17);expect(v.oy).toBeGreaterThanOrEqual(78);expect(v.oy+v.rows*v.sy).toBeLessThanOrEqual(height-17);expect(v.cols*v.sx).toBeLessThanOrEqual(width-35);}
+ expect(retroViewport(390,844,9,9).scale).toBeGreaterThan(38);
+ expect(retroViewport(844,390,9,9).scale).toBeGreaterThan(32);
 });
 it('drawing and touch coordinates round-trip on rectangular cells, portrait rotation and resized canvases',()=>{
  for(const level of [1,5,11,31,51,91]){const b=retroBoard(level);for(const [width,height]of [[844,390],[1280,720],[390,844],[1024,768]]){const v=retroViewport(width,height,b.width,b.height);for(const p of boardRoute(b)){const a=center(p),pixel=retroToScreen(a,v),back=retroFromScreen(pixel,v);expect(back.x).toBeCloseTo(a.x,9);expect(back.y).toBeCloseTo(a.y,9);}const start=center(b.start);expect(boardSegment(b,start,{x:b.width+.1,y:start.y})).toBe(false);expect(boardSegment(b,start,{x:start.x,y:b.height+.1})).toBe(false);}}

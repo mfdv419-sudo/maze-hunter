@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-26 — Ngarai visual example and readable phone Retro
+
+- Retro now fits the actual board with one proportional cell scale. Early mazes grow substantially on phones; dense boards begin at a readable enlarged view, retain free pan/lift, and have a full-map button beside zoom. Darker continuous walls and proportional mascot/finish icons remove the previous thin highlight noise. The catalogue, branch counts, exact 90% arm ratio, lives, timers and map transitions are unchanged. Deceptive route design remains pending.
+- Ngarai replaces recolored hedge blocks with continuous sculpted, layered cliffs, real shared terrain terraces, a shallow flowing channel, walkable bridge and bank approaches, cave arch, stone arch, scree, wispy sky and an open boss clearing. Cliff geometry is partitioned spatially for culling. Cave/terrain/cliff collision shortens the camera without forcing an overhead view. The smoothed camera arm is checked again to avoid cutting through geometry.
+- Added original animated Ketam Tebing and Raja Batu Retak models, with articulated legs/claws/arms, idle movement, anticipation and hit reactions. The King moves, keeps room around its larger body, charges without overlapping the target, warns of slams/falling rocks, opens recovery windows and retains cake refill. Falling rocks use a distinct warning and impact visual; canyon quests explain the landmarks and enemy.
+- Only Ngarai receives the new biome treatment in this stage. Other approved biome directions remain in `docs/VISUAL_GUIDE.md`. Original Solo, protected authored Forest and the Retro catalogue are byte-preserved. No new environment variables, Firebase rules, dependencies or removals. Rebuild frontend and Netlify functions together for the new rockfall hazard.
+- Validation: 100 logic tests pass across 17 test files. 22 distinct targeted browser scenarios pass across the verification runs, including real menu launch, canyon render/camera/boss, proportional Retro trace/zoom/map transitions/rotation, other area regressions, phone HUD and production offline reload. Frontend production build and the Netlify room bundle pass. The final charge motion is also checked for gradual simulation movement and deterministic save/resume. No physical Android/iOS performance or production multi-client verification is claimed.
+
 ## 2026-10-26 — Presentation, aquatic exploration and source consolidation
 
 - Restored natural Retro board proportions: every cell is square and uses the same viewport scale across levels. Small boards remain small; zoom is explicit.

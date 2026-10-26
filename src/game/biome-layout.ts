@@ -1,3 +1,4 @@
+import {gorgeElevation} from './gorge-terrain';
 import {aquaticGround} from './aquatic';
 import type {AdventureLayout} from './adventure-layout';
 import {areaSize,type AdventureArea} from './areas';
@@ -32,7 +33,7 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){
  const h=layout.forest!.highland,c=layout.forest!.cave,d=Math.hypot(x-h.x-.5,y-h.y-.5);
- if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return -.35*Math.max(0,1-Math.hypot(x-c.x,y-c.y)/8);
+ if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return gorgeElevation(x,y,layout);
  if(area==='mountain')return Math.max(0,4-d*.12)+Math.sin(x*.08)*.25;
  if(area==='desert')return Math.sin(x*.11)*Math.cos(y*.09)*.4-Math.max(0,1-Math.hypot(x-c.x-.5,y-c.y-.5)/3.8)*.8;
 

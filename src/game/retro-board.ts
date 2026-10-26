@@ -29,8 +29,8 @@ export interface RetroViewport {scale:number;sx:number;sy:number;ox:number;oy:nu
 export function retroViewport(width:number,height:number,cols:number,rows=cols):RetroViewport{
  const top=height<520?78:96,bottom=18,rotated=height>width&&cols>rows;
  const viewCols=rotated?rows:cols,viewRows=rotated?cols:rows,availableW=Math.max(100,width-36),availableH=Math.max(80,height-top-bottom);
- // A shared square cell scale across the campaign; unused viewport space is intentional.
- const cell=Math.min(40,availableW/(height>width?18:26),availableH/(height>width?26:18));
+ // Fit the actual board with one uniform scale. Small maps no longer inherit the largest map’s tiny cells.
+ const cell=Math.min(48,availableW/viewCols,availableH/viewRows);
  const sx=cell,sy=cell;
  return{scale:cell,sx,sy,ox:(width-viewCols*cell)/2,oy:top+(availableH-viewRows*cell)/2,rotated,boardHeight:rows,cols:viewCols,rows:viewRows};
 }
