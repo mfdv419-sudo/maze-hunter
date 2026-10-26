@@ -1,14 +1,17 @@
-# Verification — 2026-10-26
+# Terrain & Online — current verification
 
-- 110 Vitest tests, 18 files: PASS (qa-unit-result.log, refreshed after final generation).
-- Entire 176-map catalogue: unique, reachable, exact choice counts, 40-step correct / 36-step failed routes, >=95% density, winding-route and deceptive-endpoint checks: PASS.
-- Original Solo and authored Forest layout preservation: PASS.
-- Five keepers per region, dormant/awake save restore, fixed Co-op roster, shared contribution credit, no friendly fire, private Race boss and gates: PASS.
-- Wallet repeated purchase, merging, rejected overspend/unknown items, legacy ownership and independent equipment: PASS.
-- Optional high terrace: single jump cannot grab; double jump can; elevated star cannot be collected from ground: PASS.
-- Six original enemy pairs: distinct names/rigs, finite articulated geometry, dormant monuments: PASS.
-- TypeScript and Vite production build: PASS. Function bundled with esbuild for Node: PASS.
-- Browser observed: Home illustrated fallback, selection of Forest/Gorge/Desert, unique area card compositions, level illustrations, Retro Level 1 canvas with 48px square cells, functional pause dialog.
-- 3D browser render, physical phone performance, production Firebase sync and live multi-device Co-op/Race: NOT VERIFIED. Available cloud browser cannot create WebGL contexts. No previous browser-test count is reused.
-
-Release ZIP overlay and automatic removal are checked against the exact uploaded archive, then compared byte-for-byte with packaged source. See DELTA_MANIFEST.json for hashes.
+- 124 tests / 20 Vitest files: PASS. Complete output: TEST_RESULTS.txt.
+- Six handler tests with controlled Firebase Auth/Firestore/RTDB: private create, initial-null-cache join, compatible random matching, missing/expired room rejection, mode isolation and ready/start, missing server config (503), expired token (401).
+- Easy: 80 area/map combinations connected; correct smaller dimensions, keeper HP and boss HP.
+- Wall geometry: six distinct high native styles; batched detail meshes.
+- Gorge vs Desert: separate crab/skink and stone/sphinx rigs and bounds.
+- Sea boss position: swimmable home and nearby fighting positions; no dry arena disc.
+- Bridge fall: valid edge fall costs one heart and returns to checkpoint, even with a shield.
+- Environmental hazards: warning, active phase, dodge, and sea trash damage.
+- Reachable prop kinds and additional roaming guards: PASS.
+- Super cake color, effects, stock, save restore: PASS.
+- Existing exact Retro branching, preservation of Solo/authored Forest, physical primary-route traversal and Co-op/Race isolation: PASS.
+- TypeScript, Vite production frontend and bundled Node Function: PASS.
+- Browser: actual Online dialog markup measured with 48px buttons and corrected grid; eight area options and four difficulties, including Volcano Easy, observed through game menu.
+- New 3D browser render: BLOCKED by unavailable WebGL in the test browser. Not a verified visual pass.
+- Real project Firebase configuration, live multi-device rooms and physical-phone performance: NOT VERIFIED. No credentials or production URL were supplied and no production deployment was changed.

@@ -70,6 +70,7 @@ export function biomeGuardian(area:AdventureArea,boss=false):T.Group{
  if(area==='classic')return forestGuardian(boss);
  if(area==='forest'){const m=boss?forestGuardian(true):pangolin();if(boss)m.name='raja-akar';return m;}
  if(area==='gorge')return gorgeGuardian(boss);
+ if(area==='volcano'){const m=gorgeGuardian(boss);m.name=boss?'raja-magma':'kadal-bara';m.traverse(o=>{if(o instanceof T.Mesh&&o.material instanceof T.MeshLambertMaterial){o.material=o.material.clone();o.material.color.lerp(new T.Color(0x55454b),.65);o.material.emissive.set(0x461a0b);}});const glow=new T.Mesh(new T.OctahedronGeometry(boss?.2:.1),new T.MeshBasicMaterial({color:0xffae66}));glow.position.set(0,boss?1.5:.7,.4);m.add(glow);return m;}
  if(area==='desert')return boss?sphinx():skink();
  if(area==='mountain')return goat(boss);
  if(area==='coast')return coconutCrab(boss);

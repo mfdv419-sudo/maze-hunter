@@ -1,5 +1,16 @@
 # Changelog
 
+## Terrain & Online — continued from the delivered 49-file update
+
+- Replaced remaining non-sample biome hedge blocks with high continuous native wall geometry: forest root/earth buttresses, sandstone strata, mountain crags/snow, limestone coast, reef fingers, and volcanic basalt. Heights are relative to terrain and comparable to the accepted canyon; camera collision uses the same wall-top function. Static silhouette details are batched.
+- Added Easy (smaller map, more time, weaker quest keepers/boss, longer warnings) and Gunung Bara / Ember Volcano across selection, server validation, map cycle, records and co-op capacity. Existing Retro catalogue and original Solo/Forest authored routes remain preserved.
+- Added reachable climbable trees, logs, rocks and broken cart/aircraft/ship props with first-climb coin rewards. Additional patrols spawn at route bends beyond seal sites. Added deterministic warned environmental hazards: falling rocks, tumbleweed, rolling logs, coastal waves, floating/submerged trash and volcanic embers. Contact costs a heart and returns to the last checkpoint; warnings and escape routes allow avoidance. Canyon bridge edges now fall to a checkpoint; shields do not cancel a fall.
+- Sea arena is submerged, its dry arena disc is removed, the dormant monument rests on the seabed and the reef ray follows swimming depth. Gorge crab/stone and desert skink/sphinx have verified distinct rigs.
+- Added selected red/yellow/green super cakes with limited stock, chest refills, colored projectiles/icing, 2 damage/stun/slow effects, save restore and authoritative multiplayer selection.
+- Fixed room transactions aborting when RTDB first presents an empty local cache. Join and random matching now allow the authoritative retry and reject null-room results. Strict profile sync and HTTP/server errors are visible inline; actions have busy protection and timeouts. Online dialog has consistent 48px controls, spacing and responsive action/code grids.
+- 124 tests across 20 files pass, including six Function-handler tests with controlled Firebase services. Production frontend and Node Function bundling pass. Browser observed the shipped Online markup/layout and Easy/Volcano menu. Live Firebase multi-device sessions, physical phones and new 3D visual render remain unverified because the available browser cannot create WebGL contexts. No previous render-test count is reused.
+- Firestore adventure-record limit increases from 210 to 320 for eight areas × four difficulties × ten maps. Existing database identities and data are retained. Existing required online environment fields are now documented completely; no credentials are included.
+
 ## 2026-10-26 — Six biome identities, family quests, personal Race and wardrobe redemption
 
 - Continued the uploaded maze-1 source and recovered saved work. Preserved original Solo routes, authored Forest layout, existing account progress, timers and map/life rules.

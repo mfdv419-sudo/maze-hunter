@@ -11,7 +11,7 @@ import {retroBoard,boardRoute} from '../src/game/retro-board';
 import {teamSealSites} from '../src/game/quest-seals';
 import {recordRun,readRuns} from '../src/services/records';
 it('preserves original SOLO and the protected Forest sample, with separate additional expedition areas',()=>{
- for(const d of ['medium','hard','extreme']as const){expect(new AdventureState(d,2,52).layout).toEqual(adventureLayout(d,2,52));expect(new AdventureState(d,0,52,true).layout).toEqual(forestLayout());}expect(adventureAreas).toHaveLength(7);
+ for(const d of ['medium','hard','extreme']as const){expect(new AdventureState(d,2,52).layout).toEqual(adventureLayout(d,2,52));expect(new AdventureState(d,0,52,true).layout).toEqual(forestLayout());}expect(adventureAreas).toHaveLength(8);
 });
 it('each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories',()=>{
  for(const area of adventureAreas.filter(a=>a!=='classic'))for(const d of ['medium','hard','extreme']as const)for(const map of [0,9]){

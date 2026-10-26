@@ -1,3 +1,7 @@
+# Tambahan Terrain & Online
+
+Volcano / Gunung Bara ditambahkan dengan identitas basalt gelap, celah pijar dan rintangan bara. Area yang sudah ditetapkan dipertahankan. Implementasi terbaru memakai dinding native tinggi untuk setiap biome, properti yang dapat dicapai dan dipanjat, serta rintangan bergerak bertanda. Baca UPDATE_INSTRUCTIONS.md untuk aturan aktual dan QA_CURRENT.md untuk batas verifikasi.
+
 # Panduan Visual Maze Hunter
 Tanggal: 26 Oktober 2026
 Status: arah visual disetujui. Implementasi pertama: Ngarai. Area lain masih berupa panduan, belum penerapan model/medan baru. Detail implementasi aktual dan batas pengujian dicatat di CHANGELOG.md.

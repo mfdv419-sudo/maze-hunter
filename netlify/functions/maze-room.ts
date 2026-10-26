@@ -87,7 +87,7 @@ export const handler: Handler = async (event) => {
     let id = String(body.code || "").toUpperCase(),
       result: Match | null = null;
     if (action === "create" || action === "random") {
-      const difficulty: Difficulty = ["medium", "hard", "extreme"].includes(
+      const difficulty: Difficulty = ["easy", "medium", "hard", "extreme"].includes(
           body.difficulty,
         )
           ? body.difficulty
@@ -100,10 +100,11 @@ export const handler: Handler = async (event) => {
         for(const code of Object.keys(candidates).slice(-20)){
           if(now-candidates[code]>600000){await queue.child(code).remove();continue;}
           const joined=await getDatabase().ref(`mazeRooms/${code}`).transaction((r:Match|null)=>{
-            if(!r||(r.area||'classic')!==area||r.difficulty!==difficulty||r.mode!==mode||r.state!=='lobby'||!r.public||r.expiresAt<now||Object.keys(r.players||{}).length>=roomCapacity[difficulty])return;
+            if(!r)return r;
+            if((r.area||'classic')!==area||r.difficulty!==difficulty||r.mode!==mode||r.state!=='lobby'||!r.public||r.expiresAt<now||Object.keys(r.players||{}).length>=roomCapacity[difficulty])return;
             try{return addPlayer(r,key,player,now);}catch{return;}
           });
-          if(joined.committed)return{statusCode:200,headers,body:JSON.stringify({room:joined.snapshot.val(),playerKey:key,serverTime:now})};
+          if(joined.committed&&joined.snapshot.val()?.players?.[key])return{statusCode:200,headers,body:JSON.stringify({room:joined.snapshot.val(),playerKey:key,serverTime:now})};
         }
       }
       // A per-account creation cooldown prevents unbounded room creation.
@@ -149,7 +150,8 @@ export const handler: Handler = async (event) => {
       const saved = await getDatabase()
         .ref(`mazeRooms/${id}`)
         .transaction((current: Match | null) => {
-          if (!current || current.expiresAt < now) {
+          if (!current) return current;
+          if (current.expiresAt < now) {
             failure = "Room expired or not found";
             return;
           }
@@ -197,7 +199,7 @@ export const handler: Handler = async (event) => {
             return;
           }
         });
-      if (!saved.committed) throw Error(failure);
+      if (!saved.committed||!saved.snapshot.val()?.players?.[key]&&action!=='leave') throw Error(failure);
       result = saved.snapshot.val();
     }
     return {

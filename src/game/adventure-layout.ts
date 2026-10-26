@@ -1,7 +1,7 @@
 import type {Ledge} from './climbing';
 import {carve, distances, route, random, type Maze, type Difficulty, type Point} from './maze';
 import type {GrassKind} from './adventure-zones';
-export const adventureRules={medium:{size:43,seconds:720,guards:3,bosses:1,minPath:65},hard:{size:53,seconds:1080,guards:5,bosses:2,minPath:90},extreme:{size:63,seconds:1500,guards:7,bosses:3,minPath:120}} as const;
+export const adventureRules={easy:{size:35,seconds:1080,guards:2,bosses:1,minPath:40},medium:{size:43,seconds:720,guards:3,bosses:1,minPath:65},hard:{size:53,seconds:1080,guards:5,bosses:2,minPath:90},extreme:{size:63,seconds:1500,guards:7,bosses:3,minPath:120}} as const;
 export interface Vegetation extends Point {kind:GrassKind}
 export interface AdventureLayout {forest?:{trunks:Point[];pillars:Point[];boulders:Point[];arenaRadius:number;cave:Point;cabin:Point;highland:Point};ledges:Ledge[];secret?:Point;escapeConnector:Point[];fastRiver:Point;areas:{point:Point;zone:number}[];zoneCells:number[][];vegetation:Vegetation[];starts:Point[];fortress:Point;escapeRoutes:Point[][];maze:Maze;index:number;seals:Point[];stars:Point[];chests:Point[];rivers:Point[];grass:Point[];patrols:Point[][];bosses:Point[];solution:Point[]}
 const key=(p:Point)=>`${p.x},${p.y}`;
@@ -99,7 +99,7 @@ export function adventureLayout(difficulty:Difficulty,index:number,variation=1):
  const starts:Point[]=[start];
  const candidates=[...open].filter(p=>Math.abs((fd.get(key(p))||0)-target)<Math.max(8,target*.15));
  if(candidates.length<12)candidates.push(...[...open].sort((a,b)=>Math.abs((fd.get(key(a))||0)-target)-Math.abs((fd.get(key(b))||0)-target)).slice(0,30));
- while(starts.length<({medium:4,hard:8,extreme:10}[difficulty])){let best:Point|undefined,score=0;for(const p of candidates){const d=Math.min(...starts.map(q=>Math.hypot(q.x-p.x,q.y-p.y)));if(d>score){score=d;best=p;}}if(!best||score<1)break;starts.push(best);}
+ while(starts.length<({easy:4,medium:4,hard:8,extreme:10}[difficulty])){let best:Point|undefined,score=0;for(const p of candidates){const d=Math.min(...starts.map(q=>Math.hypot(q.x-p.x,q.y-p.y)));if(d>score){score=d;best=p;}}if(!best||score<1)break;starts.push(best);}
  // Escape route lengths are measured after the direct root passage opens.
  const escapeGrid=grid.map(r=>[...r]);escapeConnector.forEach(p=>escapeGrid[p.y][p.x]=0);
  escapeGrid[fastRiver.y][fastRiver.x]=1;const safe=route(escapeGrid,fortress,finish);

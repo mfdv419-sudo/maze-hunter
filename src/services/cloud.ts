@@ -81,14 +81,15 @@ export async function getProfiles(uid: string) {
   const snaps = await getDocs(collection(db, "families", uid, "profiles"));
   return Promise.all(snaps.docs.map(d=>d.data()).filter(validProfile).map(async p=>{const w=await getDoc(doc(db!,'families',uid,'wardrobes',p.id));if(w.exists())p.wardrobe=w.data() as import('./cosmetics').WardrobeWallet;return p;}));
 }
+async function serverJSON(response:Response){let data:any;try{data=await response.json();}catch{throw Error(`Layanan online tidak merespons (HTTP ${response.status}).`);}if(!response.ok)throw Error(`${data.error||'Online request failed'} (HTTP ${response.status})`);return data;}
 export async function syncProfile(uid: string, p: Profile) {
   if (!db) throw Error("Cloud unavailable");
   const target = doc(db, "families", uid, "profiles", p.id);
   // Initialize the server-owned migration receipt while the old profile still has its original schema.
   const existing=await getDoc(target);
   if(existing.exists()&&auth?.currentUser){
-    const init=await fetch('/.netlify/functions/maze-room',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:[]})});
-    if(!init.ok)throw Error('Wardrobe migration failed');
+    const init=await fetch('/.netlify/functions/maze-room',{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:[]})});
+    await serverJSON(init);
   }
   const merged = await runTransaction(db, async (tx) => {
     const snap = await tx.get(target),
@@ -97,7 +98,7 @@ export async function syncProfile(uid: string, p: Profile) {
     const {wardrobe,...publicProfile}=merged;tx.set(target, publicProfile);
     return merged;
   });
-  if(auth?.currentUser){const response=await fetch('/.netlify/functions/maze-room',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:merged.wardrobe?.pending||[]})});const result=await response.json();if(!response.ok)throw Error(result.error||'Wardrobe sync failed');merged.wardrobe=result.wallet;merged.appearance=permittedAppearance(merged);if(result.rejected?.length)window.dispatchEvent(new CustomEvent('wardrobe-rejected'));}
+  if(auth?.currentUser){const response=await fetch('/.netlify/functions/maze-room',{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:merged.wardrobe?.pending||[]})});const result=await serverJSON(response);merged.wardrobe=result.wallet;merged.appearance=permittedAppearance(merged);if(result.rejected?.length)window.dispatchEvent(new CustomEvent('wardrobe-rejected'));}
   return merged;
 }
 export async function getEntitlement(uid: string) {
@@ -135,7 +136,7 @@ export interface Room {
   id: string;
   host: string;
   mode: "race" | "coop";
-  difficulty: "medium" | "hard" | "extreme";
+  difficulty: "easy" | "medium" | "hard" | "extreme";
   seed: number;
   state: "lobby" | "playing" | "finished";
   createdAt: number;
@@ -158,16 +159,17 @@ export async function roomAction(
   if (!auth?.currentUser) throw Error("Login required");
   const response = await fetch("/.netlify/functions/maze-room", {
     method: "POST",
+    signal:AbortSignal.timeout(20000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${await auth.currentUser.getIdToken()}`,
     },
     body: JSON.stringify({ action, ...payload }),
   });
-  const data = await response.json();
+  const data=await serverJSON(response);
   if (typeof data.serverTime === "number")
     clockOffset = data.serverTime - Date.now();
-  if (!response.ok) throw Error(data.error || "Room request failed");
+  if (!response.ok) throw Error(`${data.error || "Room request failed"} (HTTP ${response.status})`);
   return data as { room: Room; playerKey: string };
 }
 export function watchRoom(

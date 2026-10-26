@@ -18,6 +18,7 @@ export function gorgeRiver(x:number,z:number,layout:AdventureLayout){
  const bridge=1-smooth(.43,.68,Math.abs(z-b.y));
  return {wet:along*across*(1-bridge),bridge:along*across*bridge};
 }
-export function gorgeElevation(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)-gorgeRiver(x,z,layout).wet*.74;}
+export function bridgeFallZone(x:number,z:number,layout:AdventureLayout){const b=gorgeLandmarks(layout).bridge;return Math.abs(x-b.x)<1.65&&Math.abs(z-b.y)>.47&&Math.abs(z-b.y)<1.4;}
+export function gorgeElevation(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)-gorgeRiver(x,z,layout).wet*.74-(bridgeFallZone(x,z,layout)?4.5:0);}
 /** Continuous summit silhouette; neighboring wall faces use exactly the same corner height. */
 export function gorgeCliffTop(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)+7.7+Math.sin(x*.24+z*.12)*1.0+Math.cos(z*.31-x*.08)*.7;}

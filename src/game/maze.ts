@@ -11,8 +11,9 @@ export interface Maze {
   entrances: Point[];
   seed: number;
 }
-export type Difficulty = "medium" | "hard" | "extreme";
+export type Difficulty = "easy" | "medium" | "hard" | "extreme";
 export const modernSettings = {
+  easy: {size:13,vision:5,seconds:480},
   medium: { size: 17, vision: 4.2, seconds: 300 },
   hard: { size: 23, vision: 3.4, seconds: 360 },
   extreme: { size: 29, vision: 2.8, seconds: 420 },

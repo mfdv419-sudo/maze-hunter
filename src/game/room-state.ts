@@ -211,7 +211,7 @@ export function performAction(
   kind: ActionKind,
   now: number,
 ) {
-  if(room.adventure){if(kind!=='jump'&&kind!=='hit'&&kind!=='dive')throw Error('Invalid action');return adventureAbility(room,key,kind,now);}
+  if(room.adventure){if(kind!=='jump'&&kind!=='hit'&&kind!=='dive'&&!['cake-normal','cake-red','cake-yellow','cake-green'].includes(kind))throw Error('Invalid action');return adventureAbility(room,key,kind,now);}
   if (kind !== "jump" && kind !== "hit") throw Error("Invalid action");
   const p = room.players[key];
   if (!p) throw Error("Not a room member");

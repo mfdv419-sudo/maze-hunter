@@ -7,6 +7,7 @@ export function aquaticGround(area:AdventureArea,x:number,y:number,layout:Advent
  const f=layout.forest!;
  if(area==='sea'){
   const islands=[layout.maze.start,f.cabin,layout.maze.finish];
+  if(Math.hypot(x-layout.fortress.x-.5,y-layout.fortress.y-.5)<4.5)return -3.4;
   const d=Math.min(...islands.map(p=>Math.hypot(x-p.x-.5,y-p.y-.5)));
   return d<2.5?.25:d<5?.25-(d-2.5)/2.5*3.65:-3.4+Math.sin(x*.12)*Math.cos(y*.1)*.15;
  }
