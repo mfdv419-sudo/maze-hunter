@@ -73,9 +73,9 @@ export function moveAdventurePlayer(room:Match,key:string,points:Point[],angle:n
  for(const q of points){if(!Number.isFinite(q.x)||!Number.isFinite(q.y)||!clearSegment(s.grid,position,q,.13))throw Error('Movement crosses a wall');length+=Math.hypot(q.x-position.x,q.y-position.y);position=q;}
  const seconds=Math.min(10,Math.max(0,(now-p.lastMove)/1000)),budget=seconds*2.7*s.speedFactor+.12;
  // Respawns are authoritative and discard stale prediction instead of accepting a teleport.
- if(length>budget){p.lastMove=now;p.seq=seq;room.revision++;return room;}
- for(const q of points){s.acceptPosition(q,airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));if(s.phase!=='playing')break;}
- Object.assign(p,s.position,{elevation:s.climber.elevation,depth:s.depth,swimming:s.swimming,climb:s.climber.state.phase,angle,lastMove:now,seq,online:true});room.adventure!.states[key]=s.save();
+ if(length>budget){p.lastMove=now;p.seq=seq;s.syncSeq=seq;room.adventure!.states[key]=s.save();room.revision++;return room;}
+ const initialRespawns=s.respawns;for(const q of points){s.acceptPosition(q,airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));if(s.phase!=='playing'||s.respawns!==initialRespawns)break;}
+ Object.assign(p,s.position,{elevation:s.climber.elevation,depth:s.depth,swimming:s.swimming,climb:s.climber.state.phase,angle,lastMove:now,seq,online:true});s.syncSeq=seq;room.adventure!.states[key]=s.save();
  if(room.mode==='coop'){room.explored??={};/* Discovery is merged by the server below. */}
  tickAdventureRoom(room,now+1);room.revision++;return room;
 }

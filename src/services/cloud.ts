@@ -17,7 +17,7 @@ import {
   runTransaction,
   getDoc,
 } from "firebase/firestore";
-import { getDatabase, ref, onValue, onDisconnect } from "firebase/database";
+import { getDatabase, ref, onValue, onDisconnect, query, orderByKey, startAt } from "firebase/database";
 import { mergeProfile, validProfile, type Profile } from "./local";
 // Read only public fields used by this browser client. Do not serialize import.meta.env.
 const config = {
@@ -177,9 +177,18 @@ export function watchRoom(
   code: string,
   fn: (r: Room | null) => void,
   error: (e: Error) => void,
+  self?:string,initial?:Room,
 ) {
   if (!rtdb) throw Error("Realtime Database unavailable");
-  return onValue(ref(rtdb, `mazeRooms/${code}`), (s) => fn(s.val()), error);
+  if(!self||!initial)return onValue(ref(rtdb, `mazeRooms/${code}`), (s) => fn(s.val()), error);
+  // Subscribe to common metadata and our own simulation only. Peer simulations and the duplicate Co-op
+  // world are server internals; requesting the root delivered them to every browser unnecessarily.
+  let current=structuredClone(initial),closed=false,ready=false,pending:ReturnType<typeof setTimeout>|undefined;
+  const emit=()=>{if(pending)clearTimeout(pending);pending=setTimeout(()=>{if(closed||!ready)return;const own=current.adventure?.states?.[self];if(current.state==='playing'&&current.adventure&&(!own||!current.adventure.questSlots||own.syncSeq!==undefined&&own.syncSeq!==(current.players[self]?.seq||0)))return;fn(structuredClone(current));},0);};
+  const off=[onValue(query(ref(rtdb,`mazeRooms/${code}`),orderByKey(),startAt('area')),s=>{const meta=s.val();if(!meta){fn(null);return;}if(meta.revision<(current.revision||0))return;current={...meta,...(current.adventure?{adventure:current.adventure}:{})};ready=true;emit();},error)];
+  off.push(onValue(ref(rtdb,`mazeRooms/${code}/adventure/states/${self}`),s=>{if(!current.adventure||!s.val())return;const state=s.val(),old=current.adventure.states[self];if(old&&(state.elapsed<old.elapsed||state.syncSeq!==undefined&&old.syncSeq!==undefined&&state.syncSeq<old.syncSeq))return;current.adventure.states={[self]:state};emit();},error));
+  for(const field of ['map','questSlots','contributions']as const)off.push(onValue(ref(rtdb,`mazeRooms/${code}/adventure/${field}`),s=>{if(!current.adventure)return;(current.adventure as any)[field]=s.val();emit();},error));
+  return()=>{closed=true;if(pending)clearTimeout(pending);off.forEach(stop=>stop());};
 }
 export async function roomPresence(code: string, key: string) {
   if (!rtdb) return () => Promise.resolve();

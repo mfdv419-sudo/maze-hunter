@@ -1,3 +1,7 @@
+# Pickup, Bandwidth & Camera — 27 October 2026
+
+Pickup disapu sepanjang lintasan; interaksi memakai posisi terbaru dalam transaksi; HTTP dan realtime memakai state sendiri; acknowledgement antarchannel diselaraskan; transparansi dibatasi per fragmen pada segmen kamera-ke-karakter. Baca UPDATE_INSTRUCTIONS.md.
+
 # Online Smoothness & Living Biomes — 27 October 2026
 
 Gerakan online dengan penyanggaan koneksi lambat dan retry sequence; kamera transparansi penghalang; siluet biome, air/lava terjun dan kapal diamond walkable; charge/roll/bubble; kebangkitan Raja tersinkron; audio sintesis; redeem mulai 50 dengan preservasi receipt. Baca UPDATE_INSTRUCTIONS.md untuk penerapan dan batas verifikasi.

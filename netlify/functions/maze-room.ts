@@ -1,3 +1,4 @@
+import {clientRoom} from '../../src/game/room-view';
 import {postRoomMessage} from '../../src/game/room-chat';
 import {validArea} from '../../src/game/areas';
 import {permittedAppearance,settleWardrobe,type WardrobeWallet} from '../../src/services/cosmetics';
@@ -66,7 +67,7 @@ export const handler: Handler = async (event) => {
       const settled=await getFirestore().runTransaction(async tx=>{const [current,wallet]=await Promise.all([tx.get(profile.ref),tx.get(wardrobeRef)]);const result=settleWardrobe(current.data() as Profile,wallet.exists?wallet.data() as WardrobeWallet:undefined,body.pending);tx.set(wardrobeRef,result.wallet);return result;});
       return{statusCode:200,headers,body:JSON.stringify(settled)};
     }
-    const storedWallet=await wardrobeRef.get();if(storedWallet.exists)data.wardrobe=storedWallet.data();
+    if(['create','join','random'].includes(action)){const storedWallet=await wardrobeRef.get();if(storedWallet.exists)data.wardrobe=storedWallet.data();}
     const player: Player = {
       uid: identity.uid,
       profileId,
@@ -144,9 +145,7 @@ export const handler: Handler = async (event) => {
       if (!result) throw Error("Could not allocate room");
     } else {
       if (!/^[A-Z2-9]{6}$/.test(id)) throw Error("Invalid room code");
-      const presence = (
-        await getDatabase().ref(`mazePresence/${id}`).get()
-      ).val() as Record<string, boolean> | null;
+      const presence = action==='move'&&body.legacy===true?(await getDatabase().ref(`mazePresence/${id}`).get()).val() as Record<string,boolean>|null:null;
       let failure = "Room changed; try again";
       const saved = await getDatabase()
         .ref(`mazeRooms/${id}`)
@@ -183,8 +182,7 @@ export const handler: Handler = async (event) => {
               room.winner = null;
               return room;
             }
-            if (action === "ability")
-              return performAction(room, key, body.kind, now);
+            if (action === "ability"){if(body.movement){const m=body.movement;movePlayer(room,key,m.points,Number(m.angle),Number(m.seq),now);const end=m.points.at(-1),p=room.players[key];if(p.seq!==Number(m.seq)||Math.hypot(p.x-end.x,p.y-end.y)>.4)throw Error('Movement must be confirmed before interaction');}return performAction(room, key, body.kind, now);}
             if (action === "move")
               return movePlayer(
                 room,
@@ -207,7 +205,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ room: result, playerKey: key, serverTime: now }),
+      body: JSON.stringify({ room: clientRoom(result,key), playerKey: key, serverTime: now }),
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed";

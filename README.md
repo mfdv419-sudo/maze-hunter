@@ -1,4 +1,4 @@
-> Current release: **Online Smoothness & Living Biomes**. Read [UPDATE_INSTRUCTIONS.md](UPDATE_INSTRUCTIONS.md) before deploying; frontend and Netlify Functions must match.
+> Current release: **Pickup, Bandwidth & Camera**. Read UPDATE_INSTRUCTIONS.md. Deploy frontend and Functions together after the prior 41-file delta.
 
 # Maze Hunter
 

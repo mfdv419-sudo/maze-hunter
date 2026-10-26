@@ -1,3 +1,3 @@
 # Setup terkini
 
-Baca UPDATE_INSTRUCTIONS.md pada root untuk rilis Online Smoothness & Living Biomes. Terapkan setelah Online Sync & Chat (delta 22 file), atau gunakan source lengkap. Deploy frontend dan Functions bersama; buat room baru. Tidak ada environment/rules Firebase tambahan.
+Lihat UPDATE_INSTRUCTIONS.md untuk Pickup, Bandwidth & Camera. Terapkan setelah delta 41 file, atau pakai source lengkap konsolidasi. Deploy frontend dan Functions bersama, refresh kedua perangkat, buat room baru. Tidak ada environment/rules Firebase tambahan.

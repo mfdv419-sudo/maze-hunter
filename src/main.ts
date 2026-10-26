@@ -633,6 +633,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
   const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
   const cakePicker=document.createElement('div');cakePicker.className='cake-picker';cakePicker.setAttribute('aria-label',tr('Pilihan kue','Cake selection'));cakePicker.innerHTML=cakeKinds.map(k=>`<button type="button" data-cake="${k}" title="${cakeNames[k][lang==='id'?0:1]}" aria-label="${cakeNames[k][lang==='id'?0:1]}" aria-pressed="${k==='normal'}"><span></span><small>${k==='normal'?'∞':'3'}</small></button>`).join('');el('game-stage').after(cakePicker);cakePicker.addEventListener('click',async e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-cake]');if(!b)return;try{if(room){const r=await roomAction('ability',{profileId:profile!.id,code:room.id,kind:'cake-'+b.dataset.cake});applyRoom(r.room);}else modern.adventure?.selectCake(b.dataset.cake!);toast(cakeNames[b.dataset.cake as typeof cakeKinds[number]][lang==='id'?0:1]);}catch(e){showError(e);}});
+  let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;let abilityBusy=false;
   const shownLoot=new Set<number>();
   const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
   journal.onclick=()=>{const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
@@ -656,18 +657,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     },
     onAction: room
       ? async (kind) => {
-          try {
-            const { room: r } = await roomAction("ability", {
-              code: room.id,
-              profileId: profile!.id,
-              kind,
-            });
-            if (activeRoom?.id === r.id) applyRoom(r);
-            return true;
-          } catch (e) {
-            showError(e);
-            return false;
-          }
+          return sendAbility(kind);
         }
       : undefined,
     onAdventure:(state)=>{
@@ -739,14 +729,14 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if (room) {
     const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
     const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
-    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
+    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=async(kind)=>{if(abilityBusy)return false;abilityBusy=true;try{await movementRequest;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,movement:{...packet,angle:modern.angle}});movementRequest=request;const {room:r}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;abilityBusy=false;}};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
     modern.paused = true;
 
     let sample = 0;
     modernTimer = setInterval(() => {
       if (screen !== "modern" || !activeRoom) return;
       const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
-      const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now());networkStatus.style.display=waiting||slow?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Koneksi lambat · gerakan disangga','Slow connection · buffering movement'):'';
+      const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now());networkStatus.style.display=waiting||slow?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Menunggu sinkronisasi server…','Waiting for server sync…'):'';
       modern.paused = !started||waiting||!!(modern.adventure&&modern.adventure.phase!=='playing');
       if(!room.adventure||!started)el("play-hint").textContent = started
         ? tr("Jelajahi labirin", "Explore the maze")
@@ -763,13 +753,14 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       motion.sample(modern.position);
       if (motion.inFlight || sample % 6) return;
       const packet=motion.packet(performance.now());if(!packet)return;
-      void roomAction("move", {
+      const request=roomAction("move", {
         code: room.id,
         profileId: profile!.id,
         points:packet.points,
         angle: modern.angle,
-        seq:packet.seq,
-      })
+        seq:packet.seq,legacy:!room.adventure,
+      });movementRequest=request;
+      void request
         .then(({ room: r }) => {if(token===generation&&activeRoom?.id===room.id)applyRoom(r);})
         .catch((e) => {
           if(token!==generation||activeRoom?.id!==room.id)return;
@@ -779,7 +770,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
               (e instanceof Error ? e.message : ""),
           );
         })
-        .finally(() => motion.complete());
+        .finally(() => {motion.complete();if(movementRequest===request)movementRequest=undefined;});
     }, 50);
     cleanup = () => {
       chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
@@ -839,7 +830,7 @@ async function enterRoom(room: Room, key: string) {
         void leaveRoom().then(() => home());
       }
     },
-    showError,
+    showError,key,room,
   );
   if(room.state==='playing')void playModern(room.difficulty,room);else lobby();
 }
