@@ -1,3 +1,4 @@
+import {coherentRoom} from './game/room-sync';
 import {foodNames} from './game/expedition-items';
 let accountLoading=false;
 import {voicePanel} from './ui/voice-panel';
@@ -741,7 +742,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if (room) {
     const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
     const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
-    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=async(kind)=>{if(abilityBusy)return false;abilityBusy=true;try{await movementRequest;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,movement:{...packet,angle:modern.angle}});movementRequest=request;const {room:r}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;abilityBusy=false;}};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
+    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=async(kind)=>{if(abilityBusy)return false;abilityBusy=true;try{await movementRequest;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,movement:{...packet,angle:modern.angle}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;abilityBusy=false;}};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
     modern.paused = true;
 
     let sample = 0;
@@ -886,6 +887,7 @@ function updateLobby() {
     Object.values(r.players).some((p) => !p.ready);
 }
 function applyRoom(r: Room) {
+  if(!coherentRoom(r,playerKey))return;
   if(!activeRoom||activeRoom.id!==r.id)return;
   if (activeRoom && activeRoom.id === r.id && r.revision < activeRoom.revision)
     return;

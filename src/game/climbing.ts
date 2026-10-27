@@ -18,7 +18,7 @@ export class Climber {
    if(s.cooldown===0&&jump+s.elevation>((l.kind==='palm'||l.kind==='tree')?.15:Math.max(.15,l.height-.93))&&(s.phase==='ground'||s.phase==='falling'&&jump>.1)&&(l.width?Math.hypot(Math.max(0,Math.abs(vx)-l.width/2),Math.max(0,Math.abs(vy)-(l.depth||1)/2))<.35:Math.hypot(vx,vy)<.99)&&(input.x*(c.x-previous.x)+input.y*(c.y-previous.y))>.05){const horizontal=Math.abs(vx)>Math.abs(vy);s.phase='hanging';s.ledge=l.id;s.elapsed=0;s.anchor=l.width?{x:Math.max(c.x-l.width/2+.12,Math.min(c.x+l.width/2-.12,next.x)),y:Math.max(c.y-(l.depth||1)/2+.12,Math.min(c.y+(l.depth||1)/2-.12,next.y))}:c;s.edge=horizontal?{x:c.x+Math.sign(vx||1)*(l.width?l.width/2+.1:.65),y:Math.max(c.y-.55,Math.min(c.y+.55,next.y))}:{x:Math.max(c.x-.55,Math.min(c.x+.55,next.x)),y:c.y+Math.sign(vy||1)*(l.depth?l.depth/2+.1:.65)};s.elevation=(l.kind==='palm'||l.kind==='tree')?.18:Math.max(.12,l.height-.93);return{position:{...s.edge},reached};}
    if(Math.abs(vx)<(l.width?l.width/2+.08:.63)&&Math.abs(vy)<(l.depth?l.depth/2+.08:.63)&&s.elevation<l.height-.1){
     // Slide along a climbable rock; maze hedges remain ordinary solid walls.
-    if(Math.abs(previous.x-c.x)>=.63)next={x:previous.x,y:next.y};else if(Math.abs(previous.y-c.y)>=.63)next={x:next.x,y:previous.y};else next={...previous};
+    if(Math.abs(previous.x-c.x)>=.63)next={x:previous.x,y:next.y};else if(Math.abs(previous.y-c.y)>=.63)next={x:next.x,y:previous.y};else if(Math.abs(next.x-c.x)<=Math.abs(previous.x-c.x)&&Math.abs(next.y-c.y)<=Math.abs(previous.y-c.y))next={...previous};
    }
   }
   return{position:next,reached};

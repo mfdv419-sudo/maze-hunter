@@ -1,3 +1,4 @@
+import {coherentRoom} from '../game/room-sync';
 import {fallbackVoiceTransport,serverVoiceTransport} from './server-voice-transport';
 import {voiceNonce} from './room-voice';
 import type {VoiceTransport,VoicePeer,VoiceSignal} from './room-voice';
@@ -180,7 +181,7 @@ export async function roomAction(
   if (typeof data.serverTime === "number")
     clockOffset = data.serverTime - (requestedAt+Date.now())/2;
   if (!response.ok) throw Error(`${data.error || "Room request failed"} (HTTP ${response.status})`);
-  return data as { room: Room; playerKey: string };
+  return data as { room: Room; playerKey: string;actionAccepted?:boolean;actionError?:string };
 }
 export function watchRoom(
   code: string,
@@ -193,9 +194,9 @@ export function watchRoom(
   // Subscribe to common metadata and our own simulation only. Peer simulations and the duplicate Co-op
   // world are server internals; requesting the root delivered them to every browser unnecessarily.
   let current=structuredClone(initial),closed=false,ready=false,pending:ReturnType<typeof setTimeout>|undefined;
-  const emit=()=>{if(pending)clearTimeout(pending);pending=setTimeout(()=>{if(closed||!ready)return;const own=current.adventure?.states?.[self];if(current.state==='playing'&&current.adventure&&(!own||!current.adventure.questSlots||own.syncSeq!==undefined&&own.syncSeq!==(current.players[self]?.seq||0)))return;fn(structuredClone(current));},0);};
+  const emit=()=>{if(pending)clearTimeout(pending);pending=setTimeout(()=>{if(closed||!ready)return;const own=current.adventure?.states?.[self];if(!coherentRoom(current,self)||current.state==='playing'&&current.adventure&&!current.adventure.questSlots)return;fn(structuredClone(current));},0);};
   const off=[onValue(query(ref(rtdb,`mazeRooms/${code}`),orderByKey(),startAt('area')),s=>{const meta=s.val();if(!meta){fn(null);return;}if(meta.revision<(current.revision||0))return;current={...meta,...(current.adventure?{adventure:current.adventure}:{})};ready=true;emit();},error)];
-  off.push(onValue(ref(rtdb,`mazeRooms/${code}/adventure/states/${self}`),s=>{if(!current.adventure||!s.val())return;const state=s.val(),old=current.adventure.states[self];if(old&&(state.elapsed<old.elapsed||state.syncSeq!==undefined&&old.syncSeq!==undefined&&state.syncSeq<old.syncSeq))return;current.adventure.states={[self]:state};emit();},error));
+  off.push(onValue(ref(rtdb,`mazeRooms/${code}/adventure/states/${self}`),s=>{if(!current.adventure||!s.val())return;const state=s.val(),old=current.adventure.states[self];if(old&&((state.worldVersion??0)<(old.worldVersion??0)||state.elapsed<old.elapsed||state.syncSeq!==undefined&&old.syncSeq!==undefined&&state.syncSeq<old.syncSeq))return;current.adventure.states={[self]:state};emit();},error));
   for(const field of ['map','questSlots','contributions']as const)off.push(onValue(ref(rtdb,`mazeRooms/${code}/adventure/${field}`),s=>{if(!current.adventure)return;(current.adventure as any)[field]=s.val();emit();},error));
   return()=>{closed=true;if(pending)clearTimeout(pending);off.forEach(stop=>stop());};
 }

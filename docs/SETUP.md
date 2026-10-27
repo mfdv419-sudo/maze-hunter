@@ -1,3 +1,3 @@
-# Setup
+# Current setup
 
-Follow ../UPDATE_INSTRUCTIONS.md for the current release. Keep the existing Firebase project. See MOBILE_LOGIN.md for optional OAuth redirect configuration and VOICE_SETUP.md for realtime/Function signaling and TURN. The current permission-denied voice fallback requires deploying frontend and Functions together; it does not require opening client database permissions.
+Apply this release after the 26-file Movement Jitter, Abandoned Roads & Voice Recovery update. Follow ../UPDATE_INSTRUCTIONS.md. Deploy frontend and Functions together and create a new room. No new environment variables or database rules are required by this revision. Existing login/voice instructions remain in MOBILE_LOGIN.md and VOICE_SETUP.md.

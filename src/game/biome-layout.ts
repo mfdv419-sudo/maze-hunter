@@ -39,6 +39,13 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
  for(const q of layout.forest!.trunks)if(!grid[q.y]?.[q.x]&&!ledges.some(l=>l.point.x===q.x&&l.point.y===q.y))ledges.push({id:ledges.length,point:q,height:2.8,kind:area==='sea'?'rock':'tree'});
  // Optional wall-side stepping ledges stay off the canonical route and quest objects.
  const terrace=areas[4].point;let added=0;for(const q of open){if(added>=4)break;if(Math.hypot(q.x-terrace.x,q.y-terrace.y)>5||testedPath.some(p=>p.x===q.x&&p.y===q.y)||[...seals,...chests,...stars].some(p=>Math.hypot(q.x-p.x,q.y-p.y)<1.5)||ledges.some(l=>Math.hypot(q.x-l.point.x,q.y-l.point.y)<1)||![[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>grid[q.y+dy]?.[q.x+dx]===1))continue;ledges.push({id:ledges.length,point:q,height:.9+added*.45,kind:'rock'});added++;}
+ // Additional movable arena stones preserve routes and quest clearance.
+ let stones=0;const stoneTarget={easy:6,medium:10,hard:14,extreme:18}[difficulty];
+ for(const q of [...open].sort((a,b)=>((a.x*137+a.y*73+variation)%991)-((b.x*137+b.y*73+variation)%991))){if(stones>=stoneTarget)break;
+  if(Math.hypot(q.x-start.x,q.y-start.y)<6||Math.hypot(q.x-finish.x,q.y-finish.y)<3||testedPath.some(p=>p.x===q.x&&p.y===q.y)||[...seals,...chests,...stars,...vegetation].some(p=>Math.hypot(q.x-p.x,q.y-p.y)<1.5)||ledges.some(l=>Math.hypot(q.x-l.point.x,q.y-l.point.y)<2)||![[1,0],[-1,0],[0,1],[0,-1]].every(([dx,dy])=>grid[q.y+dy]?.[q.x+dx]===0))continue;
+  const nav=grid.map(r=>[...r]);for(const l of ledges)nav[l.point.y][l.point.x]=1;nav[q.y][q.x]=1;const reachable=distances(nav,start);if([...seals,fortress,finish].some(p=>!reachable.has(p.x+','+p.y)))continue;
+  ledges.push({id:ledges.length,point:q,height:.65+(stones%3)*.12,kind:'rock'});stones++;
+ }
  if(cache.size>35)cache.clear();cache.set(key,structuredClone(layout));return layout;
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){

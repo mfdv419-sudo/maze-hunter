@@ -1,69 +1,98 @@
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
-> maze-hunter@1.0.0 test
-> vitest run
+ RUN  v3.2.7 /workspace/scratch/0f24cdd6d8e3/work/maze-hunter
+
+ ✓ tests/avatar-progression.test.ts (10 tests) 1826ms
+   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  1488ms
+ ✓ tests/online-world.test.ts (8 tests) 2200ms
+   ✓ rejects mixed metadata and simulation revisions even when the movement sequence is unchanged  343ms
+   ✓ damage remains cumulative across slow attack intervals and a dead guardian stays dead after save/restore  349ms
+   ✓ server cake projectiles eliminate the same guardian across long request gaps in Race and Co-op  814ms
+ ✓ tests/revision-immersion.test.ts (10 tests) 3921ms
+   ✓ slow authoritative requests accept a legal multi-second path while still rejecting wall crossing and excessive speed  620ms
+   ✓ diamond ships use the same deck and ramp for swimming and physical models, while the sea King stays in water  436ms
+   ✓ canyon and volcano have high cascades, particles and real lava contact damage; falling rocks originate above the cliffs  613ms
+   ✓ goats charge and pangolins roll after visible windup; crabs shoot bubbles rather than fruit  484ms
+   ✓ all seals wake a distant King exactly once, spawn defenders and protect every Co-op player for the same six seconds  411ms
+   ✓ all ten sea slots share identical ship terrain and place their thirty unique diamonds on walkable decks  1315ms
+ ✓ tests/retro-branching.test.ts (6 tests) 4504ms
+   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  4038ms
+   ✓ keeps winding routes and misleading dead ends without weakening the exact branching contract  372ms
+ ✓ tests/escape-routes.test.ts (1 test) 2185ms
+   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  2184ms
+ ✓ tests/adventure.test.ts (13 tests) 5910ms
+   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  946ms
+   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  4427ms
+ ✓ tests/online-motion.test.ts (9 tests) 3046ms
+   ✓ two clients move concurrently through own acknowledgements and teammate snapshots without returning to Start  1331ms
+   ✓ two players keep moving with 1.8–3 second round trips in both Race and Co-op  1205ms
+ ✓ tests/expedition-update.test.ts (9 tests) 2742ms
+   ✓ every seal region requires all three large and both small keepers, in every biome  1805ms
+   ✓ six enemy pairs have original silhouettes, finite animated geometry, and dormant monuments  312ms
+ ✓ tests/pickup-sync.test.ts (5 tests) 2058ms
+   ✓ collects a star and unlocked diamond crossed between compressed endpoints without requiring a stop  393ms
+   ✓ HTTP views keep all peer transforms and our complete simulation while dropping peer simulations and duplicate shared world  1278ms
+   ✓ acknowledgement sequence is persisted inside the own-player save, including rejected speed packets  350ms
+ ✓ tests/forest-models.test.ts (6 tests) 3061ms
+   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  2808ms
+ ✓ tests/aquatic.test.ts (5 tests) 1414ms
+   ✓ requires a real descent to collect an underwater chest, then surfaces without a height teleport  618ms
+   ✓ serializes dive state, clears it on dry land and preserves existing nonaquatic behavior  352ms
+   ✓ the authoritative room validates diving and only awards submerged loot after depth simulation  324ms
+ ✓ tests/adventure-lifecycle.test.ts (10 tests) 2430ms
+   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  2103ms
+ ✓ tests/sync-road-voice.test.ts (6 tests) 575ms
+   ✓ places abandoned roads at corridor centers with walkable room around both ends and keeps sea clear  554ms
+ ✓ tests/next-revision.test.ts (10 tests) 1098ms
+   ✓ chests grant actual food inventory, preserve the existing loot contract and serialize supplies  317ms
+   ✓ lava and abyss gaps cost one life and return to a checkpoint; marked stepping stones remain safe  569ms
+ ✓ tests/levels.test.ts (4 tests) 754ms
+   ✓ Retro 100-level campaign > has 100 unique deterministic solvable levels in 10 regions  705ms
+ ✓ tests/gorge.test.ts (5 tests) 1623ms
+   ✓ canyon has real elevation, a shallow river and a dry bridge on the shared terrain surface  438ms
+   ✓ stone monarch moves and uses its own warned attacks with recovery windows and ammunition refill  888ms
+ ✓ tests/room-function.test.ts (12 tests) 739ms
+   ✓ keeps Race and Co-op matchmaking separate and starts the joined roster only after ready  301ms
+ ✓ tests/room-watch.test.ts (1 test) 346ms
+   ✓ subscribes to metadata and own state, excludes every other simulation, and waits for matching movement acknowledgements  345ms
+ ✓ tests/expedition-mechanics.test.ts (7 tests) 935ms
+ ✓ tests/retro-viewport.test.ts (3 tests) 635ms
+   ✓ Retro boards retain valid bounds while square and rectangular layouts retain their natural proportions  499ms
+ ✓ tests/room.test.ts (5 tests) 46ms
+ ✓ tests/gameplay.test.ts (8 tests) 79ms
+ ✓ tests/mobile-auth.test.ts (2 tests) 86ms
+ ✓ tests/room-chat.test.ts (3 tests) 7ms
+ ✓ tests/auth-errors.test.ts (9 tests) 40ms
+ ✓ tests/room-voice.test.ts (6 tests) 27ms
+ ✓ tests/login-intent.test.ts (2 tests) 8ms
+ ✓ tests/item-handbook.test.ts (1 test) 6ms
+ ✓ tests/actions.test.ts (3 tests) 9ms
+ ✓ tests/terrain-update.test.ts (8 tests) 11483ms
+   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  8675ms
+   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  1272ms
+   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  1070ms
+ ✓ tests/biome-expeditions.test.ts (5 tests) 23867ms
+   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  598ms
+   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  17303ms
+   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  1255ms
+   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  1755ms
+   ✓ every new Medium area can be physically traversed through its three quests and final escape  2952ms
+
+ Test Files  31 passed (31)
+      Tests  192 passed (192)
+   Start at  17:27:12
+   Duration  24.97s (transform 3.13s, setup 0ms, collect 8.14s, tests 77.66s, environment 9ms, prepare 3.64s)
+
 
 
  RUN  v3.2.7 /workspace/scratch/0f24cdd6d8e3/work/maze-hunter
 
- ✓ tests/adventure-lifecycle.test.ts (10 tests) 1512ms
-   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  1317ms
- ✓ tests/revision-immersion.test.ts (10 tests) 1655ms
-   ✓ all ten sea slots share identical ship terrain and place their thirty unique diamonds on walkable decks  533ms
- ✓ tests/retro-branching.test.ts (6 tests) 2584ms
-   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  2314ms
- ✓ tests/adventure.test.ts (13 tests) 3278ms
-   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  552ms
-   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  2485ms
- ✓ tests/forest-models.test.ts (6 tests) 1678ms
-   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  1551ms
- ✓ tests/online-motion.test.ts (9 tests) 3155ms
-   ✓ two clients move concurrently through own acknowledgements and teammate snapshots without returning to Start  1465ms
-   ✓ two players keep moving with 1.8–3 second round trips in both Race and Co-op  1179ms
- ✓ tests/avatar-progression.test.ts (10 tests) 1432ms
-   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  1205ms
- ✓ tests/expedition-update.test.ts (9 tests) 1348ms
-   ✓ every seal region requires all three large and both small keepers, in every biome  792ms
- ✓ tests/gorge.test.ts (5 tests) 741ms
-   ✓ stone monarch moves and uses its own warned attacks with recovery windows and ammunition refill  345ms
- ✓ tests/aquatic.test.ts (5 tests) 728ms
-   ✓ requires a real descent to collect an underwater chest, then surfaces without a height teleport  327ms
- ✓ tests/escape-routes.test.ts (1 test) 1365ms
-   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  1364ms
- ✓ tests/pickup-sync.test.ts (5 tests) 1078ms
-   ✓ HTTP views keep all peer transforms and our complete simulation while dropping peer simulations and duplicate shared world  691ms
- ✓ tests/next-revision.test.ts (10 tests) 658ms
- ✓ tests/room-watch.test.ts (1 test) 291ms
- ✓ tests/sync-road-voice.test.ts (6 tests) 238ms
- ✓ tests/levels.test.ts (4 tests) 413ms
-   ✓ Retro 100-level campaign > has 100 unique deterministic solvable levels in 10 regions  384ms
- ✓ tests/expedition-mechanics.test.ts (7 tests) 475ms
- ✓ tests/mobile-auth.test.ts (2 tests) 30ms
- ✓ tests/retro-viewport.test.ts (3 tests) 388ms
- ✓ tests/room.test.ts (5 tests) 31ms
- ✓ tests/gameplay.test.ts (8 tests) 24ms
- ✓ tests/room-voice.test.ts (6 tests) 17ms
- ✓ tests/auth-errors.test.ts (9 tests) 13ms
- ✓ tests/room-function.test.ts (11 tests) 299ms
- ✓ tests/room-chat.test.ts (3 tests) 7ms
- ✓ tests/actions.test.ts (3 tests) 9ms
- ✓ tests/login-intent.test.ts (2 tests) 2ms
- ✓ tests/item-handbook.test.ts (1 test) 4ms
- ✓ tests/terrain-update.test.ts (8 tests) 6550ms
-   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  5097ms
-   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  714ms
-   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  488ms
- ✓ tests/biome-expeditions.test.ts (5 tests) 10503ms
-   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  347ms
-   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  7783ms
-   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  780ms
-   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  813ms
-   ✓ every new Medium area can be physically traversed through its three quests and final escape  778ms
+ ✓ tests/online-world.test.ts (8 tests) 1471ms
+   ✓ server cake projectiles eliminate the same guardian across long request gaps in Race and Co-op  704ms
 
- Test Files  30 passed (30)
-      Tests  183 passed (183)
-   Start at  08:12:19
-   Duration  11.19s (transform 2.17s, setup 0ms, collect 5.46s, tests 40.51s, environment 6ms, prepare 2.14s)
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  17:29:18
+   Duration  2.31s (transform 419ms, setup 0ms, collect 491ms, tests 1.47s, environment 0ms, prepare 124ms)
 
 
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
@@ -77,18 +106,18 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 
 vite v6.4.5 building for production...
 transforming...
-✓ 113 modules transformed.
+✓ 115 modules transformed.
 rendering chunks...
 computing gzip size...
 dist/index.html                         0.95 kB │ gzip:   0.52 kB
 dist/sw.js                              1.13 kB
 dist/assets/index--6QP4-Iq.css         86.38 kB │ gzip:  19.66 kB
-dist/assets/menu-world-DZbK4lpD.js      4.65 kB │ gzip:   2.30 kB
-dist/assets/retro-DlcJRhXr.js          11.77 kB │ gzip:   4.70 kB
-dist/assets/character-CW7fI7D_.js      21.57 kB │ gzip:   8.63 kB
-dist/assets/modern-CBsNyo4t.js        173.68 kB │ gzip:  58.38 kB
+dist/assets/menu-world-Bo6QRZiL.js      4.65 kB │ gzip:   2.30 kB
+dist/assets/retro-CCD8KKGe.js          11.77 kB │ gzip:   4.70 kB
+dist/assets/character-D6hifNgw.js      21.57 kB │ gzip:   8.62 kB
+dist/assets/modern-Dp_b_VD1.js        176.97 kB │ gzip:  59.46 kB
 dist/assets/three-DTW4ATUs.js         580.95 kB │ gzip: 147.24 kB
-dist/assets/index-DZCzu0Ej.js         697.01 kB │ gzip: 102.41 kB
+dist/assets/index-BB-iwEDP.js         697.33 kB │ gzip: 102.59 kB
 dist/assets/firebase-u5vRmSwp.js      849.82 kB │ gzip: 209.19 kB
 dist/assets/phaser-DIUF0PZB.js      1,481.79 kB │ gzip: 339.85 kB
 
@@ -96,7 +125,7 @@ dist/assets/phaser-DIUF0PZB.js      1,481.79 kB │ gzip: 339.85 kB
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 7.59s
+✓ built in 19.42s
 
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
@@ -105,4 +134,4 @@ npm warn Unknown env config "http-proxy". This will stop working in the next maj
 
 PUBLIC_ENV_BOUNDARY_PASS: 5 public fields retained; unrelated VITE values and server marker excluded.
 
-Final Function esbuild bundle PASS (131.6kb). Before-fix movement jitter regression FAIL; fixed regression PASS. GPU and real-device audio limits in QA_CURRENT.md.
+Final Function bundle PASS (136.6kb). Before-fix variants: 2 regressions fail; fixed variants pass. Limits in QA_CURRENT.md.

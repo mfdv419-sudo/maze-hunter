@@ -1,3 +1,4 @@
+import {stampRoom} from '../../src/game/room-sync';
 import {voiceRoomAction} from '../../src/game/voice-room';
 import {voiceConfig} from '../../src/game/voice-config';
 import {clientRoom} from '../../src/game/room-view';
@@ -156,6 +157,7 @@ export const handler: Handler = async (event) => {
       const saved = await getDatabase()
         .ref(`mazeRooms/${id}`)
         .transaction((current: Match | null) => {
+          const propose=()=>{
           if (!current) return current;
           if (current.expiresAt < now) {
             failure = "Room expired or not found";
@@ -188,7 +190,17 @@ export const handler: Handler = async (event) => {
               room.winner = null;
               return room;
             }
-            if (action === "ability"){if(body.movement){const m=body.movement;movePlayer(room,key,m.points,Number(m.angle),Number(m.seq),now);const end=m.points.at(-1),p=room.players[key];if(p.seq!==Number(m.seq)||Math.hypot(p.x-end.x,p.y-end.y)>.4)throw Error('Movement must be confirmed before interaction');}return performAction(room, key, body.kind, now);}
+            if (action === "ability"){
+              if(!body.movement)return performAction(room,key,body.kind,now);
+              const m=body.movement,seq=Number(m.seq),p=room.players[key];
+              if(seq<=(p.lastActionSeq||0))return room;
+              movePlayer(room,key,m.points,Number(m.angle),seq,now);
+              p.lastActionSeq=seq;p.lastActionAccepted=false;delete p.lastActionError;
+              if(p.seq!==seq){p.lastActionError='Movement not accepted';return room;}
+              try{performAction(room,key,body.kind,now);p.lastActionAccepted=true;}
+              catch(e){p.lastActionError=e instanceof Error?e.message:'Action unavailable';room.revision++;}
+              return room;
+            }
             if (action === "move")
               return movePlayer(
                 room,
@@ -204,6 +216,7 @@ export const handler: Handler = async (event) => {
             failure = e instanceof Error ? e.message : "Invalid action";
             return;
           }
+          };return stampRoom(propose());
         });
       if (!saved.committed||!saved.snapshot.val()?.players?.[key]&&action!=='leave') throw Error(failure);
       result = saved.snapshot.val();if(action==='leave'){const paths=[`mazeVoice/${id}/peers/${key}`,`mazeVoice/${id}/inbox/${key}`,...Object.keys(result?.players||{}).map(to=>`mazeVoice/${id}/inbox/${to}/${key}`)];await Promise.allSettled(paths.map(path=>getDatabase().ref(path).remove()));}
@@ -212,7 +225,7 @@ export const handler: Handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ room: clientRoom(result,key), playerKey: key, serverTime: now }),
+      body: JSON.stringify({ room: clientRoom(result,key), playerKey: key, serverTime: now,...(action==='ability'&&body.movement?{actionAccepted:result?.players[key]?.lastActionAccepted===true,actionError:result?.players[key]?.lastActionError}: {}) }),
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed";
