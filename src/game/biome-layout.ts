@@ -1,3 +1,4 @@
+import {courseDanger} from './platform-course';
 import {gorgeElevation} from './gorge-terrain';
 import {aquaticGround} from './aquatic';
 import type {AdventureLayout} from './adventure-layout';
@@ -36,12 +37,14 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
  const pillars=Array.from({length:8},(_,i)=>i/8*Math.PI*2).map(a=>p(fortress.x+Math.sin(a)*6,fortress.y+Math.cos(a)*6)).filter(q=>q.x>1&&q.y>1&&q.x<n-2&&q.y<n-2);
  const layout:AdventureLayout={forest:{trunks:[p(start.x+2,start.y+1),p(start.x-2,start.y+2)],pillars,boulders:[],arenaRadius:8,cave:areas[1].point,cabin:areas[2].point,highland:areas[3].point},maze:{grid,start,finish,entrances:starts,seed},index,seals,chests,stars,rivers:[],grass:[],patrols,bosses:[fortress],solution:route(grid,start,fortress),areas,zoneCells,vegetation,starts,fortress,escapeRoutes:[route(grid,fortress,finish)],escapeConnector:[],fastRiver:finish,ledges};
  for(const q of layout.forest!.trunks)if(!grid[q.y]?.[q.x]&&!ledges.some(l=>l.point.x===q.x&&l.point.y===q.y))ledges.push({id:ledges.length,point:q,height:2.8,kind:area==='sea'?'rock':'tree'});
+ // Optional wall-side stepping ledges stay off the canonical route and quest objects.
+ const terrace=areas[4].point;let added=0;for(const q of open){if(added>=4)break;if(Math.hypot(q.x-terrace.x,q.y-terrace.y)>5||testedPath.some(p=>p.x===q.x&&p.y===q.y)||[...seals,...chests,...stars].some(p=>Math.hypot(q.x-p.x,q.y-p.y)<1.5)||ledges.some(l=>Math.hypot(q.x-l.point.x,q.y-l.point.y)<1)||![[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>grid[q.y+dy]?.[q.x+dx]===1))continue;ledges.push({id:ledges.length,point:q,height:.9+added*.45,kind:'rock'});added++;}
  if(cache.size>35)cache.clear();cache.set(key,structuredClone(layout));return layout;
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){
  const h=layout.forest!.highland,c=layout.forest!.cave,d=Math.hypot(x-h.x-.5,y-h.y-.5);
  if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return gorgeElevation(x,y,layout);
- if(area==='volcano')return Math.max(0,5-d*.09)+Math.sin(x*.1)*Math.cos(y*.12)*.4;
+ if(area==='volcano')return Math.max(0,5-d*.09)+Math.sin(x*.1)*Math.cos(y*.12)*.4-(courseDanger(layout,area,x,y)?.6:0);
  if(area==='mountain')return Math.max(0,8-d*.12)+Math.sin(x*.08)*.25;
  if(area==='desert')return Math.sin(x*.11)*Math.cos(y*.09)*1.1-Math.max(0,1-Math.hypot(x-c.x-.5,y-c.y-.5)/3.8)*.8;
 

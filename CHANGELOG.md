@@ -1,3 +1,7 @@
+# Mobile Login, Expedition Items & Voice — 27 October 2026
+
+Lanjutan delta 19: login-intent dan pemulihan auth, supply combat/crafting/strength, loot feed, ledge/platform hazards, roads/sponsor slots dan room voice. Konfigurasi tambahan dan batas QA: UPDATE_INSTRUCTIONS.md.
+
 # Pickup, Bandwidth & Camera — 27 October 2026
 
 Pickup disapu sepanjang lintasan; interaksi memakai posisi terbaru dalam transaksi; HTTP dan realtime memakai state sendiri; acknowledgement antarchannel diselaraskan; transparansi dibatasi per fragmen pada segmen kamera-ke-karakter. Baca UPDATE_INSTRUCTIONS.md.
@@ -1270,4 +1274,3 @@ Pastikan variabel tersedia pada konteks **Deploy previews** yang sedang dipakai.
 Tes boundary memakai nilai sintetis hanya untuk membangun output sementara, memeriksa bahwa lima field publik tersedia dan variabel lain tidak ikut terbawa, kemudian menghapus build sementara. Ia tidak melakukan login Firebase, tidak menghubungi layanan, dan bukan preview online dengan data palsu.
 
 Deploy nyata, pemindaian Netlify, login Firebase dan multiplayer tetap memerlukan pengujian di akun Anda. Tidak ada commit/push/deploy remote yang dilakukan dalam pengerjaan paket ini.
-

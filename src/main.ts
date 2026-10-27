@@ -1,3 +1,10 @@
+import {foodNames} from './game/expedition-items';
+let accountLoading=false;
+import {voicePanel} from './ui/voice-panel';
+import {voiceTransport,getVoiceConfig} from './services/cloud';
+import {showLootFeed} from './ui/loot-feed';
+import {rememberLoginIntent,readLoginIntent,clearLoginIntent} from './services/login-intent';
+import {restoreAuth,loginRedirect} from './services/cloud';
 import {roomCapacity} from './game/adventure-room';
 import {roomChatPanel,type ChatPanel} from './ui/room-chat';
 import {lobbyMarkup,partyMarkup} from './ui/lobby';
@@ -263,7 +270,9 @@ function home() {
     })
     .catch(error=>{if(token!==generation)return;const stage=el('title-world');stage.dataset.fallback='true';stage.style.backgroundImage=`url("${screenArt('forest')}")`;stage.style.backgroundSize='cover';stage.style.backgroundPosition='center';console.warn('3D preview unavailable; using illustrated scene',error);});
   const enterMode = async (play:HTMLButtonElement) => {
-    if (profile) return homeMode === "retro" ? journey() : setup();
+    rememberLoginIntent(homeMode);try{await restoreAuth();}catch(e){showError(e);return;}
+    if(uid&&!profile){if(accountLoading)toast(tr('Memuat profil game…','Loading game profiles…'));else profiles();return;}
+    if (profile){clearLoginIntent();return homeMode === "retro" ? journey() : setup();}
     if (cloudConfigured) {
       if ([el<HTMLButtonElement>('retro-mode'),el<HTMLButtonElement>('modern-mode')].some(b=>b.disabled)) return;
       signInPanel(tr("Membuka Google…", "Opening Google…"), tr("Selesaikan masuk di jendela Google. Tunggu sampai proses masuk selesai.", "Complete sign-in in the Google window. Wait for this attempt to finish."));
@@ -271,16 +280,17 @@ function home() {
       for(const id of ['retro-mode','modern-mode'])el<HTMLButtonElement>(id).disabled=true;
       play.textContent = tr("MEMBUKA GOOGLE…", "OPENING GOOGLE…");
       const waiting = setTimeout(() => {
-        signInPanel(tr("Masih menunggu Google", "Still waiting for Google"), tr("Jika jendela Google sudah tertutup sendiri, foto pesan ini. Proses login belum mengembalikan hasil.", "If the Google window closed itself, take a screenshot of this message. Sign-in has not returned a result."), "login/pending");
+        signInPanel(tr("Masih menunggu Google", "Still waiting for Google"), tr("Jika jendela Google sudah tertutup sendiri, foto pesan ini. Proses login belum mengembalikan hasil.", "If the Google window closed itself, take a screenshot of this message. Sign-in has not returned a result."), "login/pending");if(import.meta.env.VITE_FIREBASE_AUTH_SAME_ORIGIN==='true'){const retry=document.createElement('button');retry.textContent=tr('Masuk di halaman ini','Sign in on this page');retry.onclick=()=>void loginRedirect().catch(showError);document.getElementById('auth-error')?.append(retry);}
       }, 20000);
       try {
         await login();
-        document.getElementById("auth-error")?.remove();
+        document.getElementById("auth-error")?.remove();if(profile)continueLogin();
       } catch (error) {
         const info = loginErrorDetails(error, lang);
         const context = loginContext();
         const details = `${info.name}: ${info.detail}${info.frames ? `\n${info.frames}` : ""}\nProject: ${safeLoginText(context.project, 100)}\nAuth domain: ${safeLoginText(context.authDomain, 180)}\nGame: ${safeLoginText(context.origin.replace(/^https?:\/\//, ""), 180)}\nMethod: ${context.method}\nSigned in: ${context.signedIn ? "yes" : "no"}`;
         signInPanel(tr("Masuk belum selesai", "Sign-in incomplete"), info.message, info.code ?? info.name, details);
+        if(import.meta.env.VITE_FIREBASE_AUTH_SAME_ORIGIN==='true'){const retry=document.createElement('button');retry.textContent=tr('Masuk di halaman ini','Sign in on this page');retry.onclick=()=>void loginRedirect().catch(showError);document.getElementById('auth-error')?.append(retry);}
         console.error("Sign-in failed", info.code ?? info.name, details);
       }
       finally {
@@ -373,7 +383,7 @@ function profiles() {
       family.active = p.id;
       lang = p.language;
       cache();
-      home();
+      continueLogin();
     }),
   );
   el("new-profile")?.addEventListener("submit", (e) => {
@@ -385,7 +395,7 @@ function profiles() {
     family.active = p.id;
     profile = p;
     void save()
-      .then(() => home())
+      .then(() => continueLogin())
       .catch(showError);
   });
 }
@@ -592,8 +602,8 @@ function setup(){
  });
 }
 let currentAdventure:{difficulty:Difficulty;map:number;seed:number;sample?:boolean;area?:AdventureArea}|undefined;
-let chatPanel:ChatPanel|undefined;
-function mountChat(room:Room){const b=el<HTMLButtonElement>('room-chat-open');if(!b)return;chatPanel?.destroy();chatPanel=roomChatPanel(root,b,room,playerKey,lang,async(text,messageId)=>{const r=await roomAction('chat',{profileId:profile!.id,code:room.id,text,messageId});if(activeRoom?.id===room.id)applyRoom(r.room);return r.room;});}
+let chatPanel:ChatPanel|undefined;let voiceUI:ReturnType<typeof voicePanel>|undefined;let voiceRoom='';
+function mountChat(room:Room){const b=el<HTMLButtonElement>('room-chat-open');if(!b)return;chatPanel?.destroy();if(voiceRoom!==room.id||!voiceUI){voiceUI?.destroy();voiceRoom=room.id;voiceUI=voicePanel(root,playerKey,()=>Object.fromEntries(Object.entries(activeRoom?.players||{}).map(([k,p])=>[k,p.name])),voiceTransport(room.id,playerKey),()=>getVoiceConfig(room.id,profile!.id),lang);}chatPanel=roomChatPanel(root,b,room,playerKey,lang,async(text,messageId)=>{const r=await roomAction('chat',{profileId:profile!.id,code:room.id,text,messageId});if(activeRoom?.id===room.id)applyRoom(r.room);return r.room;});}
 let onlineMotion:OnlineMotion|undefined;
 let modernTimer: ReturnType<typeof setInterval> | null = null;
 async function playModern(difficulty: Difficulty, room?: Room, reuse=false,forestSample=false,areaChoice:AdventureArea='classic') {
@@ -637,6 +647,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const shownLoot=new Set<number>();
   const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
   journal.onclick=()=>{const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
+  const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><div>'+[['food-chili','🌶'],['food-watermelon','🍉'],['food-spinach','☘'],['food-grenade','💥'],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
     questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,
@@ -662,9 +673,10 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       : undefined,
     onAdventure:(state)=>{
       if(token!==generation||screen!=='modern')return;
+      supplies.querySelectorAll<HTMLButtonElement>('[data-supply]').forEach(b=>{const k=b.dataset.supply!.replace('food-','');if(k in foodNames){b.title=foodNames[k as keyof typeof foodNames][lang==='id'?0:1];b.setAttribute('aria-label',b.title);}b.disabled=k in state.supplies?state.supplies[k as keyof typeof state.supplies]<=0:k==='craft-grenade'?state.ammo<1||state.supplies.chili<1:k==='lift'?state.elapsed>=state.strengthUntil||!!state.carried:k==='place'||k==='throw-object'?!state.carried:false;b.querySelector('small')!.textContent=k in state.supplies?String(state.supplies[k as keyof typeof state.supplies]):k==='lift'?Math.max(0,Math.ceil(state.strengthUntil-state.elapsed))+'s':k==='place'||k==='throw-object'?state.carried?'✓':'—':'';});
       const bossName=areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1];
       if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
-       const loot=state.lastLoot;shownLoot.add(loot.id);const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal loot-reveal center" role="dialog" aria-modal="true"><div class="loot-emblem">✦</div><div class="eyebrow">${tr('HARTA DITEMUKAN','TREASURE FOUND')}</div><h2>${tr('Bekal petualanganmu','Supplies for your journey')}</h2><div class="loot-items"><span>◉ <b>+${loot.coins}</b>${tr('Koin','Coins')}</span><span>⚿ <b>+${loot.keys}</b>${tr('Kunci','Key')}</span><span>▰ <b>+${loot.cakes}</b>${tr('Kue','Cakes')}</span><span>♥ <b>+${loot.hearts}</b>${tr('Nyawa','Hearts')}</span></div><p>${tr('Kue maksimal 8 · Nyawa maksimal 3','Maximum 8 cakes · Maximum 3 hearts')}</p>${button(tr('AMBIL & LANJUTKAN','COLLECT & CONTINUE'),'loot-close')}</section></div>`;click('loot-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});
+       const loot=state.lastLoot;shownLoot.add(loot.id);showLootFeed(root,loot,lang);
       }
       el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
       const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
@@ -677,7 +689,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       dive.hidden=!state.swimming;dive.textContent=state.diving?tr('↑ PERMUKAAN','↑ SURFACE'):tr('↓ SELAM','↓ DIVE');dive.setAttribute('aria-pressed',String(state.diving));const jumpButton=el('jump-action');const jumpCaption=jumpButton.querySelector('small');if(jumpCaption)jumpCaption.textContent=state.climber.state.phase==='hanging'?tr('NAIK','CLIMB'):state.swimming?tr('NAIK','RISE'):tr('LOMPAT','JUMP');
       const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
       objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/${state.sealGoal}   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${bossName} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):areaName(state.area,lang)+" "+String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'trash-hit':['Sampah melukai! Kembali ke checkpoint.','Trash hit! Returned to checkpoint.'],'obstacle-hit':['Terkena rintangan! Kembali ke checkpoint.','Obstacle hit! Returned to checkpoint.'],'super-empty':['Kue super habis. Pilih kue asli atau cari peti.','No super cakes left. Choose classic or find a chest.'],'king-dormant':['Raja masih tertidur. Lengkapi segel tim.','The King is dormant. Complete the seal goal.'],'king-awakening':['Raja bangkit! Bersiap menghindar.','The King awakens! Get ready to dodge.'],'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja penjaga bangkit. Perhatikan tanda serangannya!','The gate King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Lengkapi semua segel pada penghitung untuk membangunkan Raja.','Complete the seal counter to awaken the King.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(state.message!=='chest')toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
+      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'crafted':['Cake granat api siap dilempar.','Fire cake grenade crafted.'],'strength':['Kuat selama 25 detik! Angkat objek dari menu Bekal.','Strong for 25 seconds! Lift objects from Supplies.'],'lifted':['Objek diangkat. Pilih Taruh atau Lempar.','Object lifted. Choose Place or Throw.'],'placed':['Objek dipindahkan.','Object moved.'],'course-win':['Lintasan ditaklukkan! +10 koin dan +2 cake.','Course completed! +10 coins and +2 cakes.'],'chili':['Semburan api!','Fire breath!'],'watermelon':['Tembakan biji semangka!','Watermelon seed burst!'],'trash-hit':['Sampah melukai! Kembali ke checkpoint.','Trash hit! Returned to checkpoint.'],'obstacle-hit':['Terkena rintangan! Kembali ke checkpoint.','Obstacle hit! Returned to checkpoint.'],'super-empty':['Kue super habis. Pilih kue asli atau cari peti.','No super cakes left. Choose classic or find a chest.'],'king-dormant':['Raja masih tertidur. Lengkapi segel tim.','The King is dormant. Complete the seal goal.'],'king-awakening':['Raja bangkit! Bersiap menghindar.','The King awakens! Get ready to dodge.'],'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja penjaga bangkit. Perhatikan tanda serangannya!','The gate King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Lengkapi semua segel pada penghitung untuk membangunkan Raja.','Complete the seal counter to awaken the King.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(state.message!=='chest')toast(text[lang==='id'?0:1]);if(['seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
     },
     onTick: (seconds, explored) => {
       if(token!==generation||screen!=='modern')return;
@@ -877,7 +889,7 @@ function applyRoom(r: Room) {
   if(!activeRoom||activeRoom.id!==r.id)return;
   if (activeRoom && activeRoom.id === r.id && r.revision < activeRoom.revision)
     return;
-  activeRoom = r;chatPanel?.update(r);
+  activeRoom = r;voiceUI?.updateMembers(Object.keys(r.players));chatPanel?.update(r);
   if (r.state === "lobby") {
     updateLobby();
     return;
@@ -942,6 +954,7 @@ function confirmLeave() {
   });
 }
 async function leaveRoom() {
+  voiceUI?.destroy();voiceUI=undefined;voiceRoom='';
   roomUnwatch();
   roomUnwatch = () => {};
   if (endPresence) {
@@ -977,12 +990,14 @@ window.addEventListener("keydown", (e) => {
     pauseOverlay(!!activeRoom);
 });
 window.addEventListener("beforeunload", () => {
+  voiceUI?.destroy();
   cleanup();
   game?.dispose();
 });
+function continueLogin(){const mode=readLoginIntent();if(!profile){profiles();return;}if(mode){clearLoginIntent();homeMode=mode;mode==='modern'?setup():journey();}else home();}
 watchAuth(async (user) => {
   if (lab) return;
-  generation++;
+  generation++;accountLoading=!!user;
   uid = user?.uid || "";
   accountName = user?.displayName || "";
   profile = undefined;
@@ -993,7 +1008,7 @@ watchAuth(async (user) => {
   }
   profile = family.profiles.find((p) => p.id === family.active);
   if (profile) lang = profile.language;
-  home();
+  if(profile&&readLoginIntent())continueLogin();else home();
   if (!navigator.onLine) {
     if (!profile)
       toast(
@@ -1005,7 +1020,7 @@ watchAuth(async (user) => {
     return;
   }
   try {
-    const remote = await getProfiles(user.uid);
+    const remote = await getProfiles(user.uid);accountLoading=false;
     if (uid !== user.uid) return;
     for (const p of remote) {
       const i = family.profiles.findIndex((q) => q.id === p.id);
@@ -1014,9 +1029,9 @@ watchAuth(async (user) => {
     }
     profile = family.profiles.find((p) => p.id === family.active);
     cache();
-    if (screen === "home") {
-      if (!profile) profiles();
-      else home();
+    if (screen === "home"||screen === "profiles") {
+      if (!profile&&family.profiles.length===1){profile=family.profiles[0];family.active=profile.id;cache();}
+      if (!profile) profiles();else continueLogin();
     }
     for (const p of family.profiles) {
       const merged = await syncProfile(uid, p);
@@ -1034,6 +1049,7 @@ watchAuth(async (user) => {
     showError(e);
   }
 });
+void restoreAuth().catch(showError);
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker

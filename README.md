@@ -1,4 +1,4 @@
-> Current release: **Pickup, Bandwidth & Camera**. Read UPDATE_INSTRUCTIONS.md. Deploy frontend and Functions together after the prior 41-file delta.
+> Current release: **Mobile Login, Expedition Items & Voice**. Apply after delta 19. Read UPDATE_INSTRUCTIONS.md, docs/MOBILE_LOGIN.md and docs/VOICE_SETUP.md.
 
 # Maze Hunter
 
@@ -6,7 +6,7 @@ Browser-first family maze game with an original fantasy binturong, Indonesian an
 
 ## Apply this update
 
-Use the latest delivered project on branch `maze-1` as the baseline. Extract the changed-files ZIP over it, preserving relative paths, then rebuild the frontend and Netlify functions together. No new environment variables, Firebase rules, dependencies or file deletions are required by the canyon update. Do not upload the ZIP itself as the site source.
+Apply this delta to the Pickup, Bandwidth & Camera release (19-file delta), or use the full source archive. Deploy frontend and Functions together. Voice requires publishing the additive RTDB rules; optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. No new npm dependencies or baseline source removals.
 
 The existing prebuild cleanup still removes only the superseded files recorded in `maintenance/obsolete-files.json`. It validates all existing legacy files before deleting any and refuses customized content. `FILE_REMOVALS.txt` lists those earlier removals. A Netlify build cleans its checkout; permanent repository cleanup still requires the source deletions to be committed by the owner.
 
@@ -15,7 +15,7 @@ The existing prebuild cleanup still removes only the superseded files recorded i
 - Retro: 100 levels with unchanged staged choices, exact 40/36-step arms, map counts, time and lives. Cells remain square; actual board dimensions determine proportional fit. Phone views enlarge dense boards to a readable initial zoom. Use +/− to zoom, ⊡ for the entire map, and drag away from the character to pan while zoomed. Finger release and wall contact are free; a failed dead end consumes one life and restarts. The maze catalogue has not changed in this update; deceptive route design remains a separate outstanding correction.
 - Adventure: landscape gameplay, left joystick, independent right-side camera, A jump/double-jump/climb, B cake/interact, V dive/surface in deep water. Original Solo routes and the accepted authored Forest source remain protected.
 - Ngarai: the first implemented biome from the agreed visual guide. Continuous layered cliffs, contoured terraces, shallow stream, shared walkable bridge surface, cave arch, natural stone arch and a broad boss arena. Original animated Ketam Tebing and Raja Batu Retak replace recolored forest enemies in this area. The boss warns before slams, charges and falling rocks; recovery windows and automatic cake refill remain active.
-- Other areas retain their previous implementation. Their proposed new visual identities and enemies are documented, not yet implemented. Swimming/diving, coconut climbs and underwater treasure remain available.
+- Other biomes include the earlier Living Biomes revision. This release adds supplies, movable props, marked climbing ledges, optional lava/canyon stepping courses, roads and curated sponsor boards. Voice and mobile-login configuration are documented separately. Swimming/diving and underwater treasure remain available.
 
 ## Run and validate
 

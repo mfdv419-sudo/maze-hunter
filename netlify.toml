@@ -13,6 +13,17 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
+# Same-origin Firebase helper proxy; used only when VITE_FIREBASE_AUTH_SAME_ORIGIN=true.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://maze-hunter-e362b.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/__/firebase/init.json"
+  to = "https://maze-hunter-e362b.firebaseapp.com/__/firebase/init.json"
+  status = 200
+  force = true
 [[redirects]]
   from = "/*"
   to = "/index.html"

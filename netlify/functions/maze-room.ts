@@ -1,3 +1,4 @@
+import {voiceConfig} from '../../src/game/voice-config';
 import {clientRoom} from '../../src/game/room-view';
 import {postRoomMessage} from '../../src/game/room-chat';
 import {validArea} from '../../src/game/areas';
@@ -61,6 +62,7 @@ export const handler: Handler = async (event) => {
     const now = Date.now(),
       action = String(body.action),
       data = profile.data()!;
+    if(action==='voice-config'){const code=String(body.code||'').toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))throw Error('Invalid room code');const room=(await getDatabase().ref(`mazeRooms/${code}`).get()).val()as Match|null;if(!room?.players[key]||room.expiresAt<now)throw Error('Not a room member');return{statusCode:200,headers,body:JSON.stringify(voiceConfig(identity.uid,now,process.env))};}
     const wardrobeRef=getFirestore().doc(`families/${identity.uid}/wardrobes/${profileId}`);
     if(action==='wardrobe'){
       if(!Array.isArray(body.pending)||body.pending.length>80||body.pending.some((k:unknown)=>typeof k!=='string'||k.length>80))throw Error('Invalid wardrobe request');
@@ -200,7 +202,7 @@ export const handler: Handler = async (event) => {
           }
         });
       if (!saved.committed||!saved.snapshot.val()?.players?.[key]&&action!=='leave') throw Error(failure);
-      result = saved.snapshot.val();
+      result = saved.snapshot.val();if(action==='leave'){const paths=[`mazeVoice/${id}/peers/${key}`,`mazeVoice/${id}/inbox/${key}`,...Object.keys(result?.players||{}).map(to=>`mazeVoice/${id}/inbox/${to}/${key}`)];await Promise.allSettled(paths.map(path=>getDatabase().ref(path).remove()));}
     }
     return {
       statusCode: 200,

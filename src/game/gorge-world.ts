@@ -1,3 +1,4 @@
+import {expeditionAdditions} from './expedition-additions';
 import {expeditionEffects} from './expedition-effects';
 import {biomeScenery,biomeSky} from './biome-scenery';
 import * as T from 'three';
@@ -34,7 +35,7 @@ export function gorgeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout){
  }
  const cliffs=new T.Group();cliffs.name='stratified-canyon-cliffs';cliffs.userData.cameraOccluder=true;const cliffMaterial=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide}),chunks:{mesh:T.Mesh;x:number;z:number}[]=[];
  for(const sector of sectors.values()){const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(sector.positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(sector.tints,3));geo.computeVertexNormals();geo.computeBoundingSphere();const mesh=new T.Mesh(geo,cliffMaterial);cliffs.add(mesh);chunks.push({mesh,x:sector.x,z:sector.z});}world.add(cliffs);
- const scenery=biomeScenery(scene,world,layout,'gorge'),effects=expeditionEffects(world,layout,'gorge');
+ const additions=expeditionAdditions(world,layout,'gorge',layout.maze.grid.length<70);const scenery=biomeScenery(scene,world,layout,'gorge'),effects=expeditionEffects(world,layout,'gorge');
  const {river:r,bridge:b,arch}=gorgeLandmarks(layout),base=gorgeBank(r.x,r.y,layout);
  const riverGeo=new T.PlaneGeometry(1.62,5.6,8,28);riverGeo.rotateX(-Math.PI/2);const rp=riverGeo.attributes.position;for(let i=0;i<rp.count;i++){const z=rp.getZ(i)+r.y,x=rp.getX(i)+r.x+Math.sin((z-r.y)*.9)*.18;rp.setXYZ(i,x,gorgeBank(x,z,layout)-.31,z);}riverGeo.computeVertexNormals();const river=new T.Mesh(riverGeo,waterMat);river.name='gorge-shallow-river';world.add(river);
  const deckGeo=new T.PlaneGeometry(3.5,.82,20,2);deckGeo.rotateX(-Math.PI/2);const dp=deckGeo.attributes.position;for(let i=0;i<dp.count;i++){const x=dp.getX(i)+b.x,z=dp.getZ(i)+b.y;dp.setXYZ(i,x,gorgeElevation(x,z,layout)+.015,z);}deckGeo.computeVertexNormals();const deck=new T.Mesh(deckGeo,stone);deck.name='gorge-walkable-bridge';world.add(deck);
@@ -59,5 +60,5 @@ export function gorgeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout){
  const skyTexture=biomeSky('gorge'),sky=new T.Mesh(new T.SphereGeometry(120,24,12),new T.MeshBasicMaterial({map:skyTexture,side:T.BackSide,depthWrite:false,fog:false}));sky.name='canyon-wispy-sky';scene.add(sky);
  const ripples:T.Mesh[]=[];for(let i=0;i<6;i++){const ripple=add(new T.PlaneGeometry(.45,.025),new T.MeshBasicMaterial({color:0xc9e7df,transparent:true,opacity:.45}),r.x+(i%2-.5)*.5,base-.29,r.y-2+i*.7);ripple.rotation.x=-Math.PI/2;ripples.push(ripple);}
  ripples.forEach(m=>{props.remove(m);world.add(m);});batchStatic(props);world.add(props);
- return {update(t:number,camera:T.Camera,_player?:{x:number;y:number;depth?:number}){effects.update(t);sky.position.copy(camera.position);scenery.update(camera);const center=world.worldToLocal(camera.position.clone());chunks.forEach(c=>c.mesh.visible=Math.hypot(c.x-center.x,c.z-center.z)<50);if(scene.fog instanceof T.Fog){scene.fog.color.set(0xc8dbc3);scene.fog.near=36;scene.fog.far=88;}ripples.forEach((m,i)=>{m.position.z=r.y-2.5+(t*.45+i*.8)%5;const h=gorgeBank(m.position.x,m.position.z,layout);m.position.y=h-.29;});},dispose(){scenery.dispose();skyTexture.dispose();}};
+ return {update(t:number,camera:T.Camera,_player?:{x:number;y:number;depth?:number}){effects.update(t);sky.position.copy(camera.position);scenery.update(camera);const center=world.worldToLocal(camera.position.clone());chunks.forEach(c=>c.mesh.visible=Math.hypot(c.x-center.x,c.z-center.z)<50);if(scene.fog instanceof T.Fog){scene.fog.color.set(0xc8dbc3);scene.fog.near=36;scene.fog.far=88;}ripples.forEach((m,i)=>{m.position.z=r.y-2.5+(t*.45+i*.8)%5;const h=gorgeBank(m.position.x,m.position.z,layout);m.position.y=h-.29;});},dispose(){additions.dispose();scenery.dispose();skyTexture.dispose();}};
 }

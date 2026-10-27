@@ -1,3 +1,4 @@
+import {courseDanger} from './platform-course';
 import type {AdventureLayout} from './adventure-layout';
 const smooth=(a:number,b:number,v:number)=>{const t=Math.max(0,Math.min(1,(v-a)/(b-a)));return t*t*(3-2*t);};
 /** Shared by renderer and authoritative movement: no decorative floating bridge. */
@@ -19,6 +20,6 @@ export function gorgeRiver(x:number,z:number,layout:AdventureLayout){
  return {wet:along*across*(1-bridge),bridge:along*across*bridge};
 }
 export function bridgeFallZone(x:number,z:number,layout:AdventureLayout){const b=gorgeLandmarks(layout).bridge;return Math.abs(x-b.x)<1.65&&Math.abs(z-b.y)>.47&&Math.abs(z-b.y)<1.4;}
-export function gorgeElevation(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)-gorgeRiver(x,z,layout).wet*.74-(bridgeFallZone(x,z,layout)?4.5:0);}
+export function gorgeElevation(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)-(courseDanger(layout,'gorge',x,z)?6:0)-gorgeRiver(x,z,layout).wet*.74-(bridgeFallZone(x,z,layout)?4.5:0);}
 /** Continuous summit silhouette; neighboring wall faces use exactly the same corner height. */
 export function gorgeCliffTop(x:number,z:number,layout:AdventureLayout){return gorgeBank(x,z,layout)+7.7+Math.sin(x*.24+z*.12)*1.0+Math.cos(z*.31-x*.08)*.7;}

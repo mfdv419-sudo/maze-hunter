@@ -1,11 +1,75 @@
 {
- "rules": {
-  ".read": false, ".write": false,
-  "mazeRooms": { "$code": { ".read": "auth != null && data.child('owners').child(auth.uid).val() == true", ".write": false } },
-  "mazePresence": { "$code": { "$player": {
-   ".read": "auth != null && root.child('mazeRooms').child($code).child('owners').child(auth.uid).val() == true",
-   ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($player).child('uid').val() == auth.uid",
-   ".validate": "newData.isBoolean()"
-  } } }
- }
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "mazeRooms": {
+      "$code": {
+        ".read": "auth != null && data.child('owners').child(auth.uid).val() == true",
+        ".write": false
+      }
+    },
+    "mazePresence": {
+      "$code": {
+        "$player": {
+          ".read": "auth != null && root.child('mazeRooms').child($code).child('owners').child(auth.uid).val() == true",
+          ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($player).child('uid').val() == auth.uid",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "mazeVoice": {
+      "$code": {
+        "peers": {
+          ".read": "auth != null && root.child('mazeRooms').child($code).child('owners').child(auth.uid).val() == true",
+          "$player": {
+            ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($player).child('uid').val() == auth.uid",
+            ".validate": "!newData.exists() || (newData.hasChildren(['active','muted','talking','at']) && newData.child('active').isBoolean() && newData.child('muted').isBoolean() && newData.child('talking').isBoolean() && newData.child('at').isNumber() && newData.child('at').val() >= now-60000 && newData.child('at').val() <= now+10000)",
+            "$other": {
+              ".validate": false
+            },
+            "active": {
+              ".validate": true
+            },
+            "muted": {
+              ".validate": true
+            },
+            "talking": {
+              ".validate": true
+            },
+            "at": {
+              ".validate": true
+            },
+            "session": {
+              ".validate": "newData.isString() && newData.val().length >= 8 && newData.val().length <= 60"
+            }
+          }
+        },
+        "inbox": {
+          "$to": {
+            ".read": "auth != null && root.child('mazeRooms').child($code).child('players').child($to).child('uid').val() == auth.uid",
+            "$player": {
+              ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($player).child('uid').val() == auth.uid && root.child('mazeRooms').child($code).child('players').child($to).exists()",
+              ".validate": "!newData.exists() || (newData.hasChildren(['type','sdp','at','nonce']) && (newData.child('type').val() == 'offer' || newData.child('type').val() == 'answer') && newData.child('sdp').isString() && newData.child('sdp').val().length <= 48000 && newData.child('nonce').isString() && newData.child('nonce').val().length <= 60 && newData.child('at').isNumber() && newData.child('at').val() >= now-60000 && newData.child('at').val() <= now+10000)",
+              "$other": {
+                ".validate": false
+              },
+              "type": {
+                ".validate": true
+              },
+              "sdp": {
+                ".validate": true
+              },
+              "at": {
+                ".validate": true
+              },
+              "nonce": {
+                ".validate": true
+              }
+            },
+            ".write": "auth != null && root.child('mazeRooms').child($code).child('players').child($to).child('uid').val() == auth.uid && !newData.exists()"
+          }
+        }
+      }
+    }
+  }
 }

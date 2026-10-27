@@ -1,3 +1,5 @@
+import {voiceNonce} from './room-voice';
+import type {VoiceTransport,VoicePeer,VoiceSignal} from './room-voice';
 import {permittedAppearance} from './cosmetics';
 import { initializeApp } from "firebase/app";
 import { firebaseWebConfig } from "./firebase-web-config";
@@ -5,7 +7,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithPopup, signInWithRedirect, getRedirectResult,
   signOut,
   type User,
 } from "firebase/auth";
@@ -38,7 +40,7 @@ export const cloudConfigured = !!(
 const app = cloudConfigured
   ? initializeApp({
       apiKey: config.apiKey,
-      authDomain: config.authDomain,
+      authDomain: import.meta.env.VITE_FIREBASE_AUTH_SAME_ORIGIN==='true'?location.host:config.authDomain,
       projectId: config.projectId,
       appId: config.appId,
       databaseURL: config.databaseURL,
@@ -54,12 +56,14 @@ export function watchAuth(fn: (u: User | null) => void) {
   }
   return onAuthStateChanged(auth, fn);
 }
+export async function restoreAuth(){if(!auth)return;await auth.authStateReady();await getRedirectResult(auth);}
+export async function loginRedirect(){if(!auth)throw Error('Firebase unavailable');if(import.meta.env.VITE_FIREBASE_AUTH_SAME_ORIGIN!=='true')throw Error('Redirect requires same-origin auth setup. See docs/MOBILE_LOGIN.md');await signInWithRedirect(auth,new GoogleAuthProvider());}
 let pendingLogin: Promise<unknown> | null = null;
 // Only public identifiers and coarse status; never expose UID, email, API key, or tokens.
 export function loginContext() {
   return {
     project: config.projectId,
-    authDomain: config.authDomain,
+    authDomain: auth?.config?.authDomain||config.authDomain,
     origin: location.origin,
     method: "Google popup",
     signedIn: !!auth?.currentUser,
@@ -69,9 +73,12 @@ export async function login() {
   if (!auth)
     throw Error("Firebase belum dikonfigurasi / Firebase is not configured");
   if (pendingLogin) return pendingLogin;
-  pendingLogin = signInWithPopup(auth, new GoogleAuthProvider());
+  if(auth.currentUser)return;
+  let stop=()=>{};const observed=new Promise<void>(resolve=>{stop=onAuthStateChanged(auth,u=>{if(u)resolve();});});
+  let timer:ReturnType<typeof setTimeout>;const timeout=new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Object.assign(Error('Google sign-in did not return. Retry or use same-page sign-in.'),{code:'auth/popup-timeout'})),60000);});
+  pendingLogin = Promise.race([signInWithPopup(auth, new GoogleAuthProvider()),observed,timeout]);
   try { await pendingLogin; }
-  finally { pendingLogin = null; }
+  finally { clearTimeout(timer!);stop();pendingLogin = null; }
 }
 export async function logout() {
   if (auth) await signOut(auth);
@@ -202,3 +209,13 @@ export async function roomPresence(code: string, key: string) {
     await dc.cancel();
   };
 }
+
+export function voiceTransport(code:string,self:string):VoiceTransport{
+ if(!rtdb)throw Error('Realtime Database unavailable');const db=rtdb,own=ref(db,`mazeVoice/${code}/peers/${self}`),sent=new Set<string>();let session='';let stopPeers=()=>{},stopInbox=()=>{};return{
+ async join(){const {set,remove}=await import('firebase/database');session=voiceNonce();await remove(ref(db,`mazeVoice/${code}/inbox/${self}`));await onDisconnect(own).remove();await set(own,{active:true,muted:true,talking:false,at:Date.now(),session});},
+ async status(peer:VoicePeer){const{set}=await import('firebase/database');await set(own,{...peer,session});},
+ async send(to:string,signal:VoiceSignal){const{set}=await import('firebase/database'),target=ref(db,`mazeVoice/${code}/inbox/${to}/${self}`);sent.add(to);await onDisconnect(target).remove();await set(target,signal);},
+ listen(peers,signal){stopPeers=onValue(ref(db,`mazeVoice/${code}/peers`),s=>peers(s.val()||{}));stopInbox=onValue(ref(db,`mazeVoice/${code}/inbox/${self}`),s=>{for(const[from,value]of Object.entries(s.val()||{}))signal(from,value as VoiceSignal);});return()=>{stopPeers();stopInbox();};},
+ async close(){stopPeers();stopInbox();const{remove}=await import('firebase/database');await remove(own);await remove(ref(db,`mazeVoice/${code}/inbox/${self}`));for(const to of sent)await remove(ref(db,`mazeVoice/${code}/inbox/${to}/${self}`)).catch(()=>{});sent.clear();await onDisconnect(own).cancel();}
+ };}
+export async function getVoiceConfig(code:string,profileId:string):Promise<RTCConfiguration>{const value=await roomAction('voice-config',{code,profileId})as unknown as {iceServers:RTCIceServer[]};return{iceServers:value.iceServers};}
