@@ -1,3 +1,5 @@
+import {ActionQueue} from './game/action-queue';
+import {weaponLabels,type EquippedWeapon} from './game/weapon-shots';
 import {coherentRoom} from './game/room-sync';
 import {foodNames} from './game/expedition-items';
 let accountLoading=false;
@@ -643,12 +645,13 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea))currentAdventure={difficulty,map:sample?0:nextMap(difficulty),seed:sample?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,area:activeArea};
   const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
   const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
-  const cakePicker=document.createElement('div');cakePicker.className='cake-picker';cakePicker.setAttribute('aria-label',tr('Pilihan kue','Cake selection'));cakePicker.innerHTML=cakeKinds.map(k=>`<button type="button" data-cake="${k}" title="${cakeNames[k][lang==='id'?0:1]}" aria-label="${cakeNames[k][lang==='id'?0:1]}" aria-pressed="${k==='normal'}"><span></span><small>${k==='normal'?'∞':'3'}</small></button>`).join('');el('game-stage').after(cakePicker);cakePicker.addEventListener('click',async e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-cake]');if(!b)return;try{if(room){const r=await roomAction('ability',{profileId:profile!.id,code:room.id,kind:'cake-'+b.dataset.cake});applyRoom(r.room);}else modern.adventure?.selectCake(b.dataset.cake!);toast(cakeNames[b.dataset.cake as typeof cakeKinds[number]][lang==='id'?0:1]);}catch(e){showError(e);}});
-  let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;let abilityBusy=false;
+  const cakePicker=document.createElement('div');cakePicker.className='cake-picker';cakePicker.setAttribute('aria-label',tr('Pilihan kue','Cake selection'));cakePicker.innerHTML=cakeKinds.map(k=>`<button type="button" data-cake="${k}" title="${cakeNames[k][lang==='id'?0:1]}" aria-label="${cakeNames[k][lang==='id'?0:1]}" aria-pressed="${k==='normal'}"><span></span><small>${k==='normal'?'∞':'3'}</small></button>`).join('');el('game-stage').after(cakePicker);cakePicker.addEventListener('click',async e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-cake]');if(!b)return;try{modern.selectWeapon('cake');modern.chooseCake(b.dataset.cake!);supplies.open=false;toast(cakeNames[b.dataset.cake as typeof cakeKinds[number]][lang==='id'?0:1]);}catch(e){showError(e);}});
+  let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;const abilityQueue=new ActionQueue(2);
   const shownLoot=new Set<number>();
   const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
   journal.onclick=()=>{const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
-  const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><div>'+[['food-chili','🌶'],['food-watermelon','🍉'],['food-spinach','☘'],['food-grenade','💥'],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
+  const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><p class="weapon-state" role="status"></p><div>'+[['food-cake','🍰'],['food-chili','🌶'],['food-watermelon','🍉'],['food-spinach','☘'],['food-grenade','💥'],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('toggle',()=>{if(supplies.open)document.querySelector('.voice-panel')?.removeAttribute('open');});supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){const k=b.dataset.supply!.replace('food-','');if(['cake','chili','watermelon','grenade'].includes(k)){if(modern.selectWeapon(k as EquippedWeapon)){supplies.querySelector('summary')!.textContent=weaponLabels[k as EquippedWeapon][lang==='id'?0:1]+' · Hit';supplies.querySelectorAll('[data-supply]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));supplies.open=false;toast(tr('Senjata dipilih. Tekan Hit untuk menggunakan.','Weapon selected. Press Hit to use.'));}}else modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
+  cakePicker.classList.add('inventory-cakes');supplies.querySelector('div')!.append(cakePicker);
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
     questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,
@@ -658,7 +661,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     appearance:appearanceOf(profile,readPreferences().fur),
     entrance: me?.slot ?? Math.floor(Math.random() * 4),
     outfit: profile.outfit,
-    online: !!room,
+    online: !!room,selfKey:room?playerKey:undefined,
     onActionChange: (kind, active) => {
       const b = el(kind === "jump" ? "jump-action" : "hit-action");
       b?.classList.toggle("active", active);
@@ -675,6 +678,10 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     onAdventure:(state)=>{
       if(token!==generation||screen!=='modern')return;
       supplies.querySelectorAll<HTMLButtonElement>('[data-supply]').forEach(b=>{const k=b.dataset.supply!.replace('food-','');if(k in foodNames){b.title=foodNames[k as keyof typeof foodNames][lang==='id'?0:1];b.setAttribute('aria-label',b.title);}b.disabled=k in state.supplies?state.supplies[k as keyof typeof state.supplies]<=0:k==='craft-grenade'?state.ammo<1||state.supplies.chili<1:k==='lift'?state.elapsed>=state.strengthUntil||!!state.carried:k==='place'||k==='throw-object'?!state.carried:false;b.querySelector('small')!.textContent=k in state.supplies?String(state.supplies[k as keyof typeof state.supplies]):k==='lift'?Math.max(0,Math.ceil(state.strengthUntil-state.elapsed))+'s':k==='place'||k==='throw-object'?state.carried?'✓':'—':'';});
+      supplies.querySelector('.weapon-state')!.textContent=weaponLabels[modern.equippedWeapon][lang==='id'?0:1]+(modern.equippedWeapon!=='cake'&&state.supplies[modern.equippedWeapon]<=0?' · '+tr('Habis — pilih senjata lain','Empty — select another weapon'):abilityQueue.pending?' · '+tr('Menunggu konfirmasi: ','Awaiting confirmation: ')+abilityQueue.pending:' · '+tr('Tekan / tahan Hit','Press / hold Hit'));
+      supplies.querySelector('summary')!.textContent=weaponLabels[modern.equippedWeapon][lang==='id'?0:1]+' ▾';
+      supplies.querySelectorAll<HTMLButtonElement>('[data-supply]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.supply==='food-'+modern.equippedWeapon)));
+      el<HTMLButtonElement>('hit-action').disabled=modern.pendingActions>=2||(modern.equippedWeapon!=='cake'&&state.supplies[modern.equippedWeapon]<=0);
       const bossName=areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1];
       if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
        const loot=state.lastLoot;shownLoot.add(loot.id);showLootFeed(root,loot,lang);
@@ -730,8 +737,9 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     const b = el(id);
     b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      modern.useAction(kind);
+      modern.useAction(kind);if(kind==='hit'){modern.setHitHeld(true);b.setPointerCapture(e.pointerId);}
     });
+    if(kind==='hit')for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>modern.setHitHeld(false));
     b.addEventListener("click", (e) => {
       if (e.detail === 0) modern.useAction(kind);
     });
@@ -742,7 +750,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if (room) {
     const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
     const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
-    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=async(kind)=>{if(abilityBusy)return false;abilityBusy=true;try{await movementRequest;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,movement:{...packet,angle:modern.angle}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;abilityBusy=false;}};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
+    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=(kind)=>{const aim=modern.angle,cake=modern.equippedCake;return abilityQueue.add(async()=>{try{await movementRequest;if(token!==generation||activeRoom?.id!==room.id)return false;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,cake,movement:{...packet,angle:aim}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;}});};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
     modern.paused = true;
 
     let sample = 0;
@@ -764,7 +772,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       if (!started || modern.ended) return;
       sample++;
       motion.sample(modern.position);
-      if (motion.inFlight || sample % 6) return;
+      if (abilityQueue.pending || motion.inFlight || sample % 6) return;
       const packet=motion.packet(performance.now());if(!packet)return;
       const request=roomAction("move", {
         code: room.id,
@@ -786,7 +794,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         .finally(() => {motion.complete();if(movementRequest===request)movementRequest=undefined;});
     }, 50);
     cleanup = () => {
-      chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
+      abilityQueue.close();chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
       if (modernTimer) clearInterval(modernTimer);
       modernTimer = null;
     };

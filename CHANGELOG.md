@@ -1,3 +1,7 @@
+# Responsive Weapons & Guardian Presentation — 27 October 2026
+
+Right-side equipped weapons fired with Hit, bounded action queue, render-only attack feedback and guardian prediction, wider flame cone, timed seed bursts, swept collision and atomic cake choice. Production HTTP latency is not claimed solved. See UPDATE_INSTRUCTIONS.md.
+
 # Online World Consistency & Persistent Rocks — 27 October 2026
 
 Revision-matched snapshots, movement preserved on rejected abilities, idempotent action sequences, persistent guardian damage, shared consumed grass, current prop projectile blockers, additional movable rocks and saved falling debris with stacking. See UPDATE_INSTRUCTIONS.md.

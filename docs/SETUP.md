@@ -1,3 +1,3 @@
 # Current setup
 
-Apply this release after the 26-file Movement Jitter, Abandoned Roads & Voice Recovery update. Follow ../UPDATE_INSTRUCTIONS.md. Deploy frontend and Functions together and create a new room. No new environment variables or database rules are required by this revision. Existing login/voice instructions remain in MOBILE_LOGIN.md and VOICE_SETUP.md.
+Apply after the 21-file Online World Consistency & Persistent Rocks release. Deploy frontend and Functions together; no new env or rules. See ../UPDATE_INSTRUCTIONS.md for weapons, testing and the unresolved HTTP simulation latency limit.

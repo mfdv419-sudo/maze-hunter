@@ -91,3 +91,15 @@ header button,.profile-pill{background:#202c42!important;border:1px solid #d7b97
 .voice-panel section input[type="range"]{min-height:0;width:100%;height:22px;padding:0;margin:0;flex:1;min-width:0}
 .voice-panel section button{min-height:38px;font-size:12px;padding:8px;line-height:1.2}
 .voice-panel .voice-status:empty,.voice-panel .voice-members:empty{display:none}
+/* Weapon selection stays beside the right-hand controls and never occupies the centre. */
+#game .supply-belt{left:auto;right:max(14px,env(safe-area-inset-right));bottom:max(150px,25dvh);transform:none;width:210px;max-width:30vw}
+#game .supply-belt summary{font-size:11px;padding:8px 10px;min-height:34px}
+#game .supply-belt .weapon-state{margin:3px 0 0;padding:4px 7px;background:#142439df;border-radius:7px;font-size:10px;line-height:1.3;max-width:100%;pointer-events:none}
+#game .supply-belt>div{right:0;left:auto;bottom:66px;transform:none;width:220px;max-width:34vw;grid-template-columns:repeat(2,minmax(0,1fr));max-height:min(300px,calc(100dvh - 235px));overflow:auto;overscroll-behavior:contain;gap:6px;padding:8px}
+#game .supply-belt button{min-width:0;min-height:38px;padding:7px;font-size:11px;touch-action:manipulation}
+#game .supply-belt button[aria-pressed="true"]{outline:2px solid #f3d995;background:#526b58}
+@media(max-height:440px){#game .supply-belt{width:180px;max-width:28vw;bottom:150px}#game .supply-belt summary{font-size:10px;min-height:30px;padding:6px 8px}#game .supply-belt>div{max-height:calc(100dvh - 235px)}}
+@media(orientation:landscape){#game .supply-belt>div{width:228px;grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-height:440px) and (orientation:landscape){#game .supply-belt>div{gap:4px;padding:6px}#game .supply-belt button{min-height:34px;padding:4px;font-size:10px;line-height:1.1}}
+#game .supply-belt .inventory-cakes{position:static;left:auto;right:auto;bottom:auto;transform:none;grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;max-width:none;padding:4px;gap:4px;margin:0;border-radius:9px}
+#game .supply-belt .inventory-cakes button{min-height:30px;padding:4px;min-width:0}

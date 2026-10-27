@@ -1,87 +1,87 @@
 {
-  "release": "Online World Consistency & Persistent Rocks",
-  "baseline": "Movement Jitter, Abandoned Roads & Voice Recovery (26 files)",
+  "release": "Responsive Weapons & Guardian Presentation",
+  "baseline": "Online World Consistency & Persistent Rocks (21 files)",
   "removed": [],
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "bb53ff4b7b1890cf1a28912a948940ff6fd0fd8699c11193bca4c95234458824"
+      "sha256": "5ea7d352f0f931aa6e85b18c079ed96cd606e121bac29a38c5b7a25fc5b71c59"
     },
     {
       "path": "README.md",
-      "sha256": "7fbfa7710252c839841168d5af565a87d0713d93c40b57c3c0a626bde6a7e4f2"
+      "sha256": "cb551131c7950a103952183a9776c5cd534d3034edde8cba2c70d943a37d37cb"
     },
     {
       "path": "UPDATE_INSTRUCTIONS.md",
-      "sha256": "6ead6aa0994e9b704e77d3612bae3ac8274f75826cd208ff95e0bf9fc85469c0"
+      "sha256": "a57e638231474e8482f31892bf037bf629426aa4635be68677da5edc34bfd69f"
     },
     {
       "path": "docs/QA_CURRENT.md",
-      "sha256": "6ead6aa0994e9b704e77d3612bae3ac8274f75826cd208ff95e0bf9fc85469c0"
+      "sha256": "a57e638231474e8482f31892bf037bf629426aa4635be68677da5edc34bfd69f"
+    },
+    {
+      "path": "docs/REALTIME_GAMEPLAN.md",
+      "sha256": "9f0b90983b5d728d23f2c1019277de8812a10766e430e600be7565a9119afe50"
     },
     {
       "path": "docs/SETUP.md",
-      "sha256": "dcfaf8ab4ee12125c7b5975798b8577a16ca145bf4939bf07141d8c5469d4bde"
+      "sha256": "0cf8500fc675e60085cd5a6db22ab52c922b0fa6e744cdbd6cea3f4541f7e066"
     },
     {
       "path": "docs/TEST_RESULTS.txt",
-      "sha256": "fb3fead4b7310062134274f81f7eb82324aa14ac544871be173d734cd07e7c9b"
+      "sha256": "3c9a047ba25ad2ac638b30b8c7682ef1f656cf3651d24a9fe29bc4de460f33c8"
     },
     {
       "path": "netlify/functions/maze-room.ts",
-      "sha256": "c1162b639dd610d2bb4a58e4101249f05f6d5636cb2c843cad9851661c9e1071"
+      "sha256": "0795d3f976edb4d8e9c2edce7256a1ae380892fa46f1af52a7269a248be70c83"
     },
     {
-      "path": "src/game/adventure-room.ts",
-      "sha256": "afedf49b37b1914086b0b7032989c6a70856313969db7f7355a3fb90d6147c2e"
+      "path": "src/game/action-queue.ts",
+      "sha256": "4cfdc43fc6f48518bbc15f9a55ebbf0b32d19318bfa9d059fee355ff39a2ed1d"
     },
     {
       "path": "src/game/adventure-state.ts",
-      "sha256": "6197b9e2f9f07835efc3188398c63a149508c32c13717f993bc71050a4744f86"
+      "sha256": "c39fd4855b2e4cf7bf887dec47cc1a39761c372b9d2eb97c93030a23b2bce729"
     },
     {
-      "path": "src/game/biome-layout.ts",
-      "sha256": "880baf5ddf6bdf51e82a1394340dc1b809092e3602bd4fbb19594d889becc38d"
+      "path": "src/game/field-guide.ts",
+      "sha256": "edf747cc6b0d3192d6fefa7e94a22405381a094e3f212819711b24478f6968ac"
     },
     {
-      "path": "src/game/climbing.ts",
-      "sha256": "0a0a1adae93803e72229af96ef07a860f64f96022b90163ad077724352f17d17"
-    },
-    {
-      "path": "src/game/expedition-items.ts",
-      "sha256": "f216c85152b22b309cdb6985c197a2e909e53dbe43ae2bdd9ea5f3a946a951d8"
-    },
-    {
-      "path": "src/game/fallen-rocks.ts",
-      "sha256": "f9be4fd149bc3048df5d41223a4e99c7ec14c3dee29f5c5d18fa29c7d3a25aa8"
+      "path": "src/game/guardian-presentation.ts",
+      "sha256": "36a9771f0cc423a98d80778793e5e2a9d051c3442f79836c446a062d941d67d4"
     },
     {
       "path": "src/game/modern.ts",
-      "sha256": "cbf4fd2d10e4138c9bac9e6249f3b0806340f643faafd31adab2acd8ec21056d"
+      "sha256": "9568d27dc118c5ec2ffd8c02c8eb3cad6a447a79e4fa67ba14b8277dbf88f998"
     },
     {
-      "path": "src/game/room-state.ts",
-      "sha256": "b228b8683fce133b2d09c4fafa469e90c13589dc2d1379e923cf4a8690811153"
-    },
-    {
-      "path": "src/game/room-sync.ts",
-      "sha256": "ef6981fec52f466af2818f1c52040aa66a6c77dda3ddf56433c7ff4eb826323c"
+      "path": "src/game/weapon-shots.ts",
+      "sha256": "6e1cad5b3fa448bad614dcc4eabfbd8023e98a1b92aae4be21f9d821dc13b725"
     },
     {
       "path": "src/main.ts",
-      "sha256": "1176457d68d7a70b7b3e16ff36828bb0c87eabf762436cd7d3a57c14ad51e016"
+      "sha256": "89774f5c01e493224af9deb43bd7658d38309085b6fcfe164ecab22b3fcf0ff9"
     },
     {
-      "path": "src/services/cloud.ts",
-      "sha256": "6e5786fa57a0e2bda39a809fe0d71f84efe967575dfc85c7acabdb53787e9f7c"
+      "path": "src/presentation.css",
+      "sha256": "dfee88210ef3008e914e66f5ac7b3a31da888ada38ea81cdb574be3467be571a"
     },
     {
-      "path": "tests/online-world.test.ts",
-      "sha256": "2681181d9aa01c20264f2b5d08d27aea7db954c791a47d097da4423e31b2e806"
+      "path": "src/ui/voice-panel.ts",
+      "sha256": "f16be430e5046297ef78736c6fce93cce70ff20c69b995a24f3438eab5d6beed"
+    },
+    {
+      "path": "tests/combat-presentation.test.ts",
+      "sha256": "213a709e2ddc08850f814937a61c1ef2d7ec1621ed5fb65e93b4ae6342c8f1e3"
+    },
+    {
+      "path": "tests/next-revision.test.ts",
+      "sha256": "d9f280d8df7b4e24bac4b38e767421683e233eab3a9f9b60234b3090ea90a2bd"
     },
     {
       "path": "tests/room-function.test.ts",
-      "sha256": "b3fb3d4b0e0b063e6d0d674d9cd6a3c531bf6161339fde9e0b3cf46c4b236f37"
+      "sha256": "2c669dff0cabe01f2199a211215abd13b0a79d3a344017c3360fc060e3500c3f"
     }
   ]
 }

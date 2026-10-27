@@ -1,4 +1,4 @@
-> Current release: **Online World Consistency & Persistent Rocks**. Apply after the 26-file Movement Jitter, Abandoned Roads & Voice Recovery delta. Read UPDATE_INSTRUCTIONS.md.
+> Current release: **Responsive Weapons & Guardian Presentation**. Apply after the 21-file Online World Consistency & Persistent Rocks delta. Read UPDATE_INSTRUCTIONS.md; HTTP gameplay latency remains an explicit limitation.
 
 # Maze Hunter
 
@@ -6,7 +6,7 @@ Browser-first family maze game with an original fantasy binturong, Indonesian an
 
 ## Apply this update
 
-Apply this update to the Movement Jitter, Abandoned Roads & Voice Recovery release (26-file delta), or use the full source archive. Deploy frontend and Functions together. Voice uses additive RTDB rules when available, with authenticated Function signaling fallback on permission denial. Optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. No new npm dependencies or baseline source removals.
+Apply this update to the Online World Consistency & Persistent Rocks release (21-file delta), or use the full source archive. Deploy frontend and Functions together. Voice uses additive RTDB rules when available, with authenticated Function signaling fallback on permission denial. Optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. No new npm dependencies or baseline source removals.
 
 The existing prebuild cleanup still removes only the superseded files recorded in `maintenance/obsolete-files.json`. It validates all existing legacy files before deleting any and refuses customized content. `FILE_REMOVALS.txt` lists those earlier removals. A Netlify build cleans its checkout; permanent repository cleanup still requires the source deletions to be committed by the owner.
 

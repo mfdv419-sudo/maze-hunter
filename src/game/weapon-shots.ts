@@ -1,0 +1,5 @@
+import type {Cake} from './adventure-state';import type {Point} from './maze';
+export type EquippedWeapon='cake'|'chili'|'watermelon'|'grenade';
+export const weaponLabels={cake:['Cake','Cake'],chili:['Cabe · napas api','Chili · fire breath'],watermelon:['Semangka · rentetan biji','Watermelon · seed burst'],grenade:['Granat api','Fire grenade']}as const;
+export function weaponShots(kind:'chili'|'watermelon',origin:Point,angle:number,depth=0):Cake[]{return Array.from({length:kind==='chili'?11:10},(_,i)=>{const a=angle+(kind==='chili'?(i-5)*.095:((i%3)-1)*.018),speed=kind==='chili'?7:12;return{position:{x:origin.x+Math.sin(a)*.25,y:origin.y+Math.cos(a)*.25},velocity:{x:Math.sin(a)*speed,y:Math.cos(a)*speed},owner:'player',style:kind==='chili'?'flame':'seed',kind:kind==='chili'?'red':'normal',depth,ttl:kind==='chili'?.85:.8,...(kind==='watermelon'?{delay:i*.065}:{})};});}
+export function sweptHit(from:Point,to:Point,target:Point,radius:number){const x=to.x-from.x,y=to.y-from.y,t=Math.max(0,Math.min(1,((target.x-from.x)*x+(target.y-from.y)*y)/(x*x+y*y||1)));return Math.hypot(from.x+x*t-target.x,from.y+y*t-target.y)<radius;}

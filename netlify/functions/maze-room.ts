@@ -197,7 +197,7 @@ export const handler: Handler = async (event) => {
               movePlayer(room,key,m.points,Number(m.angle),seq,now);
               p.lastActionSeq=seq;p.lastActionAccepted=false;delete p.lastActionError;
               if(p.seq!==seq){p.lastActionError='Movement not accepted';return room;}
-              try{performAction(room,key,body.kind,now);p.lastActionAccepted=true;}
+              try{if(room.adventure&&body.kind==='hit'&&body.cake!==undefined){if(!['normal','red','yellow','green'].includes(body.cake))throw Error('Invalid cake');const state=room.adventure.states[key];if(!state)throw Error('Adventure not ready');state.selectedCake=body.cake;}performAction(room,key,body.kind,now);p.lastActionAccepted=true;}
               catch(e){p.lastActionError=e instanceof Error?e.message:'Action unavailable';room.revision++;}
               return room;
             }
