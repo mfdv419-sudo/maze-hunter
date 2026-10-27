@@ -1,65 +1,69 @@
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
 
 > maze-hunter@1.0.0 test
-> vitest run --maxWorkers=4
+> vitest run
 
 
  RUN  v3.2.7 /workspace/scratch/0f24cdd6d8e3/work/maze-hunter
 
- ✓ tests/online-motion.test.ts (7 tests) 2064ms
-   ✓ two clients move concurrently through own acknowledgements and teammate snapshots without returning to Start  970ms
-   ✓ two players keep moving with 1.8–3 second round trips in both Race and Co-op  792ms
- ✓ tests/adventure.test.ts (13 tests) 2540ms
-   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  532ms
-   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  1855ms
- ✓ tests/revision-immersion.test.ts (10 tests) 1288ms
-   ✓ all ten sea slots share identical ship terrain and place their thirty unique diamonds on walkable decks  407ms
- ✓ tests/retro-branching.test.ts (6 tests) 1795ms
-   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  1588ms
- ✓ tests/terrain-update.test.ts (8 tests) 4987ms
-   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  3767ms
-   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  526ms
-   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  479ms
- ✓ tests/adventure-lifecycle.test.ts (10 tests) 1248ms
-   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  1087ms
- ✓ tests/forest-models.test.ts (6 tests) 1357ms
-   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  1234ms
- ✓ tests/avatar-progression.test.ts (10 tests) 1014ms
-   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  839ms
- ✓ tests/expedition-update.test.ts (9 tests) 906ms
-   ✓ every seal region requires all three large and both small keepers, in every biome  525ms
- ✓ tests/escape-routes.test.ts (1 test) 876ms
-   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  874ms
- ✓ tests/pickup-sync.test.ts (5 tests) 744ms
-   ✓ HTTP views keep all peer transforms and our complete simulation while dropping peer simulations and duplicate shared world  491ms
- ✓ tests/aquatic.test.ts (5 tests) 514ms
- ✓ tests/gorge.test.ts (5 tests) 497ms
- ✓ tests/next-revision.test.ts (10 tests) 382ms
- ✓ tests/expedition-mechanics.test.ts (7 tests) 342ms
- ✓ tests/levels.test.ts (4 tests) 308ms
- ✓ tests/retro-viewport.test.ts (3 tests) 243ms
- ✓ tests/room-watch.test.ts (1 test) 204ms
- ✓ tests/gameplay.test.ts (8 tests) 15ms
+ ✓ tests/room-function.test.ts (10 tests) 342ms
+ ✓ tests/revision-immersion.test.ts (10 tests) 1552ms
+   ✓ slow authoritative requests accept a legal multi-second path while still rejecting wall crossing and excessive speed  319ms
+   ✓ all ten sea slots share identical ship terrain and place their thirty unique diamonds on walkable decks  482ms
+ ✓ tests/retro-branching.test.ts (6 tests) 2441ms
+   ✓ audits every visible route, exact choice counts and a 90% failed route per decision on all 176 generated maps  2116ms
+ ✓ tests/forest-models.test.ts (6 tests) 1615ms
+   ✓ the new continuous tail and articulated character retain finite geometry through movement with representative face and backpack combinations  1482ms
+ ✓ tests/online-motion.test.ts (7 tests) 2701ms
+   ✓ two clients move concurrently through own acknowledgements and teammate snapshots without returning to Start  1261ms
+   ✓ two players keep moving with 1.8–3 second round trips in both Race and Co-op  1023ms
+ ✓ tests/adventure.test.ts (13 tests) 3307ms
+   ✓ Real Retro decisions > all 100 boards have wrong branches, thin-wall connectivity and a valid winning route  578ms
+   ✓ Adventure catalog > has ten distinct, long and fully reachable maps per difficulty  2469ms
+ ✓ tests/avatar-progression.test.ts (10 tests) 1452ms
+   ✓ assigns each landmark to its own connected zone across all thirty Adventure maps  1175ms
+ ✓ tests/adventure-lifecycle.test.ts (10 tests) 1395ms
+   ✓ Adventure world and resources > has distinct reachable starts and seven functional areas on every map  1249ms
+ ✓ tests/expedition-update.test.ts (9 tests) 1351ms
+   ✓ every seal region requires all three large and both small keepers, in every biome  773ms
+ ✓ tests/aquatic.test.ts (5 tests) 730ms
+   ✓ requires a real descent to collect an underwater chest, then surfaces without a height teleport  365ms
+ ✓ tests/pickup-sync.test.ts (5 tests) 1015ms
+   ✓ HTTP views keep all peer transforms and our complete simulation while dropping peer simulations and duplicate shared world  668ms
+ ✓ tests/escape-routes.test.ts (1 test) 1286ms
+   ✓ all thirty maps offer an actual faster route and a key-gated hidden route  1285ms
+ ✓ tests/gorge.test.ts (5 tests) 689ms
+   ✓ stone monarch moves and uses its own warned attacks with recovery windows and ammunition refill  349ms
+ ✓ tests/expedition-mechanics.test.ts (7 tests) 588ms
+ ✓ tests/levels.test.ts (4 tests) 478ms
+   ✓ Retro 100-level campaign > has 100 unique deterministic solvable levels in 10 regions  440ms
+ ✓ tests/retro-viewport.test.ts (3 tests) 344ms
  ✓ tests/room.test.ts (5 tests) 26ms
- ✓ tests/room-voice.test.ts (6 tests) 13ms
- ✓ tests/room-function.test.ts (9 tests) 244ms
- ✓ tests/biome-expeditions.test.ts (5 tests) 9090ms
-   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  330ms
-   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  6281ms
-   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  789ms
-   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  866ms
-   ✓ every new Medium area can be physically traversed through its three quests and final escape  820ms
- ✓ tests/mobile-auth.test.ts (2 tests) 15ms
- ✓ tests/auth-errors.test.ts (9 tests) 16ms
- ✓ tests/actions.test.ts (3 tests) 6ms
- ✓ tests/room-chat.test.ts (3 tests) 6ms
+ ✓ tests/next-revision.test.ts (10 tests) 632ms
+ ✓ tests/room-watch.test.ts (1 test) 258ms
+ ✓ tests/gameplay.test.ts (8 tests) 17ms
+ ✓ tests/room-voice.test.ts (6 tests) 22ms
+ ✓ tests/mobile-auth.test.ts (2 tests) 26ms
+ ✓ tests/auth-errors.test.ts (9 tests) 20ms
+ ✓ tests/actions.test.ts (3 tests) 9ms
+ ✓ tests/room-chat.test.ts (3 tests) 7ms
  ✓ tests/item-handbook.test.ts (1 test) 4ms
  ✓ tests/login-intent.test.ts (2 tests) 3ms
+ ✓ tests/terrain-update.test.ts (8 tests) 6104ms
+   ✓ Easy and Volcano are selectable, smaller and fully connected across all map indices  4563ms
+   ✓ five biome walls have distinct actual geometry, continuous high silhouettes and no texture-only fallback  659ms
+   ✓ environmental danger has an advance warning and can be dodged, while sea trash actually costs a heart  609ms
+ ✓ tests/biome-expeditions.test.ts (5 tests) 10216ms
+   ✓ preserves original SOLO and the protected Forest sample, with separate additional expedition areas  358ms
+   ✓ each new area scales with difficulty, has distant reachable quests, multiple starts and deterministic inventories  7609ms
+   ✓ new expedition seal locks, terrain and thirty-player-objective sites remain connected  720ms
+   ✓ online rooms reconstruct the selected area identically on the authoritative server for all capacity bands  791ms
+   ✓ every new Medium area can be physically traversed through its three quests and final escape  736ms
 
  Test Files  29 passed (29)
-      Tests  173 passed (173)
-   Start at  13:28:42
-   Duration  10.06s (transform 1.41s, setup 0ms, collect 3.44s, tests 30.74s, environment 4ms, prepare 1.65s)
+      Tests  174 passed (174)
+   Start at  13:56:56
+   Duration  10.83s (transform 1.82s, setup 0ms, collect 4.94s, tests 38.63s, environment 10ms, prepare 2.10s)
 
 
 npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
@@ -78,13 +82,13 @@ rendering chunks...
 computing gzip size...
 dist/index.html                         0.95 kB │ gzip:   0.52 kB
 dist/sw.js                              1.13 kB
-dist/assets/index-jAenbQOh.css         84.07 kB │ gzip:  19.29 kB
-dist/assets/menu-world-D2X6fIfY.js      4.65 kB │ gzip:   2.30 kB
-dist/assets/retro-CgP-3BFe.js          11.77 kB │ gzip:   4.70 kB
-dist/assets/character-hDp58tSN.js      21.57 kB │ gzip:   8.62 kB
-dist/assets/modern-CZUzenhL.js        172.27 kB │ gzip:  57.61 kB
+dist/assets/index-SI60cxrh.css         85.71 kB │ gzip:  19.51 kB
+dist/assets/menu-world-DOjxCdRp.js      4.65 kB │ gzip:   2.30 kB
+dist/assets/retro-rd1RcbIb.js          11.77 kB │ gzip:   4.70 kB
+dist/assets/character-vZoGp4BI.js      21.57 kB │ gzip:   8.62 kB
+dist/assets/modern-CypPM-uP.js        172.27 kB │ gzip:  57.61 kB
 dist/assets/three-DTW4ATUs.js         580.95 kB │ gzip: 147.24 kB
-dist/assets/index-BKXLnPmh.js         694.31 kB │ gzip: 101.31 kB
+dist/assets/index-DuYG7LY8.js         694.35 kB │ gzip: 101.34 kB
 dist/assets/firebase-u5vRmSwp.js      849.82 kB │ gzip: 209.19 kB
 dist/assets/phaser-DIUF0PZB.js      1,481.79 kB │ gzip: 339.85 kB
 
@@ -92,13 +96,6 @@ dist/assets/phaser-DIUF0PZB.js      1,481.79 kB │ gzip: 339.85 kB
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 8.69s
+✓ built in 7.43s
 
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
-
-> maze-hunter@1.0.0 check:public-env
-> node scripts/check-public-env.mjs
-
-PUBLIC_ENV_BOUNDARY_PASS: 5 public fields retained; unrelated VITE values and server marker excluded.
-
-Final Function esbuild bundle PASS (128.6kb); browser limits in QA_CURRENT.md.
+Browser verification and limits in QA_CURRENT.md.

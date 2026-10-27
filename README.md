@@ -1,4 +1,4 @@
-> Current release: **Mobile Login, Expedition Items & Voice**. Apply after delta 19. Read UPDATE_INSTRUCTIONS.md, docs/MOBILE_LOGIN.md and docs/VOICE_SETUP.md.
+> Current release: **Room Creation & Mobile Entry Hotfix**. Apply after the 46-file Mobile Login, Expedition Items & Voice delta. Read UPDATE_INSTRUCTIONS.md.
 
 # Maze Hunter
 
@@ -6,7 +6,7 @@ Browser-first family maze game with an original fantasy binturong, Indonesian an
 
 ## Apply this update
 
-Apply this delta to the Pickup, Bandwidth & Camera release (19-file delta), or use the full source archive. Deploy frontend and Functions together. Voice requires publishing the additive RTDB rules; optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. No new npm dependencies or baseline source removals.
+Apply this hotfix to the Mobile Login, Expedition Items & Voice release (46-file delta), or use the full source archive. Deploy frontend and Functions together. Voice requires publishing the additive RTDB rules; optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. No new npm dependencies or baseline source removals.
 
 The existing prebuild cleanup still removes only the superseded files recorded in `maintenance/obsolete-files.json`. It validates all existing legacy files before deleting any and refuses customized content. `FILE_REMOVALS.txt` lists those earlier removals. A Netlify build cleans its checkout; permanent repository cleanup still requires the source deletions to be committed by the owner.
 

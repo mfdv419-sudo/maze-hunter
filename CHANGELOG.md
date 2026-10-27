@@ -1,3 +1,7 @@
+# Room Creation & Mobile Entry Hotfix — 27 October 2026
+
+Handle Firebase-pruned lobby state; reproduce and fix create-room HTTP 400; equal 48px mobile entry targets, four difficulty columns, portrait menus, lightweight mobile thumbnail. See UPDATE_INSTRUCTIONS.md.
+
 # Mobile Login, Expedition Items & Voice — 27 October 2026
 
 Lanjutan delta 19: login-intent dan pemulihan auth, supply combat/crafting/strength, loot feed, ledge/platform hazards, roads/sponsor slots dan room voice. Konfigurasi tambahan dan batas QA: UPDATE_INSTRUCTIONS.md.

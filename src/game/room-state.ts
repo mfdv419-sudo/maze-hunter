@@ -192,7 +192,7 @@ export function leaveMatch(room: Match, key: string, now: number) {
   const p = room.players[key];
   if (!p) return room;
   delete room.players[key];
-  if(room.adventure)delete room.adventure.states[key];
+  if(room.adventure?.states)delete room.adventure.states[key];
   if (!Object.values(room.players).some((q) => q.uid === p.uid))
     delete room.owners[p.uid];
   if (room.host === key) room.host = Object.keys(room.players)[0] || "";

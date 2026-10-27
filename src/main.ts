@@ -175,7 +175,7 @@ function begin(name: string, html: string) {
   root.dataset.screen = name;
   root.style.setProperty('--scene-art',`url("${screenArt(name==='scores'?'mountain':name==='profiles'?'coast':name==='collection'?'desert':name==='map'?'forest':selectedArea||'forest',name.length%4)}")`);
   root.innerHTML = `${lab ? `<div class="lab-banner">${tr("LAB KONTROL LOKAL · Tanpa login, cloud, pembelian, atau multiplayer", "LOCAL CONTROL LAB · No login, cloud, purchases, or multiplayer")}</div>` : ""}${header()}${html}`;
-  if(['setup','lobby','modern'].includes(name)){
+  if(name==='modern'){
    const rotate=document.createElement('div');rotate.className='adventure-rotation';rotate.innerHTML=`<section><svg width="88" height="88" viewBox="0 0 88 88" fill="none" stroke="currentColor" stroke-width="3"><rect x="18" y="28" width="52" height="32" rx="6"/><path d="M18 16A35 35 0 0 1 78 40m-7-8 7 8 5-10M70 73A35 35 0 0 1 9 48m7 8-7-8-5 10"/></svg><h2>${tr('Putar perangkatmu','Rotate your device')}</h2><p>${tr('Adventure dimainkan dalam landscape. Retro bisa dimainkan dalam portrait maupun landscape.','Adventure plays in landscape. Retro supports portrait and landscape.')}</p><small>${activeRoom?tr('Pertandingan online tetap berlangsung.','Your online match continues.'):tr('Permainan Solo berhenti sementara saat layar portrait.','Solo gameplay pauses while the screen is portrait.')}</small>${button(tr('Kembali ke Home','Back to Home'),'rotate-home','secondary')}</section>`;root.append(rotate);click('rotate-home',()=>activeRoom?confirmLeave():home());
   }
   click("brand", () =>
@@ -581,7 +581,7 @@ let currentDifficulty:Difficulty='medium';
 let selectedArea:AdventureArea='forest';
 const backdropCache=new Map<string,string>();
 async function adventurePreview(area:AdventureArea){
- const target=el('adventure-preview');if(!target)return;const token=generation,key=area+':'+JSON.stringify(profile?appearanceOf(profile):{});target.style.backgroundImage=`url("${screenArt(area)}")`;if(backdropCache.has(key)){target.style.backgroundImage=`url("${backdropCache.get(key)}")`;return;}
+ const target=el('adventure-preview');if(!target)return;const token=generation,key=area+':'+JSON.stringify(profile?appearanceOf(profile):{});target.style.backgroundImage=`url("${screenArt(area)}")`;if(matchMedia('(pointer: coarse), (max-width: 960px)').matches)return;if(backdropCache.has(key)){target.style.backgroundImage=`url("${backdropCache.get(key)}")`;return;}
  try{const{ModernGame}=await import('./game/modern');if(token!==generation)return;const host=document.createElement('div');host.style.cssText='position:fixed;width:960px;height:620px;left:-2000px;top:0;pointer-events:none';document.body.append(host);let capture:InstanceType<typeof ModernGame>|undefined;try{capture=new ModernGame(host,{difficulty:'medium',seed:15025,adventureMap:0,area,entrance:0,outfit:profile?.outfit||'classic',appearance:profile?appearanceOf(profile):undefined,onTick:()=>{},onFinish:()=>{}});const data=capture.captureBackdrop();backdropCache.set(key,data);if(backdropCache.size>12)backdropCache.delete(backdropCache.keys().next().value!);if(token===generation&&target.isConnected)target.style.backgroundImage=`url("${data}")`;}finally{capture?.dispose();host.remove();}}
  catch(e){console.warn('Scene preview unavailable',e);}
 }

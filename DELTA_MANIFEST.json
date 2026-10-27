@@ -1,187 +1,55 @@
 {
-  "release": "Mobile Login, Expedition Items & Voice",
-  "baseline": "Pickup, Bandwidth & Camera (19-file delta)",
+  "release": "Room Creation & Mobile Entry Hotfix",
+  "baseline": "Mobile Login, Expedition Items & Voice (46 files)",
   "removed": [],
   "files": [
     {
-      "path": ".env.example",
-      "sha256": "2cd224842316b1b5c8a8d068fede20ce4df4d331e43a66d08ab90861483ef610"
-    },
-    {
       "path": "CHANGELOG.md",
-      "sha256": "9225896d27168eccde7e5e86f44631ca35231e5e70b14de1bd900cc704c07254"
+      "sha256": "19b05c7e7dfd4cdb7e82407e64668dce095990a058bd9c7e2957bb8fa93ad7ce"
     },
     {
       "path": "README.md",
-      "sha256": "23375aaeab3f99e5e5e4696e936a730f66e66a8725d0c569087ef27a9b031b78"
+      "sha256": "905d7c959eb571205114fdce19185845bc7d1cc5cdb0c4d2c9a90f35a1ba1de3"
     },
     {
       "path": "UPDATE_INSTRUCTIONS.md",
-      "sha256": "65bc30ae30a23ded9aa10af70bdd8b6539b6b5c28a10de7825ebfcfeddb653ad"
-    },
-    {
-      "path": "database.rules.json",
-      "sha256": "b7a7174999b4893e07907740e06fab263d69e1fc13f9c964c88463ad47ac7dde"
-    },
-    {
-      "path": "docs/MOBILE_LOGIN.md",
-      "sha256": "85eccdaef8843e1b75dad37839ea8989c4af3d1e389cdead382a3a4ab3a264c4"
+      "sha256": "79b2f2d4d53a44c06ac62192e8b86e91792aa65d868f92aa70d3851f814441c8"
     },
     {
       "path": "docs/QA_CURRENT.md",
-      "sha256": "15a5064376f61cd7d6a00fcf915fa476ab3d49f73068cfedc1ee568eb97dfad9"
-    },
-    {
-      "path": "docs/SETUP.md",
-      "sha256": "8c3db3131a8c012f25ef56d30cb62100a281b9f60d27775873da248c001a7dfe"
-    },
-    {
-      "path": "docs/SPONSORS.md",
-      "sha256": "a13f2eeb93e1aa2c8db341d18152050a763f79685c4085680098873a2d2e995d"
+      "sha256": "79b2f2d4d53a44c06ac62192e8b86e91792aa65d868f92aa70d3851f814441c8"
     },
     {
       "path": "docs/TEST_RESULTS.txt",
-      "sha256": "a5b6f27adb93dc73c89e62ad1b558414982d069f647a93a3838879d20b30fb5f"
-    },
-    {
-      "path": "docs/VOICE_SETUP.md",
-      "sha256": "24500bf18df61b415bc826abd8bb0956a686246f6fc0cb658192ea784fc7e7b7"
-    },
-    {
-      "path": "netlify.toml",
-      "sha256": "671c858f6e58b6cf82bb742da4be7efb49f95f7b87ade9dfac9e20575d6d1d97"
-    },
-    {
-      "path": "netlify/functions/maze-room.ts",
-      "sha256": "6e880bd112bdcf6c34a73317d9281e9fb3a26775d141a5fdd46f4322380c4684"
-    },
-    {
-      "path": "public/sponsors.json",
-      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
-    },
-    {
-      "path": "scripts/check-public-env.mjs",
-      "sha256": "2ae7bbb6144a8cba5b984bfb14e13bb82669606392bfd4850079dadc762c3f8b"
-    },
-    {
-      "path": "src/game/actions.ts",
-      "sha256": "be1af8c8ccb2c035df155fc52e21035c01e4011a38f258d72069d76e75bb847e"
+      "sha256": "5b687c61c43ddf2b0a3d56cf0828c83c093fded5d7e52b2792bd92e786039e6e"
     },
     {
       "path": "src/game/adventure-room.ts",
-      "sha256": "5425afd997d67e0884bf9f56a81f4b6cc1ff6bd4166f689746b77a8fa9c7c9d8"
-    },
-    {
-      "path": "src/game/adventure-state.ts",
-      "sha256": "a80dde6b14db4d2f610ab1645a7b2a55bd94446138d1359a61294ec77ae27094"
-    },
-    {
-      "path": "src/game/biome-layout.ts",
-      "sha256": "f78c96fe1bb4b8747d872d5bd2f573519ed7b8991032b3248d7cd1c971fb5294"
-    },
-    {
-      "path": "src/game/biome-world.ts",
-      "sha256": "69e2a9e3285f468585b2ba17ce1df5b6a123b8159d565443e75264356fc3c05b"
-    },
-    {
-      "path": "src/game/character.ts",
-      "sha256": "e0651db801f5ecc330ad07a30f88f18c5ceef76a8147f668cd335298778e7f11"
-    },
-    {
-      "path": "src/game/climbing.ts",
-      "sha256": "3a677e6ec7b8574f23d5abcd6318ebe76b4764ea9faa3a9e68c174ddcb46f5ac"
-    },
-    {
-      "path": "src/game/expedition-additions.ts",
-      "sha256": "584cd857e808b2e076effec0b1157d1021625f75087a5a9332172faf0af01b07"
-    },
-    {
-      "path": "src/game/expedition-items.ts",
-      "sha256": "d0beb7e49b98dfc22a277c3b596c8c885a9815217f9e19f43166cfa806a754dd"
-    },
-    {
-      "path": "src/game/field-guide.ts",
-      "sha256": "d52782ae28718ca6ed2bf4f26a5c5d723848ab2c2c288567c87935f3ae05a6a5"
-    },
-    {
-      "path": "src/game/food-art.ts",
-      "sha256": "6625f5cfb35c766d56648465826da9357d507e2ca34d75ad1791bcdef554eb5d"
-    },
-    {
-      "path": "src/game/gorge-terrain.ts",
-      "sha256": "508aa857d884041c98167e4424e4b5fc976e58d07b28b9baba8e9129acd673dd"
-    },
-    {
-      "path": "src/game/gorge-world.ts",
-      "sha256": "c0508006d4e57c0061dea680fc34785c3f680d256cf5efebcdeaa63686de5849"
-    },
-    {
-      "path": "src/game/modern.ts",
-      "sha256": "73f186c6cc2704e9e964e2ea87ed668f1f496242d1d49e51c9a52869a0e6bd7b"
-    },
-    {
-      "path": "src/game/platform-course.ts",
-      "sha256": "a3ebb77c3f72256ab1a348531b80e8ad820bf9206299596b6ba75b12e79406e3"
+      "sha256": "3836ef883abe2d87b199c431d02de1aaa3e44c1737daaa857b0838ff3f05738e"
     },
     {
       "path": "src/game/room-state.ts",
-      "sha256": "2b95e6a1d0653fefa6ddfbae2bff2fe62206c8f9b4bd5e34bfea5c66acef8b13"
+      "sha256": "ec5bfe4fdd93208fe611fd77d603e908ebeac7136328fe7db0be96c1074ca3c6"
     },
     {
-      "path": "src/game/voice-config.ts",
-      "sha256": "50e375d0ec9a4bbeabf8e5fcc063e396ffdc6e8f0dc7c898d4cb660fe20767f1"
+      "path": "src/game/room-view.ts",
+      "sha256": "fc11bd3af56b15bbb0befff35fe4313eef36b6d80cec888e17ba7fccfed9316d"
     },
     {
       "path": "src/main.ts",
-      "sha256": "76ed90e9f67bbebf2abd0544195cea0f65c7de6be556cfdf0405cc94b546e13d"
+      "sha256": "1c026de53c4227e661707faf9fad9a7460e2b851dbb57e584eca99311850ca61"
     },
     {
       "path": "src/presentation.css",
-      "sha256": "bc7ffd067bcfa0bd9c38c361f018f1a67996078ed914e3a51f39b465dbd86062"
+      "sha256": "170405ec4b2222027842f0e2aded424e6ed68413a231a1d7168fcffb9a5679ba"
     },
     {
-      "path": "src/services/cloud.ts",
-      "sha256": "b7b853d4d3c418cd03dcdbe4278fe921a9ce1712136b271aec1bb3abea8e3dac"
-    },
-    {
-      "path": "src/services/login-intent.ts",
-      "sha256": "19d6e595793dd7743df250ab7484a1c61893e39bbcf3688910216c26f2d75352"
-    },
-    {
-      "path": "src/services/room-voice.ts",
-      "sha256": "c11a6be344be6a9b2e3fde4df2d4192a2336a19de33d8de39167bc326db749f9"
-    },
-    {
-      "path": "src/ui/loot-feed.ts",
-      "sha256": "3674ec110ce50a7682df4fccd8f3167ba823b2e96ffa6e4de3325524bc259b6b"
-    },
-    {
-      "path": "src/ui/voice-panel.ts",
-      "sha256": "572b0d71bd0786b0de7c4dc45995005d22e128344ceadea465f838f5cb25d5e3"
-    },
-    {
-      "path": "tests/item-handbook.test.ts",
-      "sha256": "30574dfd8ba1179c3dcab211d0333f0cab87942d0e42280ecfdeefc647acb6c9"
-    },
-    {
-      "path": "tests/login-intent.test.ts",
-      "sha256": "f75b4bd0432285eb9b69a5b8be5d720166c94bf2d17930392b08ace78ead1c3d"
-    },
-    {
-      "path": "tests/mobile-auth.test.ts",
-      "sha256": "5ec972ac27e286de598a4e8616974ead8d2d004488255581ed96147c034fd871"
-    },
-    {
-      "path": "tests/next-revision.test.ts",
-      "sha256": "81b145160a1b36fd914f91555d436d9a6054340ff819b9443aedefa41808d7a7"
+      "path": "tests/browser/room-entry-mobile.spec.ts",
+      "sha256": "de3b7e3d2f279c538cdb15a1f861194d5ff72d32ebc87f1fde8bafae62ff38eb"
     },
     {
       "path": "tests/room-function.test.ts",
-      "sha256": "8e27f8ffaef1203288da081dea9400ee66119c2759a80d42b19936a74ff370ae"
-    },
-    {
-      "path": "tests/room-voice.test.ts",
-      "sha256": "6600da833526170be9d6c089df8821a9da65468af7b17d151355f1724c77ba91"
+      "sha256": "33df5737c9b562e6826383f031756c484053d935f395ddb9103ab907059b0ee9"
     }
   ]
 }

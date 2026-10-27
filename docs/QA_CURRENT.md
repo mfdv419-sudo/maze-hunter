@@ -1,22 +1,12 @@
-# Mobile Login, Expedition Items & Voice — 27 October 2026
-Terapkan delta ini **setelah Pickup, Bandwidth & Camera (delta 19 file)**. Jika baseline tidak pasti, gunakan source lengkap. Tidak ada file baseline yang perlu dihapus.
+# Room Creation & Mobile Entry Hotfix — 27 October 2026
 
-## Instalasi
-1. Salin isi delta sesuai struktur folder ke source repository. Jangan upload ZIP sebagai dist.
-2. Deploy frontend dan Netlify Functions bersama. Node 24.x >=24.12; npm ci lalu npm run build. Refresh kedua perangkat dan gunakan room baru.
-3. Untuk voice: publish penambahan RTDB rules dari database.rules.json ke database lama; ikuti docs/VOICE_SETUP.md. TURN opsional secara konfigurasi tetapi diperlukan pada jaringan tertentu. VOICE_TURN_URLS dan VOICE_TURN_SECRET adalah environment server saja.
-4. Perbaikan popup Google aktif tanpa flag baru. Untuk fallback redirect smartphone, ikuti urutan domain/OAuth/proxy di docs/MOBILE_LOGIN.md sebelum mengaktifkan VITE_FIREBASE_AUTH_SAME_ORIGIN=true dan redeploy. Tidak perlu publish produksi untuk menguji preview yang domainnya diizinkan.
-5. Jangan membuat ulang Firebase, mengganti database, atau memasukkan service account ke frontend. Tidak ada dependency npm baru.
+Apply AFTER Mobile Login, Expedition Items & Voice (46-file delta). If unsure use the complete source. Deploy frontend AND Netlify Functions together, refresh/reopen all devices, create a fresh room. No new environment variables, Firebase rules, dependencies or source deletions are required by THIS hotfix. Prior voice/redirect configuration still applies unchanged.
 
-## Perubahan
-- Login menyimpan tujuan Adventure/Retro dan melanjutkan setelah autentikasi/profil, termasuk popup yang observer-nya sudah sukses.
-- Feed peti vertikal sementara; chili napas api, watermelon biji, spinach kekuatan 25 detik; craft cake Classic + chili menjadi granat api.
-- Angkat/pindahkan/lempar objek yang memenuhi syarat; validasi mencegah menutup seluruh rute quest. Batang melintang dapat menjadi pijakan; ledge bertanda dapat dipanjat/lompat.
-- Jalur batu lava/jurang opsional dengan gap fatal mengurangi satu nyawa dan respawn checkpoint; lima pijakan memberi hadiah sekali. Jalan aspal dan empat ruang sponsor kurasi.
-- Voice mic/speaker/PTT, mute peserta, volume dan cleanup per room. Audio memakai WebRTC, signaling terpisah dari gerak.
-- Mempertahankan revisi sebelumnya: biome, penjaga, kebangkitan, audio, redeem, pickup online dan mask kamera.
+## Cause and corrections
+- Firebase RTDB prunes empty children. A newly created lobby adventure.states={} disappears from persisted snapshots. clientRoom previously indexed states[playerKey] unconditionally, producing Cannot read properties of undefined (reading UID_profile) and HTTP 400 after a successful room write. Response serialization now tolerates missing states and sends an empty local map. Loading/leaving a pruned lobby is also safe.
+- Test snapshots now prune null/empty children like Firebase. Reinstating the old response code reproduces HTTP 400 u1_p; corrected code passes create, random, join, reconnect, leave and existing start/movement/chat/voice regressions.
+- Four difficulty choices occupy one row. Setup reserves equal 48px Solo/Online targets and prevents legacy primary/media styles from shrinking or misaligning them. Portrait setup/lobby remain accessible; landscape prompt applies to gameplay only.
+- Phones/coarse pointers and viewports <=960px keep the illustrated menu artwork instead of constructing an entire offscreen 3D game merely for a thumbnail. This removes avoidable menu CPU/GPU work; actual Adventure remains 3D.
 
-## Validasi dan batas
-173 tests / 29 files PASS; TypeScript, Vite production, bundling Function, dan public-env boundary PASS. UI pendek diuji 844×390 serta 740×360: delapan tombol supply muat dua baris. Browser WebRTC hanya mencapai SDP stable, tidak mengeluarkan ICE candidate/audio: audio dua perangkat belum terverifikasi. WebGL lingkungan QA tidak tersedia; visual game penuh, Google login smartphone fisik, Firebase rules produksi, pickup/movement lintas jaringan dan TURN nyata perlu test setelah deploy. Belum dideploy/publish oleh paket ini.
-
-See TEST_RESULTS.txt for the final local test run. Browser fixtures were temporary and are excluded from delivery. No claim is made that production network latency is solved.
+## Verification
+174 unit/integration tests in 29 files PASS. TypeScript + Vite production build PASS. Function bundle PASS. Browser QA used a local lab account, no live Firebase: equal reachable 48px buttons at 740x360 and 640x320; portrait 390x844 targets measured 176x48 each. Online produced the expected local-lab restriction message, Solo click entered the modern screen. WebGL is disabled in this QA browser so full game rendering was not verified. Four hasTouch Playwright regression scenarios are included but were not executed in this environment. Physical smartphone gestures, real Google auth and production multiplayer need post-deploy testing.
