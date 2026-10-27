@@ -1,3 +1,4 @@
+import {movementAllowance} from './movement-credit';
 import {AWAKEN_SECONDS} from './awakening';
 import {areaTime} from './areas';
 import {AdventureState,type AdventureSave} from './adventure-state';
@@ -9,7 +10,7 @@ export interface AdventureRoom {version:2;map:number;states:Record<string,Advent
 export const roomCapacity={easy:4,medium:4,hard:8,extreme:10} as const;
 export function loadAdventure(room:Match,key:string){const a=room.adventure!;const state=new AdventureState(room.difficulty,a.map,room.seed,false,a.questSlots?{slots:a.questSlots,slot:room.players[key].slot,shared:room.mode==='coop'}:undefined,room.area||'classic');a.states??={};if(a.states[key])state.restore(a.states[key]);if(room.mode==='coop'&&a.sharedWorld){Object.assign(state,worldValues(a.sharedWorld));state.seals=new Set(a.sharedSeals||[]);}for(const k of a.broken||[]){state.broken.add(k);const [x,y]=k.split(',').map(Number);if(state.grid[y])state.grid[y][x]=0;}return state;}
 export function startAdventureRoom(room:Match,now:number){const a=room.adventure!,base=new AdventureState(room.difficulty,a.map,room.seed,false,undefined,room.area||'classic');a.questSlots=Object.values(room.players).map(p=>p.slot);a.states={};a.bossHP=base.bossMaxHP;a.sharedSeals=[];a.contributions={};delete a.sharedWorld;a.escapeAt=-1;a.tickAt=room.startsAt;a.escapeDuration=90;
- for(const [k,p]of Object.entries(room.players)){const s=new AdventureState(room.difficulty,a.map,room.seed,false,{slots:a.questSlots!,slot:p.slot,shared:room.mode==='coop'},room.area||'classic');const start=s.layout.starts[p.slot];if(!start)throw Error('Map does not have enough distinct starts');s.position=center(start);s.checkpoint={...s.position};Object.assign(p,s.position,{seq:0,lastMove:room.startsAt,finishedAt:null});a.states[k]=s.save();}
+ for(const [k,p]of Object.entries(room.players)){const s=new AdventureState(room.difficulty,a.map,room.seed,false,{slots:a.questSlots!,slot:p.slot,shared:room.mode==='coop'},room.area||'classic');const start=s.layout.starts[p.slot];if(!start)throw Error('Map does not have enough distinct starts');s.position=center(start);s.checkpoint={...s.position};Object.assign(p,s.position,{seq:0,lastMove:room.startsAt,movementCredit:0,finishedAt:null});a.states[k]=s.save();}
  if(room.mode==='coop'){a.sharedWorld=structuredClone(Object.values(a.states)[0]);a.bossHP=a.sharedWorld.guards.find(g=>g.boss)!.hp;}
  room.expiresAt=now+(areaTime(room.area||'classic',room.difficulty)+180)*1000;
 }
@@ -71,11 +72,11 @@ export function moveAdventurePlayer(room:Match,key:string,points:Point[],angle:n
  tickAdventureRoom(room,now);if(room.state!=='playing'||now<room.startsAt||p.finishedAt||seq<=p.seq)return room;
  const s=loadAdventure(room,key);if(s.phase!=='playing')return room;let position={...s.position},length=0;
  for(const q of points){if(!Number.isFinite(q.x)||!Number.isFinite(q.y)||!clearSegment(s.grid,position,q,.13))throw Error('Movement crosses a wall');length+=Math.hypot(q.x-position.x,q.y-position.y);position=q;}
- const seconds=Math.min(10,Math.max(0,(now-p.lastMove)/1000)),budget=seconds*2.7*s.speedFactor+.12;
+ const movementAt=Math.max(now,p.lastMove),allowance=movementAllowance(p.movementCredit,p.lastMove,movementAt,2.7*s.speedFactor),budget=allowance+.12;
  // Respawns are authoritative and discard stale prediction instead of accepting a teleport.
- if(length>budget){p.lastMove=now;p.seq=seq;s.syncSeq=seq;room.adventure!.states[key]=s.save();room.revision++;return room;}
- const initialRespawns=s.respawns;for(const q of points){s.acceptPosition(q,airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));if(s.phase!=='playing'||s.respawns!==initialRespawns)break;}
- Object.assign(p,s.position,{elevation:s.climber.elevation,depth:s.depth,swimming:s.swimming,climb:s.climber.state.phase,angle,lastMove:now,seq,online:true});s.syncSeq=seq;room.adventure!.states[key]=s.save();
+ if(length>budget){p.movementCredit=allowance;p.lastMove=movementAt;p.seq=seq;s.syncSeq=seq;room.adventure!.states[key]=s.save();room.revision++;return room;}
+ p.movementCredit=Math.max(0,allowance-length);const initialRespawns=s.respawns;for(const q of points){s.acceptPosition(q,airborneHeight({at:(p.jumpAt??-1000000)/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));if(s.phase!=='playing'||s.respawns!==initialRespawns)break;}
+ Object.assign(p,s.position,{elevation:s.climber.elevation,depth:s.depth,swimming:s.swimming,climb:s.climber.state.phase,angle,lastMove:movementAt,seq,online:true});s.syncSeq=seq;room.adventure!.states[key]=s.save();
  if(room.mode==='coop'){room.explored??={};/* Discovery is merged by the server below. */}
  tickAdventureRoom(room,now+1);room.revision++;return room;
 }

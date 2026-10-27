@@ -26,6 +26,7 @@ export interface Player {depth?:number;swimming?:boolean;
   y: number;
   angle: number;
   lastMove: number;
+  movementCredit?: number;
   seq: number;
   finishedAt: number | null;
   slot: number;

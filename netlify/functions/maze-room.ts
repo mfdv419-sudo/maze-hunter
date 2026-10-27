@@ -1,3 +1,4 @@
+import {voiceRoomAction} from '../../src/game/voice-room';
 import {voiceConfig} from '../../src/game/voice-config';
 import {clientRoom} from '../../src/game/room-view';
 import {postRoomMessage} from '../../src/game/room-chat';
@@ -30,7 +31,7 @@ function admin() {
   }
 }
 export const handler: Handler = async (event) => {
-  const headers = {
+  const headers:Record<string,string> = {
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
   };
@@ -41,7 +42,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ error: "POST required" }),
     };
   try {
-    if ((event.body?.length || 0) > 20000) throw Error("Request too large");
+    if ((event.body?.length || 0) > 56000) throw Error("Request too large");
     admin();
     const token = (event.headers.authorization || "").replace(/^Bearer /, "");
     if (!token)
@@ -50,7 +51,9 @@ export const handler: Handler = async (event) => {
         headers,
         body: JSON.stringify({ error: "Login required" }),
       };
+    const requestStarted=performance.now();
     const identity = await getAuth().verifyIdToken(token, true);
+    const authMs=performance.now()-requestStarted;
     const body = JSON.parse(event.body || "{}"),
       profileId = String(body.profileId || "");
     if (!/^[a-zA-Z0-9-]{1,64}$/.test(profileId)) throw Error("Invalid profile");
@@ -58,11 +61,12 @@ export const handler: Handler = async (event) => {
       .doc(`families/${identity.uid}/profiles/${profileId}`)
       .get();
     if (!profile.exists) throw Error("Profile not found");
+    const profileMs=performance.now()-requestStarted-authMs;
     const key = `${identity.uid}_${profileId}`;
     const now = Date.now(),
       action = String(body.action),
       data = profile.data()!;
-    if(action==='voice-config'){const code=String(body.code||'').toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))throw Error('Invalid room code');const room=(await getDatabase().ref(`mazeRooms/${code}`).get()).val()as Match|null;if(!room?.players[key]||room.expiresAt<now)throw Error('Not a room member');return{statusCode:200,headers,body:JSON.stringify(voiceConfig(identity.uid,now,process.env))};}
+    if(['voice-config','voice-join','voice-status','voice-signal','voice-poll','voice-leave'].includes(action)){const code=String(body.code||'').toUpperCase();if(!/^[A-Z2-9]{6}$/.test(code))throw Error('Invalid room code');const [roster,expiry]=await Promise.all([getDatabase().ref(`mazeRooms/${code}/players`).get(),getDatabase().ref(`mazeRooms/${code}/expiresAt`).get()]);const room={id:code,players:roster.val()||{},expiresAt:expiry.val()||0}as Match;if(!room.players[key]||room.players[key].uid!==identity.uid||room.expiresAt<now)throw Error('Not a room member');return{statusCode:200,headers,body:JSON.stringify(action==='voice-config'?voiceConfig(identity.uid,now,process.env):{voice:await voiceRoomAction(getDatabase(),room,key,action,body,now),serverTime:now})};}
     const wardrobeRef=getFirestore().doc(`families/${identity.uid}/wardrobes/${profileId}`);
     if(action==='wardrobe'){
       if(!Array.isArray(body.pending)||body.pending.length>80||body.pending.some((k:unknown)=>typeof k!=='string'||k.length>80))throw Error('Invalid wardrobe request');
@@ -204,6 +208,7 @@ export const handler: Handler = async (event) => {
       if (!saved.committed||!saved.snapshot.val()?.players?.[key]&&action!=='leave') throw Error(failure);
       result = saved.snapshot.val();if(action==='leave'){const paths=[`mazeVoice/${id}/peers/${key}`,`mazeVoice/${id}/inbox/${key}`,...Object.keys(result?.players||{}).map(to=>`mazeVoice/${id}/inbox/${to}/${key}`)];await Promise.allSettled(paths.map(path=>getDatabase().ref(path).remove()));}
     }
+    headers['Server-Timing']=`auth;dur=${authMs.toFixed(1)}, profile;dur=${profileMs.toFixed(1)}, room;dur=${(performance.now()-requestStarted-authMs-profileMs).toFixed(1)}`;
     return {
       statusCode: 200,
       headers,

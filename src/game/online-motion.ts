@@ -13,6 +13,7 @@ export class OnlineMotion {
  complete(){this.inFlight=false;this.sent=null;}
  failed(){if(this.sent&&this.sent.seq>this.ack)this.retry=this.sent;this.complete();}
  reconcile(position:Point,sequence:number,respawns:number,playing=true):'keep'|'snap'{
+  if(sequence<this.ack)return'keep';
   const endpoint=this.endpoints.get(sequence),newAck=sequence>this.ack;
   const correction=respawns!==this.lastRespawn||!playing||newAck&&!!endpoint&&Math.hypot(endpoint.x-position.x,endpoint.y-position.y)>.25;
   this.ack=Math.max(this.ack,sequence);this.sequence=Math.max(this.sequence,sequence);this.lastRespawn=respawns;

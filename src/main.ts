@@ -902,7 +902,7 @@ function applyRoom(r: Room) {
     const m = game as ModernGame;
     m.setPeers(r.players, playerKey, r.mode === "coop");
     m.syncActions(r.players, playerKey, r.broken || {}, serverNow());
-    const state=r.adventure?.states?.[playerKey];if(state){const own=r.players[playerKey],policy=onlineMotion?.reconcile(state.position,own.seq||0,state.respawns,state.phase==='playing');m.syncAdventure(state,policy);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}
+    const state=r.adventure?.states?.[playerKey];if(state&&(!onlineMotion||(r.players[playerKey].seq||0)>=onlineMotion.ack)){const own=r.players[playerKey],policy=onlineMotion?.reconcile(state.position,own.seq||0,state.respawns,state.phase==='playing');m.syncAdventure(state,policy);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}
     if (r.mode === "coop")
       m.reveal(
         Object.keys(

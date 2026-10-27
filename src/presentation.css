@@ -82,3 +82,12 @@ header button,.profile-pill{background:#202c42!important;border:1px solid #d7b97
  #game .expedition-picker .difficulty button{padding:8px 2px}
  #game .expedition-picker .difficulty small{font-size:8px}
 }
+
+/* Compact voice controls override form defaults (49px inputs and large label margins). */
+.voice-panel section{align-content:start;grid-auto-rows:max-content;max-height:min(65dvh,340px)}
+.voice-panel section p{margin:0;font-size:12px;line-height:1.4}
+.voice-panel section label{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;min-height:24px}
+.voice-panel section input[type="checkbox"]{appearance:auto;min-height:0;width:16px;height:16px;padding:0;margin:0;flex:none}
+.voice-panel section input[type="range"]{min-height:0;width:100%;height:22px;padding:0;margin:0;flex:1;min-width:0}
+.voice-panel section button{min-height:38px;font-size:12px;padding:8px;line-height:1.2}
+.voice-panel .voice-status:empty,.voice-panel .voice-members:empty{display:none}

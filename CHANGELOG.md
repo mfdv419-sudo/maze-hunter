@@ -1,3 +1,7 @@
+# Movement Jitter, Abandoned Roads & Voice Recovery — 27 October 2026
+
+Bounded server-time movement credit prevents false speed rejection under arrival jitter; old acknowledgements are ignored; centered terrain-following weathered roads; member-authenticated signaling fallback and compact voice controls. See UPDATE_INSTRUCTIONS.md.
+
 # Room Creation & Mobile Entry Hotfix — 27 October 2026
 
 Handle Firebase-pruned lobby state; reproduce and fix create-room HTTP 400; equal 48px mobile entry targets, four difficulty columns, portrait menus, lightweight mobile thumbnail. See UPDATE_INSTRUCTIONS.md.

@@ -1,3 +1,4 @@
+import {fallbackVoiceTransport,serverVoiceTransport} from './server-voice-transport';
 import {voiceNonce} from './room-voice';
 import type {VoiceTransport,VoicePeer,VoiceSignal} from './room-voice';
 import {permittedAppearance} from './cosmetics';
@@ -175,6 +176,7 @@ export async function roomAction(
     body: JSON.stringify({ action, ...payload }),
   });
   const data=await serverJSON(response);
+  if(action==='move'&&Date.now()-requestedAt>1200)console.debug('Movement confirmation timing',{roundTripMs:Date.now()-requestedAt,serverTiming:response.headers.get('Server-Timing')});
   if (typeof data.serverTime === "number")
     clockOffset = data.serverTime - (requestedAt+Date.now())/2;
   if (!response.ok) throw Error(`${data.error || "Room request failed"} (HTTP ${response.status})`);
@@ -210,12 +212,15 @@ export async function roomPresence(code: string, key: string) {
   };
 }
 
-export function voiceTransport(code:string,self:string):VoiceTransport{
+function realtimeVoiceTransport(code:string,self:string):VoiceTransport{
  if(!rtdb)throw Error('Realtime Database unavailable');const db=rtdb,own=ref(db,`mazeVoice/${code}/peers/${self}`),sent=new Set<string>();let session='';let stopPeers=()=>{},stopInbox=()=>{};return{
  async join(){const {set,remove}=await import('firebase/database');session=voiceNonce();await remove(ref(db,`mazeVoice/${code}/inbox/${self}`));await onDisconnect(own).remove();await set(own,{active:true,muted:true,talking:false,at:Date.now(),session});},
  async status(peer:VoicePeer){const{set}=await import('firebase/database');await set(own,{...peer,session});},
  async send(to:string,signal:VoiceSignal){const{set}=await import('firebase/database'),target=ref(db,`mazeVoice/${code}/inbox/${to}/${self}`);sent.add(to);await onDisconnect(target).remove();await set(target,signal);},
- listen(peers,signal){stopPeers=onValue(ref(db,`mazeVoice/${code}/peers`),s=>peers(s.val()||{}));stopInbox=onValue(ref(db,`mazeVoice/${code}/inbox/${self}`),s=>{for(const[from,value]of Object.entries(s.val()||{}))signal(from,value as VoiceSignal);});return()=>{stopPeers();stopInbox();};},
+ listen(peers,signal,error){stopPeers=onValue(ref(db,`mazeVoice/${code}/peers`),s=>peers(s.val()||{}),error);stopInbox=onValue(ref(db,`mazeVoice/${code}/inbox/${self}`),s=>{for(const[from,value]of Object.entries(s.val()||{}))signal(from,value as VoiceSignal);},error);return()=>{stopPeers();stopInbox();};},
+ async suspend(){stopPeers();stopInbox();await Promise.allSettled([onDisconnect(own).cancel(),...Array.from(sent,to=>onDisconnect(ref(db,`mazeVoice/${code}/inbox/${to}/${self}`)).cancel())]);},
  async close(){stopPeers();stopInbox();const{remove}=await import('firebase/database');await remove(own);await remove(ref(db,`mazeVoice/${code}/inbox/${self}`));for(const to of sent)await remove(ref(db,`mazeVoice/${code}/inbox/${to}/${self}`)).catch(()=>{});sent.clear();await onDisconnect(own).cancel();}
  };}
 export async function getVoiceConfig(code:string,profileId:string):Promise<RTCConfiguration>{const value=await roomAction('voice-config',{code,profileId})as unknown as {iceServers:RTCIceServer[]};return{iceServers:value.iceServers};}
+
+export function voiceTransport(code:string,self:string):VoiceTransport{const profileId=self.slice((auth?.currentUser?.uid.length||0)+1);return fallbackVoiceTransport(realtimeVoiceTransport(code,self),serverVoiceTransport((action,payload)=>roomAction(action,{...payload,code,profileId})));}

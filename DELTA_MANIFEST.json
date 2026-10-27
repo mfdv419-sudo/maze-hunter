@@ -1,55 +1,107 @@
 {
-  "release": "Room Creation & Mobile Entry Hotfix",
-  "baseline": "Mobile Login, Expedition Items & Voice (46 files)",
+  "release": "Movement Jitter, Abandoned Roads & Voice Recovery",
+  "baseline": "Room Creation & Mobile Entry Hotfix (13 files)",
   "removed": [],
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "19b05c7e7dfd4cdb7e82407e64668dce095990a058bd9c7e2957bb8fa93ad7ce"
+      "sha256": "969f25ede6492f8a353b0fffe9701357e7c9840675a6a17813e2889a660a4e9a"
     },
     {
       "path": "README.md",
-      "sha256": "905d7c959eb571205114fdce19185845bc7d1cc5cdb0c4d2c9a90f35a1ba1de3"
+      "sha256": "eff1f85ed45489d968b02e7f9beed9fe7d4acdf653788be706f4ed25b4e110a5"
     },
     {
       "path": "UPDATE_INSTRUCTIONS.md",
-      "sha256": "79b2f2d4d53a44c06ac62192e8b86e91792aa65d868f92aa70d3851f814441c8"
+      "sha256": "93060f802dc9d8388f46170d6a6d1da46c5b16d032830cb029732484f0406720"
     },
     {
       "path": "docs/QA_CURRENT.md",
-      "sha256": "79b2f2d4d53a44c06ac62192e8b86e91792aa65d868f92aa70d3851f814441c8"
+      "sha256": "93060f802dc9d8388f46170d6a6d1da46c5b16d032830cb029732484f0406720"
+    },
+    {
+      "path": "docs/SETUP.md",
+      "sha256": "8188b36f11fa60ec177c3dfdfe98395b926543cfaf8dbfcc302005c7e0e44834"
     },
     {
       "path": "docs/TEST_RESULTS.txt",
-      "sha256": "5b687c61c43ddf2b0a3d56cf0828c83c093fded5d7e52b2792bd92e786039e6e"
+      "sha256": "2a9cf5bfe24431cc356be14c1d66bf291e3b4a2d90407cfe27fcedb2371a6d51"
+    },
+    {
+      "path": "docs/VOICE_SETUP.md",
+      "sha256": "069719ab627be1b0a249f3ca57363711b31baf2fb1a6b33099e6d39e28d2f574"
+    },
+    {
+      "path": "netlify/functions/maze-room.ts",
+      "sha256": "6ae91b965bc95bfbde760b500590e2fb400a7891df7bd0630c08fa31461ab19e"
+    },
+    {
+      "path": "src/game/abandoned-road.ts",
+      "sha256": "5e13ad3fad7bdd88e27fe129cf07659613841b1269c7119b821320ed0d8a2e50"
     },
     {
       "path": "src/game/adventure-room.ts",
-      "sha256": "3836ef883abe2d87b199c431d02de1aaa3e44c1737daaa857b0838ff3f05738e"
+      "sha256": "d3fa0840084c317b406de060c976bfcb0748c4c75ea5a4e20c1c88112b196a04"
+    },
+    {
+      "path": "src/game/expedition-additions.ts",
+      "sha256": "704bd9b839225576cdf87e9fc7f28aa8662e97fd8910795dec58d62f3fd41c17"
+    },
+    {
+      "path": "src/game/movement-credit.ts",
+      "sha256": "3d3ed6e02be5a4367361451c900fa2aa71e71791426f5838deaeb8a5dbde30b6"
+    },
+    {
+      "path": "src/game/online-motion.ts",
+      "sha256": "e78d918b7473baab86af69f5ebda7a24a8b2b4992c1a97f003a42185b542b920"
     },
     {
       "path": "src/game/room-state.ts",
-      "sha256": "ec5bfe4fdd93208fe611fd77d603e908ebeac7136328fe7db0be96c1074ca3c6"
+      "sha256": "c2fa5968ee1a5d5db8fc6d43b73644647a0a3390a460adb09a1f28807b8d1ae5"
     },
     {
-      "path": "src/game/room-view.ts",
-      "sha256": "fc11bd3af56b15bbb0befff35fe4313eef36b6d80cec888e17ba7fccfed9316d"
+      "path": "src/game/voice-room.ts",
+      "sha256": "8cbb3c42a486ab9c485e1bfd9999cd2a44e13cbb84eb910129d89a95e342ec93"
     },
     {
       "path": "src/main.ts",
-      "sha256": "1c026de53c4227e661707faf9fad9a7460e2b851dbb57e584eca99311850ca61"
+      "sha256": "6f91aaf125a2f1b2d4f8ff714e8649ac5f43b7ccc6aacd239ce7be88c9b0d524"
     },
     {
       "path": "src/presentation.css",
-      "sha256": "170405ec4b2222027842f0e2aded424e6ed68413a231a1d7168fcffb9a5679ba"
+      "sha256": "9e7146926fd1880bdc59b712926534d4b2fd2b5cd7c024af0d446a3b9d18fe70"
     },
     {
-      "path": "tests/browser/room-entry-mobile.spec.ts",
-      "sha256": "de3b7e3d2f279c538cdb15a1f861194d5ff72d32ebc87f1fde8bafae62ff38eb"
+      "path": "src/services/cloud.ts",
+      "sha256": "6c5ca6f9a19311dfefe173eb233a598588cdfbe68e84b056c15ea03edcbf6d4a"
+    },
+    {
+      "path": "src/services/room-voice.ts",
+      "sha256": "7cedba58a50cf8d828cee940621fc2150f6c240028fa18df2a42cef89f61a8d9"
+    },
+    {
+      "path": "src/services/server-voice-transport.ts",
+      "sha256": "aaebab51c312874f953ee03af8caaa63832260b2d213bdf87ba2e6660d8cd766"
+    },
+    {
+      "path": "src/ui/voice-error.ts",
+      "sha256": "b8563f542b973cdff8b20852e3d1b5a25d5e38ca8bce8df39e559e0f828042f3"
+    },
+    {
+      "path": "src/ui/voice-panel.ts",
+      "sha256": "f6b5b5c8de8ca6649e5b9efa6e40a646c0722ce9c5ae23bb17ab9617cea129fa"
+    },
+    {
+      "path": "tests/online-motion.test.ts",
+      "sha256": "5925e370673c00399d9e27309a36fe6389a06a8c70640f855e698b4fbd6f13c8"
     },
     {
       "path": "tests/room-function.test.ts",
-      "sha256": "33df5737c9b562e6826383f031756c484053d935f395ddb9103ab907059b0ee9"
+      "sha256": "a4d172d22b6ff9f58a213b89bd3958a504847293bb24ee5ed68733ffea85e6c3"
+    },
+    {
+      "path": "tests/sync-road-voice.test.ts",
+      "sha256": "702af191afdcc24ef5c949b064aac0b8439b61097c02ec723610a7ca4e10bb76"
     }
   ]
 }
