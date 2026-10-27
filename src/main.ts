@@ -1,3 +1,4 @@
+import {realtimeEnabled} from './services/cloud';
 import {ActionQueue} from './game/action-queue';
 import {weaponLabels,type EquippedWeapon} from './game/weapon-shots';
 import {coherentRoom} from './game/room-sync';
@@ -772,7 +773,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       if (!started || modern.ended) return;
       sample++;
       motion.sample(modern.position);
-      if (abilityQueue.pending || motion.inFlight || sample % 6) return;
+      if (abilityQueue.pending || motion.inFlight || sample % (realtimeEnabled()?1:6)) return;
       const packet=motion.packet(performance.now());if(!packet)return;
       const request=roomAction("move", {
         code: room.id,
@@ -897,7 +898,8 @@ function updateLobby() {
 function applyRoom(r: Room) {
   if(!coherentRoom(r,playerKey))return;
   if(!activeRoom||activeRoom.id!==r.id)return;
-  if (activeRoom && activeRoom.id === r.id && r.revision < activeRoom.revision)
+  const restarted=(r.rtEpoch||0)>(activeRoom.rtEpoch||0);if(restarted){const s=r.adventure?.states?.[playerKey];if(s){onlineMotion?.restart(s.position,r.players[playerKey]?.seq||0,s.respawns);if(game&&screen==='modern')(game as ModernGame).syncAdventure(s,'snap');}}
+  if (!restarted && activeRoom && activeRoom.id === r.id && r.revision < activeRoom.revision)
     return;
   activeRoom = r;voiceUI?.updateMembers(Object.keys(r.players));chatPanel?.update(r);
   if (r.state === "lobby") {
@@ -919,7 +921,7 @@ function applyRoom(r: Room) {
           (r as Room & { explored?: Record<string, boolean> }).explored || {},
         ).map((k) => k.replace("_", ",")),
       );
-    if (r.state === "finished" && !m.ended) {
+    if (r.state === "finished" && !m.ended && (r.transport!=='ws-v1'||r.rtSettled===true)) {
       m.ended = true;
       m.clearInput();
       const won =

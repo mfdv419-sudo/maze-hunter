@@ -1,3 +1,7 @@
+# Realtime Node Server & Wall-Stopped Rocks — 27 October 2026
+
+Persistent Node/WebSocket rooms and opt-in browser transport, sparse snapshots, cached simulation, authenticated commands, checkpoints/leases/reconnect and idempotent final records. Falling rocks stop at walls and preserve the exact resting/pickup position. Deployment and limitations: docs/REALTIME_SETUP.md.
+
 # Responsive Weapons & Guardian Presentation — 27 October 2026
 
 Right-side equipped weapons fired with Hit, bounded action queue, render-only attack feedback and guardian prediction, wider flame cone, timed seed bursts, swept collision and atomic cake choice. Production HTTP latency is not claimed solved. See UPDATE_INSTRUCTIONS.md.

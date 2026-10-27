@@ -21,5 +21,6 @@ export class OnlineMotion {
   for(const seq of this.endpoints.keys())if(seq<=sequence)this.endpoints.delete(seq);
   if(correction){this.reset(position);return'snap';}return'keep';
  }
+ restart(position:Point,sequence:number,respawns:number){this.sequence=this.ack=sequence;this.lastRespawn=respawns;this.endpoints.clear();this.complete();this.reset(position);}
  reset(position:Point){this.samples=[];this.retry=null;this.last={...position};}
 }

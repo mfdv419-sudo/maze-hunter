@@ -44,5 +44,5 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, allowedHosts: ["terminal.local"] },
+  server: { port: 5173, allowedHosts: ["terminal.local"], proxy:process.env.MAZE_FUNCTIONS_PROXY?{"/.netlify/functions":{target:process.env.MAZE_FUNCTIONS_PROXY,changeOrigin:true}}:undefined },
 });

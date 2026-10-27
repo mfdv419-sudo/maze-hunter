@@ -1,0 +1,1 @@
+{"extends":"../tsconfig.json","include":["../src/game","../src/services/cosmetics.ts","./**/*.ts"],"exclude":["../tests"]}

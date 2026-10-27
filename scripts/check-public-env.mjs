@@ -6,6 +6,7 @@ import {join,resolve} from 'node:path';
 // Synthetic build-only markers. This test never connects to Firebase or serves this build.
 for(const name of Object.keys(process.env))if(name.startsWith('VITE_'))delete process.env[name];
 const publicValues={
+ VITE_REALTIME_URL:'wss://realtime-build-check.invalid/game',
  VITE_FIREBASE_API_KEY:'public-web-key-build-verification',
  VITE_FIREBASE_AUTH_DOMAIN:'public-config-check.firebaseapp.com',
  VITE_FIREBASE_PROJECT_ID:'public-config-check',
@@ -13,6 +14,8 @@ const publicValues={
  VITE_FIREBASE_DATABASE_URL:'https://public-config-check-default-rtdb.firebaseio.com',
 };
 const forbidden={
+ MAZE_FUNCTIONS_PROXY:'https://server-proxy-must-not-be-bundled.invalid',
+ REALTIME_ALLOWED_ORIGINS:'SERVER_ORIGINS_MUST_NOT_BE_BUNDLED',
  VITE_FIREBASE_CLIENT_EMAIL:'UNUSED_CLIENT_EMAIL_MUST_NOT_BE_BUNDLED',
  VITE_UNRELATED_BUILD_CHECK:'UNRELATED_VITE_VALUE_MUST_NOT_BE_BUNDLED',
  FIREBASE_SERVICE_ACCOUNT_JSON:'SERVER_ONLY_MARKER_MUST_NOT_BE_BUNDLED',
@@ -27,5 +30,5 @@ try{
  const content=(await Promise.all(files.map(n=>readFile(join(assets,n),'utf8')))).join('\n');
  for(const [name,value]of Object.entries(forbidden))assert.ok(!content.includes(value),`${name} unexpectedly reached the browser bundle`);
  for(const [name,value]of Object.entries(publicValues))assert.ok(content.includes(value),`${name} was not available in the Firebase web config`);
- console.log('PUBLIC_ENV_BOUNDARY_PASS: 5 public fields retained; unrelated VITE values and server marker excluded.');
+ console.log('PUBLIC_ENV_BOUNDARY_PASS: 6 public fields retained; unrelated VITE values and server marker excluded.');
 }finally{await rm(folder,{recursive:true,force:true});}

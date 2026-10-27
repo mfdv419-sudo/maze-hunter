@@ -1,87 +1,163 @@
 {
-  "release": "Responsive Weapons & Guardian Presentation",
-  "baseline": "Online World Consistency & Persistent Rocks (21 files)",
+  "release": "Realtime Node Server & Wall-Stopped Rocks",
+  "baseline": "Responsive Weapons & Guardian Presentation (21 files, weapons-guardian)",
   "removed": [],
   "files": [
     {
+      "path": ".dockerignore",
+      "sha256": "e99236d4219b3d23762cc397da22a0dd3a10e0c42d0b7ec6823623b9a6a20ca8"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "6ce13cdd72a44172ba9c23119349aad1af9c366608d64da8d3c1264f465374a9"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "f871e50410e0ef8595b3103b9182c030a8435f63577b51e9a17e5eb18f5ef108"
+    },
+    {
       "path": "CHANGELOG.md",
-      "sha256": "5ea7d352f0f931aa6e85b18c079ed96cd606e121bac29a38c5b7a25fc5b71c59"
+      "sha256": "c5f6e3c74699b9b64d3cd01aef9a0894cbc567f3b3813f9b1b1c0e1341c27906"
     },
     {
       "path": "README.md",
-      "sha256": "cb551131c7950a103952183a9776c5cd534d3034edde8cba2c70d943a37d37cb"
+      "sha256": "7f573bf96c1cdb10e9905e1ef030a8cd4c1b763ccc6688f1dabe3f08168b231d"
     },
     {
       "path": "UPDATE_INSTRUCTIONS.md",
-      "sha256": "a57e638231474e8482f31892bf037bf629426aa4635be68677da5edc34bfd69f"
+      "sha256": "a042262882f194babc2628a8469c82d19d4cf9b9853adfb43a171cbf6e04075a"
     },
     {
       "path": "docs/QA_CURRENT.md",
-      "sha256": "a57e638231474e8482f31892bf037bf629426aa4635be68677da5edc34bfd69f"
+      "sha256": "a042262882f194babc2628a8469c82d19d4cf9b9853adfb43a171cbf6e04075a"
+    },
+    {
+      "path": "docs/REALTIME_CAPACITY.jsonl",
+      "sha256": "ca4f25ac44bd0b3561b1c3f9178bf5cd40fc9e0b75c82ac73ff8bfc2d0376964"
     },
     {
       "path": "docs/REALTIME_GAMEPLAN.md",
-      "sha256": "9f0b90983b5d728d23f2c1019277de8812a10766e430e600be7565a9119afe50"
+      "sha256": "2d1c6bc682b85e66b9485d69469d188f22849f0a0390923c4b49919410e96e2b"
+    },
+    {
+      "path": "docs/REALTIME_SETUP.md",
+      "sha256": "8de996bcf1ebc125af4289003f9838269e1a22f601535c55bddd0d4e01697825"
     },
     {
       "path": "docs/SETUP.md",
-      "sha256": "0cf8500fc675e60085cd5a6db22ab52c922b0fa6e744cdbd6cea3f4541f7e066"
+      "sha256": "0cb645d9d7c851b3c17ff778ad1d403699a264c86212e50af536e0fac89ecd7f"
     },
     {
       "path": "docs/TEST_RESULTS.txt",
-      "sha256": "3c9a047ba25ad2ac638b30b8c7682ef1f656cf3651d24a9fe29bc4de460f33c8"
+      "sha256": "8bf84e9978170710457c9f911fb86a7174aff1e388abffdd937d68c3e315e638"
     },
     {
       "path": "netlify/functions/maze-room.ts",
-      "sha256": "0795d3f976edb4d8e9c2edce7256a1ae380892fa46f1af52a7269a248be70c83"
+      "sha256": "ca188db38aec42d1cba4042861bc1b77140f4cf29123534d3fe8beb4738c3a6c"
     },
     {
-      "path": "src/game/action-queue.ts",
-      "sha256": "4cfdc43fc6f48518bbc15f9a55ebbf0b32d19318bfa9d059fee355ff39a2ed1d"
+      "path": "package-lock.json",
+      "sha256": "78b78d68d333c53d41304c27c9c7e88a74bc815fdf18824dcc2182144c377418"
+    },
+    {
+      "path": "package.json",
+      "sha256": "0eb7a9d7987ce10b3471fb798822c9cd180f2c1296c1f7224e8878dd55617f80"
+    },
+    {
+      "path": "realtime/Dockerfile",
+      "sha256": "7ca088bd508bab4bd1f39a33d9edd756e24942a969ae33783d80a4dbe9839299"
+    },
+    {
+      "path": "realtime/engine.ts",
+      "sha256": "13524910cb79e49d93a554e39816c47b845d60467fd4441c05a542cf27f2e880"
+    },
+    {
+      "path": "realtime/firebase-store.ts",
+      "sha256": "f5fa87925e0518d947db8b6a1726ff3d4b2c1d90fb4df002fb415636905a2f94"
+    },
+    {
+      "path": "realtime/gateway.ts",
+      "sha256": "8b8f5d077930766b44067dd356a82497c76156d779f2970d410fa2d394b249e4"
+    },
+    {
+      "path": "realtime/server.ts",
+      "sha256": "9f3fc1a44a99892a8e600d9b69cfdb2866bb1f4a5aefb33103493786197f0ae8"
+    },
+    {
+      "path": "realtime/tsconfig.json",
+      "sha256": "7491fb9f06915723058022acd22e25d5e112ccb114df68bb6ddc018d11a0f59e"
+    },
+    {
+      "path": "scripts/check-public-env.mjs",
+      "sha256": "c341b98929ec90c6fba87da449af460deec1aae30dcc6395c4a5fec70b46bb44"
+    },
+    {
+      "path": "src/game/adventure-room.ts",
+      "sha256": "b69c1002b29647e6dc9a0ea62c3f49013a59504b4004c42b56b92dbccb1c83eb"
     },
     {
       "path": "src/game/adventure-state.ts",
-      "sha256": "c39fd4855b2e4cf7bf887dec47cc1a39761c372b9d2eb97c93030a23b2bce729"
+      "sha256": "2e1ca0f83211c913fc4dca9e8cd151d31fb59b0f3f57b835c10a9c88bd51f720"
     },
     {
-      "path": "src/game/field-guide.ts",
-      "sha256": "edf747cc6b0d3192d6fefa7e94a22405381a094e3f212819711b24478f6968ac"
+      "path": "src/game/fallen-rocks.ts",
+      "sha256": "bb3d5f6c2b83a0aede661c7f08f700215aa82c808a2bc4689f58e6f9ff6d0b93"
     },
     {
-      "path": "src/game/guardian-presentation.ts",
-      "sha256": "36a9771f0cc423a98d80778793e5e2a9d051c3442f79836c446a062d941d67d4"
+      "path": "src/game/field-obstacles.ts",
+      "sha256": "06ee295b4abba9c4c36a6eea8763e915357d07ceb40f9e7260a4bb7a0bbdcaf4"
     },
     {
       "path": "src/game/modern.ts",
-      "sha256": "9568d27dc118c5ec2ffd8c02c8eb3cad6a447a79e4fa67ba14b8277dbf88f998"
+      "sha256": "afdceb1457659404838ec786b1290f054a436049d6731ec6711e39c266b31d4a"
     },
     {
-      "path": "src/game/weapon-shots.ts",
-      "sha256": "6e1cad5b3fa448bad614dcc4eabfbd8023e98a1b92aae4be21f9d821dc13b725"
+      "path": "src/game/online-motion.ts",
+      "sha256": "44c4205d0c5bf9dadd47822e0613efdc512cef010aa8193b40910052263bd1f4"
+    },
+    {
+      "path": "src/game/realtime-protocol.ts",
+      "sha256": "b19c936b32f879f0096a2f6dfdc6937f106b9b6977eb714ff18e775b1a375560"
+    },
+    {
+      "path": "src/game/room-state.ts",
+      "sha256": "d0c9b81e96fe138588ccabf48c66c7d8a9d52dd72e47ae0505be2327e74bb654"
+    },
+    {
+      "path": "src/game/room-view.ts",
+      "sha256": "e556d9854c8411954106a0b5c2078385e1fc9578a5a7e8eb40590971e35b8db8"
     },
     {
       "path": "src/main.ts",
-      "sha256": "89774f5c01e493224af9deb43bd7658d38309085b6fcfe164ecab22b3fcf0ff9"
+      "sha256": "7261ca5fbbf8a2c3f81ec385f4c8bbfc8f35a7e90ea2e350686cd3b08cfa194a"
     },
     {
-      "path": "src/presentation.css",
-      "sha256": "dfee88210ef3008e914e66f5ac7b3a31da888ada38ea81cdb574be3467be571a"
+      "path": "src/services/cloud.ts",
+      "sha256": "c173afc6ecc76021c9f39eccd4de5e8f3e5d1b82bfd58d7a0373bf9fcdb98e84"
     },
     {
-      "path": "src/ui/voice-panel.ts",
-      "sha256": "f16be430e5046297ef78736c6fce93cce70ff20c69b995a24f3438eab5d6beed"
+      "path": "src/services/realtime-client.ts",
+      "sha256": "c0a1a528a8f585bb7977cd8c1e6cb37ca32bc72ea6cc66c93fd61cccdfa31b02"
     },
     {
-      "path": "tests/combat-presentation.test.ts",
-      "sha256": "213a709e2ddc08850f814937a61c1ef2d7ec1621ed5fb65e93b4ae6342c8f1e3"
+      "path": "tests/realtime-capacity.test.ts",
+      "sha256": "c7338056931f458819c8b16e9afe6aa1d949d8471cf612b64d9e3c4600028547"
     },
     {
-      "path": "tests/next-revision.test.ts",
-      "sha256": "d9f280d8df7b4e24bac4b38e767421683e233eab3a9f9b60234b3090ea90a2bd"
+      "path": "tests/realtime-server.test.ts",
+      "sha256": "fbfa5a6540d9967795a378b38f2e0e3718c0504e01014014b59dd34e2d83225a"
     },
     {
       "path": "tests/room-function.test.ts",
-      "sha256": "2c669dff0cabe01f2199a211215abd13b0a79d3a344017c3360fc060e3500c3f"
+      "sha256": "93f2843d56eb1110efd629db61bbf4bb20c20a16cc30aa3e663a6c4a33d5c935"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "ffa56e11381665c8ee88216ed0bd4d7b64f542882b01481a703caec16f5b86e6"
+    },
+    {
+      "path": "vite.config.ts",
+      "sha256": "9f56da532a66a656711186738783bf1c0d4bf2462a73e4f97055fdca10b39938"
     }
   ]
 }

@@ -40,7 +40,7 @@ export interface Player {depth?:number;swimming?:boolean;
   jumpCount?:number;
   hitAt?: number;
 }
-export interface Match {simulationVersion?:number;chat?:Record<string,import('./room-chat').RoomMessage>;chatLast?:Record<string,number>;
+export interface Match {transport?:'ws-v1';rtEpoch?:number;rtSettled?:boolean;rtIdleAt?:number;rtLease?:{owner:string;until:number};simulationVersion?:number;chat?:Record<string,import('./room-chat').RoomMessage>;chatLast?:Record<string,number>;
   area?:import('./areas').AdventureArea;
   adventure?:AdventureRoom;
   public?:boolean;

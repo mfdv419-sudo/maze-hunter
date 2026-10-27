@@ -165,6 +165,7 @@ export const handler: Handler = async (event) => {
           }
           try {
             const room = structuredClone(current);
+            if(room.transport==='ws-v1')throw Error('Use the configured realtime server for this room');
             room.players ??= {};
             room.owners ??= {};
             if (action === "join") return addPlayer(room, key, player, now);
@@ -229,7 +230,7 @@ export const handler: Handler = async (event) => {
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed";
-    const status = /token|auth\/|Login/.test(message)
+    const status = /Use the configured realtime server/.test(message)?409:/token|auth\/|Login/.test(message)
       ? 401
       : /configured/.test(message)
         ? 503

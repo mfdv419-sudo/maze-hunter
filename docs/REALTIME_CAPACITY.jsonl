@@ -1,0 +1,3 @@
+{"players": 4, "difficulty": "medium", "ticks": 20, "meanMs": 18.6, "p95Ms": 33.3, "fullBytes": 13718, "deltaBytes": 4518, "writes": 3}
+{"players": 8, "difficulty": "hard", "ticks": 20, "meanMs": 29.6, "p95Ms": 43.5, "fullBytes": 18336, "deltaBytes": 5268, "writes": 7}
+{"players": 10, "difficulty": "extreme", "ticks": 20, "meanMs": 32.9, "p95Ms": 56.5, "fullBytes": 22407, "deltaBytes": 6736, "writes": 9}

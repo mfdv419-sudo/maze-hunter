@@ -1,3 +1,4 @@
+import {RealtimeClient,realtimeEndpoint} from './realtime-client';
 import {coherentRoom} from '../game/room-sync';
 import {fallbackVoiceTransport,serverVoiceTransport} from './server-voice-transport';
 import {voiceNonce} from './room-voice';
@@ -83,6 +84,7 @@ export async function login() {
   finally { clearTimeout(timer!);stop();pendingLogin = null; }
 }
 export async function logout() {
+  rt?.close();rt=undefined;rtProfile='';
   if (auth) await signOut(auth);
 }
 export async function getProfiles(uid: string) {
@@ -138,7 +140,7 @@ export interface RoomPlayer {
   jumpCount?:number;
   hitAt?: number;
 }
-export interface Room {chat?:Record<string,import('../game/room-chat').RoomMessage>;chatLast?:Record<string,number>;
+export interface Room {transport?:'ws-v1';rtEpoch?:number;rtSettled?:boolean;simulationVersion?:number;chat?:Record<string,import('../game/room-chat').RoomMessage>;chatLast?:Record<string,number>;
   area?:import('../game/areas').AdventureArea;
   adventure?:import('../game/adventure-room').AdventureRoom;
   public?:boolean;
@@ -159,13 +161,15 @@ export interface Room {chat?:Record<string,import('../game/room-chat').RoomMessa
   broken?: Record<string, boolean>;
 }
 export const multiplayerConfigured = () => !!rtdb;
+const realtimeURL=realtimeEndpoint(import.meta.env.VITE_REALTIME_URL);export const realtimeEnabled=()=>!!realtimeURL;let rt:RealtimeClient|undefined,rtProfile='';function realtime(profileId:string){if(!auth?.currentUser)throw Error('Login required');if(!rt||rtProfile!==auth.currentUser.uid+'_'+profileId){rt?.close();rtProfile=auth.currentUser.uid+'_'+profileId;rt=new RealtimeClient(realtimeURL,async()=>{if(!auth?.currentUser)throw Error('Login required');return auth.currentUser.getIdToken(true);},profileId);}return rt;}
 let clockOffset = 0;
-export const serverNow = () => Date.now() + clockOffset;
+export const serverNow = () => Date.now() + (realtimeURL&&rt?rt.offset:clockOffset);
 export async function roomAction(
   action: string,
   payload: Record<string, unknown>,
 ) {
   if (!auth?.currentUser) throw Error("Login required");
+  if(realtimeURL&&['create','join','random','ready','start','reconnect','chat','move','ability','leave'].includes(action)){const value=await realtime(String(payload.profileId||'')).request(action,payload).catch(e=>{if(rt?.roomCode)sessionStorage.setItem('mh-active-room',rt.roomCode);throw e;});return value as {room:Room;playerKey:string;actionAccepted?:boolean;actionError?:string};}
   const requestedAt=Date.now();
   const response = await fetch("/.netlify/functions/maze-room", {
     method: "POST",
@@ -189,6 +193,7 @@ export function watchRoom(
   error: (e: Error) => void,
   self?:string,initial?:Room,
 ) {
+  if(realtimeURL){if(!rt)throw Error('Join the realtime room first');return rt.watch(code,fn as any,error);}
   if (!rtdb) throw Error("Realtime Database unavailable");
   if(!self||!initial)return onValue(ref(rtdb, `mazeRooms/${code}`), (s) => fn(s.val()), error);
   // Subscribe to common metadata and our own simulation only. Peer simulations and the duplicate Co-op
@@ -201,6 +206,7 @@ export function watchRoom(
   return()=>{closed=true;if(pending)clearTimeout(pending);off.forEach(stop=>stop());};
 }
 export async function roomPresence(code: string, key: string) {
+  if(realtimeURL)return()=>Promise.resolve();
   if (!rtdb) return () => Promise.resolve();
   const target = ref(rtdb, `mazePresence/${code}/${key}`);
   const { set } = await import("firebase/database");
