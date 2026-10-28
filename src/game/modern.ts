@@ -1,3 +1,4 @@
+import {CameraCollision} from './camera-collision';
 import {GuardianPresentation} from './guardian-presentation';
 import {weaponShots,sweptHit,type EquippedWeapon} from './weapon-shots';
 import {ROCK_LIMIT} from './fallen-rocks';
@@ -114,6 +115,7 @@ export class ModernGame {
   private scene = new T.Scene();
   private world=new T.Group();
   private occlusion=new CameraOcclusion();
+  private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
   private cameraYaw=0;
   private desiredCameraYaw=0;
@@ -185,10 +187,9 @@ export class ModernGame {
   private cameraBlocked(p:T.Vector3){
     const x=p.x/U,z=p.z/U,ground=this.terrain(x,z),ix=Math.floor(x),iz=Math.floor(z);
     if(p.y<ground+.12)return true;
-    if(this.adventure?.area==='gorge'){const king=this.adventure.guards.find(g=>g.boss&&!g.dead);if(king&&Math.hypot(p.x-king.position.x*U,p.z-king.position.y*U)<1.75&&p.y<this.terrain(king.position.x,king.position.y)+4.9)return true;}
-    if(this.maze.grid[iz]?.[ix]===1){const top=this.adventure?.expedition&&!this.adventure.sample?biomeWallTop(this.adventure.area,x,z,this.adventure.layout):this.terrain(ix+.5,iz+.5)+(this.adventure?.sample?(ix>=55&&ix<=71&&iz>=54&&iz<=71?4.2:2.18):this.wallHeight+.23);if(p.y<top+.08)return true;}
+    if(this.maze.grid[iz]?.[ix]===1&&!this.adventure?.layout.grass.some(g=>g.x===ix&&g.y===iz)){const top=this.adventure?.expedition&&!this.adventure.sample?biomeWallTop(this.adventure.area,x,z,this.adventure.layout):this.terrain(ix+.5,iz+.5)+(this.adventure?.sample?(ix>=55&&ix<=71&&iz>=54&&iz<=71?4.2:2.18):this.wallHeight+.23);if(p.y<top+.08)return true;}
     if(this.adventure?.area==='gorge'){const r=gorgeLandmarks(this.adventure.layout).river,base=gorgeBank(r.x,r.y,this.adventure.layout);if(Math.abs(x-r.x)<2.8&&Math.abs(z-r.y+1)<1.4){const roof=base+2.3+Math.sqrt(Math.max(0,1-Math.pow((x-r.x)/2.3,2)))*1.25;if(p.y>roof-.5&&p.y<roof+.65)return true;}}
-    return !!this.adventure?.layout.ledges.some(l=>Math.abs(x-l.point.x-.5)<.6&&Math.abs(z-l.point.y-.5)<.6&&p.y<this.terrain(x,z)+l.height+.12);
+    return false;
   }
   private get wallHeight(){return this.adventure?.sample?1.95:this.adventure?.expedition?(9.5):.82;}
   private jumpAt(time:number){return airborneHeight({at:this.jumpStarted,base:this.jumpBase,count:this.jumpCount},time);}
@@ -420,6 +421,7 @@ export class ModernGame {
     document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==host)this.clearInput();},{signal:this.abort.signal});
     host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){look(e.clientX-this.lookX,e.clientY-this.lookY);this.lookX=e.clientX;this.lookY=e.clientY;}},{signal:this.abort.signal});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
+    for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.treeTrunks])if(root)this.cameraCollision.register(root);
     for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.leaves,this.treeTrunks,this.treeCrowns,...this.ledgeModels,...this.landmarkModels.map(l=>l.group)])if(root)this.occlusion.register(root);this.world.traverse(o=>{if(o.userData.cameraOccluder)this.occlusion.register(o);});
 this.awakeningPanel=document.createElement('div');this.awakeningPanel.className='awakening-cinematic';this.awakeningPanel.hidden=true;const title=document.createElement('strong');title.textContent=document.documentElement.lang==='id'?'RAJA BANGKIT':'THE KING AWAKENS';const caption=document.createElement('span');caption.textContent=document.documentElement.lang==='id'?'Semua pemain dilindungi selama cuplikan':'All players protected during the sequence';const skip=document.createElement('button');skip.type='button';skip.textContent=document.documentElement.lang==='id'?'Lewati cuplikan':'Skip scene';skip.onclick=()=>this.skipAwakening();this.awakeningPanel.append(title,caption,skip);host.parentElement!.append(this.awakeningPanel);
     this.observer = new ResizeObserver(() => this.resize());
@@ -736,11 +738,22 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     }
     const cameraInputDt=Math.min(raw,.2);
     if(!this.paused&&!this.adventure?.awakening){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(75*Math.PI/180,this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(-25*Math.PI/180,this.desiredPitch-cameraInputDt*.8);}
+    const previousYaw=this.cameraYaw;
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
     const mode=this.cameraMode;
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
+    if(!this.previewMode&&!this.adventure?.awakening){
+      const safe=this.cameraCollision.resolve(target,desired);
+      if(safe.distanceTo(target)<1.25){
+        const prior=target.clone().add(new T.Vector3(-Math.sin(previousYaw)*distance,height,-Math.cos(previousYaw)*distance));
+        if(this.cameraCollision.resolve(target,prior).distanceTo(target)>safe.distanceTo(target)+.01){
+          this.cameraYaw=this.desiredCameraYaw=previousYaw;desired.copy(prior);
+        }
+      }
+      desired.copy(this.cameraCollision.resolve(target,desired));
+    }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}
     if(cinematic&&!this.wasCinematic)this.clearInput();
@@ -748,7 +761,9 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     if(this.wasCinematic&&!cinematic)this.acc=0;this.wasCinematic=cinematic;
     if(!cinematic){
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*9));this.lookAt.lerp(target,1-Math.exp(-dt*12));}
-    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*1.0,this.lookAt.y+(this.cameraPitch<0?(distance+1)*Math.tan(-this.cameraPitch):0),this.lookAt.z+Math.cos(this.cameraYaw)*1.0);
+    if(!this.previewMode)this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));
+    const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,Math.hypot(distance,height)));
+    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*framing,this.lookAt.y+(this.cameraPitch<0?(distance+1)*Math.tan(-this.cameraPitch)*framing:0),this.lookAt.z+Math.cos(this.cameraYaw)*framing);
     }
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
       const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;
@@ -764,12 +779,13 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     if(!this.adventure?.expedition){const rise=Math.max(0,this.camera.position.y-target.y-10);const fog=this.scene.fog as T.Fog;fog.near=10+rise;fog.far=24+rise;}
     this.forestScene?.update(this.time,this.camera,this.position);this.biomeScene?.update(this.time,this.camera,{...this.position,depth:this.adventure?.depth});
     this.host.dataset.swimming=String(!!this.adventure?.swimming);this.host.dataset.depth=String(this.adventure?.depth||0);this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
+    // Solid walls are handled by collision. Only tiny residual obstructions use a restrained fade.
     this.occlusion.update(this.camera,target,dt);
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {
     if(document.pointerLockElement===this.host)document.exitPointerLock();
-    this.awakeningPanel?.remove();this.occlusion.dispose();this.forestScene?.dispose();this.biomeScene?.dispose();
+    this.awakeningPanel?.remove();this.occlusion.dispose();this.cameraCollision.dispose();this.forestScene?.dispose();this.biomeScene?.dispose();
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.abort.abort();

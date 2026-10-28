@@ -1,3 +1,7 @@
+## Camera collision, weapon dock and tablet fullscreen
+
+Frontend revision after realtime-server-rocks (40 files). Camera wall collision replaces broad transparency; weapon selection stays clear of joystick/A/B; fullscreen has WebKit support and explicit failure feedback. See `CAMERA_TABLET_UPDATE.md` for application and device checks.
+
 # Realtime Node Server & Wall-Stopped Rocks — 27 October 2026
 
 Persistent Node/WebSocket rooms and opt-in browser transport, sparse snapshots, cached simulation, authenticated commands, checkpoints/leases/reconnect and idempotent final records. Falling rocks stop at walls and preserve the exact resting/pickup position. Deployment and limitations: docs/REALTIME_SETUP.md.

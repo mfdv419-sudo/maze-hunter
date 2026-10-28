@@ -1,3 +1,5 @@
+import {mountControlLayout} from './ui/control-layout';
+import {toggleFullscreen} from './ui/fullscreen';
 import {realtimeEnabled} from './services/cloud';
 import {ActionQueue} from './game/action-queue';
 import {weaponLabels,type EquippedWeapon} from './game/weapon-shots';
@@ -179,6 +181,7 @@ function begin(name: string, html: string) {
   root.dataset.screen = name;
   root.style.setProperty('--scene-art',`url("${screenArt(name==='scores'?'mountain':name==='profiles'?'coast':name==='collection'?'desert':name==='map'?'forest':selectedArea||'forest',name.length%4)}")`);
   root.innerHTML = `${lab ? `<div class="lab-banner">${tr("LAB KONTROL LOKAL · Tanpa login, cloud, pembelian, atau multiplayer", "LOCAL CONTROL LAB · No login, cloud, purchases, or multiplayer")}</div>` : ""}${header()}${html}`;
+  if(document.getElementById('game-fullscreen'))click('game-fullscreen',requestGameFullscreen);
   if(name==='modern'){
    const rotate=document.createElement('div');rotate.className='adventure-rotation';rotate.innerHTML=`<section><svg width="88" height="88" viewBox="0 0 88 88" fill="none" stroke="currentColor" stroke-width="3"><rect x="18" y="28" width="52" height="32" rx="6"/><path d="M18 16A35 35 0 0 1 78 40m-7-8 7 8 5-10M70 73A35 35 0 0 1 9 48m7 8-7-8-5 10"/></svg><h2>${tr('Putar perangkatmu','Rotate your device')}</h2><p>${tr('Adventure dimainkan dalam landscape. Retro bisa dimainkan dalam portrait maupun landscape.','Adventure plays in landscape. Retro supports portrait and landscape.')}</p><small>${activeRoom?tr('Pertandingan online tetap berlangsung.','Your online match continues.'):tr('Permainan Solo berhenti sementara saat layar portrait.','Solo gameplay pauses while the screen is portrait.')}</small>${button(tr('Kembali ke Home','Back to Home'),'rotate-home','secondary')}</section>`;root.append(rotate);click('rotate-home',()=>activeRoom?confirmLeave():home());
   }
@@ -329,18 +332,7 @@ function home() {
   click("retro-mode", () => chooseMode("retro"));
   click("modern-mode", () => chooseMode("modern"));
   click("wardrobe", () => wardrobe());click("collection-open",()=>collection());
-  click("fullscreen", async () => {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (document.documentElement.requestFullscreen)
-      await document.documentElement.requestFullscreen();
-    else
-      toast(
-        tr(
-          "Gunakan tombol layar penuh pada browser.",
-          "Use your browser’s fullscreen option.",
-        ),
-      );
-  });
+  click("fullscreen", requestGameFullscreen);
   click("lab", () => {
     lab = true;
     uid = "local-control-lab";
@@ -468,8 +460,12 @@ function journey(region?: number) {
   for (let id = r * 10 + 1; id <= r * 10 + 10; id++)
     click(`level-${id}`, () => playRetro(id));
 }
+async function requestGameFullscreen(){
+ const result=await toggleFullscreen();
+ if(result==='unavailable')toast(tr('Layar penuh dibatasi browser ini. Di iPad/iPhone, gunakan Safari → Bagikan → Tambahkan ke Layar Utama, lalu buka dari ikon game.','Fullscreen is restricted by this browser. On iPad/iPhone, use Safari → Share → Add to Home Screen, then open the game icon.'));
+}
 function hud(title: string, sub: string, touch = false) {
-  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="item-guide" class="icon-button" aria-label="${tr("Panduan benda","Item guide")}" title="${tr("Panduan benda","Item guide")}">?</button><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Lempar kue / tebas rumput", "Throw cake / cut grass")}"><b>B</b><small>${tr("KUE", "CAKE")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
+  return `<main class="play-screen"><div class="playbar"><button id="exit-game" class="icon-button" aria-label="${tr("Keluar permainan", "Exit game")}">←</button><div><b>${title}</b><small>${sub}</small></div><div id="hud-stats" class="hud-stats"></div><button id="item-guide" class="icon-button" aria-label="${tr("Panduan benda","Item guide")}" title="${tr("Panduan benda","Item guide")}">?</button><button id="game-fullscreen" class="icon-button" aria-label="${tr("Layar penuh", "Fullscreen")}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg></button><button id="pause-game" class="icon-button" aria-label="${tr("Jeda", "Pause")}">Ⅱ</button></div><div id="game-stage" class="game-stage"></div><div id="play-hint" class="play-hint"></div>${touch ? `<div id="joystick" class="joystick" role="group" aria-label="${tr("Joystick gerakan", "Movement joystick")}"><span id="stick"></span></div><div class="action-controls"><button id="hit-action" class="action-button action-hit" aria-label="${tr("Lempar kue / tebas rumput", "Throw cake / cut grass")}"><b>B</b><small>${tr("KUE", "CAKE")}</small></button><button id="jump-action" class="action-button action-jump" aria-label="${tr("Lompat", "Jump")}"><b>A</b><small>${tr("LOMPAT", "JUMP")}</small></button></div>` : ""}<div id="game-overlay"></div></main>`;
 }
 function pauseOverlay(online = false) {
   if (online) {
@@ -651,7 +647,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const shownLoot=new Set<number>();
   const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
   journal.onclick=()=>{const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
-  const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><p class="weapon-state" role="status"></p><div>'+[['food-cake','🍰'],['food-chili','🌶'],['food-watermelon','🍉'],['food-spinach','☘'],['food-grenade','💥'],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('toggle',()=>{if(supplies.open)document.querySelector('.voice-panel')?.removeAttribute('open');});supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){const k=b.dataset.supply!.replace('food-','');if(['cake','chili','watermelon','grenade'].includes(k)){if(modern.selectWeapon(k as EquippedWeapon)){supplies.querySelector('summary')!.textContent=weaponLabels[k as EquippedWeapon][lang==='id'?0:1]+' · Hit';supplies.querySelectorAll('[data-supply]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));supplies.open=false;toast(tr('Senjata dipilih. Tekan Hit untuk menggunakan.','Weapon selected. Press Hit to use.'));}}else modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
+  const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><p class="weapon-state" role="status"></p><div>'+[['food-cake',tr('Kue','Cake')],['food-chili',tr('Cabe','Chili')],['food-watermelon',tr('Semangka','Watermelon')],['food-spinach',tr('Bayam','Spinach')],['food-grenade',tr('Granat','Grenade')],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('toggle',()=>{if(supplies.open)document.querySelector('.voice-panel')?.removeAttribute('open');});supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){const k=b.dataset.supply!.replace('food-','');if(['cake','chili','watermelon','grenade'].includes(k)){if(modern.selectWeapon(k as EquippedWeapon)){supplies.querySelector('summary')!.textContent=weaponLabels[k as EquippedWeapon][lang==='id'?0:1]+' · Hit';supplies.querySelectorAll('[data-supply]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));supplies.open=false;toast(tr('Senjata dipilih. Tekan Hit untuk menggunakan.','Weapon selected. Press Hit to use.'));}}else modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
   cakePicker.classList.add('inventory-cakes');supplies.querySelector('div')!.append(cakePicker);
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
@@ -801,6 +797,8 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     };
     applyRoom(activeRoom?.id===room.id?activeRoom:room);
   }
+  const clearControls=mountControlLayout(root.querySelector<HTMLElement>('.play-screen')!),previousCleanup=cleanup;
+  cleanup=()=>{clearControls();previousCleanup();};
 }
 let wardrobeSlot:Slot='head';
 function collection(){

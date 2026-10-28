@@ -103,3 +103,13 @@ header button,.profile-pill{background:#202c42!important;border:1px solid #d7b97
 @media(max-height:440px) and (orientation:landscape){#game .supply-belt>div{gap:4px;padding:6px}#game .supply-belt button{min-height:34px;padding:4px;font-size:10px;line-height:1.1}}
 #game .supply-belt .inventory-cakes{position:static;left:auto;right:auto;bottom:auto;transform:none;grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;max-width:none;padding:4px;gap:4px;margin:0;border-radius:9px}
 #game .supply-belt .inventory-cakes button{min-height:30px;padding:4px;min-width:0}
+/* Keep weapon selection in a dedicated bottom lane, clear of movement and A/B. */
+#game .supply-belt{right:auto;bottom:max(14px,env(safe-area-inset-bottom));max-width:none;transform:none;z-index:16}
+#game .supply-belt summary{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere;padding:6px;font-size:11px}
+#game .supply-belt .weapon-state{display:none}
+#game .supply-belt>div{left:0;right:auto;bottom:52px;width:100%;max-width:none;max-height:calc(100dvh - 165px);grid-template-columns:repeat(2,minmax(0,1fr));overflow:auto;transform:none}
+#game .supply-belt button{min-height:44px}
+#game .supply-belt .inventory-cakes{grid-template-columns:repeat(2,minmax(0,1fr))}
+#game .supply-belt .inventory-cakes button{min-height:40px}
+@media(min-width:1000px){#game .supply-belt>div{grid-template-columns:repeat(3,minmax(0,1fr))}#game .supply-belt .inventory-cakes{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-height:440px){#game .supply-belt summary{min-height:40px}#game .supply-belt>div{max-height:calc(100dvh - 145px);bottom:48px}#game .supply-belt button{min-height:40px}}
