@@ -1,3 +1,4 @@
+import {once} from 'node:events';
 import {afterEach,it,expect,vi} from 'vitest';
 import type {Match} from '../src/game/room-state';
 import {RealtimeEngine,type Identity} from '../realtime/engine';
@@ -42,7 +43,7 @@ it('reports checkpoint errors, recovers after a transient failure, and fences su
  expect(engine.rooms.has(created.room!.id)).toBe(false);expect(log).toHaveBeenCalledWith('Realtime room lease expired; reconnect required',expect.any(Object));
 });
 it('two real WebSocket clients can create, wait thirty simulated seconds, then join with healthy storage',async()=>{
- const {createGateway}=await import('../realtime/gateway'),{once}=await import('node:events'),{default:WS}=await import('ws');
+ const {createGateway}=await import('../realtime/gateway'),{default:WS}=await import('ws');
  let now=Date.now();const db=new ColdDatabase(),engine=new RealtimeEngine(new FirebaseRoomStore(db as any),1,()=>now),gateway=createGateway(engine,{origins:['http://localhost:5173'],authenticate:async token=>player(token,now)});
  gateway.http.listen(0,'127.0.0.1');await once(gateway.http,'listening');const port=(gateway.http.address()as any).port,sockets:InstanceType<typeof WS>[]=[];
  const connect=async(name:string)=>{const ws=new WS(`ws://127.0.0.1:${port}/game`,{origin:'http://localhost:5173'});sockets.push(ws);ws.on('error',()=>{});await once(ws,'open');const next=once(ws,'message');ws.send(JSON.stringify({type:'auth',token:name,profileId:'p'}));expect(JSON.parse(String((await next)[0])).type).toBe('authenticated');return ws;};

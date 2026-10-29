@@ -10,6 +10,10 @@ export class OnlineMotion {
  slow(now:number){return this.inFlight&&now-this.sentAt>1200;}
  blocked(now:number){return this.samples.length>=160||this.inFlight&&now-this.sentAt>8000;}
  packet(now:number){if(this.inFlight)return null;const packet=this.retry||{points:this.samples.length?this.samples.splice(0,24):[{...this.last}],seq:++this.sequence};this.retry=null;this.sent=packet;this.endpoints.set(packet.seq,{...packet.points.at(-1)!});this.sentAt=now;this.inFlight=true;return packet;}
+ /** Resolve only after reconciliation and cleanup, so queued actions can allocate a packet. */
+ async track<T>(request:Promise<T>,accept:(value:T)=>void,failed:(error:unknown)=>void){
+  try{accept(await request);}catch(error){this.failed();failed(error);}finally{this.complete();}
+ }
  complete(){this.inFlight=false;this.sent=null;}
  failed(){if(this.sent&&this.sent.seq>this.ack)this.retry=this.sent;this.complete();}
  reconcile(position:Point,sequence:number,respawns:number,playing=true):'keep'|'snap'{

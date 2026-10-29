@@ -23,3 +23,13 @@ it('keeps legitimate buffered movement when a slow request is followed by a fast
  const credit=r.players.a.movementCredit;moveAdventurePlayer(r,'a',second.points,0,second.seq,r.startsAt+3800);expect(r.players.a.movementCredit).toBe(credit);
 });
 it('ignores an older acknowledgement carrying a stale respawn counter',()=>{const q=new OnlineMotion({x:2,y:2},8,2);expect(q.reconcile({x:1,y:1},7,1)).toBe('keep');expect(q.ack).toBe(8);expect(q.reconcile({x:2,y:2},8,2)).toBe('keep');});
+it('releases the movement flight before a waiting hit allocates its next packet',async()=>{
+ const q=new OnlineMotion({x:2,y:2});q.sample({x:2.1,y:2});const first=q.packet(0)!;let finish!:(v:number)=>void;
+ const response=new Promise<number>(resolve=>finish=resolve),flight=q.track(response,()=>{q.reconcile({x:2.1,y:2},first.seq,0);},()=>{});
+ const queuedHit=(async()=>{await flight;q.sample({x:2.2,y:2});return q.packet(100);})();finish(1);
+ const packet=await queuedHit;expect(packet).not.toBeNull();expect(packet!.seq).toBe(first.seq+1);expect(packet!.points.at(-1)).toEqual({x:2.2,y:2});q.complete();
+});
+it('keeps failed movement for retry while releasing a waiting action rather than leaving it stuck in flight',async()=>{
+ const q=new OnlineMotion({x:2,y:2});q.sample({x:2.1,y:2});const first=q.packet(0)!,failed=vi.fn();
+ await q.track(Promise.reject(Error('Offline')),()=>{},failed);expect(failed).toHaveBeenCalled();expect(q.inFlight).toBe(false);expect(q.packet(100)).toEqual(first);q.complete();
+});

@@ -1,6 +1,6 @@
 import {mountControlLayout} from './ui/control-layout';
 import {toggleFullscreen} from './ui/fullscreen';
-import {realtimeEnabled} from './services/cloud';
+import {realtimeEnabled,realtimeLatency,isRoomCommandError} from './services/cloud';
 import {ActionQueue} from './game/action-queue';
 import {weaponLabels,type EquippedWeapon} from './game/weapon-shots';
 import {coherentRoom} from './game/room-sync';
@@ -747,14 +747,14 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   if (room) {
     const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
     const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
-    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=(kind)=>{const aim=modern.angle,cake=modern.equippedCake;return abilityQueue.add(async()=>{try{await movementRequest;if(token!==generation||activeRoom?.id!==room.id)return false;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,cake,movement:{...packet,angle:aim}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(/HTTP 400/.test(e instanceof Error?e.message:'')){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;}});};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
+    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=(kind)=>{const aim=modern.angle,cake=modern.equippedCake;return abilityQueue.add(async()=>{try{await movementRequest;if(token!==generation||activeRoom?.id!==room.id)return false;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,cake,movement:{...packet,angle:aim}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(isRoomCommandError(e)){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;}});};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
     modern.paused = true;
 
     let sample = 0;
     modernTimer = setInterval(() => {
       if (screen !== "modern" || !activeRoom) return;
       const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
-      const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now());networkStatus.style.display=waiting||slow?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Menunggu sinkronisasi server…','Waiting for server sync…'):'';
+      const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now()),latency=realtimeEnabled()?realtimeLatency():0;networkStatus.style.display=waiting||slow||latency>350?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Menunggu sinkronisasi server…','Waiting for server sync…'):latency>350?tr('Koneksi lambat · ','Slow connection · ')+Math.round(latency)+' ms':'';el('game-stage').dataset.networkRtt=String(Math.round(latency));
       modern.paused = !started||waiting||!!(modern.adventure&&modern.adventure.phase!=='playing');
       if(!room.adventure||!started)el("play-hint").textContent = started
         ? tr("Jelajahi labirin", "Explore the maze")
@@ -777,18 +777,16 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         points:packet.points,
         angle: modern.angle,
         seq:packet.seq,legacy:!room.adventure,
-      });movementRequest=request;
-      void request
-        .then(({ room: r }) => {if(token===generation&&activeRoom?.id===room.id)applyRoom(r);})
-        .catch((e) => {
+      });
+      const tracked=motion.track(request,
+        ({room:r})=>{if(token===generation&&activeRoom?.id===room.id)applyRoom(r);},
+        (e)=>{
           if(token!==generation||activeRoom?.id!==room.id)return;
-          motion.failed();if(!/HTTP 4(00|01|03|04|09)/.test(e instanceof Error?e.message:''))return;const own=activeRoom.players[playerKey],snapshot=activeRoom.adventure?.states?.[playerKey];if(snapshot)modern.syncAdventure(snapshot,'snap');else modern.position={x:own.x,y:own.y};motion.reset(modern.position);
-          toast(
-            tr("Posisi disinkronkan ulang: ", "Position resynchronized: ") +
-              (e instanceof Error ? e.message : ""),
-          );
-        })
-        .finally(() => {motion.complete();if(movementRequest===request)movementRequest=undefined;});
+          if(!isRoomCommandError(e))return;const snapshot=activeRoom.adventure?.states?.[playerKey];if(snapshot)modern.syncAdventure(snapshot,'snap');else modern.position={x:activeRoom.players[playerKey].x,y:activeRoom.players[playerKey].y};motion.reset(modern.position);
+          toast(tr('Posisi disinkronkan ulang: ','Position resynchronized: ')+(e instanceof Error?e.message:''));
+        });
+      movementRequest=tracked;
+      void tracked.finally(()=>{if(movementRequest===tracked)movementRequest=undefined;}).catch(showError);
     }, 50);
     cleanup = () => {
       abilityQueue.close();chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
@@ -893,6 +891,7 @@ function updateLobby() {
     Object.keys(r.players).length < 2 ||
     Object.values(r.players).some((p) => !p.ready);
 }
+const presentedRooms=new WeakMap<ModernGame,{id:string;epoch:number;revision:number}>();
 function applyRoom(r: Room) {
   if(!coherentRoom(r,playerKey))return;
   if(!activeRoom||activeRoom.id!==r.id)return;
@@ -909,7 +908,9 @@ function applyRoom(r: Room) {
     return;
   }
   if (screen === "modern" && game) {
-    const m = game as ModernGame;
+    const m = game as ModernGame,previous=presentedRooms.get(m);
+    if(previous?.id===r.id&&previous.epoch===(r.rtEpoch||0)&&previous.revision===r.revision)return;
+    presentedRooms.set(m,{id:r.id,epoch:r.rtEpoch||0,revision:r.revision});
     m.setPeers(r.players, playerKey, r.mode === "coop");
     m.syncActions(r.players, playerKey, r.broken || {}, serverNow());
     const state=r.adventure?.states?.[playerKey];if(state&&(!onlineMotion||(r.players[playerKey].seq||0)>=onlineMotion.ack)){const own=r.players[playerKey],policy=onlineMotion?.reconcile(state.position,own.seq||0,state.respawns,state.phase==='playing');m.syncAdventure(state,policy);if(state.phase!=='playing')el('play-hint').textContent=state.phase==='won'?tr('Gerbang terlewati! Menunggu hasil pertandingan.','Escaped! Waiting for match results.'):tr('Petualangan berakhir. Menunggu hasil tim.','Run ended. Waiting for team results.');}

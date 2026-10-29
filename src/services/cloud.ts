@@ -1,4 +1,4 @@
-import {RealtimeClient,realtimeEndpoint} from './realtime-client';
+import {RealtimeClient,RealtimeCommandError,realtimeEndpoint} from './realtime-client';
 import {coherentRoom} from '../game/room-sync';
 import {fallbackVoiceTransport,serverVoiceTransport} from './server-voice-transport';
 import {voiceNonce} from './room-voice';
@@ -162,6 +162,8 @@ export interface Room {transport?:'ws-v1';rtEpoch?:number;rtSettled?:boolean;sim
 }
 export const multiplayerConfigured = () => !!rtdb;
 const realtimeURL=realtimeEndpoint(import.meta.env.VITE_REALTIME_URL);export const realtimeEnabled=()=>!!realtimeURL;let rt:RealtimeClient|undefined,rtProfile='';function realtime(profileId:string){if(!auth?.currentUser)throw Error('Login required');if(!rt||rtProfile!==auth.currentUser.uid+'_'+profileId){rt?.close();rtProfile=auth.currentUser.uid+'_'+profileId;rt=new RealtimeClient(realtimeURL,async()=>{if(!auth?.currentUser)throw Error('Login required');return auth.currentUser.getIdToken(true);},profileId);}return rt;}
+export const realtimeLatency=()=>rt?.roundTripMs||0;
+export const isRoomCommandError=(error:unknown)=>error instanceof RealtimeCommandError||/HTTP 4(00|01|03|04|09)/.test(error instanceof Error?error.message:'');
 let clockOffset = 0;
 export const serverNow = () => Date.now() + (realtimeURL&&rt?rt.offset:clockOffset);
 export async function roomAction(
