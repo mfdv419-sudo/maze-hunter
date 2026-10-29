@@ -4,10 +4,29 @@ import {tickAdventureRoom,retainRoomSimulation} from '../src/game/adventure-room
 export interface Identity {uid:string;profileId:string;player:Player;expiresAt:number}
 export interface RoomStore {create(room:Match,owner:string,now:number):Promise<boolean>;claim(code:string,owner:string,now:number,key:string,joining:boolean):Promise<Match>;save(room:Match,owner:string,now:number,release?:boolean):Promise<void>}
 export class RealtimeEngine {
+ readonly storageStatus={healthy:true,failures:0,lastError:null as string|null};private checkpointErrors=new Map<string,string>();
  readonly rooms=new Map<string,Match>();readonly owner=randomUUID();private loads=new Map<string,Promise<Match>>();private writes=new Map<string,Promise<void>>();private leases=new Map<string,number>();private settling=new Set<string>();private lastCheckpoint=0;private creating=new Map<string,number>();private pendingCreates=0;draining=false;tickMs=0;
  constructor(readonly store:RoomStore,readonly maxRooms=1,private now=()=>Date.now()){}
  private async load(code:string,key:string,joining:boolean){if(this.rooms.has(code))return this.rooms.get(code)!;if(this.loads.has(code))return this.loads.get(code)!;if([...this.rooms.values()].filter(r=>r.state!=='finished').length+this.loads.size+this.pendingCreates>=this.maxRooms)throw Error('Realtime server is full');const pending=this.store.claim(code,this.owner,this.now(),key,joining).then(room=>{for(const p of Object.values(room.players))p.online=false;retainRoomSimulation(room);this.rooms.set(code,room);stampRoom(room);this.leases.set(code,room.rtLease?.until||this.now()+12000);return room;}).finally(()=>this.loads.delete(code));this.loads.set(code,pending);return pending;}
- private persist(room:Match,release=false){const old=this.writes.get(room.id)||Promise.resolve();const job=old.catch(()=>{}).then(async()=>{const at=this.now();await this.store.save(structuredClone(room),this.owner,at,release);if(!release)this.leases.set(room.id,at+12000);});this.writes.set(room.id,job);void job.finally(()=>{if(this.writes.get(room.id)===job)this.writes.delete(room.id);}).catch(()=>{});return job;}
+ private persist(room:Match,release=false){
+  const old=this.writes.get(room.id)||Promise.resolve();
+  const job=old.catch(()=>{}).then(async()=>{
+   const at=this.now();
+   try{
+    await this.store.save(structuredClone(room),this.owner,at,release);
+    if(!release)this.leases.set(room.id,at+12000);
+    this.checkpointErrors.delete(room.id);this.storageStatus.healthy=this.checkpointErrors.size===0;
+    if(this.storageStatus.healthy)this.storageStatus.lastError=null;
+   }catch(error){
+    const message=error instanceof Error?error.message:String(error),raw=(error as {code?:unknown})?.code;
+    const code=typeof raw==='string'&&/^[a-zA-Z0-9_/-]{1,64}$/.test(raw)?raw:message==='Room lease lost'?'ROOM_LEASE_LOST':'CHECKPOINT_FAILED';
+    this.storageStatus.healthy=false;this.storageStatus.failures++;this.storageStatus.lastError=code;
+    if(this.checkpointErrors.get(room.id)!==code)console.error('Realtime checkpoint failed',{room:room.id,code,message});
+    if(this.rooms.has(room.id))this.checkpointErrors.set(room.id,code);throw error;
+   }
+  });
+  this.writes.set(room.id,job);void job.finally(()=>{if(this.writes.get(room.id)===job)this.writes.delete(room.id);}).catch(()=>{});return job;
+ }
  private membership(room:Match,key:string){if(!room.players[key]||room.expiresAt<this.now())throw Error('Not a current room member');if((this.leases.get(room.id)||0)<=this.now())throw Error('Room lease expired; reconnect');}
  view(code:string,key:string){const r=this.rooms.get(code);if(!r)return null;this.membership(r,key);return clientRoom(r,key);}
  async command(identity:Identity,action:string,body:Record<string,any>){if(this.draining)throw Error('Server restarting; reconnect');if(identity.expiresAt<=this.now())throw Error('Authentication expired');const key=`${identity.uid}_${identity.profileId}`,now=this.now();let code=String(body.code||'').toUpperCase(),r:Match|undefined,accepted:boolean|undefined,error:string|undefined;
@@ -41,8 +60,8 @@ export class RealtimeEngine {
   stampRoom(r);return{room:clientRoom(r,key),playerKey:key,serverTime:now,...(accepted!==undefined?{actionAccepted:accepted,...(error?{actionError:error}:{})}:{})};
  }
  disconnect(code:string,key:string){const r=this.rooms.get(code);if(r?.players[key]){r.players[key].online=false;r.revision++;stampRoom(r);}}
- tick(){const now=this.now(),started=performance.now();for(const[code,r]of this.rooms){if((this.leases.get(code)||0)<=now){this.rooms.delete(code);continue;}if(r.expiresAt<now){r.state='finished';r.finishedAt??=now;void this.persist(r,true).finally(()=>this.rooms.delete(code)).catch(()=>{});continue;}if(Object.values(r.players).some(p=>p.online))delete r.rtIdleAt;else{r.rtIdleAt??=now;if(now-r.rtIdleAt>60000&&r.state!=='finished'){r.state='finished';r.finishedAt=now;for(const s of Object.values(r.adventure?.states||{})){s.phase='lost';s.reason='time';}r.revision++;stampRoom(r);}}if(r.state==='playing'){tickAdventureRoom(r,now);r.revision++;stampRoom(r);}if(r.state==='finished'&&!r.rtSettled&&!this.settling.has(code)){this.settling.add(code);void this.persist(r).then(()=>{r.rtSettled=true;r.revision++;stampRoom(r);}).catch(()=>{}).finally(()=>this.settling.delete(code));}}
-  if(now-this.lastCheckpoint>=2000){this.lastCheckpoint=now;for(const r of this.rooms.values())if(!this.writes.has(r.id))void this.persist(r).catch(()=>{/* Lease deadline stops simulation if storage cannot be renewed. */});}
+ tick(){const now=this.now(),started=performance.now();for(const[code,r]of this.rooms){if((this.leases.get(code)||0)<=now){console.error('Realtime room lease expired; reconnect required',{room:code,storageError:this.storageStatus.lastError});this.rooms.delete(code);this.checkpointErrors.delete(code);continue;}if(r.expiresAt<now){r.state='finished';r.finishedAt??=now;void this.persist(r,true).finally(()=>this.rooms.delete(code)).catch(()=>{});continue;}if(Object.values(r.players).some(p=>p.online))delete r.rtIdleAt;else{r.rtIdleAt??=now;if(now-r.rtIdleAt>60000&&r.state!=='finished'){r.state='finished';r.finishedAt=now;for(const s of Object.values(r.adventure?.states||{})){s.phase='lost';s.reason='time';}r.revision++;stampRoom(r);}}if(r.state==='playing'){tickAdventureRoom(r,now);r.revision++;stampRoom(r);}if(r.state==='finished'&&!r.rtSettled&&!this.settling.has(code)){this.settling.add(code);void this.persist(r).then(()=>{r.rtSettled=true;r.revision++;stampRoom(r);}).catch(()=>{}).finally(()=>this.settling.delete(code));}}
+  if(now-this.lastCheckpoint>=2000){this.lastCheckpoint=now;for(const r of this.rooms.values())if(!this.writes.has(r.id))void this.persist(r).catch(()=>{/* persist records the failure; the lease deadline still fences this instance. */});}
   this.tickMs=performance.now()-started;
  }
  async shutdown(){this.draining=true;await Promise.allSettled([...this.rooms.values()].map(r=>this.persist(r,true)));}
