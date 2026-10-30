@@ -1,0 +1,2 @@
+import {createHmac} from 'node:crypto';
+export function voiceConfig(uid:string,now:number,env:Record<string,string|undefined>){const urls=(env.VOICE_TURN_URLS||'').split(',').map(s=>s.trim()).filter(s=>/^turns?:[^\s]+$/.test(s));const iceServers:any[]=[{urls:'stun:stun.l.google.com:19302'}];if(urls.length&&env.VOICE_TURN_SECRET){const username=`${Math.floor(now/1000)+3600}:${uid}`,credential=createHmac('sha1',env.VOICE_TURN_SECRET).update(username).digest('base64');iceServers.push({urls,username,credential});}return{iceServers,relayConfigured:iceServers.length>1};}

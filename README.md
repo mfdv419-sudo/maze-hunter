@@ -1,44 +1,40 @@
+> Current release: **Realtime Node Server & Wall-Stopped Rocks**. Apply after the latest 21-file Responsive Weapons & Guardian Presentation delta. Read UPDATE_INSTRUCTIONS.md and docs/REALTIME_SETUP.md. A separate running server and opt-in URL are required.
+
 # Maze Hunter
 
-A browser-based, dark-fantasy maze action game built with Phaser 3, TypeScript, and Vite. The game currently ships with a procedural 100-chamber solo campaign, five sectors, local progress, bilingual UI (English / Bahasa Indonesia), retro palette toggle, keyboard and touch controls, enemy AI, active hazards, combat, fog-of-war minimap, timer, pause/retry/next-level flows, and Race vs AI practice.
+Browser-first family maze game with an original fantasy binturong, Indonesian and English, Retro Journey and Adventure. This is a playable browser project; app stores and commercial services are not final.
 
-## Requirements
-- Node.js 20+ (CI uses Node 22)
-- npm
+## Apply this update
 
-## Run locally
-```bash
-npm install
+Apply this update to the Responsive Weapons & Guardian Presentation release (21-file delta), or use the full source archive. Deploy frontend and Functions together; build/start the persistent backend separately as described in docs/REALTIME_SETUP.md. Voice uses additive RTDB rules when available, with authenticated Function signaling fallback on permission denial. Optional same-origin OAuth redirect requires domain/client configuration before enabling its flag. Install updated locked dependencies with npm ci. No baseline source removals.
+
+The existing prebuild cleanup still removes only the superseded files recorded in `maintenance/obsolete-files.json`. It validates all existing legacy files before deleting any and refuses customized content. `FILE_REMOVALS.txt` lists those earlier removals. A Netlify build cleans its checkout; permanent repository cleanup still requires the source deletions to be committed by the owner.
+
+## Current scope
+
+- Retro: 100 levels with unchanged staged choices, exact 40/36-step arms, map counts, time and lives. Cells remain square; actual board dimensions determine proportional fit. Phone views enlarge dense boards to a readable initial zoom. Use +/− to zoom, ⊡ for the entire map, and drag away from the character to pan while zoomed. Finger release and wall contact are free; a failed dead end consumes one life and restarts. The maze catalogue has not changed in this update; deceptive route design remains a separate outstanding correction.
+- Adventure: landscape gameplay, left joystick, independent right-side camera, A jump/double-jump/climb, B cake/interact, V dive/surface in deep water. Original Solo routes and the accepted authored Forest source remain protected.
+- Ngarai: the first implemented biome from the agreed visual guide. Continuous layered cliffs, contoured terraces, shallow stream, shared walkable bridge surface, cave arch, natural stone arch and a broad boss arena. Original animated Ketam Tebing and Raja Batu Retak replace recolored forest enemies in this area. The boss warns before slams, charges and falling rocks; recovery windows and automatic cake refill remain active.
+- Other biomes include the earlier Living Biomes revision. This release adds supplies, movable props, marked climbing ledges, optional lava/canyon stepping courses, roads and curated sponsor boards. Voice and mobile-login configuration are documented separately. Swimming/diving and underwater treasure remain available.
+
+## Run and validate
+
+Use Node 24.12 or later in the 24.x line. Install dependencies with `npm ci` when needed.
+
+```sh
 npm run dev
-```
-Open the local URL printed by Vite. Use WASD or arrow keys to move; Space or J to attack; Escape to pause. On phones, use the on-screen direction pad, attack, and pause controls. Collect the glowing shards and reach the gate before time runs out.
-
-## Checks
-```bash
-npm run typecheck
-npm run test
-npm run validate:levels
+npm test
 npm run build
+npm run test:browser
 ```
-The level validation suite checks all 100 generated configurations for reachable exits, walkable objective/spawn tiles, non-overlapping spawns, and deterministic generation.
 
-## Progress and settings
-Campaign progress, cleared chambers, best times, language, sound, reduced-motion preference, and retro palette are stored locally in the browser. Clearing a chamber unlocks the next. Clearing chamber 100 triggers the campaign-complete screen.
+The supplied production catalogue requires no Python or C++ during normal builds. Optional catalogue authoring uses `scripts/generate-retro.py`, `scripts/retro-packing.cpp`, and `scripts/retro-templates.json`.
 
-## Online services status
-**Firebase Authentication / Cloud Firestore are not connected in this build.** Local play and local save work without credentials. Do not present a local profile as an online login. To add Firebase, create a Firebase project, enable Google Authentication, create Firestore, then implement and test the provider and per-user security rules before advertising cloud save. `.env.example` is only a configuration placeholder; it does not imply that online login is implemented.
+## Documentation
 
-**Race is local AI practice only.** No online multiplayer server, cross-client synchronization, or authoritative race validation is included. Online race must not be advertised until a server is deployed and multi-client disconnect/reconnect tests pass.
+- `CHANGELOG.md`: the single development-history document and verification results.
+- `docs/PROJECT_BRIEF.md`: current product/gameplay constraints.
+- `docs/VISUAL_GUIDE.md`: agreed biome art direction and implementation scope.
+- `docs/SETUP.md`: existing Firebase/account/environment setup.
 
-## Build and deploy
-```bash
-npm run build
-npm run preview
-```
-Deploy the generated `dist/` directory to a static host such as GitHub Pages, Netlify, or Cloudflare Pages. Keep secrets out of the repository. GitHub Actions runs typecheck, tests, level validation, and production build on pushes and pull requests.
-
-## Current limitations / QA notes
-- Art is generated with in-engine pixel-style primitives and procedural maze geometry; no third-party asset pack is bundled. This is a functional vertical slice with 100 generated playable chambers, but it is not yet a fully animated hand-authored sprite-sheet production art set.
-- The five sectors vary palette, maze dimensions, enemy pressure, hazards, and time pressure; further hand-authored room gimmicks, bosses, weapons, and balancing are recommended for production quality.
-- Race AI reuses the core chamber and opponent pressure rather than implementing synchronized multi-racer standings.
-- Firebase login/cloud persistence and online multiplayer remain unimplemented, as stated above.
+Automated viewport checks do not establish physical Android/iOS performance. Production Google login, real multi-client matches, ads, billing/subscriptions and store packaging require their respective final verification. No remote deployment or Git write is performed by preparing this package.

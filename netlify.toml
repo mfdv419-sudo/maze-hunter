@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+[build.environment]
+  NODE_VERSION = "24"
+  # Firebase web app identifiers are public client configuration, not Admin credentials.
+  # Keep secret scanning enabled; exempt only the five fields consumed by the browser.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_FIREBASE_API_KEY,VITE_FIREBASE_AUTH_DOMAIN,VITE_FIREBASE_PROJECT_ID,VITE_FIREBASE_APP_ID,VITE_FIREBASE_DATABASE_URL"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+# Same-origin Firebase helper proxy; used only when VITE_FIREBASE_AUTH_SAME_ORIGIN=true.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://maze-hunter-e362b.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/__/firebase/init.json"
+  to = "https://maze-hunter-e362b.firebaseapp.com/__/firebase/init.json"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
