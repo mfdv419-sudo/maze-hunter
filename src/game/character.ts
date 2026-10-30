@@ -1,9 +1,10 @@
+import {airPose,smooth01} from './motion-quality';
 import {gloveModel,bootModel,expeditionWearables} from './gear-model';
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
 export type CharacterAppearance=Appearance & {hands?:string;feet?:string};
-export interface CharacterAction {eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
+export interface CharacterAction {jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
@@ -76,10 +77,18 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  // Explicit hands/feet choices are independent; missing slots preserve legacy outfit gear.
  const legacyGear=a.body==='classic'?'bare':a.body==='climber'?'climber':a.body==='desert'?'desert':a.body==='diver'?'diver':'trail';
  for(let i=0;i<2;i++){gloveModel(elbows[i],gear.hands??legacyGear,i?-1:1);bootModel(knees[i],gear.feet??legacyGear,i?1:-1);}
+ const pivot=joint(root,0,.65,0,'motion-pivot');pivot.add(body);body.position.y=-.65;
+ const costumeFX=joint(body,0,0,0,'costume-motion-effects'),sparkMaterial=new T.MeshBasicMaterial({color:a.body==='aurora'?0x95efde:a.body==='space'?0x99d9ff:a.body==='raincoat'?0x7ecfef:0xffd17d,transparent:true,opacity:.7,depthWrite:false});
+ const hasFX=a.body!=='classic'||a.back==='wings'||a.tail==='star'||a.head==='moon';
+ const sparks:T.Mesh[]=[];if(hasFX)for(let i=0;i<6;i++){const q=addMesh(costumeFX,new T.OctahedronGeometry(.018+i%2*.008),sparkMaterial);q.name='costume-spark';sparks.push(q);}
+ const wings=body.children.filter(o=>o instanceof T.Mesh&&o.geometry instanceof T.SphereGeometry&&Math.abs(o.position.x)>.3&&o.position.z<-.2);
+ const poseJoints=[body,head,...arms,...elbows,...legs,...knees],previousPose=poseJoints.map(()=>new T.Euler());let posed=false;
+ const pack=body.getObjectByName('explorer-pack');let gait=0,landing=0,lastJump=0;
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
-  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion),stride=Math.sin(time*11)*walk*.5;
-  body.position.y=celebrate?Math.abs(Math.sin(time*5))*.1:Math.sin(time*(walk>.05?22:2))*(walk>.05?.014:.006);body.rotation.x=-walk*.085;chest.scale.y=1+Math.sin(time*2)*.012;
+  poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
+  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*10.5*walk;const stride=Math.sin(gait)*walk*.54;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
+  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:Math.sin(time*(walk>.05?22:2))*(walk>.05?.014:.006));body.rotation.x=-walk*.085;chest.scale.y=1+Math.sin(time*2)*.012;
   for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);legs[i].rotation.x=-swing;knees[i].rotation.x=Math.max(0,swing)*.65;}
   head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
@@ -91,14 +100,25 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
 
   if((action?.eat??100)<.75){arms[1].rotation.x=-1.8;elbows[1].rotation.x=-1.1;head.rotation.x=.12;head.scale.y=1+Math.sin(time*24)*.02;}else head.scale.y=1;if(action?.carrying){arms.forEach(a=>a.rotation.x=-2.7);elbows.forEach(e=>e.rotation.x=-.25);}
   if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
-  if(action?.climb==='hanging'||action?.climb==='climbing'){body.position.y-=.1;arms.forEach(arm=>{arm.rotation.x=-2.35;arm.rotation.z=0;});elbows.forEach(e=>e.rotation.x=-.15);legs.forEach(l=>l.rotation.x=-.6);knees.forEach(k=>k.rotation.x=.6);}
-  if(action?.swim){body.rotation.x=1.18;body.position.y=.18;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
+  if(action?.climb==='hanging'||action?.climb==='climbing'){
+   const pulling=action.climb==='climbing',p=smooth01(action.climbProgress||0),cycle=(action.climbProgress||0)*Math.PI*(action.treeClimb?6:2);
+   body.position.y-=.08;body.rotation.x=.16-(pulling?p*.3:0);head.rotation.x=-.2;
+   arms.forEach((arm,i)=>{const reach=pulling?Math.sin(cycle+i*Math.PI):0;arm.rotation.set(-2.45+reach*.38+(pulling&&!action.treeClimb?p*.85:0),0,(i?1:-1)*.1);elbows[i].rotation.x=-.3-Math.max(0,-reach)*.9;legs[i].rotation.x=-.45-reach*.3;knees[i].rotation.x=.85+reach*.25;});
+  }else if(jump>.015&&!action?.swim){const pose=airPose(action?.jumpCount||1,action?.jumpAge||0,action?.jumpBase||0);pivot.rotation.x=pose.flip;legs.forEach(l=>l.rotation.x=-pose.tuck*.9);knees.forEach(k=>k.rotation.x=.45+pose.tuck*1.1);arms.forEach((arm,i)=>{arm.rotation.x=-.65-pose.tuck*.8;arm.rotation.z=(i?1:-1)*(.22+pose.tuck*.12);});}
+  if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.65);body.rotation.x+=landing*.14;}
+
+  if(action?.swim){body.rotation.x=1.18;body.position.y=-.47;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
   centers.forEach((p,i)=>{const u=i/28,b=rest[i];p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,b.y+Math.sin(time*2-u*3)*.025*u-(action?.swim?u*1.1:0),b.z+Math.sin(time*2.3-u*4)*.045*u+(action?.swim?u*.2:0));});
   for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();normal.crossVectors(tangent,up).normalize();if(normal.lengthSq()<.1)normal.set(1,0,0);binormal.crossVectors(tangent,normal).normalize();const radius=.075*(1-i/28*.65);
    for(let j=0;j<9;j++){const a=j/8*Math.PI*2,c=Math.cos(a),s=Math.sin(a),k=(i*9+j)*3;for(let axis=0;axis<3;axis++){const v=normal.getComponent(axis)*c+binormal.getComponent(axis)*s;positions[k+axis]=centers[i].getComponent(axis)+v*radius;normals[k+axis]=v;}}}
   geo.attributes.position.needsUpdate=geo.attributes.normal.needsUpdate=true;charm.position.copy(centers[24]);
-  if(cape&&capeRest){const p=cape.geometry.attributes.position;for(let i=0;i<p.count;i++){const fall=(.75-capeRest[i*3+1])/.58;p.setZ(i,capeRest[i*3+2]-Math.sin(time*3+fall*3)*.035*fall-walk*.06*fall);}p.needsUpdate=true;cape.geometry.computeVertexNormals();}
+  if(posed){const blend=1-Math.exp(-dt*22);poseJoints.forEach((q,i)=>{q.rotation.x=previousPose[i].x+(q.rotation.x-previousPose[i].x)*blend;q.rotation.y=previousPose[i].y+(q.rotation.y-previousPose[i].y)*blend;q.rotation.z=previousPose[i].z+(q.rotation.z-previousPose[i].z)*blend;});}posed=true;
+  scarf.rotation.x=-walk*.25+Math.sin(time*4)*.08+landing*.25;
+  if(pack){pack.rotation.x=walk*.06+Math.sin(gait)*walk*.025;pack.rotation.z=lag*.25;}
+  wings.forEach(wing=>wing.rotation.z=Math.sign(wing.position.x)*(.4+Math.sin(time*(jump>.02?7:2))*(jump>.02?.22:.04)));
+  costumeFX.visible=hasFX&&(walk>.05||jump>.02||landing>.02);sparks.forEach((q,i)=>{const u=(time*.7+i/6)%1,angle=i*2.399+time*.5;q.position.set(Math.sin(angle)*(.26+u*.16),.12+u*.8,Math.cos(angle)*.28-.1);q.scale.setScalar(Math.sin(u*Math.PI)*(jump>.02?1.2:.7));});
+  if(cape&&capeRest){const p=cape.geometry.attributes.position;for(let i=0;i<p.count;i++){const fall=(.75-capeRest[i*3+1])/.58;p.setZ(i,capeRest[i*3+2]-Math.sin(time*3+fall*3)*.035*fall-walk*.09*fall+lag*fall*.3);}p.needsUpdate=true;cape.geometry.computeVertexNormals();}
  }
  animate(0,0);return{root,animate,dispose:()=>disposeModel(root)};
 }

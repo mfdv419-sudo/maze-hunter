@@ -1,3 +1,5 @@
+import {batchStatic} from './static-model';
+import {smooth01} from './motion-quality';
 import * as T from 'three';
 import type {AdventureArea} from './areas';
 import {joint,addMesh as add,roundBox,satin} from './model-parts';
@@ -17,8 +19,11 @@ function pangolin(){
  for(let row=0;row<5;row++)for(let col=0;col<5;col++){const a=(col-2)*.45,q=add(body,new T.ConeGeometry(.1,.17,4),plate,Math.sin(a)*.29,.28-row*.12,-Math.cos(a)*(.24+Math.sin(row*.65)*.06));q.rotation.set(-.8-row*.08,0,-a*.4);}
  const head=joint(rig,0,.96,.1,'pangolin-head');ell(head,fur,0,0,0,.23,.22,.21);const nose=add(head,new T.ConeGeometry(.13,.3,8),cream,0,-.06,.25);nose.rotation.x=Math.PI/2;ell(head,ink,0,-.065,.4,.05,.04,.032);const ee=eyes(head,.13,.04,.17);for(const s of[-1,1])ell(head,fur,s*.2,.14,-.02,.05,.07,.035);
  const arms:T.Group[]=[],legs:T.Group[]=[];for(const s of[-1,1]){const a=joint(rig,s*.3,.71,.02,'pangolin-arm');arms.push(a);add(a,new T.CapsuleGeometry(.065,.22,3,7),fur,0,-.12,0);for(let i=0;i<3;i++)add(a,new T.ConeGeometry(.014,.065,5),cream,(i-1)*.035,-.29,.025).rotation.x=Math.PI;const l=joint(rig,s*.16,.31,0,'pangolin-leg');legs.push(l);add(l,new T.CapsuleGeometry(.08,.13,3,7),fur,0,-.08,0);box(l,.16,.08,.22,cream,0,-.25,.04);}
+ const curl=joint(root,0,.48,0,'pangolin-curled-shell');curl.visible=false;const ball=ell(curl,plate,0,0,0,.37,.37,.37);for(let i=0;i<18;i++){const a=i*2.399,y=(i/17-.5)*.6,r=Math.sqrt(Math.max(0,.35*.35-y*y));const q=add(curl,new T.ConeGeometry(.075,.12,4),i%2?plate:fur,Math.sin(a)*r,y,Math.cos(a)*r);q.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),q.position.clone().normalize());}
+ batchStatic(curl);
+ let rolling=0,rollTime=0;
  const tail=joint(rig,0,.38,-.24,'scaled-tail');for(let i=0;i<7;i++){const q=add(tail,new T.ConeGeometry(.105-i*.011,.22,5),i%2?plate:fur,-i*.045,-i*.025,-i*.12);q.rotation.x=-Math.PI/2;q.rotation.z=-.22;}const f=fruit(arms[1],0,-.26,.08);
- root.userData.animate=((t,speed,w,stun,hit)=>{const stride=Math.sin(t*9)*Math.min(1,speed)*.45;rig.position.y=Math.abs(stride)*.035;body.rotation.x=-w*.12;head.rotation.set(w*.22,Math.sin(t*.9)*.08,stun?Math.sin(t*12)*.08:0);arms.forEach((a,i)=>a.rotation.x=(i?1:-1)*stride-w*1.6);legs.forEach((a,i)=>a.rotation.x=(i?-1:1)*stride);tail.rotation.y=Math.sin(t*2)*.09+stride*.2;body.scale.setScalar(1+(hit>0&&hit<.3?Math.sin(hit/.3*Math.PI)*.07:0));blink(ee,t,stun);f.visible=false;})as Pose;return root;
+ root.userData.animate=((t,speed,w,stun,hit)=>{const desired=root.userData.motion?.rolling?1:0;const rollDt=Math.min(.1,Math.max(0,t-rollTime));rollTime=t;rolling+=(desired-rolling)*(1-Math.exp(-rollDt*18));curl.visible=rolling>.01;rig.visible=rolling<.99;rig.scale.setScalar(Math.max(.01,1-rolling));curl.scale.setScalar(Math.max(.01,rolling));curl.rotation.x=root.userData.motion?.rolling?(root.userData.motion.rollAge||0)*8:curl.rotation.x;const stride=Math.sin(t*9)*Math.min(1,speed)*.45;rig.position.y=Math.abs(stride)*.035;body.rotation.x=-w*.12;head.rotation.set(w*.22,Math.sin(t*.9)*.08,stun?Math.sin(t*12)*.08:0);arms.forEach((a,i)=>a.rotation.x=(i?1:-1)*stride-w*1.6);legs.forEach((a,i)=>a.rotation.x=(i?-1:1)*stride);tail.rotation.y=Math.sin(t*2)*.09+stride*.2;body.scale.setScalar(1+(hit>0&&hit<.3?Math.sin(hit/.3*Math.PI)*.07:0));blink(ee,t,stun);f.visible=false;})as Pose;return root;
 }
 function skink(){
  const root=new T.Group();root.name='kadal-pasir';const rig=joint(root,0,0,0,'skink-rig'),hide=satin(0xc7aa70),dark=satin(0x967346),cream=satin(0xf0d9aa),ink=satin(0x413b30);
@@ -66,7 +71,7 @@ function coralRay(){
  root.userData.animate=((t,speed,w,stun,hit,phase)=>{const swim=3+Math.min(1,speed)*2;wings.forEach((q,i)=>{q.rotation.z=(i?1:-1)*(Math.sin(t*swim)*.26+w*.25);q.rotation.x=Math.sin(t*swim+.7)*.035;});tail.rotation.set(Math.sin(t*swim)*.07,Math.sin(t*swim-.8)*.25,0);rig.position.y=.62+Math.sin(t*1.8)*.06;body.scale.y=.19*(1+w*.2);blink(ee,t,stun);armor.rotation.y=t*.45;glow.color.set(phase===3?0xe0c4f6:0xaceade);rig.rotation.z=stun?Math.sin(t*10)*.06:hit>0&&hit<.35?Math.sin(hit/.35*Math.PI)*.08:0;})as Pose;return root;
 }
 /** Original rigs use the existing game’s +Z facing and shared animation contract. */
-export function biomeGuardian(area:AdventureArea,boss=false):T.Group{
+function buildGuardian(area:AdventureArea,boss=false):T.Group{
  if(area==='classic')return forestGuardian(boss);
  if(area==='forest'){const m=boss?forestGuardian(true):pangolin();if(boss)m.name='raja-akar';return m;}
  if(area==='gorge')return gorgeGuardian(boss);
@@ -75,4 +80,16 @@ export function biomeGuardian(area:AdventureArea,boss=false):T.Group{
  if(area==='mountain')return goat(boss);
  if(area==='coast')return coconutCrab(boss);
  if(boss)return coralRay();const root=new T.Group(),water=aquaticGuardian(false),land=skink();root.name='amphibious-reef-keeper';root.add(water,land);root.userData.habitat=0;root.userData.animate=((...args:Parameters<Pose>)=>{const onLand=Number(root.userData.habitat||0);water.visible=onLand<.55;land.visible=onLand>.05;water.scale.setScalar(Math.max(.01,1-onLand));land.scale.setScalar(Math.max(.01,onLand));water.userData.animate?.(...args);land.userData.animate?.(...args);})as Pose;return root;
+}
+
+/** Blend gait amplitude and wake pose without altering root position or authoritative facing. */
+export function biomeGuardian(area:AdventureArea,boss=false):T.Group{
+ const root=buildGuardian(area,boss),animate=root.userData.animate;let speed=0,last=0,wakeLean=0,wakeOffset=0;const rig=root.children.find(o=>o.name.endsWith('-rig')||o.name==='rig');
+ root.userData.animate=(time:number,wanted:number,windup:number,stunned:boolean,reaction:number,phase:number)=>{
+  const dt=Math.min(.1,Math.max(0,time-last));last=time;speed+=(Math.min(1.5,wanted)-speed)*(1-Math.exp(-dt*12));
+  if(rig){rig.rotation.x-=wakeLean;rig.position.y-=wakeOffset;}
+  animate?.(time,speed,Math.max(0,Math.min(1,windup)),stunned,reaction,phase);
+  const wake=root.userData.motion?.wake??1;wakeLean=boss?-(1-smooth01(wake))*.55:0;wakeOffset=boss?-(1-smooth01(wake))*.15:0;if(rig){rig.rotation.x+=wakeLean;rig.position.y+=wakeOffset;}if(boss&&wake<1)root.traverse(o=>{if(o.name==='guardian-eye')o.scale.y*=.15+.85*smooth01(wake);});
+ };
+ return root;
 }
