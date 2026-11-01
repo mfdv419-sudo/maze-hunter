@@ -476,7 +476,7 @@ function pauseOverlay(online = false) {
   }
   game?.setPaused(true);
   el("game-overlay").innerHTML =
-    `<div class="modal-backdrop"><section class="modal center"><div class="eyebrow">${tr("TARIK NAPAS SEJENAK", "TAKE A BREATHER")}</div><h2>${tr("Petualangan dijeda", "Adventure paused")}</h2>${button(tr("Lanjut bermain", "Resume"), "resume")}${button(tr("Ulangi", "Restart"), "restart", "secondary")}${button(tr("Kembali ke menu", "Return to menu"), "quit", "quiet")}</section></div>`;
+    `<div class="modal-backdrop"><section class="modal center pause-modal" role="dialog" aria-modal="true"><div class="eyebrow">${tr("TARIK NAPAS SEJENAK", "TAKE A BREATHER")}</div><h2>${tr("Petualangan dijeda", "Adventure paused")}</h2>${button(tr("Lanjut bermain", "Resume"), "resume")}${button(tr("Ulangi", "Restart"), "restart", "secondary")}${button(tr("Kembali ke menu", "Return to menu"), "quit", "quiet")}</section></div>`;
   click("resume", () => {
     game?.setPaused(false);
     el("game-overlay").innerHTML = "";

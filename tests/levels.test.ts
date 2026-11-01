@@ -20,7 +20,7 @@ describe("Retro 100-level campaign", () => {
       layouts.add(JSON.stringify(m.grid));
       const path = route(m.grid, m.start, m.finish);
       expect(path.length).toBeGreaterThan(2);
-      expect(c.seconds).toBe(id<=20?60:id<=40?90:id<=80?120:150);
+      expect(c.seconds).toBe((id<=20?60:id<=40?90:id<=80?120:150)-20);
       for (let i = 1; i < path.length; i++)
         expect(clearSegment(m.grid, center(path[i - 1]), center(path[i]))).toBe(
           true,

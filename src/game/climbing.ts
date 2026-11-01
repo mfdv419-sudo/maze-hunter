@@ -1,5 +1,6 @@
 import {climbLift,smooth01} from './motion-quality';
 import type {Point} from './maze';
+export const climbDuration=(tree:boolean)=>tree?2.1:.9;
 export interface Ledge {kind?:'palm'|'rock'|'tree'|'log'|'cart'|'plane'|'wreck';point:Point;height:number;id:number;width?:number;depth?:number}
 export interface ClimbSave {phase:'ground'|'hanging'|'climbing'|'top'|'falling';ledge:number;elapsed:number;elevation:number;anchor:Point;edge:Point;cooldown:number}
 export class Climber {
@@ -11,7 +12,7 @@ export class Climber {
   const s=this.state;s.cooldown=Math.max(0,s.cooldown-dt);let reached:number|null=null;
   const ledge=ledges.find(l=>l.id===s.ledge);
   if(s.phase==='hanging'&&ledge){const to={x:s.anchor.x-previous.x,y:s.anchor.y-previous.y},dot=input.x*to.x+input.y*to.y;if(dot>.12)this.up();else if(dot<-.15){s.phase='falling';s.cooldown=.7;}return{position:{...s.edge},reached};}
-  if(s.phase==='climbing'&&ledge){s.elapsed+=dt;const p=Math.min(1,s.elapsed/((ledge.kind==='palm'||ledge.kind==='tree')?2.1:.55)),tree=ledge.kind==='palm'||ledge.kind==='tree',ease=tree?climbLift(p):smooth01(p),travel=tree?smooth01((p-.78)/.22):ease;const base=(ledge.kind==='palm'||ledge.kind==='tree')?.18:Math.max(.12,ledge.height-.93);s.elevation=base+(ledge.height-base)*ease;
+  if(s.phase==='climbing'&&ledge){s.elapsed+=dt;const p=Math.min(1,s.elapsed/climbDuration(ledge.kind==='palm'||ledge.kind==='tree')),tree=ledge.kind==='palm'||ledge.kind==='tree',ease=tree?climbLift(p):smooth01(p),travel=tree?smooth01((p-.78)/.22):ease;const base=(ledge.kind==='palm'||ledge.kind==='tree')?.18:Math.max(.12,ledge.height-.93);s.elevation=base+(ledge.height-base)*ease;
    if(p===1){s.phase='top';reached=ledge.id;}return{position:{x:s.edge.x+(s.anchor.x-s.edge.x)*travel,y:s.edge.y+(s.anchor.y-s.edge.y)*travel},reached};}
   if(s.phase==='top'&&ledge){if(Math.abs(next.x-(ledge.point.x+.5))<(ledge.width?ledge.width/2:.55)&&Math.abs(next.y-(ledge.point.y+.5))<(ledge.depth?ledge.depth/2:.55)){s.elevation=ledge.height;return{position:next,reached};}s.phase='falling';s.elapsed=0;s.cooldown=jump>.1?.1:.45;}
   if(s.phase==='falling'){s.elapsed+=dt;s.elevation=Math.max(0,s.elevation-(.6+s.elapsed*5)*dt);if(!s.elevation)s.phase='ground';}

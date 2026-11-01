@@ -146,7 +146,7 @@ export function retroConfig(level: number) {
     level,
     region: Math.floor((level - 1) / 10),
     lives: 3,
-    seconds: level<=20?60:level<=40?90:level<=80?120:150,
+    seconds: (level<=20?60:level<=40?90:level<=80?120:150)-20,
     maps,pageCount,
     maze,
     length,

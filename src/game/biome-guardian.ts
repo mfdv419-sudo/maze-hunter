@@ -85,11 +85,13 @@ function buildGuardian(area:AdventureArea,boss=false):T.Group{
 /** Blend gait amplitude and wake pose without altering root position or authoritative facing. */
 export function biomeGuardian(area:AdventureArea,boss=false):T.Group{
  const root=buildGuardian(area,boss),animate=root.userData.animate;let speed=0,last=0,wakeLean=0,wakeOffset=0;const rig=root.children.find(o=>o.name.endsWith('-rig')||o.name==='rig');
+ const wakeJoints:{joint:T.Object3D;x:number;y:number;z:number}[]=[];if(boss)root.traverse(o=>{if(o instanceof T.Group&&/head$|shoulder$|claw-arm$|ray-wing$/.test(o.name))wakeJoints.push({joint:o,x:0,y:0,z:0});});
  root.userData.animate=(time:number,wanted:number,windup:number,stunned:boolean,reaction:number,phase:number)=>{
   const dt=Math.min(.1,Math.max(0,time-last));last=time;speed+=(Math.min(1.5,wanted)-speed)*(1-Math.exp(-dt*12));
   if(rig){rig.rotation.x-=wakeLean;rig.position.y-=wakeOffset;}
+  for(const p of wakeJoints){p.joint.rotation.x-=p.x;p.joint.rotation.y-=p.y;p.joint.rotation.z-=p.z;}
   animate?.(time,speed,Math.max(0,Math.min(1,windup)),stunned,reaction,phase);
-  const wake=root.userData.motion?.wake??1;wakeLean=boss?-(1-smooth01(wake))*.55:0;wakeOffset=boss?-(1-smooth01(wake))*.15:0;if(rig){rig.rotation.x+=wakeLean;rig.position.y+=wakeOffset;}if(boss&&wake<1)root.traverse(o=>{if(o.name==='guardian-eye')o.scale.y*=.15+.85*smooth01(wake);});
+  const wake=root.userData.motion?.wake??1;for(const p of wakeJoints){const stretch=Math.sin(Math.PI*smooth01(wake));p.x=-stretch*(p.joint.name.endsWith('head')?.16:.55);p.y=p.joint.name.endsWith('head')?Math.sin(wake*Math.PI*2)*stretch*.12:0;p.z=p.joint.name.endsWith('head')?0:Math.sign(p.joint.position.x)*stretch*.18;p.joint.rotation.x+=p.x;p.joint.rotation.y+=p.y;p.joint.rotation.z+=p.z;}wakeLean=boss?-(1-smooth01(wake))*.55:0;wakeOffset=boss?-(1-smooth01(wake))*.15:0;if(rig){rig.rotation.x+=wakeLean;rig.position.y+=wakeOffset;}if(boss&&wake<1)root.traverse(o=>{if(o.name==='guardian-eye')o.scale.y*=.15+.85*smooth01(wake);});
  };
  return root;
 }

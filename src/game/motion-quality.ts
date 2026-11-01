@@ -7,3 +7,6 @@ export function activeWindup(until:number,elapsed:number){return until>elapsed?M
 
 /** Three deliberate grips: lift on the pull, hold while the other hand reaches. */
 export function climbLift(progress:number){const p=Math.max(0,Math.min(1,progress)),step=p*3,index=Math.min(2,Math.floor(step));return (index+smooth01(Math.min(1,(step-index)/.65)))/3;}
+
+/** Planar two-bone solve: limbs retain their lengths while a hand reaches a grip. */
+export function armGrip(y:number,z:number){const upper=.22,fore=.22,d=Math.max(.06,Math.min(.435,Math.hypot(y,z))),bend=-Math.acos(Math.max(-1,Math.min(1,(d*d-upper*upper-fore*fore)/(2*upper*fore))));return{shoulder:Math.atan2(-z,-y)-Math.atan2(fore*Math.sin(bend),upper+fore*Math.cos(bend)),elbow:bend};}
