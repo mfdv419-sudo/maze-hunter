@@ -1,3 +1,4 @@
+import {repairGorgeChests} from './reward-access';
 import {courseDanger} from './platform-course';
 import {gorgeElevation} from './gorge-terrain';
 import {aquaticGround} from './aquatic';
@@ -46,6 +47,7 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
   const nav=grid.map(r=>[...r]);for(const l of ledges)nav[l.point.y][l.point.x]=1;nav[q.y][q.x]=1;const reachable=distances(nav,start);if([...seals,fortress,finish].some(p=>!reachable.has(p.x+','+p.y)))continue;
   ledges.push({id:ledges.length,point:q,height:.65+(stones%3)*.12,kind:'rock'});stones++;
  }
+ if(area==='gorge')repairGorgeChests(layout);
  if(cache.size>35)cache.clear();cache.set(key,structuredClone(layout));return layout;
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){

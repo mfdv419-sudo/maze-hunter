@@ -14,7 +14,7 @@ import {
   shrubKey,
   type ActionKind,
 } from "./actions";
-export interface Player {depth?:number;swimming?:boolean;
+export interface Player {avatarPose?:import('./avatar-actions').AvatarAction|null;climbElapsed?:number;climbTree?:boolean;depth?:number;swimming?:boolean;
   uid: string;
   profileId: string;
   name: string;

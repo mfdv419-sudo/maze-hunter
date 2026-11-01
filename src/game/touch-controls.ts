@@ -28,6 +28,6 @@ export function bindJoystick(root:HTMLElement,game:{joystick:{x:number;y:number}
  },{signal});
  root.addEventListener('pointermove',e=>{if(pointer===e.pointerId)control(e);},{signal});
  for(const name of ['pointerup','pointercancel','lostpointercapture'] as const)root.addEventListener(name,e=>{if(pointer===e.pointerId)reset();},{signal});
- window.addEventListener('blur',reset,{signal});window.addEventListener('resize',()=>{reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;if(actions)actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;},{signal});
+ window.addEventListener('blur',reset,{signal});let lastWidth=root.clientWidth,lastHeight=root.clientHeight;window.addEventListener('resize',()=>{const major=Math.abs(root.clientWidth-lastWidth)>4||Math.abs(root.clientHeight-lastHeight)>80;lastWidth=root.clientWidth;lastHeight=root.clientHeight;if(!major)return;reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;if(actions)actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;},{signal});
  return()=>{controller.abort();reset();};
 }

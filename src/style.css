@@ -1329,3 +1329,31 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 #game-overlay .pause-modal .eyebrow{font-size:11px;margin:0;}
 #game-overlay .pause-modal button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:42px;margin:0;transform:none;padding:10px 14px;font-size:16px;line-height:1.2;}
 @media(max-height:430px){#game-overlay .pause-modal{padding:14px 20px;gap:8px;}#game-overlay .pause-modal h2{font-size:22px;}#game-overlay .pause-modal button{min-height:38px;padding:8px 12px;font-size:15px;}}
+
+/* All short gameplay dialogs use the same in-viewport action grid. */
+#game-overlay .modal.center{box-sizing:border-box;width:min(450px,calc(100vw - 28px));max-height:calc(100dvh - 28px);padding:clamp(14px,3vh,26px);overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(6px,1.5vh,12px);}
+#game-overlay .modal.center>*{min-width:0;max-width:100%;}
+#game-overlay .modal.center button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;min-height:40px;margin:0;transform:none;padding:9px 12px;font-size:16px;line-height:1.2;}
+#game-overlay .modal.center h2{font-size:clamp(22px,4vw,32px);line-height:1.15;margin:0;overflow-wrap:anywhere;}
+#game-overlay .modal.center p{margin:4px 0;font-size:16px;line-height:1.3;}
+#game-overlay .modal.center .result-symbol{font-size:clamp(28px,7vh,46px);line-height:1;}
+#game-overlay .modal.center .eyebrow{font-size:10px;line-height:1.3;}
+.modal{overflow-x:hidden;min-width:0;}
+.modal button{box-sizing:border-box;max-width:100%;}
+@media(max-height:430px){#game-overlay .modal.center{padding:12px 18px;gap:6px;}#game-overlay .modal.center h2{font-size:23px;}#game-overlay .modal.center button{min-height:36px;font-size:14px;padding:8px;}#game-overlay .modal.center .result-symbol{font-size:28px;}}
+
+.paged-dialog{display:flex;flex-direction:column;gap:8px;overflow:hidden!important;max-height:calc(100dvh - 28px);padding:clamp(12px,2.5vh,22px);}
+.paged-dialog h2{font-size:clamp(20px,3vw,28px);margin:0;line-height:1.15;}
+.paged-dialog p,.paged-dialog li{font-size:13px;line-height:1.45;}
+.paged-dialog p,.paged-dialog ol,.paged-dialog label{margin:4px 0;}
+.paged-dialog .guide-heading{position:static;padding:0;flex-shrink:0;}
+.paged-dialog .guide-card{padding:10px;gap:8px;}.paged-dialog .guide-illustration{min-width:42px;width:42px;}
+.paged-dialog .guide-card p{font-size:12px;}.paged-dialog .guide-card h3{font-size:14px;}
+.paged-dialog .dialog-pages-nav{display:flex;justify-content:center;align-items:center;gap:14px;flex:0 0 auto;margin-top:4px;order:10;}
+.modal .dialog-pages-nav button{width:40px!important;min-width:40px;min-height:32px;margin:0!important;padding:4px 10px;transform:none;}
+.paged-dialog>button{flex:0 0 auto;min-height:36px;padding:8px 12px;font-size:14px;}
+.paged-dialog .expedition-task{margin:0;padding:8px;}.paged-dialog .expedition-task p{font-size:12px;}
+@media(max-height:430px){.paged-dialog p,.paged-dialog li{font-size:12px;line-height:1.35;}.paged-dialog h2{font-size:20px;}.paged-dialog input,.paged-dialog select{padding:5px;}.paged-dialog>button{min-height:32px;padding:6px 10px;}.result .match-ranking{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 10px;margin:0;padding-top:3px;}.result .match-ranking h3{grid-column:1/-1;font-size:11px;margin:0;}.result .match-ranking p{font-size:10px!important;margin:0!important;}.result .result-symbol{display:none;}}
+.modal>button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;margin:7px 0 0;transform:none;}
+.paged-dialog{align-items:stretch;}.paged-dialog>button{width:auto!important;max-width:none!important;align-self:stretch;margin:0!important;}.paged-dialog>label{min-width:0;}.paged-dialog select{min-width:0;width:100%;max-width:100%;}
+@media(max-height:430px){.settings-modal.paged-dialog{gap:5px;padding:12px 18px;}.settings-modal.paged-dialog>label{font-size:12px;gap:3px;margin:0;}.settings-modal.paged-dialog select{padding:5px;font-size:12px;}.settings-modal.paged-dialog>button{min-height:30px;font-size:13px;padding:5px 10px;}.settings-modal.paged-dialog .dialog-pages-nav button{min-height:28px;}.settings-modal.paged-dialog h2{font-size:20px;}}

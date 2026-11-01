@@ -1,3 +1,5 @@
+import {throwPose,releaseTime,actionDuration,type AvatarActionKind} from './avatar-actions';
+import {foodArt} from './food-art';
 import {walkingLeg} from './avatar-presentation';
 import {airPose,smooth01,armGrip} from './motion-quality';
 import {gloveModel,bootModel,expeditionWearables} from './gear-model';
@@ -5,7 +7,7 @@ import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
 export type CharacterAppearance=Appearance & {hands?:string;feet?:string};
-export interface CharacterAction {jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
+export interface CharacterAction {actionKind?:AvatarActionKind;actionAge?:number;cakeColor?:number;hurtAge?:number;defeated?:boolean;pickup?:number;allowIdle?:boolean;jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
@@ -78,6 +80,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  // Explicit hands/feet choices are independent; missing slots preserve legacy outfit gear.
  const legacyGear=a.body==='classic'?'bare':a.body==='climber'?'climber':a.body==='desert'?'desert':a.body==='diver'?'diver':'trail';
  for(let i=0;i<2;i++){gloveModel(elbows[i],gear.hands??legacyGear,i?-1:1);bootModel(knees[i],gear.feet??legacyGear,i?1:-1);}
+ const rightGrip=joint(elbows[1],0,-.15,.025,'right-hand-grip');const heldCake=joint(rightGrip,0,0,0,'held-cake');addMesh(heldCake,new T.CylinderGeometry(.11,.12,.07,10),cream,0,.02,0);const heldIcing=addMesh(heldCake,new T.CylinderGeometry(.115,.115,.025,10),pink,0,.067,0);const heldFoods=(['chili','watermelon','spinach']as const).map(kind=>{const m=foodArt(kind);m.name='hand-'+kind;m.scale.setScalar(.55);rightGrip.add(m);return m;});
  const pivot=joint(root,0,.65,0,'motion-pivot');pivot.add(body);body.position.y=-.65;
  const costumeFX=joint(body,0,0,0,'costume-motion-effects'),sparkMaterial=new T.MeshBasicMaterial({color:a.body==='aurora'?0x95efde:a.body==='space'?0x99d9ff:a.body==='raincoat'?0x7ecfef:0xffd17d,transparent:true,opacity:.7,depthWrite:false});
  const hasFX=a.body!=='classic'||a.back==='wings'||a.tail==='star'||a.head==='moon';
@@ -89,32 +92,43 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
   poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
-  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.x=-walk*.045;chest.scale.y=1+Math.sin(time*2)*.012;
+  const walkStep=Math.floor(gait/Math.PI);root.userData.footfall=walk>.08&&walkStep!==root.userData.walkStep;root.userData.walkStep=walkStep;
+  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.set(-walk*.045,0,0);chest.scale.y=1+Math.sin(time*2)*.012;
   for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
-  head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
+  head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
   const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
   if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms.forEach((a,i)=>{a.rotation.x=-p*2.65;a.rotation.z=(i?1:-1)*(.12+p*.32);});elbows.forEach(e=>e.rotation.x=-.12);head.rotation.x=-p*.12;}
   if((action?.jump||0)>.05){const p=Math.min(1,action!.jump!);arms.forEach((a,i)=>{a.rotation.x=-.8-p*.5;a.rotation.z=(i?1:-1)*.35;});knees.forEach(k=>k.rotation.x=.5);}
   pole.visible=!!action?.pole&&!(hit>0&&hit<1)&&action?.climb==='ground'&&!(action?.jump);if(pole.visible){arms[0].rotation.x=-.25+stride*.3;elbows[0].rotation.x=-.9;pole.rotation.x=-(arms[0].rotation.x+elbows[0].rotation.x)+.15;pole.rotation.z=.06;}
-  if(walk<.04&&time%12>9&&action?.greet===undefined&&!action?.pole){arms[0].rotation.x=-.55;arms[0].rotation.z=-.28;elbows[0].rotation.x=-.8;head.rotation.y=Math.sin(time*2)*.12;}
+  if(action?.allowIdle&&walk<.04&&time%16>14&&action?.greet===undefined&&!action?.pole&&!(action?.actionKind&&(action.actionAge??100)<actionDuration(action.actionKind))){arms[0].rotation.x=-.55;arms[0].rotation.z=-.28;elbows[0].rotation.x=-.8;head.rotation.y=Math.sin(time*2)*.12;}
 
-  if((action?.eat??100)<.75){arms[1].rotation.x=-1.8;elbows[1].rotation.x=-1.1;head.rotation.x=.12;head.scale.y=1+Math.sin(time*24)*.02;}else head.scale.y=1;if(action?.carrying){arms.forEach(a=>a.rotation.x=-2.7);elbows.forEach(e=>e.rotation.x=-.25);}
+  if((action?.eat??100)<.75){arms[1].rotation.x=-1.8;elbows[1].rotation.x=-1.1;head.rotation.x=.12;head.scale.y=1+Math.sin(time*24)*.02;}else head.scale.y=1;if(action?.carrying){arms.forEach(a=>a.rotation.x=-2.2);elbows.forEach(e=>e.rotation.x=-.4);}
   if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
   if(action?.climb==='hanging'||action?.climb==='climbing'){
    const pulling=action.climb==='climbing',p=smooth01(action.climbProgress||0),cycle=(action.climbProgress||0)*Math.PI*(action.treeClimb?6:2);
    const gripPhase=((action.climbProgress||0)*3)%1;body.position.y-=.08+(action.treeClimb?Math.sin(gripPhase*Math.PI)*.025:0);body.rotation.x=.16-(pulling?p*.3:0);head.rotation.x=-.2;
-   arms.forEach((arm,i)=>{const reach=pulling?Math.sin(cycle+i*Math.PI):0;const grip=armGrip(.23+reach*.08-(pulling&&!action.treeClimb?p*.28:0),.23);arm.rotation.set(grip.shoulder,0,(i?1:-1)*.1);elbows[i].rotation.x=grip.elbow;legs[i].rotation.x=-.45-reach*.3;knees[i].rotation.x=.85+reach*.25;});
+   arms.forEach((arm,i)=>{const reach=pulling?Math.sin(cycle+i*Math.PI):0;const grip=armGrip(.23+reach*.08-(pulling&&!action.treeClimb?p*.28:0),.23);arm.rotation.set(grip.shoulder,0,(i?1:-1)*.1);elbows[i].rotation.x=grip.elbow;legs[i].rotation.x=-.45-reach*.3;knees[i].rotation.x=.85+reach*.25;if(pulling&&!action.treeClimb&&i===0){const step=smooth01((p-.4)/.25)*(1-smooth01((p-.85)/.15));legs[i].rotation.x-=step*.65;knees[i].rotation.x+=step*.5;}});
   }else if(jump>.015&&!action?.swim){const pose=airPose(action?.jumpCount||1,action?.jumpAge||0,action?.jumpBase||0);pivot.rotation.x=pose.flip;legs.forEach(l=>l.rotation.x=-pose.tuck*.9);knees.forEach(k=>k.rotation.x=.45+pose.tuck*1.1);arms.forEach((arm,i)=>{arm.rotation.x=-.65-pose.tuck*.8;arm.rotation.z=(i?1:-1)*(.22+pose.tuck*.12);});}
   if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.65);body.rotation.x+=landing*.14;}
 
+  const kind=action?.actionKind,age=action?.actionAge??100,active=!!kind&&age>=0&&age<actionDuration(kind),ground=action?.climb!=='climbing'&&action?.climb!=='hanging';
+  heldCake.visible=ground&&active&&(kind==='cake'||kind==='grenade')&&age<releaseTime(kind!);heldIcing.material instanceof T.MeshLambertMaterial&&heldIcing.material.color.setHex(action?.cakeColor??0xe67d83);
+  heldFoods.forEach((m,i)=>m.visible=ground&&active&&kind===['chili','watermelon','spinach'][i]&&age<.6);
+  if(active&&ground){pole.visible=false;if(kind==='cake'||kind==='grenade'||kind==='throw-object'||kind==='cut'){const pose=throwPose(kind==='cut'?'cake':kind,age);body.rotation.y=pose.twist;body.position.y-=pose.weight;arms[1].rotation.x=pose.shoulder;elbows[1].rotation.x=pose.elbow;arms[0].rotation.x=-.3-pose.twist*2;if(kind==='throw-object'){arms[0].rotation.x=pose.shoulder;elbows[0].rotation.x=pose.elbow;}}
+   else if(kind==='chili'||kind==='watermelon'||kind==='spinach'){const grip=armGrip(.21,.28);arms[1].rotation.x=grip.shoulder;elbows[1].rotation.x=grip.elbow;head.rotation.x=age<.24?.05:-.08;body.rotation.x+=age>.24&&kind!=='spinach'?.12:0;head.scale.x=1+(age>.22&&age<.8?.018:0);if(kind==='spinach'&&age>.45)arms.forEach((a,i)=>a.rotation.z=(i?1:-1)*.35);}
+   else if(kind==='lift'||kind==='place'){const squat=Math.sin(Math.min(1,age/.6)*Math.PI)*.1;body.position.y-=squat;knees.forEach(k=>k.rotation.x+=squat*4);body.rotation.x+=squat;}}
+  if(!active)head.scale.x=1;
+  if((action?.hurtAge??100)<.35){const recoil=Math.sin(Math.max(0,action!.hurtAge!)/.35*Math.PI);body.rotation.x-=recoil*.16;arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*recoil*.2);}
+  if(action?.defeated){const fall=smooth01((action.hurtAge??1)/.6);pivot.rotation.z=-fall*1.05;pivot.position.y=.65+fall*.16;}
+  if((action?.pickup??100)<.4&&ground&&!active){arms[0].rotation.z=-.35;head.rotation.x=-.06;}
   if(action?.swim){body.rotation.x=1.18;body.position.y=-.47;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
   centers.forEach((p,i)=>{const u=i/28,b=rest[i],angle=action?.swim?-1.18:0,ry=b.y-.43,rz=b.z+.19,y=.43+ry*Math.cos(angle)-rz*Math.sin(angle),z=-.19+ry*Math.sin(angle)+rz*Math.cos(angle);p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,y+Math.sin(time*2-u*3)*.025*u,z+Math.sin(time*2.3-u*4)*.045*u);});
   for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();if(i===0)normal.set(1,0,0);normal.addScaledVector(tangent,-normal.dot(tangent)).normalize();if(normal.lengthSq()<.1)normal.crossVectors(tangent,up).normalize();binormal.crossVectors(tangent,normal).normalize();const radius=.078*(1-i/28*.65);
    for(let j=0;j<9;j++){const a=j/8*Math.PI*2,c=Math.cos(a),s=Math.sin(a),k=(i*9+j)*3;for(let axis=0;axis<3;axis++){const v=normal.getComponent(axis)*c+binormal.getComponent(axis)*s;positions[k+axis]=centers[i].getComponent(axis)+v*radius;normals[k+axis]=v;}}}
   geo.attributes.position.needsUpdate=geo.attributes.normal.needsUpdate=true;charm.position.copy(centers[24]);
-  if(posed){const blend=1-Math.exp(-dt*(action?.climb==='climbing'||action?.climb==='hanging'?12:18));poseJoints.forEach((q,i)=>{q.rotation.x=previousPose[i].x+(q.rotation.x-previousPose[i].x)*blend;q.rotation.y=previousPose[i].y+(q.rotation.y-previousPose[i].y)*blend;q.rotation.z=previousPose[i].z+(q.rotation.z-previousPose[i].z)*blend;});}posed=true;if(pole.visible)pole.rotation.x=-(arms[0].rotation.x+elbows[0].rotation.x)+.15;
+  if(posed){const blend=1-Math.exp(-dt*(active?60:action?.climb==='climbing'||action?.climb==='hanging'?12:18));poseJoints.forEach((q,i)=>{q.rotation.x=previousPose[i].x+(q.rotation.x-previousPose[i].x)*blend;q.rotation.y=previousPose[i].y+(q.rotation.y-previousPose[i].y)*blend;q.rotation.z=previousPose[i].z+(q.rotation.z-previousPose[i].z)*blend;});}posed=true;if(pole.visible)pole.rotation.x=-(arms[0].rotation.x+elbows[0].rotation.x)+.15;
   scarf.rotation.x=-walk*.25+Math.sin(time*4)*.08+landing*.25;
   if(pack){pack.rotation.x=walk*.06+Math.sin(gait)*walk*.025;pack.rotation.z=lag*.25;}
   wings.forEach(wing=>wing.rotation.z=Math.sign(wing.position.x)*(.4+Math.sin(time*(jump>.02?7:2))*(jump>.02?.22:.04)));
