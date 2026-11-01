@@ -1,6 +1,6 @@
 import {weaponShots,sweptHit} from './weapon-shots';
 import type {Ledge} from './climbing';
-import {settleRocks,fallenId,ROCK_LIMIT} from './fallen-rocks';
+import {settleRocks,fallenId,ROCK_LIMIT,safeRockPoint} from './fallen-rocks';
 import {emptySupplies,inCone,type Supplies,type PropMove,type FireZone,type FoodKind} from './expedition-items';
 import {courseDanger,platformCourse} from './platform-course';
 import {fieldPose} from './field-obstacles';
@@ -151,7 +151,7 @@ export class AdventureState {
   else if(phase===2){if(k===0)this.warn('roots',this.position,.8,1.6);else if(k===1)this.warn('spin',g.position,2,1.6);else{this.warn('vine',this.position,.55,1.6,g.position);if(this.difficulty!=='medium')this.spawnSapling({x:Math.floor(g.position.x),y:Math.floor(g.position.y)});}}
   else {if(k===0)this.warn('cataclysm',g.position,3.7,2.2);else if(k===1){this.warn('branch',this.position,.8,1.7);this.spawnSapling({x:Math.floor(g.position.x),y:Math.floor(g.position.y)});}else this.warn('charge',this.position,.65,1.9,g.position);}
  }
- private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(h.kind==='rockfall'&&Object.keys(this.fallenRocks).length<ROCK_LIMIT)this.fallenRocks[`fallen-900-${h.id}`]={...h.point};if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g){const dx=h.point.x-g.position.x,dy=h.point.y-g.position.y,d=Math.hypot(dx,dy),k=this.area==='gorge'?Math.max(0,d-1.55)/(d||1):1;if(this.area==='gorge')g.dash={from:{...g.position},to:moveSliding(this.grid,g.position,dx*k,dy*k,.4),at:this.elapsed,until:this.elapsed+.36};else g.position=moveSliding(this.grid,g.position,dx*k,dy*k,.4);}}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
+ private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(h.kind==='rockfall'&&Object.keys(this.fallenRocks).length<ROCK_LIMIT)this.fallenRocks[`fallen-900-${h.id}`]=safeRockPoint(h.point,this.grid);if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g){const dx=h.point.x-g.position.x,dy=h.point.y-g.position.y,d=Math.hypot(dx,dy),k=this.area==='gorge'?Math.max(0,d-1.55)/(d||1):1;if(this.area==='gorge')g.dash={from:{...g.position},to:moveSliding(this.grid,g.position,dx*k,dy*k,.4),at:this.elapsed,until:this.elapsed+.36};else g.position=moveSliding(this.grid,g.position,dx*k,dy*k,.4);}}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
    if(h.kind==='charge'||h.kind==='vine'){const vx=h.point.x-h.from.x,vy=h.point.y-h.from.y,l=vx*vx+vy*vy,t=Math.max(0,Math.min(1,((this.position.x-h.from.x)*vx+(this.position.y-h.from.y)*vy)/(l||1)));inside=Math.hypot(this.position.x-h.from.x-vx*t,this.position.y-h.from.y-vy*t)<h.radius;}
    if(inside&&jump<.22&&this.depth<.75){if(h.kind==='roots'){this.slowUntil=this.elapsed+2;this.notify('roots');}else this.damage(this.stage==='escape'?'guard':'boss');}}
   this.hazards=this.hazards.filter(h=>h.end>this.elapsed);

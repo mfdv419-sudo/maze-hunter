@@ -102,7 +102,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
   if(action?.climb==='hanging'||action?.climb==='climbing'){
    const pulling=action.climb==='climbing',p=smooth01(action.climbProgress||0),cycle=(action.climbProgress||0)*Math.PI*(action.treeClimb?6:2);
-   body.position.y-=.08;body.rotation.x=.16-(pulling?p*.3:0);head.rotation.x=-.2;
+   const gripPhase=((action.climbProgress||0)*3)%1;body.position.y-=.08+(action.treeClimb?Math.sin(gripPhase*Math.PI)*.025:0);body.rotation.x=.16-(pulling?p*.3:0);head.rotation.x=-.2;
    arms.forEach((arm,i)=>{const reach=pulling?Math.sin(cycle+i*Math.PI):0;arm.rotation.set(-2.45+reach*.38+(pulling&&!action.treeClimb?p*.85:0),0,(i?1:-1)*.1);elbows[i].rotation.x=-.3-Math.max(0,-reach)*.9;legs[i].rotation.x=-.45-reach*.3;knees[i].rotation.x=.85+reach*.25;});
   }else if(jump>.015&&!action?.swim){const pose=airPose(action?.jumpCount||1,action?.jumpAge||0,action?.jumpBase||0);pivot.rotation.x=pose.flip;legs.forEach(l=>l.rotation.x=-pose.tuck*.9);knees.forEach(k=>k.rotation.x=.45+pose.tuck*1.1);arms.forEach((arm,i)=>{arm.rotation.x=-.65-pose.tuck*.8;arm.rotation.z=(i?1:-1)*(.22+pose.tuck*.12);});}
   if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.65);body.rotation.x+=landing*.14;}
