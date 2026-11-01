@@ -1,3 +1,4 @@
+import {explorerPole,CameraBoom} from './avatar-presentation';
 import {climbDuration} from './climbing';
 import {rockBounce,rockSurface,rockSupport} from './rock-physics';
 import {rockGeometry} from './rock-art';
@@ -121,7 +122,7 @@ export class ModernGame {
   private occlusion=new CameraOcclusion();
   private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
-  private cameraYaw=0;
+  private cameraBoom=new CameraBoom();private cameraYaw=0;
   private desiredCameraYaw=0;
   private cameraPitch=22*Math.PI/180;
   private desiredPitch=22*Math.PI/180;
@@ -176,7 +177,7 @@ export class ModernGame {
       angle: number;
       depth?:number;swimming?:boolean;jumpAt: number; jumpBase?:number;jumpCount?:number;
       hitAt: number;
-      elevation:number;
+      elevation:number;walkSpeed?:number;
       climb?:import('./climbing').ClimbSave['phase'];
     }
   >();
@@ -694,21 +695,23 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const climbingLedge=this.adventure?.physicalLedges.find(l=>l.id===this.adventure?.climber.state.ledge),treeClimb=climbingLedge?.kind==='tree'||climbingLedge?.kind==='palm';
     this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {
       jumpCount:this.jumpCount,jumpAge:this.elapsed-this.jumpStarted,jumpBase:this.jumpBase,treeClimb,
-      eat:this.adventure?this.adventure.elapsed-this.adventure.eatingAt:100,carrying:!!this.adventure?.carried,jump:this.jumpAt(this.elapsed),swim:this.adventure?.swimming,pole:this.adventure?.climber.state.phase==='ground'&&!!this.adventure?.expedition&&!this.adventure.swimming&&this.adventure.area!=='sea'&&this.elapsed-this.hitStarted>HIT_SECONDS,lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/climbDuration(!!treeClimb),
+      eat:this.adventure?this.adventure.elapsed-this.adventure.eatingAt:100,carrying:!!this.adventure?.carried,jump:this.jumpAt(this.elapsed),swim:this.adventure?.swimming,pole:explorerPole(!!this.adventure?.expedition,this.adventure?.area||'classic',this.adventure?.climber.state.phase,this.adventure?.swimming,this.elapsed-this.hitStarted,this.jumpAt(this.elapsed),!!this.adventure?.carried),lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/climbDuration(!!treeClimb),
       hit: Math.max(
         0,
         Math.min(1, (this.elapsed - this.hitStarted) / HIT_SECONDS),
       ),
     });
-    for (const p of this.peers.values()) {
+    for (const [peerKey,p] of this.peers.entries()) {
       const dist = Math.hypot(p.character.root.position.x-p.target.x,p.character.root.position.z-p.target.z);
       p.character.root.position.lerp(p.target,1-Math.exp(-dt*12));
       p.character.root.rotation.y=turnTowards(p.character.root.rotation.y,p.angle,dt,8);
+      const moved=dist-Math.hypot(p.character.root.position.x-p.target.x,p.character.root.position.z-p.target.z);const speed=Math.max(0,Math.min(1.3,moved/Math.max(.001,dt)/2.3));p.walkSpeed=(p.walkSpeed||0)+(speed-(p.walkSpeed||0))*(1-Math.exp(-dt*6));
       const now = Date.now() + this.serverOffset;
       p.character.root.position.y=(p.swimming?-.68-(p.depth||0):p.elevation)+(p.climb==='hanging'||p.climb==='climbing'?0:airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000));
       const peerShadow=p.character.root.getObjectByName('ground-shadow');if(peerShadow){peerShadow.visible=!p.swimming;peerShadow.position.y=.005+(p.climb==='top'?p.elevation:this.terrain(p.target.x,p.target.z))-p.character.root.position.y;}
       if(p.character.root.userData.climbPhase!==p.climb){p.character.root.userData.climbPhase=p.climb;p.character.root.userData.climbAt=this.time;}
-      p.character.animate(this.time, Math.min(1, dist * 5), false, {swim:p.swimming,jump:airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000),jumpCount:p.jumpCount,jumpBase:p.jumpBase,jumpAge:(now-p.jumpAt)/1000,climbProgress:(this.time-(p.character.root.userData.climbAt||0))/2.1,treeClimb:true,
+      const peerJump=airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000),carrying=!!this.adventure&&Object.values(this.adventure.propMoves).some(prop=>prop.holder===peerKey);
+      p.character.animate(this.time, p.walkSpeed||0, false, {pole:explorerPole(!!this.adventure?.expedition,this.adventure?.area||'classic',p.climb,p.swimming,(now-p.hitAt)/1000,peerJump,carrying),carrying,swim:p.swimming,jump:airborneHeight({at:p.jumpAt/1000,base:p.jumpBase||0,count:p.jumpCount||1},now/1000),jumpCount:p.jumpCount,jumpBase:p.jumpBase,jumpAge:(now-p.jumpAt)/1000,climbProgress:(this.time-(p.character.root.userData.climbAt||0))/2.1,treeClimb:true,
         climb:p.climb==='hanging'?'hanging':p.climb==='climbing'?'climbing':'ground',
         hit: Math.max(0, Math.min(1, (now - p.hitAt) / 1000 / HIT_SECONDS)),
       });
@@ -751,9 +754,10 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const cameraInputDt=Math.min(raw,.2);
     if(!this.paused&&!this.adventure?.awakening){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(75*Math.PI/180,this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(-25*Math.PI/180,this.desiredPitch-cameraInputDt*.8);}
     const previousYaw=this.cameraYaw;
-    this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,14);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*14));
+    this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,10);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*10));
     const mode=this.cameraMode;
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
+    if(this.acc&&!this.adventure?.awakening){this.lookY+=(target.y-this.lookY)*(1-Math.exp(-dt*6));target.y=this.lookY;}else this.lookY=target.y;
     const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
     if(!this.previewMode&&!this.adventure?.awakening){
@@ -764,15 +768,15 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
           this.cameraYaw=this.desiredCameraYaw=previousYaw;desired.copy(prior);
         }
       }
-      desired.copy(this.cameraCollision.resolve(target,desired));
+      const safeDesired=this.cameraCollision.resolve(target,desired),wantedLength=desired.distanceTo(target),safeLength=safeDesired.distanceTo(target),boom=this.cameraBoom.step(wantedLength,safeLength,dt,this.time);desired.sub(target).normalize().multiplyScalar(boom).add(target);
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}
     if(cinematic&&!this.wasCinematic)this.clearInput();
     if(cinematic){const playerTarget=target.clone(),playerCamera=this.cameraCollision.resolve(playerTarget,desired.clone()),f=state!.layout.fortress,p=awakeningProgress(state!.elapsed,state!.bossAwakeAt);const shot=awakeningShot(p);target=new T.Vector3((f.x+.5)*U,this.terrain(f.x+.5,f.y+.5)+shot.lookHeight,(f.y+.5)*U);desired.copy(target).add(new T.Vector3(shot.x,shot.y,shot.z));const handoff=smooth01((p-.83)/.17);target.lerp(playerTarget,handoff);desired.lerp(playerCamera,handoff);this.camera.position.lerp(desired,1-Math.exp(-dt*5));this.lookAt.lerp(target,1-Math.exp(-dt*5));this.camera.lookAt(this.lookAt);}
-    if(this.wasCinematic&&!cinematic)this.cinematicReturnAt=this.time;this.wasCinematic=cinematic;
+    if(this.wasCinematic&&!cinematic){this.cinematicReturnAt=this.time;this.cameraBoom.reset();}this.wasCinematic=cinematic;
     if(!cinematic){
-    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));this.lookAt.lerp(target,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?4:12)));}
+    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));this.lookAt.lerp(target,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));}
     if(!this.previewMode)this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));
     const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,Math.hypot(distance,height)));
     this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*framing,this.lookAt.y+(this.cameraPitch<0?(distance+1)*Math.tan(-this.cameraPitch)*framing:0),this.lookAt.z+Math.cos(this.cameraYaw)*framing);

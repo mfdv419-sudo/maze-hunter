@@ -1,5 +1,18 @@
 # Maze Hunter — riwayat revisi
 
+## 1 November 2026 — Avatar Sync & Camera Comfort
+
+Delta ini dipasang **setelah Gameplay & Animation Polish (20 file)**.
+
+- Aturan trekking pole disatukan untuk avatar lokal dan pemain lain. Avatar pemain lain sebelumnya tidak menerima flag pole sama sekali. Pole kini terlihat pada kedua sisi dalam kondisi berjalan/diam di tanah dan tersimpan saat melompat, berenang, memanjat, membawa objek atau sedang menyerang.
+- Kecepatan animasi pemain lain dihitung dari perpindahan horizontal yang benar-benar ditampilkan per frame, lalu diratakan. Tidak lagi memakai jarak ke paket posisi terakhir sebagai ukuran kekuatan langkah.
+- Langkah dibuat lebih lebar dengan ayunan kaki bergantian, tekukan lutut dan angkatan kaki yang lebih jelas. Irama langkah diturunkan dan gerak naik-turun badan diperkecil.
+- Kamera mempertahankan yaw manual. Tracking vertikal diratakan; kamera dan fokus menggunakan laju follow yang sama. Saat dinding memaksa jarak kamera mendekat, pemulihan jarak menunggu sejenak lalu dibatasi kecepatannya untuk mengurangi gerak maju-mundur berulang. Tumbukan tetap dijaga; sudut tidak dipaksa naik.
+
+**Pemasangan:** salin perubahan ke GitHub/branch Netlify lalu deploy ulang. Buka ulang game di semua perangkat supaya tidak mencampur versi frontend. Tidak ada perubahan environment atau server Node, sehingga server dan tunnel yang sudah berjalan tidak perlu direstart untuk delta ini.
+
+**Validasi:** 243 tes unit, 2 tes browser baru dan build frontend lulus. Tes browser memeriksa pole avatar lokal dan remote, penyimpanan pole saat memanjat/menyerang, perubahan kecepatan langkah remote, serta kamera yang tidak berputar otomatis saat berjalan dan stabil setelah berhenti. Tes merupakan fixture runtime lokal; belum merupakan tes online dua perangkat fisik atau pengukuran FPS/kenyamanan bermain lama. Animasi tetap menggunakan rig prosedural.
+
 ## 1 November 2026 — Gameplay & Animation Polish
 
 Paket delta ini dipasang setelah **Motion Corrections (12 file, 30 Oktober)**. Salin isi folder `maze-hunter` di ZIP ke proyek yang sudah memuat revisi sebelumnya. Paket hanya berisi file yang berubah; bukan source lengkap.

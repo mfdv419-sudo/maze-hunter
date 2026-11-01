@@ -1,3 +1,4 @@
+import {walkingLeg} from './avatar-presentation';
 import {airPose,smooth01,armGrip} from './motion-quality';
 import {gloveModel,bootModel,expeditionWearables} from './gear-model';
 import {paletteColors,type Appearance} from '../services/cosmetics';
@@ -87,9 +88,9 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
   poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
-  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*10.5*walk;const stride=Math.sin(gait)*walk*.54;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
-  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:Math.sin(time*(walk>.05?22:2))*(walk>.05?.014:.006));body.rotation.x=-walk*.085;chest.scale.y=1+Math.sin(time*2)*.012;
-  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);legs[i].rotation.x=-swing;knees[i].rotation.x=Math.max(0,swing)*.65;}
+  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
+  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.x=-walk*.045;chest.scale.y=1+Math.sin(time*2)*.012;
+  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
   const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
