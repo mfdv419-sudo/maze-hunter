@@ -1,3 +1,4 @@
+import {pilotGround} from './forest-pilot';
 import {shipSurface} from './expedition-landmarks';
 import type {AdventureLayout} from './adventure-layout';
 import type {AdventureArea} from './areas';
@@ -5,6 +6,7 @@ import type {Point} from './maze';
 export const aquaticArea=(area:AdventureArea)=>area==='sea'||area==='coast';
 /** Shared terrain and depth rules: renderer, pickups and authoritative room simulation. */
 export function aquaticGround(area:AdventureArea,x:number,y:number,layout:AdventureLayout):number{
+ if(layout.pilot)return pilotGround(x,y);
  const f=layout.forest!;
  if(area==='sea'){
   const deck=shipSurface(x,y,layout);if(deck!==null)return deck;
@@ -16,5 +18,5 @@ export function aquaticGround(area:AdventureArea,x:number,y:number,layout:Advent
  const d=Math.hypot(x-f.cave.x-.5,y-f.cave.y-.5);
  return Math.sin(x*.07)*.12-Math.max(0,1-d/5.2)*3.6;
 }
-export function aquaticSwimming(area:AdventureArea,p:Point,layout:AdventureLayout){return aquaticArea(area)&&aquaticGround(area,p.x,p.y,layout)<-1.05;}
+export function aquaticSwimming(area:AdventureArea,p:Point,layout:AdventureLayout){return (aquaticArea(area)||!!layout.pilot)&&aquaticGround(area,p.x,p.y,layout)<-1.05;}
 export function aquaticChestDepth(area:AdventureArea,index:number,p:Point,layout:AdventureLayout){return aquaticArea(area)?Math.max(0,-aquaticGround(area,p.x+.5,p.y+.5,layout)-.6):0;}

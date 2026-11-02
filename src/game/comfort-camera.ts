@@ -22,32 +22,17 @@ export function edgePan(x:number,width:number){const margin=Math.min(64,width*.1
 /** Keep collision on the requested camera ray; never search another orbit. */
 export function cameraFocus(pitch:number,distance:number){return pitch<0?distance*Math.tan(-clampPitch(pitch)):.2;}
 
-/** World-space contact anchor. Only manual orbit can shorten the target ray. */
-export class ContactFollowCamera {
- private position:T.Vector3|undefined;private target:T.Vector3|undefined;private request:T.Vector3|undefined;private held=false;
- reset(){this.position=undefined;this.target=undefined;this.request=undefined;this.held=false;}
- resetView(){this.request=undefined;}
- get anchored(){return this.held;}
+/** Fixed spherical orbit: no world-space height anchor and no alternative-side search. */
+export class RadiusOrbitCamera {
+ private target:T.Vector3|undefined;private length:number|undefined;
+ reset(){this.target=undefined;this.length=undefined;}
+ resetView(){}
  step(target:T.Vector3,offset:T.Vector3,resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3){
-  const radius=offset.length();
-  if(!this.position){this.position=resolve(target,target.clone().add(offset));this.held=this.position.distanceTo(target)<radius-.01;}
-  else if(!this.request||this.request.distanceToSquared(offset)>1e-10){
-   // A player orbit stays at its current radius. A real wall may shorten it.
-   const length=this.held?Math.min(radius,this.position.distanceTo(target)):radius;
-   const direction=this.request?this.position.clone().sub(this.held?target:this.target!).normalize().applyQuaternion(new T.Quaternion().setFromUnitVectors(this.request.clone().normalize(),offset.clone().normalize())):offset.clone().normalize();
-   this.position.copy(resolve(target,target.clone().addScaledVector(direction,length)));
-   this.held=this.position.distanceTo(target)<radius-.01;
-  }else if(this.held){
-   const delta=this.position.clone().sub(target),length=delta.length();
-   if(length>=radius){
-    // Player motion has restored the radius: follow only the overshoot, no autonomous recovery.
-    const desired=target.clone().addScaledVector(delta,radius/Math.max(length,.0001));
-    const safe=resolve(this.position,desired);this.held=safe.distanceTo(desired)>.01;this.position.copy(safe);
-   }
-  }else{
-   const desired=this.position.clone().add(target.clone().sub(this.target!)),safe=resolve(this.position,desired);
-   this.held=safe.distanceTo(desired)>.01;this.position.copy(safe);
-  }
-  this.target=target.clone();this.request=offset.clone();return this.position.clone();
+  const radius=offset.length(),direction=offset.clone().normalize();this.length??=radius;
+  if(this.target&&this.length<radius-.001)this.length=Math.min(radius,Math.max(.08,this.length-target.clone().sub(this.target).dot(direction)));
+  if(this.length>=radius-.001)this.length=radius;
+  const desired=target.clone().addScaledVector(direction,this.length),safe=resolve(target,desired);this.length=Math.min(this.length,safe.distanceTo(target));this.target=target.clone();return target.clone().addScaledVector(direction,this.length);
  }
 }
+/** Steering while moving follows a continuous orbit; no idle recenter or scenery-driven rotation. */
+export function steerOrbit(yaw:number,x:number,dt:number,manual=false){return manual?yaw:yaw-Math.max(-1,Math.min(1,x))*Math.max(0,Math.min(.05,dt))*1.05;}

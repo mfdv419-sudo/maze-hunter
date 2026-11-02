@@ -3,5 +3,5 @@ import '/src/style.css';import '/src/presentation.css';import {showQuiz} from '/
 // Rendering-only projections. No production Auth, backend, or reward writes.
 const result=new URLSearchParams(location.search).has('result');sessionStorage.removeItem('mh-retro-quiz:two-render');
 const questions=[{id:'render-1',subject:'Matematika',question:'Berapakah hasil 2 + 1?',options:['2','3','4'],answer:result?1:null,...(result?{correct_index:1,explanation:'2 ditambah 1 sama dengan 3.'}:{})},{id:'render-2',subject:'Matematika',question:'Ada 9 kelereng dan 4 diberikan kepada teman. Berapa sisanya?',options:['6','5','4'],answer:result?0:null,...(result?{correct_index:1,explanation:'9 dikurangi 4 sama dengan 5.'}:{})}];
-void showQuiz(async()=>{throw Error('Rendering-only fixture: backend absent');},'two-render-session','two-render',{stage:result?'quiz_finished':'quiz_active',level:1,baseReward:3,totalReward:3,...(result?{correct:1}:{}),questions},false,()=>{},()=>new Promise(()=>{}));
+void showQuiz(async()=>{throw Error('Rendering-only fixture: backend absent');},'two-render-session','two-render',{stage:result?'quiz_finished':'quiz_active',level:1,quizRemaining:30,baseReward:3,totalReward:3,...(result?{correct:1}:{}),questions},false,()=>{},()=>new Promise(()=>{}));
 </script></body></html>

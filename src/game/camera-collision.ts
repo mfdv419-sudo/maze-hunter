@@ -20,13 +20,14 @@ export class CameraCollision {
   for(const mesh of this.meshes){if(!mesh.visible)continue;for(const box of this.boxes(mesh)){
    const expanded=box.clone().expandByScalar(radius);
    // Near a wall, reduce only the safety margin rather than ignoring that wall.
-   if(expanded.containsPoint(target)){expanded.copy(box).expandByScalar(.025);if(expanded.containsPoint(target)){safe=0;continue;}}
+   if(expanded.containsPoint(target)){expanded.copy(box).expandByScalar(.025);if(expanded.containsPoint(target)){if(!expanded.containsPoint(desired))continue;safe=0;continue;}}
    const hit=ray.intersectBox(expanded,new T.Vector3());if(hit)safe=Math.min(safe,Math.max(0,target.distanceTo(hit)-.025));
   }}
   if(this.solid){
    const offsets=[new T.Vector3(),new T.Vector3(radius,0,0),new T.Vector3(-radius,0,0),new T.Vector3(0,radius,0),new T.Vector3(0,-radius,0),new T.Vector3(0,0,radius),new T.Vector3(0,0,-radius)];
    const blocked=(at:number)=>{const p=target.clone().addScaledVector(ray.direction,at);return offsets.some(o=>this.solid!(p.clone().add(o)));};
-   let last=0;for(let at=Math.min(.09,safe);at<=safe+.00001;at=Math.min(safe,at+.09)){
+   let last=0,exited=!blocked(0);for(let at=Math.min(.09,safe);at<=safe+.00001;at=Math.min(safe,at+.09)){
+    if(!exited){exited=!blocked(at);last=at;if(at>=safe)break;continue;}
     if(blocked(at)){let lo=last,hi=at;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(blocked(mid))hi=mid;else lo=mid;}safe=Math.max(0,lo-.025);break;}
     last=at;if(at>=safe)break;
    }

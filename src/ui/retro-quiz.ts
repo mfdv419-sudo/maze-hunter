@@ -1,3 +1,4 @@
+import {QuizClock} from './quiz-clock';
 type API=(body:Record<string,unknown>)=>Promise<any>;
 export interface BonusChoice{subject:string;sessionId?:string;questions?:any[]}
 const subjects:Record<string,string>={MIX:'Random Mix',MTK:'Matematika',IPA:'IPA',IPS:'IPS',IDN:'Bahasa Indonesia',ENG:'Bahasa Inggris',FRA:'Bahasa Prancis',ARB:'Bahasa Arab',ZHO:'Bahasa Mandarin',PP:'Pendidikan Pancasila',TIK:'Informatika'};
@@ -17,22 +18,24 @@ export async function startBonus(api:API,choice:BonusChoice,profile:string,level
 }
 export function showQuiz(api:API,sessionId:string,profile:string,initial:any,en:boolean,update:(progress:any)=>void,ready?:()=>Promise<any>):Promise<any>{return new Promise(resolve=>{
  let state=initial,answers:Record<string,number>={...pendingBonus(profile)?.choices};for(const q of state.questions)if(q.answer!==null&&q.answer!==undefined)answers[q.id]=q.answer;
- const {overlay,modal}=panel('Bonus Quiz');
- const persist=()=>rememberBonus(profile,{...pendingBonus(profile),sessionId,level:state.level,stage:state.stage,questions:state.questions,choices:answers});persist();
- const close=(value:any)=>{if(value?.progress)update(value.progress);rememberBonus(profile,null);overlay.remove();resolve(value);};
- const final=()=>{modal.replaceChildren();modal.classList.add('quiz-summary');text(modal,en?'Quiz results':'Hasil kuis','h2');text(modal,`${state.correct}/2 ${en?'correct':'benar'} · ${state.totalReward} ★`,'strong');
+ const {overlay,modal}=panel('Bonus Quiz');const cached=pendingBonus(profile),budget=initial.quizRemaining??cached?.proof?.remaining??60,clock=new QuizClock(budget,Date.now(),cached?.quizDeadline,cached?.answerSeconds);let timedOut=false;let ticker:ReturnType<typeof setInterval>|undefined;
+ const persist=()=>rememberBonus(profile,{...pendingBonus(profile),sessionId,level:state.level,stage:state.stage,questions:state.questions,choices:answers,quizDeadline:clock.deadline,answerSeconds:clock.left()===0||Object.keys(answers).length===2?clock.stop():undefined});persist();
+ const close=(value:any)=>{clearInterval(ticker);if(value?.progress)update(value.progress);rememberBonus(profile,null);overlay.remove();resolve(value);};
+ const final=()=>{clearInterval(ticker);modal.replaceChildren();modal.classList.add('quiz-summary');text(modal,en?'Quiz results':'Hasil kuis','h2');text(modal,`${state.correct}/2 ${en?'correct':'benar'} · ${state.totalReward} ★`,'strong');
   for(const [i,q]of state.questions.entries()){const detail=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`${i+1}. ${q.answer===q.correct_index?(en?'Correct':'Benar'):(en?'Incorrect':'Belum tepat')} · ${q.subject}`;detail.className='quiz-review';detail.append(summary);const prompt=text(detail,'');content(prompt,q.question);const selected=text(detail,'');content(selected,`${en?'Your answer':'Jawabanmu'}: ${q.options[q.answer]}`);const correct=text(detail,'');content(correct,`${en?'Correct answer':'Jawaban benar'}: ${q.options[q.correct_index]}`);const explanation=text(detail,'');content(explanation,q.explanation);modal.append(detail);}
   action(modal,en?'Continue':'Lanjutkan',()=>close(state));
  };
- const submit=async()=>{modal.replaceChildren();text(modal,en?'Saving quiz results…':'Menyimpan hasil kuis…','h2');try{
+ const submit=async()=>{clock.stop();clearInterval(ticker);persist();modal.replaceChildren();text(modal,en?'Saving quiz results…':'Menyimpan hasil kuis…','h2');try{
   if(ready){const verified=await ready();ready=undefined;if(verified.progress)update(verified.progress);}
-  state=await api({action:'answers',sessionId,answers:state.questions.map((q:any)=>({questionId:q.id,index:answers[q.id]}))});if(state.progress)update(state.progress);persist();final();
+  state=await api({action:'answers',sessionId,answerSeconds:clock.stop(),answers:state.questions.map((q:any)=>({questionId:q.id,index:answers[q.id]}))});if(state.progress)update(state.progress);persist();final();
  }catch(e){modal.replaceChildren();text(modal,en?'Answers retained':'Jawaban tetap tersimpan','h2');text(modal,String(e instanceof Error?e.message:e));action(modal,en?'Retry':'Coba lagi',()=>void submit());action(modal,en?'Keep base reward and close':'Hadiah dasar tetap · tutup',()=>{overlay.remove();resolve(null);},true);}};
- const skip=()=>{const gate=ready?ready():Promise.resolve();void gate.then(()=>api({action:'skip',sessionId})).catch(()=>{});close(null);};
- const draw=()=>{const index=state.questions.findIndex((q:any)=>answers[q.id]===undefined);if(index<0){void submit();return;}const q=state.questions[index];modal.replaceChildren();text(modal,`Bonus Quiz · ${index+1}/2`,'h2');text(modal,q.subject,'small');const prompt=text(modal,'');prompt.className='quiz-question';content(prompt,q.question);const options=document.createElement('div');options.className='quiz-answers';modal.append(options);
-  q.options.forEach((v:string,i:number)=>{const b=action(options,'',()=>{answers[q.id]=i;persist();draw();});content(b,v);});action(modal,en?'Skip quiz · keep base reward':'Lewati kuis · hadiah dasar tetap',skip,true);
+ const expire=async()=>{if(timedOut)return;timedOut=true;clock.stop();clearInterval(ticker);persist();modal.replaceChildren();text(modal,en?'Time is up':'Waktu habis','h2');text(modal,en?'Your base reward is retained.':'Hadiah dasar tetap tersimpan.');const gate=ready?ready():Promise.resolve();void gate.then(()=>api({action:'skip',sessionId})).catch(()=>{});action(modal,en?'Continue':'Lanjutkan',()=>close(null));};
+ const tick=()=>{const label=modal.querySelector('[data-quiz-countdown]');if(label)label.textContent=`⏱ ${Math.ceil(clock.left())}s`;if(clock.left()<=0&&!timedOut)void expire();};
+ const skip=()=>{clearInterval(ticker);const gate=ready?ready():Promise.resolve();void gate.then(()=>api({action:'skip',sessionId})).catch(()=>{});close(null);};
+ const draw=()=>{const index=state.questions.findIndex((q:any)=>answers[q.id]===undefined);if(index<0){void submit();return;}const q=state.questions[index];modal.replaceChildren();text(modal,`Bonus Quiz · ${index+1}/2`,'h2');const time=text(modal,`⏱ ${Math.ceil(clock.left())}s`);time.dataset.quizCountdown='';time.setAttribute('role','timer');text(modal,q.subject,'small');const prompt=text(modal,'');prompt.className='quiz-question';content(prompt,q.question);const options=document.createElement('div');options.className='quiz-answers';modal.append(options);
+  q.options.forEach((v:string,i:number)=>{const b=action(options,'',()=>{if(clock.left()<=0){void expire();return;}answers[q.id]=i;if(Object.keys(answers).length===2)clock.stop();persist();draw();});content(b,v);});action(modal,en?'Skip quiz · keep base reward':'Lewati kuis · hadiah dasar tetap',skip,true);
  };
- if(state.stage==='quiz_finished')final();else draw();
+ if(state.stage==='quiz_finished')final();else {ticker=setInterval(tick,100);if(clock.left()<=0)void expire();else draw();}
  });}
 export async function finishBonus(api:API,choice:BonusChoice,profile:string,proof:Record<string,unknown>,en:boolean,update:(progress:any)=>void){
  if(!choice.sessionId)return;

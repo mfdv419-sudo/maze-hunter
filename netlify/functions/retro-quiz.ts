@@ -1,3 +1,4 @@
+import {retroConfig} from '../../src/game/maze';
 import type {Handler} from '@netlify/functions';
 import {getApps,initializeApp,cert} from 'firebase-admin/app';
 import {getAuth} from 'firebase-admin/auth';
@@ -16,12 +17,13 @@ export const handler:Handler=async event=>{const headers={'Content-Type':'applic
  const response=await db.runTransaction(async tx=>{const [snapshot,pSnap,kSnap]=await Promise.all([tx.get(ref),tx.get(profile),tx.get(progressRef)]);const p=pSnap.data()!,old=kSnap.data() as KnowledgeProgress|undefined;let s=snapshot.data() as QuizSession|undefined;let delta=0;
  if(body.action==='start'){if(s){if(s.profileId!==profileId||s.subject!==body.subject||s.level!==body.level)throw Error('Attempt mismatch');return{...publicSession(s,bank),progress:old,draft};}if(!validQuizLevel(body.level)||!subjects.length)throw Error('Quiz level unavailable');const selected=levelQuestions(pool,String(body.subject),body.level);s={version:PACK_VERSION,profileId,level:body.level,subject:String(body.subject),createdAt:now,stage:'maze_running',questions:selected.map(q=>q.id),answers:{},baseReward:0,correct:0};tx.create(ref,s);return{...publicSession(s,bank),draft};}
  if(!s||s.profileId!==profileId)throw Error('Attempt not found');if(s.version!==PACK_VERSION)throw Error('Pack version changed');if(now-s.createdAt>86400000&&s.stage!=='quiz_finished'&&s.stage!=='quiz_skipped')throw Error('Attempt expired');
- if(body.action==='finish'&&s.stage==='maze_running'){s.baseReward=verifyGate(s.level,body.path,body.seconds,body.errors,(now-s.createdAt)/1000);s.completedAt=now;s.stage='quiz_active';const key=String(s.level),previous=p.retro?.[key];tx.update(profile,{[`retro.${key}`]:{stars:Math.max(previous?.stars||0,s.baseReward),seconds:Math.min(previous?.seconds??Infinity,body.seconds),errors:Math.min(previous?.errors??Infinity,body.errors)},updatedAt:now});}
+ if(body.action==='finish'&&s.stage==='maze_running'){s.baseReward=verifyGate(s.level,body.path,body.seconds,body.errors,(now-s.createdAt)/1000);s.quizRemaining=Math.max(0,retroConfig(s.level).seconds-body.seconds);s.completedAt=now;s.stage='quiz_active';const key=String(s.level),previous=p.retro?.[key];tx.update(profile,{[`retro.${key}`]:{stars:Math.max(previous?.stars||0,s.baseReward),seconds:Math.min(previous?.seconds??Infinity,body.seconds),errors:Math.min(previous?.errors??Infinity,body.errors)},updatedAt:now});}
  else if(body.action==='answers'){
+  if(!Number.isFinite(body.answerSeconds)||body.answerSeconds<0||body.answerSeconds>(s.quizRemaining??0))throw Error('Quiz time expired or invalid');
   if(!Array.isArray(body.answers)||body.answers.length!==2||new Set(body.answers.map((a:any)=>a.questionId)).size!==2||body.answers.some((a:any)=>!s!.questions.includes(a.questionId)||!Number.isInteger(a.index)||a.index<0||a.index>2))throw Error('Two valid answers required');
   for(const answer of body.answers){if(s.stage==='quiz_finished'){if(s.answers[answer.questionId]!==answer.index)throw Error('Answer already final');}else answerQuestion(s,bank,String(answer.questionId),answer.index,now);}
  }
- else if(body.action==='answer'){if(s.stage==='quiz_finished'&&s.answers[body.questionId]===body.index){}else answerQuestion(s,bank,String(body.questionId),body.index,now);}
+ else if(body.action==='answer')throw Error('Submit both timed answers together');
  else if(body.action==='skip'&&s.stage!=='quiz_finished'){s.stage='quiz_skipped';s.totalReward=s.baseReward;s.scoredAt=now;}
  else if(!['resume','finish','skip'].includes(body.action))throw Error('Unknown action');
  if(s.baseReward>0){const settled=settleKnowledge(old,s,Math.max(p.retro?.[String(s.level)]?.stars||0,s.baseReward));delta=settled.delta;tx.set(progressRef,settled.progress);tx.set(ref,s);return{...publicSession(s,bank),progress:settled.progress,delta,draft};}

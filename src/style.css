@@ -1378,3 +1378,5 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 
 .modal.retro-quiz.quiz-summary{display:flex;flex-direction:column;width:min(92vw,580px);gap:12px;align-items:stretch}
 .quiz-review{padding:10px 12px;border:1px solid #7e8b9c;border-radius:12px;min-width:0}.quiz-review summary{cursor:pointer;font-size:15px;line-height:1.4}.quiz-review p{margin-top:8px;font-size:14px}
+.retro-quiz>[role=timer]{font-variant-numeric:tabular-nums;font-weight:700;color:#f3d491}
+@media(orientation:landscape) and (max-height:500px){.retro-quiz>[role=timer]{grid-column:2;grid-row:1;justify-self:end;align-self:center}.retro-quiz:has(>[role=timer])>h2{grid-column:1;grid-row:1}.retro-quiz:has(>[role=timer])>small{grid-row:2}}

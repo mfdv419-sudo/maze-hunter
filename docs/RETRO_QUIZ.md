@@ -16,10 +16,16 @@ Sekarang teks/opsi dua soal dikirim bersama start session sebelum maze dimulai, 
 
 Function retro-quiz memakai backend Netlify dan Firebase Admin existing. Tidak memakai proses Node multiplayer di laptop. Tidak perlu hosting atau environment baru. Kunci tetap privat di function; preload hanya untuk dua pertanyaan sesi, bukan seluruh bank.
 
-Versi sesi menjadi `retro-levels-001-100-two-v3`; mulai level baru sesudah deploy. Attempt tiga soal versi lama tidak dilanjutkan sebagai dua soal, sedangkan progress/bintang tersimpan tetap dipertahankan. Rules dari paket awal Knowledge Bonus tetap harus sudah diterapkan.
+Versi sesi menjadi `retro-levels-001-100-two-timed-v4`; mulai level baru sesudah deploy. Attempt tiga soal versi lama tidak dilanjutkan sebagai dua soal, sedangkan progress/bintang tersimpan tetap dipertahankan. Rules dari paket awal Knowledge Bonus tetap harus sudah diterapkan.
 
 ## Validasi
 
-281 tes/45 file lulus; validator 2.000 soal dan bundle function lulus. Handler dengan adapter Auth/Firestore pengujian memverifikasi dua soal, preload tanpa kunci, penilaian batch hanya setelah Gate, duplicate answers ditolak, retry tanpa tambahan reward, ownership dan level berpeta ganda. Ini bukan pengujian Firebase produksi.
+291 tes/46 file lulus; validator 2.000 soal dan bundle function lulus. Handler dengan adapter Auth/Firestore pengujian memverifikasi dua soal, preload tanpa kunci, penilaian batch hanya setelah Gate, duplicate answers ditolak, retry tanpa tambahan reward, ownership dan level berpeta ganda. Ini bukan pengujian Firebase produksi.
 
 Browser fixture render memverifikasi soal pertama langsung menjadi kedua tanpa hasil antarsoal, meskipun promise verifikasi masih pending. Ringkasan contoh dua soal muat tanpa overflow pada 390×844 (panel 351×261) dan 844×390 (panel 532×254). Fixture hanya render dengan backend sengaja tidak tersedia, bukan kuis produksi atau bukti latensi jaringan nyata. Alur akun nyata setelah Netlify deploy masih memerlukan pilot.
+
+## Current timed revision
+
+Session version: `retro-levels-001-100-two-timed-v4`. Remaining level time is carried into the two-question panel and displayed. A shared QuizClock spans both answers, uses the actual display deadline, and freezes on the last click. Final verification/retry time does not consume answer time. If the deadline expires, optional bonus is skipped; the base maze reward remains. Refresh/resume retains the question deadline or frozen elapsed answer time.
+
+The server calculates its question budget from the level config and verified maze seconds, rejects missing/negative/excess answer duration, and requires both answers in one timed submission. This follows the existing browser completion-proof model; it is not a claim of a complete anti-cheat system. Single-answer scoring requests are no longer supported. No correct count/keys/explanations are returned early. Question preload still avoids waiting for a finish response before showing the questions. Deploy frontend and function together and begin a fresh attempt.

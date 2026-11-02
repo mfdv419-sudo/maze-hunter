@@ -56,7 +56,7 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
  if(cache.size>35)cache.clear();cache.set(key,structuredClone(layout));return layout;
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){
- if(layout.training)return 0;
+ if(layout.training)return 0;if(layout.pilot)return aquaticGround(area,x,y,layout);
  const h=layout.forest!.highland,c=layout.forest!.cave,d=Math.hypot(x-h.x-.5,y-h.y-.5);
  if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return gorgeElevation(x,y,layout);
  if(area==='volcano')return Math.max(0,5-d*.09)+Math.sin(x*.1)*Math.cos(y*.12)*.4-(courseDanger(layout,area,x,y)?.6:0);

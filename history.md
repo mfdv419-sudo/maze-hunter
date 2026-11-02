@@ -1,5 +1,21 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Pilot Forest Grove, orbit radius dan countdown Retro
+
+Dasar: source terbaru yang sudah memuat bank 2.000 soal dan revisi dua soal. Delta digabung agar bisa ditimpa pada paket bank tersebut; ZIP kamera lima file yang dibatalkan tidak diperlukan. Prompt serta keempat gambar Forest_Grove_Final(1).zip diperiksa. Scope pilot tetap **SOLO / Medium / Map 01**, bukan seluruh map Adventure.
+
+- Dunia authored 73×73: Entrance, Hub tiga cabang, Green Cliffs, Ancient Ruins, Giant Tree, Waterfall Valley, Sanctuary terisolasi dan Exit. Tepian/pohon bisa dipanjat; ada selam, atap terowongan, rune, jembatan lintas zona dan shortcut setelah pohon ditaklukkan. Dua dari tiga Sigil membuka Sanctuary; boss dikalahkan dahulu sebelum Exit terbuka. Pertarungan, Binturong, reward serta map lainnya dipertahankan.
+- Scene prosedural memakai batu/rumput bertingkat, pohon/bunga yang dibatch, reruntuhan, jembatan papan, langit, air terjun/foam, kolam/alur air serta feedback rune/gate. Tidak menggambar garis solusi referensi. Minimap pilot menyembunyikan pickup yang belum terjelajah. QA geometri: 99 mesh dunia, 90.112 triangle, tanpa koordinat invalid; ini bukan pengukuran FPS.
+- HUD pilot ringkas: Back/Forest Grove di kiri atas; minimap dan Fullscreen/Settings/Guide di kanan atas. Objective dipindah ke Guide. Kontrol kanan ikon saja dan pilihan horizontal empat ability. Spinach dapat dipilih sebagai utility; senjata lain tetap bisa dipakai selama buff. Pengaturan audio, volume, sensitivitas, reset, warna cake dan taruh benda dipertahankan. SOLO tanpa chat/mic; toggle Online existing dipindah ke bawah minimap, transportnya tidak diganti.
+- Anchor posisi dunia dan pencarian sisi diganti RadiusOrbitCamera. Radius bebas 7,2 / FOV 60; ketinggian relatif mengikuti karakter/pitch. Steering dari input memungkinkan lingkaran, drag manual diprioritaskan, tanpa idle recenter/pencarian sisi. Collision nyata boleh memendekkan radius; tidak ada pemulihan berdasarkan timer. Asal ray di dalam objek panjat boleh keluar volumenya agar kamera tidak dipaksa masuk ke karakter.
+- Sisa countdown Retro kini tampil dan berjalan melewati dua soal, berhenti pada klik jawaban terakhir, tidak menghitung verifikasi akhir. Timeout mempertahankan hadiah dasar tanpa bonus. Backend memeriksa budget/durasi dan menerima batch dua jawaban; feedback tetap di akhir. Versi sesi v4 perlu permainan baru, progress lama tidak dihapus.
+
+Validasi: **291 tes / 46 file lulus**; build frontend/server realtime, bundle function dan validator 2.000 soal lulus. Tes terarah pilot memakai kurva lompat asli. Cakupan: semua pasangan dua Sigil, gate/Exit, panjat aktual, selam/atap/kembali, pickup valid, crosslink/shortcut lebih singkat, serialisasi, orbit dan batas timer. Browser fixture menguji HUD/Guide portrait/landscape serta countdown 1/2 → 2/2 → verifikasi. Fixture geometri memakai pembuat scene asli tanpa renderer.
+
+**Batas:** peluncuran game asli di browser cloud gagal membuat WebGL context (renderer dinonaktifkan). Kualitas visual, FPS HP, native multitouch, fullscreen perangkat, kuis akun nyata dan voice online belum terverifikasi. Tidak diganti data produksi palsu atau diklaim lulus. Ini pilot source dengan pemeriksaan visual perangkat yang masih terbuka.
+
+Pasang delta pada source dengan bank 2.000 soal, deploy Netlify frontend/functions, refresh dan mulai sesi baru. Tidak ada environment/rules atau protokol realtime baru; PowerShell 1/2 boleh tetap berjalan. Tidak ada push/deploy/perubahan data Firebase live dari sesi ini. Laporan: docs/FOREST_GROVE_PILOT.md.
+
 ## 2 November 2026 — Kamera kontak dan Retro dua soal
 
 **Dasar source:** paket 16 file berisi bank aktif 2.000 soal. Pengguna belum menerapkan koreksi kamera lima file sesudahnya; ZIP tersebut diabaikan dan bukan prasyarat. Revisi ini dapat ditimpa langsung pada paket 16 file. Riwayat paket lima file tetap dicatat di bawah sebagai riwayat pembuatan, bukan status pemasangan pengguna.

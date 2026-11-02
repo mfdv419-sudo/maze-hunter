@@ -1,3 +1,5 @@
+import {forestPilotWorld} from './forest-pilot-world';
+import type {AdventureState} from './adventure-state';
 import {expeditionAdditions} from './expedition-additions';
 import {expeditionEffects} from './expedition-effects';
 import {biomeWallTop,biomeWalls} from './biome-walls';
@@ -9,7 +11,8 @@ import type {AdventureLayout} from './adventure-layout';
 import {biomeElevation} from './biome-layout';
 import {forestTree,groundTexture} from './world-art';
 import {batchStatic} from './static-model';
-export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea){
+export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea,state?:()=>AdventureState|undefined){
+ if(layout.pilot)return forestPilotWorld(scene,world,layout,state);
  if(area==='gorge')return gorgeWorld(scene,world,layout);
  const additions=expeditionAdditions(world,layout,area,layout.maze.grid.length<70);const walls=biomeWalls(world,layout,area),effects=expeditionEffects(world,layout,area);
  const theme=areaThemes[area],n=layout.maze.grid.length,props=new T.Group(),stone=new T.MeshLambertMaterial({color:theme.wall,map:groundTexture('stone')}),wood=new T.MeshLambertMaterial({color:0x987652}),leaf=new T.MeshLambertMaterial({color:area==='coast'?0x70ab70:0x507d62});
