@@ -47,10 +47,16 @@ export function biomeLayout(area:AdventureArea,difficulty:Difficulty,index:numbe
   const nav=grid.map(r=>[...r]);for(const l of ledges)nav[l.point.y][l.point.x]=1;nav[q.y][q.x]=1;const reachable=distances(nav,start);if([...seals,fortress,finish].some(p=>!reachable.has(p.x+','+p.y)))continue;
   ledges.push({id:ledges.length,point:q,height:.65+(stones%3)*.12,kind:'rock'});stones++;
  }
+ if(area==='gorge'){
+  const protectedSites=[...seals,...chests,...stars,start,fortress,finish];
+  const bay=open.find(q=>q.x>5&&q.y>5&&q.x<n-6&&q.y<n-6&&Math.hypot(q.x-areas[4].point.x,q.y-areas[4].point.y)<12&&protectedSites.every(p=>Math.hypot(p.x-q.x,p.y-q.y)>3.5&&Math.hypot(p.x-q.x-1,p.y-q.y)>2.5)&&!courseDanger(layout,area,q.x+.5,q.y+.5)&&Array.from({length:5},(_,j)=>j-2).every(dy=>Array.from({length:5},(_,j)=>j-2).every(dx=>grid[q.y+dy]?.[q.x+dx]===0)));
+  if(bay){layout.ledges=layout.ledges.filter(l=>Math.hypot(l.point.x-bay.x,l.point.y-bay.y)>4);const landing={x:bay.x+1.5,y:bay.y+.5},pad={x:bay.x-.5,y:bay.y+.5};layout.traversal={pad,landing,entry:{x:bay.x-2.5,y:bay.y+.5}};layout.ledges.push({id:800,point:{x:bay.x+1,y:bay.y},height:2.35,width:1.6,depth:1.5,kind:'rock'},{id:801,point:{x:bay.x+1,y:bay.y+2},height:1.35,width:1.4,depth:1.1,kind:'rock'});}
+ }
  if(area==='gorge')repairGorgeChests(layout);
  if(cache.size>35)cache.clear();cache.set(key,structuredClone(layout));return layout;
 }
 export function biomeElevation(area:AdventureArea,x:number,y:number,layout:AdventureLayout){
+ if(layout.training)return 0;
  const h=layout.forest!.highland,c=layout.forest!.cave,d=Math.hypot(x-h.x-.5,y-h.y-.5);
  if(area==='sea'||area==='coast')return aquaticGround(area,x,y,layout);if(area==='gorge')return gorgeElevation(x,y,layout);
  if(area==='volcano')return Math.max(0,5-d*.09)+Math.sin(x*.1)*Math.cos(y*.12)*.4-(courseDanger(layout,area,x,y)?.6:0);

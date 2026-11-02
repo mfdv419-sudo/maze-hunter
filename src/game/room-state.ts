@@ -37,6 +37,7 @@ export interface Player {avatarPose?:import('./avatar-actions').AvatarAction|nul
   climb?:import('./climbing').ClimbSave['phase'];
   jumpAt?: number;
   jumpBase?:number;
+  jumpBoost?:number;
   jumpCount?:number;
   hitAt?: number;
 }

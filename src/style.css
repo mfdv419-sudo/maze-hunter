@@ -1357,3 +1357,6 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 .modal>button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:100%;min-width:0;margin:7px 0 0;transform:none;}
 .paged-dialog{align-items:stretch;}.paged-dialog>button{width:auto!important;max-width:none!important;align-self:stretch;margin:0!important;}.paged-dialog>label{min-width:0;}.paged-dialog select{min-width:0;width:100%;max-width:100%;}
 @media(max-height:430px){.settings-modal.paged-dialog{gap:5px;padding:12px 18px;}.settings-modal.paged-dialog>label{font-size:12px;gap:3px;margin:0;}.settings-modal.paged-dialog select{padding:5px;font-size:12px;}.settings-modal.paged-dialog>button{min-height:30px;font-size:13px;padding:5px 10px;}.settings-modal.paged-dialog .dialog-pages-nav button{min-height:28px;}.settings-modal.paged-dialog h2{font-size:20px;}}
+
+/* Keep practice, solo and online on one row without adding menu overflow. */
+.expedition-picker .setup-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.expedition-picker .setup-actions button{min-width:0}.expedition-picker .setup-actions #practice-area{background:#294955;border-color:#a9c4bd}

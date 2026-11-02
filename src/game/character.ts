@@ -7,7 +7,7 @@ import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
 export type CharacterAppearance=Appearance & {hands?:string;feet?:string};
-export interface CharacterAction {actionKind?:AvatarActionKind;actionAge?:number;cakeColor?:number;hurtAge?:number;defeated?:boolean;pickup?:number;allowIdle?:boolean;jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
+export interface CharacterAction {cameraLook?:number;actionKind?:AvatarActionKind;actionAge?:number;cakeColor?:number;hurtAge?:number;defeated?:boolean;pickup?:number;allowIdle?:boolean;jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
@@ -96,6 +96,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.set(-walk*.045,0,0);chest.scale.y=1+Math.sin(time*2)*.012;
   for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
+  if(action?.cameraLook!==undefined&&walk<.04){const angle=Math.atan2(Math.sin(action.cameraLook),Math.cos(action.cameraLook));if(Math.abs(angle)<1.15)head.rotation.y=angle*.65;}
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
   const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
   if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms.forEach((a,i)=>{a.rotation.x=-p*2.65;a.rotation.z=(i?1:-1)*(.12+p*.32);});elbows.forEach(e=>e.rotation.x=-.12);head.rotation.x=-p*.12;}

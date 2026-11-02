@@ -138,6 +138,7 @@ export interface RoomPlayer {
   jumpAt?: number;
   jumpBase?:number;
   jumpCount?:number;
+  jumpBoost?:number;
   hitAt?: number;
 }
 export interface Room {transport?:'ws-v1';rtEpoch?:number;rtSettled?:boolean;simulationVersion?:number;chat?:Record<string,import('../game/room-chat').RoomMessage>;chatLast?:Record<string,number>;

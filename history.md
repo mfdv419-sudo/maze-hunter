@@ -1,5 +1,43 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Reference Camera & Traversal Pilot
+
+**Dasar pemasangan:** setelah Comfort Camera (9 file). Menggunakan video referensi pengguna sebagai arah perilaku, bukan menjanjikan hasil visual identik. Paket ini menerapkan kamera/gerakan dan pilot aktivitas; inventaris shortcut, efek sepatu, set kostum dan penggantian model besar tetap pending.
+
+### Kamera dan gerakan
+
+- FOV kini tetap 60° juga di `resize()`. Sebelumnya konstruktor 60° masih ditimpa 50°/57° oleh resize. Jarak horizontal target disatukan menjadi 7,2 world unit; tambahan zoom otomatis dekat boss dihapus. Framing bebas halangan stabil saat arah kamera berubah.
+- Comfort/Dynamic mengikuti arah perjalanan secara bertahap saat bergerak. Rotasi dibatasi 0,8 radian/detik; Comfort mulai setelah 1,3 detik tanpa input kamera, Dynamic setelah 0,7 detik. Karena gerak berbasis layar dan acuan kamera ikut berubah, joystick diagonal yang ditahan menghasilkan lintasan melengkung. Manual tetap tidak auto-center. Saat diam kamera tidak mengitari karakter sendiri.
+- Drag kanan tetap memegang pointer yang sama hingga dilepas. Saat jari sentuh mencapai tepi layar, kamera meneruskan putaran perlahan sehingga tidak perlu mengangkat dan menempel ulang untuk melihat lebih jauh. Joystick/A/B tetap terpisah. Edge pan tidak diterapkan ke mouse.
+- Collision mencari sisi dengan radius hampir penuh terlebih dahulu. **Jarak tidak dijanjikan tetap mutlak di ruang tertutup**: bila tak ada ruang bebas, collision tetap boleh memperpendek jarak untuk menghindari tembus dinding. Pelebaran/desain ulang seluruh koridor belum dilakukan dalam pilot ini.
+- Saat diam dan kamera di depan, kepala karakter dapat menatap kamera dalam batas putar leher. Tubuh tidak otomatis ikut berputar; arah dari belakang memakai idle kecil yang sudah ada.
+
+### Latihan dan aktivitas ngarai
+
+- Tombol **LATIHAN KONTROL** pada pemilihan Adventure membuka taman latihan terpisah 35×35: lapangan kamera, pohon panjat, batu pelontar, tepian tinggi dan tiga pijakan. Tanpa penjaga, bahaya berjadwal, batas waktu, kematian, reward akun, kemenangan tercatat atau kenaikan urutan peta. Latihan hanya SOLO lokal; akun/Firebase asli tetap dipertahankan untuk game utama.
+- Batu bercincin emas memberi lompatan tinggi saat A/Space ditekan di atasnya: tinggi puncak 2,2 world unit dan durasi lebih panjang, bukan teleport ke atas. Salto kedua tetap dibatasi satu kali. Papan petunjuk dan cincin berdenyut menjelaskan fungsi pad.
+- Server menentukan boost dari posisi pad yang sah. `jumpBoost` disiarkan bersama state jump pemain dan dipakai perhitungan tinggi lokal/remote/server, termasuk hit detection. Klien tidak mengirim pengali lompat bebas.
+- Ngarai mendapat bay opsional batu pelontar → tepian tinggi 2,35 → pijakan turun 1,35 pada ruang kosong yang memenuhi clearance. Tidak memotong dinding atau mengganti rute maze. Pada 10 peta Medium seed 15025, 8 peta menyediakan bay; peta tanpa ruang aman mempertahankan tantangan semula. **Ini pilot, bukan redesain seluruh area atau jaminan bay di semua seed.**
+- Lebar/depth tepian baru dicocokkan antara geometri dan collider; tepian ID 800+ tidak bisa diangkat seperti batu lepas. Reward peti diperiksa kembali agar tidak berada pada tepian baru.
+- Jalur pijakan jurang yang sudah ada dipertahankan. Titik masuk bank yang aman dan entry bay dapat memperbarui checkpoint. Efek debu/cahaya singkat serta suara pijakan muncul saat meraih/mencapai tepian; tinggi efek mengikuti permukaan, bukan tertinggal di bawah tanah.
+- Panjat masih memakai rig prosedural yang sudah ada; ini tidak menyatakan seluruh masalah anatomi, penetrasi model, atau gerakan memanjat lama sudah selesai. Pelebaran kapal–dinding dan pengembangan area lain tetap lanjutan setelah pilot.
+
+### Validasi
+
+- Suite utama: **260 tes / 43 file lulus**. Setelah tambahan tes terbaru, **14 tes terarah kamera/pilot lulus**, termasuk resize FOV, lintasan diagonal, edge pan, isolasi latihan, kurva spring jump, pemain meraih dan menyelesaikan panjat tinggi, serta keputusan boost oleh server.
+- Build frontend dan server berhasil. Tombol Latihan dan alur menuju halaman permainan terverifikasi melalui browser preview.
+- Percobaan menjalankan arena pada browser cloud berhenti pada **THREE.WebGLRenderer: Error creating WebGL context**. Karena itu belum ada klaim gameplay visual/FPS, native multi-touch revisi ini, Safari/iPad, perangkat fisik atau kenyamanan bermain lama lulus. Ini batas lingkungan uji yang sama dengan revisi kamera sebelumnya. Uji jaringan produksi dua perangkat juga belum dilakukan.
+
+### Pemasangan dan pilot perangkat
+
+1. Salin file delta ke source GitHub/branch Netlify yang telah memuat revisi sebelumnya, lalu deploy ulang.
+2. Salin file yang sama ke folder proyek server di laptop.
+3. **PowerShell 1:** Ctrl+C, jawab Y bila diminta, lalu jalankan `npm.cmd run build:realtime` dan `npm.cmd run start:realtime:local`.
+4. **PowerShell 2 tetap berjalan**; tidak ada environment baru dan tidak perlu mengganti URL tunnel yang masih aktif.
+5. Buka ulang game pada kedua perangkat; gunakan **room baru**. Mulai dari Adventure → Latihan Kontrol, coba putaran kamera/joystick, lalu pad emas → tepian tinggi. Sesudah itu uji ngarai. Jangan unggah service-account JSON atau file environment.
+
+Tidak ada GitHub push atau publikasi Netlify langsung dari sesi ini.
+
 ## 2 November 2026 — Third-Person Comfort Camera
 
 **Dasar:** dipasang setelah Controls & Agreed Character Actions (25 file). Revisi ini fokus pada kamera Adventure SOLO dan ONLINE. Retro, aturan serangan, peta dan server realtime tidak diubah.

@@ -1,3 +1,4 @@
+import {trainingLayout} from './training-layout';
 import {handOrigin,projectileOrigin,releaseTime,type AvatarAction} from './avatar-actions';
 import {rockSupport,type RestingRock} from './rock-physics';
 import {weaponShots,sweptHit} from './weapon-shots';
@@ -45,13 +46,13 @@ export class AdventureState {
  invulnerableUntil=0;slowUntil=0;stunUntil=0;hits=0;lastHit=-100;lastThrow=-100;lastJump=-100;resetFogRevision=0;respawns=0;revision=0;message='';messageAt=-10;
  effectEvents:{id:number;source:'guard'|'boss'|'river'|'cake'|'environment'|'fall';point:Point;cake?:CakeKind}[]=[];effectId=0;
  phase:'playing'|'won'|'lost'='playing';reason:'time'|'lives'|'escape'|null=null;
- constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic') {
+ constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic',readonly training=false) {
   this.teamSize=team?.shared?Math.max(1,team.slots.length):1;
-  this.layout=sample?forestLayout():area==='classic'?adventureLayout(difficulty,mapIndex,variation):biomeLayout(area,difficulty,mapIndex,variation);const encounters=this.expedition?sealEncounters(this.layout):[];if(team)this.layout.seals=teamSealSites(this.layout,team,this.area);this.grid=this.layout.maze.grid.map(r=>[...r]);
-  this.obstacles=this.expedition?fieldObstacles(this.layout,this.area):[];
+  this.layout=training?trainingLayout():sample?forestLayout():area==='classic'?adventureLayout(difficulty,mapIndex,variation):biomeLayout(area,difficulty,mapIndex,variation);const encounters=this.expedition&&!training?sealEncounters(this.layout):[];if(team)this.layout.seals=teamSealSites(this.layout,team,this.area);this.grid=this.layout.maze.grid.map(r=>[...r]);
+  this.obstacles=this.expedition&&!training?fieldObstacles(this.layout,this.area):[];
   this.position=center(this.layout.maze.start);this.checkpoint={...this.position};
   this.guards=[...this.layout.patrols.map((p,i)=>({patrol:p,boss:false,elite:i>=adventureRules[difficulty].guards})),...this.layout.bosses.map(p=>({patrol:[p],boss:true,elite:false}))].map(({patrol,boss,elite})=>this.makeGuard(patrol,boss,elite));
-  if(this.expedition){const keepers=encounters.map(e=>({...this.makeGuard(e.patrol,false,e.size==='large'),quest:e.quest,size:e.size,hp:this.difficulty==='easy'?2:e.size==='large'?5:2}));this.guards=[...keepers,...this.guards.slice(3)];if(this.area==='sea')this.guards.filter(g=>g.boss).forEach(g=>g.depth=.8);}
+  if(this.expedition&&!training){const keepers=encounters.map(e=>({...this.makeGuard(e.patrol,false,e.size==='large'),quest:e.quest,size:e.size,hp:this.difficulty==='easy'?2:e.size==='large'?5:2}));this.guards=[...keepers,...this.guards.slice(3)];if(this.area==='sea')this.guards.filter(g=>g.boss).forEach(g=>g.depth=.8);}
  }
  private protectedRockSites?:{x:number;y:number;radius:number}[];
  get rockProtectedPoints(){return this.protectedRockSites??=[...[...this.layout.seals,...this.layout.chests,this.layout.maze.start,this.layout.maze.finish].map(p=>({x:p.x+.5,y:p.y+.5,radius:1.3})),...this.layout.solution.map(p=>({x:p.x+.5,y:p.y+.5,radius:.65}))];}
@@ -63,7 +64,7 @@ export class AdventureState {
  useSupply(kind:string,angle:number){if(this.phase!=='playing'||this.awakening||['hanging','climbing'].includes(this.climber.state.phase))return false;
   if(this.carried&&!['place','throw-object'].includes(kind))return false;
   if(kind==='craft-grenade'){if(!this.ammo||!this.supplies.chili)return false;this.ammo--;this.supplies.chili--;this.supplies.grenade++;this.notify('crafted');return true;}
-  if(kind==='lift'){if(this.elapsed>=this.strengthUntil||this.carried)return false;const candidates=this.layout.ledges.filter(l=>['tree','log','rock'].includes(l.kind||'')&&!this.layout.stars.some(p=>p.x===l.point.x&&p.y===l.point.y)).map(l=>({id:String(l.id),p:this.propMoves[String(l.id)]||center(l.point)}));for(const[id,p]of Object.entries(this.fallenRocks))candidates.push({id,p:this.propMoves[id]||p});const found=candidates.filter(o=>!o.p.holder&&Math.hypot(o.p.x-this.position.x,o.p.y-this.position.y)<1.6).sort((a,b)=>Math.hypot(a.p.x-this.position.x,a.p.y-this.position.y)-Math.hypot(b.p.x-this.position.x,b.p.y-this.position.y))[0];if(!found)return false;this.avatarAction={kind:'lift',at:this.elapsed,angle,prop:found.id,from:{x:found.p.x,y:found.p.y}};this.carried=found.id;this.propMoves[found.id]={x:found.p.x,y:found.p.y,holder:'local'};this.notify('lifted');return true;}
+  if(kind==='lift'){if(this.elapsed>=this.strengthUntil||this.carried)return false;const candidates=this.layout.ledges.filter(l=>l.id<800&&['tree','log','rock'].includes(l.kind||'')&&!this.layout.stars.some(p=>p.x===l.point.x&&p.y===l.point.y)).map(l=>({id:String(l.id),p:this.propMoves[String(l.id)]||center(l.point)}));for(const[id,p]of Object.entries(this.fallenRocks))candidates.push({id,p:this.propMoves[id]||p});const found=candidates.filter(o=>!o.p.holder&&Math.hypot(o.p.x-this.position.x,o.p.y-this.position.y)<1.6).sort((a,b)=>Math.hypot(a.p.x-this.position.x,a.p.y-this.position.y)-Math.hypot(b.p.x-this.position.x,b.p.y-this.position.y))[0];if(!found)return false;this.avatarAction={kind:'lift',at:this.elapsed,angle,prop:found.id,from:{x:found.p.x,y:found.p.y}};this.carried=found.id;this.propMoves[found.id]={x:found.p.x,y:found.p.y,holder:'local'};this.notify('lifted');return true;}
   if(kind==='place'||kind==='throw-object'){if(!this.carried)return false;const id=this.carried,p={x:this.position.x+Math.sin(angle)*1.25,y:this.position.y+Math.cos(angle)*1.25};let elevation=0;if(kind==='place'){const support=this.physicalLedges.filter(l=>l.kind==='rock'&&l.height<4&&Math.hypot(l.point.x+.5-p.x,l.point.y+.5-p.y)<.7).sort((a,b)=>b.height-a.height)[0];if(support){p.x=support.point.x+.5;p.y=support.point.y+.5;elevation=support.height;}}if(!fits(this.grid,p,.35)||[...this.layout.seals,this.layout.maze.finish].some(q=>Math.hypot(p.x-q.x-.5,p.y-q.y-.5)<1.4))return false;const nav=this.grid.map(r=>[...r]);nav[Math.floor(p.y)][Math.floor(p.x)]=1;const reachable=distances(nav,this.layout.maze.start);if([...this.layout.seals,this.layout.fortress,this.layout.maze.finish].some(q=>!reachable.has(q.x+','+q.y)))return false;this.avatarAction={kind:kind==='place'?'place':'throw-object',at:this.elapsed,angle,prop:id,from:{x:this.position.x+Math.sin(angle)*.28,y:this.position.y+Math.cos(angle)*.28}};this.propMoves[id]={...p,elevation};this.carried=null;if(kind==='throw-object')this.projectiles.push({position:{...this.position},velocity:{x:Math.sin(angle)*5,y:Math.cos(angle)*5},owner:'player',style:'rock',kind:'red',ttl:.5,depth:this.depth,launchAngle:angle,delay:releaseTime('throw-object')});this.notify('placed');return true;}
   if(kind==='food-grenade'){if(!this.supplies.grenade||this.elapsed-this.lastThrow<.65)return false;this.supplies.grenade--;this.lastThrow=this.elapsed;this.avatarAction={kind:'grenade',at:this.elapsed,angle};this.projectiles.push({position:{...this.position},velocity:{x:Math.sin(angle)*5,y:Math.cos(angle)*5},owner:'player',style:'grenade',kind:'red',depth:this.depth,ttl:1,launchAngle:angle,delay:releaseTime('grenade')});return true;}
   const food=kind.slice(5)as FoodKind;if(!['chili','watermelon','spinach'].includes(food)||!this.supplies[food]||this.elapsed-this.eatingAt<1)return false;this.supplies[food]--;this.eatingKind=food;this.eatingAt=this.elapsed;this.avatarAction={kind:food,at:this.elapsed,angle};
@@ -109,6 +110,7 @@ export class AdventureState {
   const launchAngle=Math.atan2(dx,dy);this.avatarAction={kind:'cake',at:this.elapsed,angle:launchAngle,cake:this.selectedCake};this.projectiles.push({position:handOrigin(this.position,launchAngle),velocity:{x:dx*6,y:dy*6},owner:'player',kind:this.selectedCake,depth:this.depth,ttl:1.25,launchAngle,delay:releaseTime('cake')});return true;
  }
  damage(source:'guard'|'boss'|'river'|'environment'|'fall') {
+  if(this.training)return;
   if(this.phase!=='playing'||this.awakening||this.elapsed<this.invulnerableUntil)return;
   this.effectEvents.push({id:++this.effectId,source,point:{...this.position}});this.effectEvents=this.effectEvents.slice(-32);this.invulnerableUntil=this.elapsed+1.4;
   if(this.shield&&source!=='river'&&source!=='fall'){this.shield=0;this.notify('shield');return;}
@@ -165,13 +167,15 @@ export class AdventureState {
  }
  step(dt:number,raw:number,dx:number,dy:number,jump:number,movementOnly=false,predictOnly=false) {
   if(this.phase!=='playing')return;this.elapsed+=Math.max(0,raw);
-  if(this.stage==='escape'&&this.remaining<=0){this.phase='lost';this.reason='escape';return;}
-  if(this.stage!=='escape'&&this.elapsed>=this.limit){this.phase='lost';this.reason='time';return;}
+  if(this.training){this.lives=3;this.ammo=8;}
+  if(!this.training&&this.stage==='escape'&&this.remaining<=0){this.phase='lost';this.reason='escape';return;}
+  if(!this.training&&this.stage!=='escape'&&this.elapsed>=this.limit){this.phase='lost';this.reason='time';return;}
   if(this.elapsed-this.lastHit>7)this.hits=0;
   if(this.awakening){dx=0;dy=0;}
   const previous={...this.position},next=moveSliding(this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor,.13);
   const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.physicalLedges);this.position=climbing.position;
   if(this.expedition&&this.climber.elevation<.5&&!['hanging','climbing'].includes(this.climber.state.phase))for(const obstacle of [...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))]){if(this.layout.ledges.some(l=>l.point.x===obstacle.x&&l.point.y===obstacle.y&&this.propMoves[String(l.id)]))continue;const x=this.position.x-obstacle.x-.5,y=this.position.y-obstacle.y-.5,d=Math.hypot(x,y);if(d<obstacle.r){const k=obstacle.r/Math.max(.001,d);this.position={x:obstacle.x+.5+(d?x:.001)*k,y:obstacle.y+.5+y*k};}}
+  if(this.training){if(climbing.reached!==null)this.climbed.add(climbing.reached);this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;c.position.x+=c.velocity.x*dt;c.position.y+=c.velocity.y*dt;return c.ttl>0;});return;}
   if(!predictOnly&&climbing.reached!==null&&!this.climbed.has(climbing.reached)){this.climbed.add(climbing.reached);this.coins+=5;this.notify('climb');}
   if(!predictOnly&&!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
   jump=Math.max(jump,this.climber.elevation);
@@ -184,7 +188,7 @@ export class AdventureState {
   if(this.expedition){
    if(this.area==='volcano'&&jump<.4&&cascadeSites(this.layout).some(p=>Math.hypot(this.position.x-p.x-p.dx*.6,this.position.y-p.y-p.dz*.6)<1.3))this.damage('environment');
    if(this.area==='gorge'){const b=gorgeLandmarks(this.layout).bridge;if(Math.abs(this.position.y-b.y)<.4&&Math.abs(this.position.x-b.x)>1.8&&Math.abs(this.position.x-b.x)<2.8)this.checkpoint={...this.position};if(bridgeFallZone(this.position.x,this.position.y,this.layout)&&jump<.6)this.damage('fall');}
-   const course=platformCourse(this.layout,this.area);if(course&&jump<.25){course.stones.forEach((p,i)=>{if(Math.hypot(this.position.x-p.x,this.position.y-p.y)<.48&&!this.courseSteps.includes(i))this.courseSteps.push(i);});if(this.courseSteps.length===course.stones.length&&!this.courseReward){this.courseReward=true;this.coins+=10;this.ammo=Math.min(8,this.ammo+2);this.notify('course-win');}}
+   const course=platformCourse(this.layout,this.area);if(this.area==='gorge'&&this.climber.elevation<.1){const entry=this.layout.traversal?.entry;if(entry&&Math.hypot(this.position.x-entry.x,this.position.y-entry.y)<.5)this.checkpoint={...entry};if(course)for(const side of[-1,1]){const bank={x:course.x+side*3.4,y:course.y};if(this.grid[Math.floor(bank.y)]?.[Math.floor(bank.x)]===0&&Math.hypot(this.position.x-bank.x,this.position.y-bank.y)<.5&&!bridgeFallZone(bank.x,bank.y,this.layout))this.checkpoint=bank;}}if(course&&jump<.25){course.stones.forEach((p,i)=>{if(Math.hypot(this.position.x-p.x,this.position.y-p.y)<.48&&!this.courseSteps.includes(i))this.courseSteps.push(i);});if(this.courseSteps.length===course.stones.length&&!this.courseReward){this.courseReward=true;this.coins+=10;this.ammo=Math.min(8,this.ammo+2);this.notify('course-win');}}
    if(courseDanger(this.layout,this.area,this.position.x,this.position.y,this.difficulty==='easy')&&jump<.2)this.damage('fall');
    for(const h of this.obstacles)if(!this.propMoves['field-'+h.id]&&!(h.kind==='rock'&&(this.fallenRocks[`fallen-${h.id}-${Math.floor((this.elapsed+h.phase)/(h.period*(this.difficulty==='easy'?1.5:1)))}`]||Object.keys(this.fallenRocks).length>=ROCK_LIMIT))&&fieldContact(h,this.elapsed,this.position,jump,this.depth,this.difficulty==='easy',this.grid)){this.damage('environment');this.notify(h.kind==='trash'?'trash-hit':'obstacle-hit');}
   }

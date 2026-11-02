@@ -42,11 +42,11 @@ export function hitTargets(
   );
 }
 /** Shared client/server airborne boost; a third press cannot grant a third impulse. Times are seconds. */
-export interface JumpStamp {at:number;base:number;count:number}
-export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/JUMP_SECONDS);}
-export function nextJump(j:JumpStamp,now:number):JumpStamp|null{
+export interface JumpStamp {at:number;base:number;count:number;boost?:number}
+export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/(JUMP_SECONDS*Math.sqrt(j.boost||1)))*(j.boost||1);}
+export function nextJump(j:JumpStamp,now:number,boost=1):JumpStamp|null{
  const height=airborneHeight(j,now),age=now-j.at;
  if(age<.12)return null;
  if(height>.015){return j.count===1?{at:now,base:height,count:2}:null;}
- return {at:now,base:0,count:1};
+ return boost>1?{at:now,base:0,count:1,boost:Math.min(4,boost)}:{at:now,base:0,count:1};
 }
