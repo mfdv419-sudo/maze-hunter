@@ -1,5 +1,39 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Third-Person Comfort Camera
+
+**Dasar:** dipasang setelah Controls & Agreed Character Actions (25 file). Revisi ini fokus pada kamera Adventure SOLO dan ONLINE. Retro, aturan serangan, peta dan server realtime tidak diubah.
+
+### Perubahan
+
+- Kamera awal memakai pitch 18°, vertical FOV 60°, jarak horizontal 6,4–6,8 world unit (sekitar 3–4 tinggi avatar), dengan fokus badan yang tidak mengikuti bob animasi. Pengaturan lama high-view tidak lagi membuka game pada sudut tinggi.
+- Geseran sentuh mengikuti lebar/tinggi viewport: satu lebar layar menghasilkan rotasi 180° pada sensitivitas standar. Slider sensitivitas sentuh terpisah dari mouse. Pointer joystick, kamera dan A/B tetap terpisah; perbaikan koordinat `lookY` sebelumnya dipertahankan.
+- Pitch dibatasi −12° sampai 50°. Input tidak valid diabaikan/dipulihkan. Q/E dan R/F mengikuti pembatasan yang sama. Gerakan karakter tetap relatif terhadap arah kamera pada bidang horizontal.
+- Settings menyediakan Comfort (default), Dynamic dan Manual. Comfort menunggu 5 detik setelah input manual sebelum centering perlahan; Dynamic menunggu 2 detik dan lebih aktif. Manual tidak melakukan centering. Kamera tidak melakukan centering saat diam, drag, pause/cuplikan, atau input gerak menyamping. Tidak ditambahkan shake, blur atau head bob.
+- Tombol kamera menjadi **Reset Camera**: meminta sudut standar di belakang arah hadap karakter melalui transisi, tidak memindahkan kamera seketika.
+- Saat boom terlalu pendek, kamera mencari ruang orbit di sisi sekitar pada ketinggian yang sama sebelum mendekati tubuh. Collision tetap menguji dinding dan terrain, ditambah tapak solid properti panjat yang dipindah; objek yang sedang dipegang tidak menghalangi kamera. Pemulihan jarak yang dibatasi sebelumnya tetap dipakai. Ruang yang benar-benar tertutup tetap dapat memperpendek jarak; perubahan ini bukan pengganti pelebaran arena.
+- Tracking vertikal tetap terpisah dari koordinat jari dan diratakan. Kamera mundur sedikit saat berada dekat arena boss aktif.
+- Cuplikan boss memilih satu sisi dengan clearance terbaik dan mempertahankannya selama dolly, bukan mengorbit melintasi bukit. Collision diterapkan pada posisi cuplikan dan transisinya. Titik fokus boss laut diperbaiki agar tidak mengarah ke dasar laut. Skip, timeline online dan perlindungan cuplikan tetap dipertahankan.
+
+### Validasi dan batasnya
+
+Build frontend berhasil. Suite utama 254 tes lulus; setelah tambahan dua tes kontak properti dan reset, 16 tes terarah kamera/kontrol/comfort lulus. Ekspektasi sensitivitas pada tes native multi-touch lama diperbarui untuk rumus baru. UI Settings terverifikasi menampilkan mode dan sensitivitas melalui browser preview.
+
+Pemeriksaan runtime lintas ukuran layar disediakan pada `tests/fixtures/comfort-camera.html` (jalankan melalui Vite, bukan build production). Percobaan menjalankannya pada browser cloud berhenti saat membuat renderer: **THREE.WebGLRenderer: Error creating WebGL context**. Karena itu tes gameplay visual, native multi-touch baru, FPS, Safari/iPad, perangkat HP/tablet fisik dan jaringan internet nyata **belum dinyatakan lulus** dalam revisi ini. Fixture ONLINE adalah klien presentasi lokal, bukan koneksi server produksi. Kenyamanan bermain lama tetap memerlukan pilot perangkat pengguna.
+
+### Catatan pengalaman bermain berikutnya — belum diterapkan
+
+- Perlebar ruang air–kapal dan jalur naik agar kapal tidak berhimpit dengan dinding; pastikan karakter dan pendaratan terbaca.
+- Audit macet saat panjat tinggi/pohon, penetrasi badan terhadap permukaan solid, kontak tangan/kaki, langkah yang masih kecil dan kemudahan melompat di antara banyak batu. Ini membutuhkan revisi collision/animasi tersendiri, bukan dinyatakan selesai oleh kamera.
+- Efek langkah sesuai material; kaki/jejak basah setelah keluar air. Efek sepatu premium mengikuti footfall: nada untuk sepatu tari, efek bola untuk sepatu olahraga, dengan volume/frekuensi yang nyaman.
+- Efek singkat untuk salto kedua tanpa mengganggu pandangan.
+- Kostum dalam satu set: menyelam (tas, sepatu, kacamata, baju), roket, olahraga, dan tema berikutnya. Detail manfaat dan harga belum dikunci.
+- UI bagian atas menunggu rekomendasi pengguna. Inventaris gerakan penjaga/boss serta variasi gameplay tetap dua fokus lanjutan yang disepakati.
+
+### Pemasangan
+
+Salin isi folder `maze-hunter` di ZIP ke source GitHub yang sudah memuat revisi sebelumnya, lalu deploy ulang Netlify dan buka ulang game pada kedua perangkat. Revisi ini hanya frontend: **tidak perlu build/restart PowerShell 1, tidak perlu menghentikan PowerShell 2, dan tidak ada environment variable baru**. Jangan mengunggah kredensial atau file environment. Tidak ada publikasi/deploy langsung yang dilakukan dari sesi ini.
+
 ## 1 November 2026 — Controls & Agreed Character Actions
 
 **Penerapan:** delta ini dipasang setelah **Avatar & Camera Comfort (6 file)**. Ini mencakup koreksi yang dilaporkan dan implementasi lanjutan gerakan karakter pemain; inventaris variasi permainan tetap tahap desain. Penilaian nyaman/tidaknya di perangkat fisik belum digantikan oleh hasil tes otomatis.

@@ -1,3 +1,4 @@
+import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,clearOrbit,sceneAzimuth} from './comfort-camera';
 import {holdProp,restoreProp,releaseProp} from './prop-presentation';
 import {actionKind,releaseTime,actionDuration,handOrigin,projectileOrigin,type AvatarAction} from './avatar-actions';
 import {explorerPole,CameraBoom} from './avatar-presentation';
@@ -124,8 +125,8 @@ export class ModernGame {
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
   private cameraBoom=new CameraBoom();private cameraYaw=0;
   private desiredCameraYaw=0;
-  private cameraPitch=22*Math.PI/180;
-  private desiredPitch=22*Math.PI/180;
+  private cameraPitch=CAMERA_PITCH;
+  private desiredPitch=CAMERA_PITCH;
   private cameraDirection=new T.Vector3();
   private lookY=0;private followHeight=0;
   private ledgeModels:T.Group[]=[];
@@ -137,6 +138,7 @@ export class ModernGame {
   private daylight:T.HemisphereLight;
   private particleColor=new T.Color();
   private cameraMode=readPreferences().camera;
+  private comfortMode=readPreferences().cameraComfort||'comfort';private sceneSide=0;
   private lookAt=new T.Vector3();
   private lastLook=0;
   private lookPointer:number|null=null;
@@ -194,6 +196,9 @@ export class ModernGame {
   private cameraBlocked(p:T.Vector3){
     const x=p.x/U,z=p.z/U,ground=this.terrain(x,z),ix=Math.floor(x),iz=Math.floor(z);
     if(p.y<ground+.12)return true;
+    // Match climbable solid footprints, not decorative crowns or pickup rings.
+    const a=this.adventure;if(a)for(const l of a.layout.ledges){const move=a.propMoves[String(l.id)];if(move?.holder)continue;const cx=move?.x??l.point.x+.5,cz=move?.y??l.point.y+.5,base=this.terrain(cx,cz)+(move?.elevation||0);if(p.y<=base+.04||p.y>=base+l.height)continue;const tree=l.kind==='tree'||l.kind==='palm';if(tree?Math.hypot(x-cx,z-cz)<.15:Math.abs(x-cx)<(l.width?l.width/2:.48)&&Math.abs(z-cz)<(l.depth?l.depth/2:.48))return true;}
+
     if(this.maze.grid[iz]?.[ix]===1&&!this.adventure?.layout.grass.some(g=>g.x===ix&&g.y===iz)){const top=this.adventure?.expedition&&!this.adventure.sample?biomeWallTop(this.adventure.area,x,z,this.adventure.layout):this.terrain(ix+.5,iz+.5)+(this.adventure?.sample?(ix>=55&&ix<=71&&iz>=54&&iz<=71?4.2:2.18):this.wallHeight+.23);if(p.y<top+.08)return true;}
     if(this.adventure?.area==='gorge'){const r=gorgeLandmarks(this.adventure.layout).river,base=gorgeBank(r.x,r.y,this.adventure.layout);if(Math.abs(x-r.x)<2.8&&Math.abs(z-r.y+1)<1.4){const roof=base+2.3+Math.sqrt(Math.max(0,1-Math.pow((x-r.x)/2.3,2)))*1.25;if(p.y>roof-.5&&p.y<roof+.65)return true;}}
     return false;
@@ -298,8 +303,9 @@ export class ModernGame {
     this.scene.fog=new T.Fog(0xb4d6c3,10,24);
     this.world.scale.set(U,1,U);this.scene.add(this.world);
     host.append(this.renderer.domElement);
-    this.camera = new T.PerspectiveCamera(52,1,.08,160);
-    if(this.cameraMode==='overview')this.cameraPitch=this.desiredPitch=55*Math.PI/180;else if(this.cameraMode==='level')this.cameraPitch=this.desiredPitch=0;
+    this.camera = new T.PerspectiveCamera(60,1,.08,160);
+    // Older high-view preferences migrate to the comfortable starting angle.
+    this.cameraPitch=this.desiredPitch=CAMERA_PITCH;
     const startX=Math.floor(this.position.x),startY=Math.floor(this.position.y);
     this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
@@ -419,7 +425,7 @@ export class ModernGame {
       signal: this.abort.signal,
     });
     host.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.abort.signal});
-    const look=(dx:number,dy:number)=>{if(this.adventure?.awakening)return;const speed=this.mousePreferences.sensitivity||1;this.desiredCameraYaw-=dx*.0035*speed;this.desiredPitch=Math.max(-25*Math.PI/180,Math.min(75*Math.PI/180,this.desiredPitch+dy*.0025*speed));this.lastLook=this.time;};
+    const look=(dx:number,dy:number,touch=false)=>{if(this.adventure?.awakening)return;const d=lookDelta(dx,dy,host.clientWidth,host.clientHeight,touch?this.mousePreferences.touchSensitivity:this.mousePreferences.sensitivity,touch);this.desiredCameraYaw+=d.yaw;this.desiredPitch=clampPitch(this.desiredPitch+d.pitch);this.lastLook=this.time;};
     host.addEventListener('pointerdown',e=>{const r=host.getBoundingClientRect();if(this.expandedMap||document.getElementById('maze-transition')||this.paused)return;
       if(e.pointerType==='mouse'&&this.mousePreferences.mouse!=='drag'){
         if(document.pointerLockElement===host){if(e.button===0)this.useAction('hit');return;}
@@ -429,7 +435,7 @@ export class ModernGame {
     },{signal:this.abort.signal});
     document.addEventListener('mousemove',e=>{if(document.pointerLockElement===host&&!this.paused)look(e.movementX,e.movementY);},{signal:this.abort.signal});
     document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==host)this.clearInput();},{signal:this.abort.signal});
-    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){e.preventDefault();look(e.clientX-this.lookX,e.clientY-this.lookY);this.lookX=e.clientX;this.lookY=e.clientY;}},{signal:this.abort.signal});
+    host.addEventListener('pointermove',e=>{if(this.lookPointer===e.pointerId){e.preventDefault();look(e.clientX-this.lookX,e.clientY-this.lookY,e.pointerType!=='mouse');this.lookX=e.clientX;this.lookY=e.clientY;}},{signal:this.abort.signal});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
     for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.treeTrunks])if(root)this.cameraCollision.register(root);
     for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.leaves,this.treeTrunks,this.treeCrowns,...this.ledgeModels,...this.landmarkModels.map(l=>l.group)])if(root)this.occlusion.register(root);this.world.traverse(o=>{if(o.userData.cameraOccluder)this.occlusion.register(o);});
@@ -442,7 +448,8 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
   }
   captureBackdrop(){this.previewMode=true;this.paused=true;if(this.adventure){const p=this.adventure.layout.areas[this.adventure.area==='gorge'?1:2].point;this.position={x:p.x+.5,y:p.y+2.5};this.adventure.position={...this.position};}this.cameraYaw=this.desiredCameraYaw=this.adventure?.area==='gorge'?Math.PI+.5:Math.PI+.2;this.cameraPitch=this.desiredPitch=this.adventure?.area==='gorge'?.8:.85;this.acc=0;this.updateVision();this.frame(performance.now());this.renderer.render(this.scene,this.camera);return this.renderer.domElement.toDataURL('image/png');}
   skipAwakening(){this.skippedAwakening=this.adventure?.bossAwakeAt??-1;this.acc=0;}
-  cycleCameraView(){const degrees=this.desiredPitch*180/Math.PI;const next=degrees<10?22:degrees<40?55:0;this.desiredPitch=next*Math.PI/180;return next;}
+  resetCamera(){this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
+  cycleCameraView(){return this.resetCamera();}
   private resize() {
     const w = this.host.clientWidth,
       h = this.host.clientHeight;
@@ -757,34 +764,32 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
       this.hero.root.visible=a.elapsed<a.invulnerableUntil?Math.floor(this.time*9)%2===0:true;
     }
     const cameraInputDt=Math.min(raw,.2);
-    if(!this.paused&&!this.adventure?.awakening){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=Math.min(75*Math.PI/180,this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=Math.max(-25*Math.PI/180,this.desiredPitch-cameraInputDt*.8);}
-    const previousYaw=this.cameraYaw;
-    this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,10);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*10));
-    const mode=this.cameraMode;
+    if(!this.paused&&!this.adventure?.awakening){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=clampPitch(this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=clampPitch(this.desiredPitch-cameraInputDt*.8);}
+    if(this.keys.has('q')||this.keys.has('e')||this.keys.has('r')||this.keys.has('f'))this.lastLook=this.time;
+    const centering=autoCenter(this.comfortMode,this.time-this.lastLook,actual,this.lookPointer!==null||this.paused||!!this.adventure?.awakening||Math.abs(this.joystick.x)>.15||this.keys.has('a')||this.keys.has('d')||this.keys.has('arrowleft')||this.keys.has('arrowright'));
+    if(centering)this.desiredCameraYaw=dampAngle(this.desiredCameraYaw,this.angle,dt,centering);
+    if(!Number.isFinite(this.desiredCameraYaw))this.desiredCameraYaw=Number.isFinite(this.angle)?this.angle:0;
+    this.desiredPitch=clampPitch(this.desiredPitch);
+    this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,18);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*18));
+
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
-    const distance=this.previewMode?12:mode==='overview'?4.3:(this.host.clientWidth<this.host.clientHeight?5.2:5.8),height=(distance+1)*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
+    const distance=this.previewMode?12:(this.host.clientWidth<this.host.clientHeight?6.4:6.8)+(this.adventure?.bossAwake&&Math.hypot(this.position.x-this.adventure.layout.fortress.x-.5,this.position.y-this.adventure.layout.fortress.y-.5)<7?.8:0),height=distance*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
     if(!this.previewMode&&!this.adventure?.awakening){
-      const safe=this.cameraCollision.resolve(target,desired);
-      if(safe.distanceTo(target)<1.25){
-        const prior=target.clone().add(new T.Vector3(-Math.sin(previousYaw)*distance,height,-Math.cos(previousYaw)*distance));
-        if(this.cameraCollision.resolve(target,prior).distanceTo(target)>safe.distanceTo(target)+.01){
-          this.cameraYaw=this.desiredCameraYaw=previousYaw;desired.copy(prior);
-        }
-      }
+      desired.copy(clearOrbit(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b)));
       const safeDesired=this.cameraCollision.resolve(target,desired),wantedLength=desired.distanceTo(target),safeLength=safeDesired.distanceTo(target),boom=this.cameraBoom.step(wantedLength,safeLength,dt,this.time);desired.sub(target).normalize().multiplyScalar(boom).add(target);
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}
-    if(cinematic&&!this.wasCinematic)this.clearInput();
-    if(cinematic){const playerTarget=target.clone(),playerCamera=this.cameraCollision.resolve(playerTarget,desired.clone()),f=state!.layout.fortress,p=awakeningProgress(state!.elapsed,state!.bossAwakeAt);const shot=awakeningShot(p);target=new T.Vector3((f.x+.5)*U,this.terrain(f.x+.5,f.y+.5)+shot.lookHeight,(f.y+.5)*U);desired.copy(target).add(new T.Vector3(shot.x,shot.y,shot.z));const handoff=smooth01((p-.83)/.17);target.lerp(playerTarget,handoff);desired.lerp(playerCamera,handoff);this.camera.position.lerp(desired,1-Math.exp(-dt*5));this.lookAt.lerp(target,1-Math.exp(-dt*5));this.camera.lookAt(this.lookAt);}
+    if(cinematic&&!this.wasCinematic){this.clearInput();const f=state!.layout.fortress,focus=new T.Vector3((f.x+.5)*U,(state!.area==='sea'?Math.max(-.7,this.terrain(f.x+.5,f.y+.5)):this.terrain(f.x+.5,f.y+.5))+1.8,(f.y+.5)*U);this.sceneSide=sceneAzimuth(focus,(a,b)=>this.cameraCollision.resolve(a,b));}
+    if(cinematic){const playerTarget=target.clone(),playerCamera=this.cameraCollision.resolve(playerTarget,desired.clone()),f=state!.layout.fortress,p=awakeningProgress(state!.elapsed,state!.bossAwakeAt);const shot=awakeningShot(p);target=new T.Vector3((f.x+.5)*U,(state!.area==='sea'?Math.max(-.7,this.terrain(f.x+.5,f.y+.5)):this.terrain(f.x+.5,f.y+.5))+shot.lookHeight,(f.y+.5)*U);const radius=Math.hypot(shot.x,shot.z);desired.copy(target).add(new T.Vector3(Math.sin(this.sceneSide)*radius,shot.y,Math.cos(this.sceneSide)*radius));desired.copy(this.cameraCollision.resolve(target,desired));const handoff=smooth01((p-.83)/.17);target.lerp(playerTarget,handoff);desired.lerp(playerCamera,handoff);if(!this.wasCinematic){this.camera.position.copy(desired);this.lookAt.copy(target);}else this.camera.position.lerp(desired,1-Math.exp(-dt*5));this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));this.lookAt.lerp(target,1-Math.exp(-dt*5));this.camera.lookAt(this.lookAt);}
     if(this.wasCinematic&&!cinematic){this.cinematicReturnAt=this.time;this.cameraBoom.reset();}this.wasCinematic=cinematic;
     if(!cinematic){
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));this.lookAt.lerp(target,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));}
     if(!this.previewMode)this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));
     const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,Math.hypot(distance,height)));
-    this.camera.lookAt(this.lookAt.x+Math.sin(this.cameraYaw)*framing,this.lookAt.y+(this.cameraPitch<0?(distance+1)*Math.tan(-this.cameraPitch)*framing:0),this.lookAt.z+Math.cos(this.cameraYaw)*framing);
+    this.camera.lookAt(this.lookAt.x,this.lookAt.y+.2*framing,this.lookAt.z);
     }
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
       const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;
@@ -802,6 +807,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.host.dataset.swimming=String(!!this.adventure?.swimming);this.host.dataset.depth=String(this.adventure?.depth||0);this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     // Solid walls are handled by collision. Only tiny residual obstructions use a restrained fade.
     this.occlusion.update(this.camera,target,dt);
+
     this.renderer.render(this.scene, this.camera);
   }
   dispose() {
