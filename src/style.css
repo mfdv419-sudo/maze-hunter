@@ -1364,3 +1364,14 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 .retro-quiz{width:min(94vw,620px);max-height:94dvh;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:20px;overflow-y:auto;overflow-x:hidden;text-align:left;min-width:0}
 .retro-quiz h2{font-size:clamp(20px,4vw,28px);margin:0}.retro-quiz p{margin:0;line-height:1.45;overflow-wrap:anywhere}.retro-quiz select{width:100%;min-height:42px}.retro-quiz button{width:100%;margin:0;white-space:normal;overflow-wrap:anywhere;min-width:0}.quiz-answers{display:grid;gap:8px}.retro-quiz bdi{unicode-bidi:isolate}.retro-quiz [dir=rtl]{font-family:'Noto Sans Arabic','Segoe UI',Tahoma,sans-serif}.quiz-explanation{color:#f6dfa8}
 @media(orientation:landscape) and (max-height:500px){.retro-quiz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:14px;width:min(94vw,900px)}.retro-quiz h2,.retro-quiz>small{grid-column:1/-1}.retro-quiz .quiz-question{grid-column:1;grid-row:3}.retro-quiz .quiz-answers{grid-column:2;grid-row:3/6}.retro-quiz button{padding:8px;min-height:40px;font-size:14px}.retro-quiz>button{grid-column:1/-1}.retro-quiz p{font-size:14px}}
+
+/* Pre-level quiz settings use a compact single column, independent of question layout. */
+.modal.retro-quiz.quiz-setup{display:flex;flex-direction:column;gap:14px;width:min(92vw,520px);max-width:520px;height:auto;min-height:0;padding:22px;align-items:stretch;justify-content:flex-start}
+.modal.retro-quiz.quiz-setup h2{margin:0;font-size:25px;line-height:1.2}
+.modal.retro-quiz.quiz-setup p{font-size:15px;line-height:1.5;margin:0}
+.quiz-setup .quiz-bonus-toggle{display:flex;align-items:center;gap:10px;margin:0;font-size:16px;line-height:1.3;min-height:32px}
+.quiz-setup .quiz-bonus-toggle[hidden]{display:none}
+.quiz-setup .quiz-bonus-toggle input[type=checkbox]{width:22px;height:22px;min-width:22px;min-height:0;padding:0;margin:0;border-radius:5px;accent-color:#d9bc80;flex:0 0 22px}
+.quiz-setup-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;width:100%;min-width:0}
+.quiz-setup .quiz-setup-actions>button{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:10px 14px;margin:0;transform:none;font-size:16px;line-height:1.2}
+@media(max-height:430px){.modal.retro-quiz.quiz-setup{padding:16px 20px;gap:10px}.modal.retro-quiz.quiz-setup h2{font-size:22px}.quiz-setup .quiz-setup-actions>button{min-height:40px;font-size:14px}}

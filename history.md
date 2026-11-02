@@ -1,5 +1,19 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Quiz Setup Layout Hotfix
+
+Dipasang setelah Retro Knowledge Bonus & Camera Fix (23 file). Tidak ada perubahan scoring, bank, kamera, rules, environment atau server.
+
+- Akar tombol bergeser: `presentation.css` masih memuat `.modal>button+button{margin-left:8px}` yang mengalahkan reset margin sebelumnya. Aturan lama dihapus; tombol bertumpuk tidak lagi mendapat offset tombol kedua.
+- Checkbox sebelumnya mewarisi min-height/padding/margin input form dan label block umum. Kini label toggle flex satu baris, margin nol, checkbox 22×22 px.
+- Panel setup kuis dipisah dari grid pertanyaan landscape: satu kolom ringkas, tinggi otomatis, judul Retro · Level N dan satu grup tombol dengan lebar/tinggi/spacing sama.
+- Bila kuis belum tersedia, kontrol checkbox/mapel disembunyikan. Pesan menjelaskan tetap memperoleh bintang dasar. Bank yang tersedia tetap hanya Level 1; ini bukan perubahan cakupan data.
+- Fixture render baru memuat **style.css dan presentation.css**, agar override tema yang sebelumnya terlewat ikut diperiksa.
+
+Validasi: build frontend lulus. Browser DOM pada 390×844 dan 844×390 memverifikasi sisi kiri/kanan kedua tombol identik, tinggi 44/40 px, tanpa horizontal/vertical overflow. Panel landscape available tinggi 233 px; setelah checkbox aktif/mapel muncul 285 px, tetap muat. Checkbox tepat 22×22 px. Tes bersifat layout UI, tanpa backend atau penilaian dummy; tidak memerlukan pengulangan suite scoring karena logikanya tidak berubah.
+
+Pemasangan: timpa file perubahan pada source GitHub, deploy Netlify dan refresh browser. **Tidak perlu perubahan environment, rules Firestore, atau restart PowerShell 1/2 untuk hotfix ini.** Ketentuan pemasangan rules/review dari paket kuis sebelumnya tetap berlaku.
+
 ## 2 November 2026 — Retro Knowledge Bonus B/C/D & Camera Collision Correction
 
 **Pemasangan:** setelah Camera & Traversal Pilot (19 file). Source kerja terbaru dari revisi sesi ini dipakai sebagai dasar. Dua perubahan diminta bersamaan oleh pengguna: Retro sesuai prompt/Excel yang dilampirkan dan koreksi kamera dari rekaman bug. Generator, orientasi portrait/landscape dan kontrol maze Retro tidak diubah.

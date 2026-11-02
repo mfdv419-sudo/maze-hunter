@@ -1,0 +1,5 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Quiz setup rendering fixture</title><body><script type="module">
+import '/src/style.css';import '/src/presentation.css';import {chooseRetroBonus} from '/src/ui/retro-quiz.ts';
+const available=new URLSearchParams(location.search).get('available')==='1';
+void chooseRetroBonus(available?1:2,async()=>({available:true,subjects:['MTK','IPA','IPS'],draft:true}),true);
+</script></body></html>
