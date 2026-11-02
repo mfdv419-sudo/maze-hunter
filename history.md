@@ -1,5 +1,33 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Kamera kontak dan Retro dua soal
+
+**Dasar source:** paket 16 file berisi bank aktif 2.000 soal. Pengguna belum menerapkan koreksi kamera lima file sesudahnya; ZIP tersebut diabaikan dan bukan prasyarat. Revisi ini dapat ditimpa langsung pada paket 16 file. Riwayat paket lima file tetap dicatat di bawah sebagai riwayat pembuatan, bukan status pemasangan pengguna.
+
+- Kamera memakai anchor posisi dunia (`ContactFollowCamera`), bukan boom yang memulihkan jarak berdasarkan waktu atau pencarian sisi. Kamera follow menyapu jalur perpindahan kamera aktual; ketika mentok kamera berhenti. Karakter yang mendekat/memulihkan jarak. Setelah jarak standar tercapai kamera mengikuti lagi pada frame yang sama.
+- Orbit manual menjaga radius yang berlaku; collision nyata di ray orbit boleh memperpendeknya. Saat halangan hilang kamera tidak mundur sendiri. Orbit setelah anchor memakai delta sudut relatif terhadap sisi aktual, tidak meloncat ke sudut lama. Tidak ada auto-center pada mode gameplay. Normal/default berarti posisi follow aktual sudah sesuai, bukan perintah menggerakkan kamera lagi. Input/Reset dan cinematic boss tetap eksplisit.
+- Retro menjadi dua soal: dua soal lokal mapel terpilih, atau dua mapel berbeda pada Mix. Hasil/pembahasan hanya sesudah keduanya dijawab; server menahan kunci dan jumlah benar hingga selesai. 2/2 memberi total dua kali dasar, maksimum/replay idempoten tetap berlaku.
+- Pertanyaan/opsi tanpa kunci disiapkan saat start session. Setelah Gate, soal langsung dibuka dari preload sambil validasi berjalan. Await penyimpanan profil yang sebelumnya memblokir pembukaan soal dihapus. Kedua jawaban dikirim dalam satu transaksi; hasil tetap menunggu backend sah. Retry mempertahankan bukti dan jawaban. Versi sesi diperbarui; mulai level baru setelah deploy.
+- Backend tetap Netlify Function/Firebase, bukan server multiplayer laptop. Tidak ada environment, rules baru atau restart PowerShell.
+
+Validasi: **281 tes/45 file lulus**, validator bank dan bundle function lulus; setelah penyesuaian Reset, 14 tes kamera dan build final lulus. Browser fixture memverifikasi perpindahan 1/2 → 2/2 tanpa feedback ketika verifikasi pending; ringkasan dua hasil muat pada portrait/landscape tanpa overflow. Tes handler memakai mock Auth/Firestore; belum uji akun produksi/latensi nyata. Kamera belum terverifikasi visual pada HP/tablet; WebGL browser pengujian sebelumnya disabled. Dokumen: `docs/CAMERA_VIDEO_REVIEW.md` dan `docs/RETRO_QUIZ.md`.
+
+Pemasangan: timpa delta ini pada source paket 16 file, abaikan ZIP lima file, deploy Netlify termasuk function, refresh game dan mulai sesi baru. PowerShell 1/2 tetap berjalan. Tidak ada push/deploy langsung pada sesi ini.
+
+## 2 November 2026 — Koreksi regresi kamera berpindah sisi
+
+Setelah paket Retro 1–100 & Camera Pilot (16 file), pengguna mengirim video `petal_20261102_221800.mp4` dan menegaskan kamera tidak boleh mengitari karakter atau mendekat tanpa halangan. Kedekatan akibat tembok nyata diterima; perpindahan sisi otomatis tidak.
+
+- Kesalahan pilot: pencarian kandidat `StableCameraOrbit` relatif terhadap yaw hasil sebelumnya, sehingga pergeseran dapat terus menumpuk. Ray lama yang bebas menarik kamera kembali; auto-center Comfort masih mengubah yaw bersamaan. Penguncian sisi/durasi tidak mengatasi dua pemilik arah ini.
+- Class solver dan seluruh pemakai gameplay dihapus, diganti `followCameraPosition` pada satu ray milik input. Collision hanya memperpendek radius ray tersebut, tidak memilih sisi atau pitch baru.
+- Comfort/default dan Manual tidak auto-center. Dynamic yang dipilih pengguna tetap tracking arah. Input manual, Reset Camera dan cuplikan boss tetap disengaja.
+- Pivot kamera dan lookAt disatukan; penghalusan fokus horizontal yang tertinggal dihapus. Yaw/pitch/followHeight tetap diratakan. Radius bebas halangan 7,2 dan FOV 60 dipertahankan. Boom direset saat awal/respawn agar jarak pendek lokasi lama tidak terbawa.
+- Tidak ada perubahan Retro/bank/bonus, arena, karakter, server Node, environment atau rules. Rincian dan batas ada di `docs/CAMERA_VIDEO_REVIEW.md`.
+
+Validasi: **280 tes/45 file lulus; build frontend lulus**. Regresi menguji helper produksi pada 30/60/120 FPS di ruang terbuka; objek di luar ray; 30 detik halangan lalu hilang; putaran manual; tidak ada auto-center Comfort setelah bergerak lama. Tidak ada lagi referensi solver pilot pada src/tests. Bukan klaim uji visual HP/tablet: WebGL lingkungan browser sebelumnya disabled, perangkat fisik dan koneksi nyata belum diuji.
+
+Pemasangan: timpa lima file setelah paket 16 file sebelumnya, deploy Netlify, buka ulang game dan mulai sesi baru. **PowerShell 1/2 tetap berjalan.** Comfort default stabil tanpa auto-center; jika pengguna sebelumnya memilih Dynamic, gunakan Comfort untuk perilaku tersebut. Tidak ada deploy langsung dari sesi ini.
+
 ## 2 November 2026 — Bank Retro aktif 1–100 dan audit zoom kamera
 
 Menggantikan pembatas Level 1/draft pada integrasi kuis sebelumnya atas koreksi eksplisit pengguna. Lampiran baru memuat bank 2.000 soal dan README/manifest, **tidak memuat prompt implementasi terpisah**.

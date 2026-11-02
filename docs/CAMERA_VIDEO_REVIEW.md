@@ -1,22 +1,26 @@
-# Audit kamera — video petal_20261102_214120
+# Kamera kontak — kesepakatan terakhir pengguna
 
-Rekaman sekitar 32 detik menunjukkan skala avatar berubah besar berulang kali: sekitar detik 6 tampilan mendekati kepala, kemudian jauh lagi; sekitar detik 15–18 kepala kembali memenuhi layar sebelum kembali jauh. Tanpa data input video tidak membuktikan persis jari mana yang memicu tiap perubahan.
+Dasar source: paket 16 file Retro 2.000 soal (`maze-hunter-retro-100-levels-camera-pilot-delta.zip`). Paket kamera lima file setelahnya belum dipasang pengguna dan **bukan prasyarat** revisi ini.
 
-## Penyebab yang dikonfirmasi pada kode
+## Perilaku
 
-1. CameraCollision.resolve memotong ray target–kamera pada dinding/terrain. Ketika jarak aman sangat kecil, CameraBoom langsung menyamakan distance dengan nilai kecil itu. Ini zoom karena tabrakan, bukan perubahan FOV.
-2. Kamera di-lerp dalam koordinat dunia; interpolasi dua titik orbit memotong lingkaran dan dapat memotong sudut dinding.
-3. Setelah lerp ada resolve kedua yang memotong kamera lagi seketika, mengalahkan penghalusan posisi.
-4. Revisi sebelumnya menghapus pencarian sisi liar, tetapi akibatnya hanya menyisakan pemendekan pada satu ray. Ini belum memenuhi permintaan menggeser kamera lebih dahulu.
+1. Ruang bebas: kamera mengikuti perpindahan karakter pada offset/jarak standar (7,2; FOV 60).
+2. Drag pemain: kamera berputar pada radius yang sedang berlaku. Bila ray orbit benar-benar terhalang, collision boleh mendekatkan kamera agar tidak menembus tembok.
+3. Bila kamera tertahan/menjadi dekat: posisi kamera disimpan dalam koordinat dunia. Hilangnya halangan atau berlalunya waktu tidak membuat kamera mundur sendiri.
+4. Karakter bergerak menjauh: selama jarak belum standar, kamera tetap pada anchor. Begitu jarak standar tercapai, kamera mengikuti kelebihan perpindahan pada frame tersebut, lalu mengikuti gerakan berikutnya. Tidak menunggu timer dan tidak memainkan animasi pemulihan jarak.
+5. Jika kamera dalam keadaan mengikuti dan jalur perpindahan kamera menabrak permukaan, kamera berhenti di kontak. Karakter dapat bergerak mendekat; kamera tidak diproyeksikan ke dekat karakter akibat dinding di antara karakter dan kamera.
+6. Kembali ke tampilan normal/default berarti posisi aktual kebetulan sudah sesuai dengan follow orang ketiga. Tidak ada perintah putar/zoom tambahan menuju sudut default. Kontak dan pelepasan tidak mengganti yaw/pitch permintaan pemain.
 
-## Perubahan pilot
+## Implementasi
 
-StableCameraOrbit memeriksa sisi pada ketinggian yang dipilih pemain, memulai koreksi sebelum ray benar-benar tertutup, mempertahankan arah hindar minimal 1,2 detik, membatasi koreksi otomatis 0,85 rad/detik dan membatasi pencarian luas setiap 150 ms. Putaran bebas mengikuti input maksimal 3,2 rad/detik. Bila putaran memasuki batas dinding dari sisi yang cukup lapang, langkah sudut dibatasi di tepi aman alih-alih langsung memperpendek radius. Tidak mencari sisi secara teleport dan tidak menaikkan pitch.
+`ContactFollowCamera` menyimpan posisi dunia, target terakhir, permintaan orbit terakhir dan status anchor. Gerak follow menguji sweep kamera dari posisi aktual ke posisi aktual + perpindahan karakter. Orbit manual menguji ray target–posisi orbit. Keduanya tidak dicampur. Ketika anchor dilepas, offset aktual dipertahankan agar tidak meloncat ke sudut lama. Orbit berikutnya memakai perubahan sudut relatif terhadap posisi aktual, bukan menarik kamera kembali ke permintaan lama.
 
-Posisi mengikuti target dan offset orbit langsung setelah penghalusan yaw/pitch/tinggi yang existing; lerp chord dan resolve kedua pada kamera normal dihapus. Collision volume dan boom masih dipakai sekali sesudah pemilihan sisi. FOV tetap 60. Cuplikan boss tetap memakai resolver terpisah.
+`StableCameraOrbit`/pencarian sisi dihapus. Boom recovery berbasis waktu tidak dipakai oleh kamera Adventure. Tidak ada auto-center pada ketiga mode; input manual/reset dan cinematic boss tetap disengaja. Yaw/pitch dan tracking tinggi existing tetap diratakan. LookAt dan kamera memakai target yang sama agar fokus tidak tertinggal. Reset Camera tetap perintah eksplisit pemain. Tidak mengubah gerak karakter, fisika properti, area atau protokol server realtime.
 
-## Batas yang belum selesai
+## Verifikasi dan batas
 
-**Jarak belum konstan mutlak pada koridor yang benar-benar sempit.** Jika semua ray tertutup, termasuk ketika karakter bergerak mendekati dinding saat koreksi belum selesai, collision masih memendekkan radius untuk menjaga kamera di luar solid. Paket ini tidak menghapus seluruh kemungkinan mendekati karakter pada ruang tertutup. Menjaga radius penuh sekaligus semua dinding opaque/solid dalam ruang yang lebih kecil dari radius tidak mungkin; perlu pelebaran area atau keputusan fallback occlusion yang disepakati. Pelebaran kapal–dinding dan redesain semua koridor belum dikerjakan di paket ini.
+Suite utama 281 tes/45 file lulus; sesudah penyesuaian Reset Camera, 14 tes kamera terarah dan build frontend final lulus. Tes mencakup follow bebas pada 30/60/120 FPS, kontak kamera terhadap wall, kamera diam ketika karakter mendekat/menjauh dalam radius, mengikuti tepat setelah radius tercapai, halangan hilang tanpa pemulihan otomatis, objek di antara hero/kamera tidak memindahkan kamera, serta orbit relatif saat anchor berubah sisi.
 
-Browser pengujian gagal membuat WebGL context (GL_RENDERER Disabled). Unit test menilai lintasan/sisi/kecepatan dan geometri, bukan kenyamanan visual nyata. Karena itu kamera ini **pilot source**, belum dinyatakan final nyaman. Uji di HP/tablet tetap diperlukan, terutama tikungan sempit, naik kapal/pohon, joystick + drag bersamaan dan rotasi penuh. Jangan menyebut seluruh keluhan kamera selesai hanya karena build lulus.
+Tes geometri menggunakan helper yang sama dengan runtime. Ini bukan klaim visual HP/tablet atau jaringan nyata lulus. Browser pengujian sebelumnya tidak dapat membuat WebGL context. Cuplikan boss tetap memakai kamera tersendiri; perubahan framing selama cinematic tersebut bukan auto-follow normal. Occlusion lokal existing dipertahankan ketika penghalang berada di garis pandang.
+
+Pemasangan: timpa delta ini langsung setelah paket 16 file. Abaikan ZIP koreksi lima file. Deploy ulang Netlify, buka ulang game, mulai sesi baru. Tidak ada environment/rules/server realtime baru dan PowerShell 1/2 tetap berjalan.

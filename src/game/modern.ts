@@ -1,9 +1,9 @@
 import {jumpPower} from './traversal-features';
 import {traversalWorld} from './traversal-world';
-import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,StableCameraOrbit} from './comfort-camera';
+import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,ContactFollowCamera} from './comfort-camera';
 import {holdProp,restoreProp,releaseProp} from './prop-presentation';
 import {actionKind,releaseTime,actionDuration,handOrigin,projectileOrigin,type AvatarAction} from './avatar-actions';
-import {explorerPole,CameraBoom} from './avatar-presentation';
+import {explorerPole} from './avatar-presentation';
 import {climbDuration} from './climbing';
 import {rockBounce,rockSurface,rockSupport,restingRockPose} from './rock-physics';
 import {rockGeometry} from './rock-art';
@@ -126,7 +126,7 @@ export class ModernGame {
   private occlusion=new CameraOcclusion();
   private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
-  private cameraOrbitSolver=new StableCameraOrbit();private cameraBoom=new CameraBoom();private cameraYaw=0;
+  private contactCamera=new ContactFollowCamera();private cameraYaw=0;
   private desiredCameraYaw=0;
   private cameraPitch=CAMERA_PITCH;
   private desiredPitch=CAMERA_PITCH;
@@ -452,7 +452,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
   }
   captureBackdrop(){this.previewMode=true;this.paused=true;if(this.adventure){const p=this.adventure.layout.areas[this.adventure.area==='gorge'?1:2].point;this.position={x:p.x+.5,y:p.y+2.5};this.adventure.position={...this.position};}this.cameraYaw=this.desiredCameraYaw=this.adventure?.area==='gorge'?Math.PI+.5:Math.PI+.2;this.cameraPitch=this.desiredPitch=this.adventure?.area==='gorge'?.8:.85;this.acc=0;this.updateVision();this.frame(performance.now());this.renderer.render(this.scene,this.camera);return this.renderer.domElement.toDataURL('image/png');}
   skipAwakening(){this.skippedAwakening=this.adventure?.bossAwakeAt??-1;this.acc=0;}
-  resetCamera(){this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
+  resetCamera(){this.contactCamera?.resetView();this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
   cycleCameraView(){return this.resetCamera();}
   private resize() {
     const w = this.host.clientWidth,
@@ -784,16 +784,16 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const distance=this.previewMode?12:7.2,orbit=cameraOrbit(this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch,distance),height=orbit.height;
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*orbit.horizontal,height,-Math.cos(this.cameraYaw)*orbit.horizontal));
     if(!this.previewMode&&!this.adventure?.awakening){
-      desired.copy(this.cameraOrbitSolver.step(target,this.cameraYaw,orbit.horizontal,height,dt,this.time,(a,b)=>this.cameraCollision.resolve(a,b)));
-      const safeDesired=this.cameraCollision.resolve(target,desired),wantedLength=desired.distanceTo(target),safeLength=safeDesired.distanceTo(target),boom=this.cameraBoom.step(wantedLength,safeLength,dt,this.time);desired.sub(target).normalize().multiplyScalar(boom).add(target);
+      if(!this.acc)this.contactCamera.reset();
+      desired.copy(this.contactCamera.step(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b)));
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}
     if(cinematic&&!this.wasCinematic){this.clearInput();const f=state!.layout.fortress,focus=new T.Vector3((f.x+.5)*U,(state!.area==='sea'?Math.max(-.7,this.terrain(f.x+.5,f.y+.5)):this.terrain(f.x+.5,f.y+.5))+1.8,(f.y+.5)*U);this.sceneSide=sceneAzimuth(focus,(a,b)=>this.cameraCollision.resolve(a,b));}
     if(cinematic){const playerTarget=target.clone(),playerCamera=this.cameraCollision.resolve(playerTarget,desired.clone()),f=state!.layout.fortress,p=awakeningProgress(state!.elapsed,state!.bossAwakeAt);const shot=awakeningShot(p);target=new T.Vector3((f.x+.5)*U,(state!.area==='sea'?Math.max(-.7,this.terrain(f.x+.5,f.y+.5)):this.terrain(f.x+.5,f.y+.5))+shot.lookHeight,(f.y+.5)*U);const radius=Math.hypot(shot.x,shot.z);desired.copy(target).add(new T.Vector3(Math.sin(this.sceneSide)*radius,shot.y,Math.cos(this.sceneSide)*radius));desired.copy(this.cameraCollision.resolve(target,desired));const handoff=smooth01((p-.83)/.17);target.lerp(playerTarget,handoff);desired.lerp(playerCamera,handoff);if(!this.wasCinematic){this.camera.position.copy(desired);this.lookAt.copy(target);}else this.camera.position.lerp(desired,1-Math.exp(-dt*5));this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));this.lookAt.lerp(target,1-Math.exp(-dt*5));this.camera.lookAt(this.lookAt);}
-    if(this.wasCinematic&&!cinematic){this.cinematicReturnAt=this.time;this.cameraBoom.reset();this.cameraOrbitSolver.reset();}this.wasCinematic=cinematic;
+    if(this.wasCinematic&&!cinematic){this.cinematicReturnAt=this.time;this.contactCamera.reset();}this.wasCinematic=cinematic;
     if(!cinematic){
-    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.copy(desired);this.lookAt.lerp(target,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));}
+    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.copy(desired);this.lookAt.copy(target);}
     // Normal orbit was already volume-tested; do not apply a second post-smoothing snap.
     const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,distance));
     this.camera.lookAt(this.lookAt.x,this.lookAt.y+cameraFocus(this.cameraPitch,distance)*framing,this.lookAt.z);
