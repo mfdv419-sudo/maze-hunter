@@ -1360,3 +1360,7 @@ html,body,#game { height:100dvh;min-height:0;overflow:hidden; }
 
 /* Keep practice, solo and online on one row without adding menu overflow. */
 .expedition-picker .setup-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.expedition-picker .setup-actions button{min-width:0}.expedition-picker .setup-actions #practice-area{background:#294955;border-color:#a9c4bd}
+/* Scoped Knowledge Bonus panels; existing Retro board orientation is unchanged. */
+.retro-quiz{width:min(94vw,620px);max-height:94dvh;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;padding:20px;overflow-y:auto;overflow-x:hidden;text-align:left;min-width:0}
+.retro-quiz h2{font-size:clamp(20px,4vw,28px);margin:0}.retro-quiz p{margin:0;line-height:1.45;overflow-wrap:anywhere}.retro-quiz select{width:100%;min-height:42px}.retro-quiz button{width:100%;margin:0;white-space:normal;overflow-wrap:anywhere;min-width:0}.quiz-answers{display:grid;gap:8px}.retro-quiz bdi{unicode-bidi:isolate}.retro-quiz [dir=rtl]{font-family:'Noto Sans Arabic','Segoe UI',Tahoma,sans-serif}.quiz-explanation{color:#f6dfa8}
+@media(orientation:landscape) and (max-height:500px){.retro-quiz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:14px;width:min(94vw,900px)}.retro-quiz h2,.retro-quiz>small{grid-column:1/-1}.retro-quiz .quiz-question{grid-column:1;grid-row:3}.retro-quiz .quiz-answers{grid-column:2;grid-row:3/6}.retro-quiz button{padding:8px;min-height:40px;font-size:14px}.retro-quiz>button{grid-column:1/-1}.retro-quiz p{font-size:14px}}

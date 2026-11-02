@@ -1,0 +1,26 @@
+import type {Handler} from '@netlify/functions';
+import {getApps,initializeApp,cert} from 'firebase-admin/app';
+import {getAuth} from 'firebase-admin/auth';
+import {getFirestore} from 'firebase-admin/firestore';
+import bankData from '../private/questions_level01_500_master.json';
+import review from '../private/quiz-review.json';
+import {PACK_VERSION,selectQuestions,publicSession,verifyGate,answerQuestion,settleKnowledge,type Question,type QuizSession,type KnowledgeProgress} from '../lib/retro-quiz-core';
+const bank=bankData as Question[];
+export const handler:Handler=async event=>{const headers={'Content-Type':'application/json','Cache-Control':'no-store'};const reply=(statusCode:number,data:unknown)=>({statusCode,headers,body:JSON.stringify(data)});try{
+ if(event.httpMethod!=='POST')return reply(405,{error:'POST required'});if((event.body?.length||0)>750000)return reply(413,{error:'Request too large'});
+ if(!getApps().length){const raw=process.env.FIREBASE_SERVICE_ACCOUNT_JSON;if(!raw)throw Error('Quiz backend is not configured');initializeApp({credential:cert(JSON.parse(raw))});}
+ const token=(event.headers.authorization||'').replace(/^Bearer /,'');if(!token)return reply(401,{error:'Login required'});const {uid}=await getAuth().verifyIdToken(token,true),body=JSON.parse(event.body||'{}'),profileId=String(body.profileId||'');if(!/^[a-zA-Z0-9-]{1,64}$/.test(profileId))return reply(400,{error:'Invalid profile'});
+ const db=getFirestore(),profile=db.doc(`families/${uid}/profiles/${profileId}`),progressRef=db.doc(`families/${uid}/retroKnowledge/${profileId}`);if(!(await profile.get()).exists)return reply(404,{error:'Profile not found'});
+ const draftOrigin=process.env.RETRO_QUIZ_DRAFT_ORIGIN||'',draft=!!draftOrigin&&event.headers.origin===draftOrigin&&/^https:\/\/deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(draftOrigin),pool=bank.filter(q=>q.status==='approved'||review.version===PACK_VERSION&&(review.approved_ids as string[]).includes(q.id)||draft),subjects=[...new Set(pool.map(q=>q.subject_code))].filter(code=>pool.filter(q=>q.subject_code===code).length>=3);
+ if(body.action==='availability')return reply(200,{available:body.level===1&&subjects.length>0,subjects,version:PACK_VERSION,draft});
+ const id=String(body.sessionId||'');if(!/^[a-zA-Z0-9-]{16,80}$/.test(id))return reply(400,{error:'Invalid attempt ID'});const ref=db.doc(`families/${uid}/retroQuizSessions/${id}`),now=Date.now();
+ const response=await db.runTransaction(async tx=>{const [snapshot,pSnap,kSnap]=await Promise.all([tx.get(ref),tx.get(profile),tx.get(progressRef)]);const p=pSnap.data()!,old=kSnap.data() as KnowledgeProgress|undefined;let s=snapshot.data() as QuizSession|undefined;let delta=0;
+ if(body.action==='start'){if(s){if(s.profileId!==profileId||s.subject!==body.subject)throw Error('Attempt mismatch');return{...publicSession(s,bank),progress:old,draft};}if(body.level!==1||!subjects.length)throw Error('Quiz unavailable: academic review pending');const selected=selectQuestions(pool,String(body.subject));s={version:PACK_VERSION,profileId,level:1,subject:String(body.subject),createdAt:now,stage:'maze_running',questions:selected.map(q=>q.id),answers:{},baseReward:0,correct:0};tx.create(ref,s);return{...publicSession(s,bank),draft};}
+ if(!s||s.profileId!==profileId)throw Error('Attempt not found');if(s.version!==PACK_VERSION)throw Error('Pack version changed');if(now-s.createdAt>86400000&&s.stage!=='quiz_finished'&&s.stage!=='quiz_skipped')throw Error('Attempt expired');
+ if(body.action==='finish'&&s.stage==='maze_running'){s.baseReward=verifyGate(s.level,body.path,body.seconds,body.errors,(now-s.createdAt)/1000);s.completedAt=now;s.stage='quiz_active';const key=String(s.level),previous=p.retro?.[key];tx.update(profile,{[`retro.${key}`]:{stars:Math.max(previous?.stars||0,s.baseReward),seconds:Math.min(previous?.seconds??Infinity,body.seconds),errors:Math.min(previous?.errors??Infinity,body.errors)},updatedAt:now});}
+ else if(body.action==='answer'){if(s.stage==='quiz_finished'&&s.answers[body.questionId]===body.index){}else answerQuestion(s,bank,String(body.questionId),body.index,now);}
+ else if(body.action==='skip'&&s.stage!=='quiz_finished'){s.stage='quiz_skipped';s.totalReward=s.baseReward;s.scoredAt=now;}
+ else if(!['resume','finish','skip'].includes(body.action))throw Error('Unknown action');
+ if(s.baseReward>0){const settled=settleKnowledge(old,s,Math.max(p.retro?.[String(s.level)]?.stars||0,s.baseReward));delta=settled.delta;tx.set(progressRef,settled.progress);tx.set(ref,s);return{...publicSession(s,bank),progress:settled.progress,delta,draft};}
+ tx.set(ref,s);return{...publicSession(s,bank),progress:old,delta,draft};});return reply(200,response);
+ }catch(e){return reply(400,{error:e instanceof Error?e.message:'Quiz request failed'});}};

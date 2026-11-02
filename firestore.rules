@@ -30,6 +30,8 @@ service cloud.firestore {
    allow delete: if false;
   }
   match /families/{uid}/wardrobes/{profile} {allow read: if request.auth != null && request.auth.uid == uid;allow write: if false;}
+  match /families/{uid}/retroKnowledge/{profile} {allow read: if request.auth != null && request.auth.uid == uid;allow write: if false;}
+  match /families/{uid}/retroQuizSessions/{attempt} {allow read, write: if false;}
   match /entitlements/{uid} { allow read: if request.auth != null && request.auth.uid == uid; allow write: if false; }
  }
 }

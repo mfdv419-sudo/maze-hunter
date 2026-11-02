@@ -1,3 +1,5 @@
+import {chooseRetroBonus,startBonus,finishBonus,pendingBonus,resumeBonus,type BonusChoice} from './ui/retro-quiz';
+import {retroQuizRequest} from './services/cloud';
 import {mountDialogPages} from './ui/dialog-pages';
 import {mountControlLayout} from './ui/control-layout';
 import {toggleFullscreen} from './ui/fullscreen';
@@ -58,7 +60,7 @@ import {
   writeFamily,
   newProfile,
   mergeProfile,
-  recordLevel,
+  recordLevel,retroTotalStars,
   unlocked,
   type Family,
   type Profile,
@@ -254,7 +256,7 @@ function home() {
       <div class="scene-caption"><span class="scene-eyebrow">${tr("SAHABAT PETUALANGANMU", "YOUR ADVENTURE COMPANION")}</span><strong>${profile?esc(profile.name):tr("Sahabat Rimba", "Forest Friend")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Temukan buah favorit binturong", "Find the binturong’s favorite figs") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
       <div class="mascot-hint">${tr("Ketuk untuk lompat · tahan & geser untuk putar", "Tap to jump · hold & drag to rotate")} <span>↗</span></div>
       <div class="title-tools">${button("⚙", "settings", "round-tool")}${profile?button('<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Zm0 2H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v7m-5 0h10"/></svg>',"scores","round-tool"):""}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
-      ${profile ? `<div class="title-progress">★ ${Object.values(profile.retro).reduce((n, r) => n + r.stars, 0)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
+      ${profile ? `<div class="title-progress">★ ${retroTotalStars(profile)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
       ${profile?`<div class="home-collection"><button id="collection-open"><b>◉ ${stats(profile).coins}</b><span>${tr('KOLEKSI & MISI','COLLECTION & QUESTS')}</span><small>${cosmetics.filter(c=>owns(profile!,c)).length}/${cosmetics.length}</small></button></div>`:''}
       ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
     </main>`,
@@ -372,7 +374,7 @@ function profiles() {
   if (!uid) return home();
   begin(
     "profiles",
-    `<main class="page narrow"><div class="eyebrow">${tr("AKUN KELUARGA", "FAMILY ACCOUNT")}</div><h1>${tr("Siapa yang berpetualang?", "Who’s exploring today?")}</h1><p class="lead">${tr("Gunakan nama panggilan. Setiap profil punya progres dan kostum sendiri.", "Use a nickname. Every profile has their own progress and outfits.")}</p><div class="profile-grid">${family.profiles.map((p, i) => `<button class="profile-card" id="p-${i}"><span class="avatar">${esc(p.name.slice(0, 1).toUpperCase())}</span><h2>${esc(p.name)}</h2><span>${tr("Level", "Level")} ${unlocked(p)} · ${Object.values(p.retro).reduce((n, r) => n + r.stars, 0)} ★</span></button>`).join("")}</div>${family.profiles.length < 6 ? `<form id="new-profile"><label for="nickname">${tr("Profil baru (maksimal 6)", "New profile (up to 6)")}</label><div class="input-row"><input id="nickname" maxlength="24" minlength="1" placeholder="${tr("Nama panggilan", "Nickname")}" required autocomplete="off">${button(tr("Tambah profil", "Add profile"), "add-profile")}</div></form>` : ""}<p class="small">${esc(accountName)}</p></main>`,
+    `<main class="page narrow"><div class="eyebrow">${tr("AKUN KELUARGA", "FAMILY ACCOUNT")}</div><h1>${tr("Siapa yang berpetualang?", "Who’s exploring today?")}</h1><p class="lead">${tr("Gunakan nama panggilan. Setiap profil punya progres dan kostum sendiri.", "Use a nickname. Every profile has their own progress and outfits.")}</p><div class="profile-grid">${family.profiles.map((p, i) => `<button class="profile-card" id="p-${i}"><span class="avatar">${esc(p.name.slice(0, 1).toUpperCase())}</span><h2>${esc(p.name)}</h2><span>${tr("Level", "Level")} ${unlocked(p)} · ${retroTotalStars(p)} ★</span></button>`).join("")}</div>${family.profiles.length < 6 ? `<form id="new-profile"><label for="nickname">${tr("Profil baru (maksimal 6)", "New profile (up to 6)")}</label><div class="input-row"><input id="nickname" maxlength="24" minlength="1" placeholder="${tr("Nama panggilan", "Nickname")}" required autocomplete="off">${button(tr("Tambah profil", "Add profile"), "add-profile")}</div></form>` : ""}<p class="small">${esc(accountName)}</p></main>`,
   );
   family.profiles.forEach((p, i) =>
     click(`p-${i}`, () => {
@@ -449,12 +451,13 @@ function journey(region?: number) {
           open = id <= max;
         const xs = [7, 16, 25, 35, 45, 55, 65, 75, 84, 93],
           ys = [61, 38, 34, 51, 68, 67, 43, 27, 32, 48];
-        return `<button class="level-node ${result ? "complete" : id === max ? "current" : ""}" id="level-${id}" style="--node-x:${xs[i]}%;--node-y:${ys[i]}%" ${open ? "" : "disabled"} aria-label="${tr("Level", "Level")} ${id}${open ? "" : tr(" terkunci", " locked")}"><img src="${levelArt(id)}" alt=""><span>${id}</span><small>${result ? "★".repeat(result.stars) + "☆".repeat(3 - result.stars) : open ? tr("MAIN", "PLAY") : tr("TERKUNCI", "LOCKED")}</small></button>`;
+        return `<button class="level-node ${result ? "complete" : id === max ? "current" : ""}" id="level-${id}" style="--node-x:${xs[i]}%;--node-y:${ys[i]}%" ${open ? "" : "disabled"} aria-label="${tr("Level", "Level")} ${id}${open ? "" : tr(" terkunci", " locked")}"><img src="${levelArt(id)}" alt=""><span>${id}</span><small>${result ? "★".repeat(result.stars) + "☆".repeat(3 - result.stars)+((profile!.knowledge?.bestRewards[String(id)]||0)>result.stars?` +${profile!.knowledge!.bestRewards[String(id)]-result.stars}★`:"") : open ? tr("MAIN", "PLAY") : tr("TERKUNCI", "LOCKED")}</small></button>`;
       },
     ).join(
       "",
     )}<div class="region-label">${tr("WILAYAH", "REGION")} ${r + 1}<span>10 ${tr("jalur untuk ditemukan", "paths to discover")}</span></div></div><div class="map-nav">${button("← " + tr("Sebelumnya", "Previous"), "prev", "secondary", r === 0)}<span>${Object.keys(profile.retro).length}/100 ${tr("level selesai", "levels complete")}</span>${button(tr("Berikutnya", "Next") + " →", "next-region", "secondary", r === 9)}</div></main>`,
   );
+  if(pendingBonus(profile.id)){const b=document.createElement('button');b.className='game-button secondary';b.textContent=tr('LANJUTKAN BONUS QUIZ','RESUME BONUS QUIZ');b.onclick=()=>{b.disabled=true;void resumeBonus(body=>retroQuizRequest(profile!.id,body),profile!.id,lang==='en',progress=>{if(profile){profile.knowledge=progress;cache();}}).then(()=>journey(r)).catch(e=>{showError(e);b.disabled=false;});};el('help').before(b);}
   click("help", () => instructions());
   click("prev", () => journey(r - 1));
   click("next-region", () => journey(r + 1));
@@ -489,8 +492,12 @@ function pauseOverlay(online = false) {
   );
   click("quit", () => home());
 }
-async function playRetro(level: number) {
+async function playRetro(level: number,selected?:BonusChoice) {
   if (!profile || level > unlocked(profile)) return;
+  const playerProfile=profile,api=(body:Record<string,unknown>)=>retroQuizRequest(playerProfile.id,body);
+  let bonus=selected||await chooseRetroBonus(level,lab?async()=>({available:false,subjects:[]}):api,lang==='en');if(!bonus)return;
+  if(bonus.subject!=='OFF'){try{bonus=await startBonus(api,bonus,playerProfile.id,level);}catch(e){showError(e);return;}}
+  const choice=bonus;let finishHandled=false;
   begin(
     "retro",
     hud(
@@ -535,7 +542,8 @@ async function playRetro(level: number) {
         `<span class="lives">${"♥".repeat(s.lives)}${"♡".repeat(3 - s.lives)}</span><span>${s.boards.length>1?`${tr("PETA","MAP")} ${s.pageIndex+1}/${s.boards.length} · `:""}${Math.ceil(s.config.seconds - s.elapsed)}s</span>`;
       const subtitle=el("play-hint");subtitle.textContent=s.finalPage?tr("Cari buah · jalan buntu: kembali ke Start level, −1 nyawa","Find figs · dead end: back to the level Start, −1 life"):tr("Cari gerbang ke peta berikutnya · jalan buntu: kembali ke peta 1, −1 nyawa","Find the gate to the next map · dead end: back to map 1, −1 life");
     },
-    onFinish: (s) => {
+    onFinish: async (s) => {
+      if(finishHandled||token!==generation)return;finishHandled=true;
       const won = s.phase === "won";
       tone(won ? 720 : 120, 0.18, "sine", 0.025);
       if (won && profile) {
@@ -544,8 +552,9 @@ async function playRetro(level: number) {
           stars: s.rating,
           errors: s.errors,
         });
-        void save();
+        if(choice.subject!=='OFF')await save();else void save();
       }
+      if(won&&choice.subject!=='OFF'){await finishBonus(api,choice,playerProfile.id,{path:s.path.map(p=>({x:Math.round(p.x*10000)/10000,y:Math.round(p.y*10000)/10000})),seconds:s.elapsed,errors:s.errors},lang==='en',progress=>{playerProfile.knowledge=progress;if(profile?.id===playerProfile.id)profile.knowledge=progress;cache();});if(token!==generation)return;}
       result(
         won,
         s.elapsed,
@@ -553,7 +562,7 @@ async function playRetro(level: number) {
         s.reason === "time"
           ? tr("Waktu habis", "Time is up")
           : tr("Nyawa habis", "No lives left"),
-        () => playRetro(level),
+        () => playRetro(level,{subject:choice.subject}),
         won && level < 100
           ? async () => {
               await betweenLevels(level, adFree || lab);
@@ -818,7 +827,7 @@ function wardrobe(){
 }
 function scores(kind:'retro'|'adventure'='retro',level=1,map=0,difficulty:Difficulty='medium',scoreArea:AdventureArea='classic') {
  if(!profile)return home();
- const rows=kind==='retro'?family.profiles.filter(p=>p.retro[String(level)]).map(p=>({name:p.name,seconds:p.retro[String(level)].seconds,stars:p.retro[String(level)].stars})).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds):readRuns(uid).filter(r=>(r.area||'classic')===scoreArea&&r.map===map&&r.difficulty===difficulty).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds);
+ const rows=kind==='retro'?family.profiles.filter(p=>p.retro[String(level)]).map(p=>({name:p.name,seconds:p.retro[String(level)].seconds,stars:Math.max(p.retro[String(level)].stars,p.knowledge?.bestRewards[String(level)]||0)})).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds):readRuns(uid).filter(r=>(r.area||'classic')===scoreArea&&r.map===map&&r.difficulty===difficulty).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds);
  begin('scores',`<main class="page scores-page"><div class="inventory-heading"><div><div class="eyebrow">${tr('CATATAN KELUARGA','FAMILY RECORDS')}</div><h1>${tr('Papan pencapaian','Best adventures')}</h1></div>${button('×','scores-close','round-tool')}</div><div class="score-filters"><button id="score-retro" class="${kind==='retro'?'selected':''}">RETRO JOURNEY</button><button id="score-adventure" class="${kind==='adventure'?'selected':''}">ADVENTURE</button>${kind==='retro'?`<select id="score-level" aria-label="Level">${Array.from({length:100},(_,i)=>`<option value="${i+1}" ${i+1===level?'selected':''}>LEVEL ${i+1}</option>`).join('')}</select>`:`<select id="score-area" aria-label="Area">${adventureAreas.map(a=>`<option value="${a}" ${a===scoreArea?'selected':''}>${areaName(a,lang)}</option>`).join('')}</select><select id="score-difficulty" aria-label="Difficulty">${['easy','medium','hard','extreme'].map(d=>`<option ${d===difficulty?'selected':''}>${d}</option>`).join('')}</select><select id="score-map" aria-label="Map">${Array.from({length:10},(_,i)=>`<option value="${i}" ${i===map?'selected':''}>MAP ${i+1}</option>`).join('')}</select>`}</div><p class="small">${kind==='retro'?tr('Catatan terbaik profil dalam akun keluarga.','Best results for profiles in your family account.'):tr('Catatan kemenangan Adventure pada perangkat ini.','Adventure wins recorded on this device.')}</p><div class="score-list">${rows.length?rows.map((r,i)=>`<div class="score-row"><strong>${i+1}</strong><b>${esc(r.name)}</b><span>★ ${r.stars}</span><span>${r.seconds.toFixed(1)}s</span></div>`).join(''):`<div class="empty-record">☆<p>${tr('Belum ada kemenangan pada pilihan ini.','No completed runs for this selection yet.')}</p></div>`}</div></main>`);
  click('scores-close',()=>home());click('score-retro',()=>scores('retro',level,map,difficulty));click('score-adventure',()=>scores('adventure',level,map,difficulty));
  el('score-area')?.addEventListener('change',()=>scores(kind,level,map,difficulty,el<HTMLSelectElement>('score-area').value as AdventureArea));el('score-level')?.addEventListener('change',()=>scores(kind,Number(el<HTMLSelectElement>('score-level').value),map,difficulty));el('score-map')?.addEventListener('change',()=>scores(kind,level,Number(el<HTMLSelectElement>('score-map').value),difficulty,scoreArea));el('score-difficulty')?.addEventListener('change',()=>scores(kind,level,map,el<HTMLSelectElement>('score-difficulty').value as Difficulty,scoreArea));

@@ -1,6 +1,6 @@
 import {jumpPower} from './traversal-features';
 import {traversalWorld} from './traversal-world';
-import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,clearOrbit,sceneAzimuth,travelYaw,edgePan} from './comfort-camera';
+import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan} from './comfort-camera';
 import {holdProp,restoreProp,releaseProp} from './prop-presentation';
 import {actionKind,releaseTime,actionDuration,handOrigin,projectileOrigin,type AvatarAction} from './avatar-actions';
 import {explorerPole,CameraBoom} from './avatar-presentation';
@@ -781,10 +781,9 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
 
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
-    const distance=this.previewMode?12:7.2,height=distance*Math.tan(Math.max(0,this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch));
-    const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*distance,height,-Math.cos(this.cameraYaw)*distance));
+    const distance=this.previewMode?12:7.2,orbit=cameraOrbit(this.adventure?.swimming&&this.adventure.depth>.5?Math.min(this.cameraPitch,.2):this.cameraPitch,distance),height=orbit.height;
+    const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*orbit.horizontal,height,-Math.cos(this.cameraYaw)*orbit.horizontal));
     if(!this.previewMode&&!this.adventure?.awakening){
-      desired.copy(clearOrbit(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b),desired.distanceTo(target)*.94));
       const safeDesired=this.cameraCollision.resolve(target,desired),wantedLength=desired.distanceTo(target),safeLength=safeDesired.distanceTo(target),boom=this.cameraBoom.step(wantedLength,safeLength,dt,this.time);desired.sub(target).normalize().multiplyScalar(boom).add(target);
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
@@ -795,8 +794,8 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     if(!cinematic){
     if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.lerp(desired,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));this.lookAt.lerp(target,1-Math.exp(-dt*(this.time-this.cinematicReturnAt<1.2?3:9)));}
     if(!this.previewMode)this.camera.position.copy(this.cameraCollision.resolve(target,this.camera.position));
-    const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,Math.hypot(distance,height)));
-    this.camera.lookAt(this.lookAt.x,this.lookAt.y+.2*framing,this.lookAt.z);
+    const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,distance));
+    this.camera.lookAt(this.lookAt.x,this.lookAt.y+cameraFocus(this.cameraPitch,distance)*framing,this.lookAt.z);
     }
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
       const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,(effect.height??this.terrain(effect.point.x,effect.point.y))+.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;

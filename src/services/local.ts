@@ -6,7 +6,7 @@ export interface LevelResult {
   stars: number;
   errors: number;
 }
-export interface Profile {wardrobeSchema?:1;wardrobe?:import('./cosmetics').WardrobeWallet;
+export interface Profile {knowledge?:{version:1;bestRewards:Record<string,number>;bonusByLevel:Record<string,number>};wardrobeSchema?:1;wardrobe?:import('./cosmetics').WardrobeWallet;
   id: string;
   name: string;
   language: "id" | "en";
@@ -80,6 +80,7 @@ export function mergeProfile(a: Profile, b: Profile): Profile {
         }
       : r;
   }
+  out.knowledge=a.knowledge||b.knowledge;
   out.adventures={...a.adventures};
   for(const [id,r]of Object.entries(b.adventures||{})){const old=out.adventures[id];out.adventures[id]=old?{coins:Math.max(old.coins,r.coins),stars:Math.max(old.stars,r.stars),chests:Math.max(old.chests,r.chests),zones:[...new Set([...old.zones,...r.zones])].sort()}:r;}
   const wa=ensureWallet(a),wb=ensureWallet(b);out.wardrobe={version:1,legacy:[...new Set([...wa.legacy,...wb.legacy])],purchases:[...new Set([...wa.purchases,...wb.purchases])],pending:[...new Set([...wa.pending,...wb.pending])].filter(k=>!wa.purchases.includes(k)&&!wb.purchases.includes(k)),paid:{...wa.paid,...wb.paid}};out.wardrobeSchema=1;
@@ -104,3 +105,5 @@ export function recordLevel(p: Profile, id: number, r: LevelResult) {
 }
 
 export function recordExpedition(p:Profile,id:string,r:ExpeditionRecord){const old=p.adventures?.[id];p.adventures??={};p.adventures[id]=old?{coins:Math.max(old.coins,r.coins),stars:Math.max(old.stars,r.stars),chests:Math.max(old.chests,r.chests),zones:[...new Set([...old.zones,...r.zones])].sort()}:r;p.updatedAt=Date.now();}
+
+export function retroTotalStars(p:Profile){return Object.values(p.retro).reduce((n,r)=>n+Math.max(0,Math.min(3,r.stars||0)),0)+Object.entries(p.knowledge?.bestRewards||{}).reduce((n,[id,v])=>n+Math.max(0,Math.min(6,v||0)-Math.max(0,Math.min(3,p.retro[id]?.stars||0))),0);}

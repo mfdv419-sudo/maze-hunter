@@ -90,7 +90,7 @@ export async function logout() {
 export async function getProfiles(uid: string) {
   if (!db) throw Error("Cloud unavailable");
   const snaps = await getDocs(collection(db, "families", uid, "profiles"));
-  return Promise.all(snaps.docs.map(d=>d.data()).filter(validProfile).map(async p=>{const w=await getDoc(doc(db!,'families',uid,'wardrobes',p.id));if(w.exists())p.wardrobe=w.data() as import('./cosmetics').WardrobeWallet;return p;}));
+  return Promise.all(snaps.docs.map(d=>d.data()).filter(validProfile).map(async p=>{const w=await getDoc(doc(db!,'families',uid,'wardrobes',p.id));if(w.exists())p.wardrobe=w.data() as import('./cosmetics').WardrobeWallet;const q=await getDoc(doc(db!,'families',uid,'retroKnowledge',p.id)).catch(()=>undefined);if(q?.exists())p.knowledge=q.data() as Profile['knowledge'];return p;}));
 }
 async function serverJSON(response:Response){let data:any;try{data=await response.json();}catch{throw Error(`Layanan online tidak merespons (HTTP ${response.status}).`);}if(!response.ok)throw Error(`${data.error||'Online request failed'} (HTTP ${response.status})`);return data;}
 export async function syncProfile(uid: string, p: Profile) {
@@ -106,7 +106,7 @@ export async function syncProfile(uid: string, p: Profile) {
     const snap = await tx.get(target),
       old = snap.data();
     const merged = validProfile(old) ? mergeProfile(p, old) : p;
-    const {wardrobe,...publicProfile}=merged;tx.set(target, publicProfile);
+    const {wardrobe,knowledge,...publicProfile}=merged;tx.set(target, publicProfile);
     return merged;
   });
   if(auth?.currentUser){const response=await fetch('/.netlify/functions/maze-room',{method:'POST',signal:AbortSignal.timeout(20000),headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},body:JSON.stringify({action:'wardrobe',profileId:p.id,pending:merged.wardrobe?.pending||[]})});const result=await serverJSON(response);merged.wardrobe=result.wallet;merged.appearance=permittedAppearance(merged);if(result.rejected?.length)window.dispatchEvent(new CustomEvent('wardrobe-rejected'));}
@@ -234,3 +234,5 @@ function realtimeVoiceTransport(code:string,self:string):VoiceTransport{
 export async function getVoiceConfig(code:string,profileId:string):Promise<RTCConfiguration>{const value=await roomAction('voice-config',{code,profileId})as unknown as {iceServers:RTCIceServer[]};return{iceServers:value.iceServers};}
 
 export function voiceTransport(code:string,self:string):VoiceTransport{const profileId=self.slice((auth?.currentUser?.uid.length||0)+1);return fallbackVoiceTransport(realtimeVoiceTransport(code,self),serverVoiceTransport((action,payload)=>roomAction(action,{...payload,code,profileId})));}
+
+export async function retroQuizRequest(profileId:string,request:Record<string,unknown>){if(!auth?.currentUser)throw Error('Login required for Bonus Quiz');const response=await fetch('/.netlify/functions/retro-quiz',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${await auth.currentUser.getIdToken()}`},signal:AbortSignal.timeout(25000),body:JSON.stringify({...request,profileId})});return serverJSON(response);}

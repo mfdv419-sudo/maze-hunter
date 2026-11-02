@@ -1,5 +1,62 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Retro Knowledge Bonus B/C/D & Camera Collision Correction
+
+**Pemasangan:** setelah Camera & Traversal Pilot (19 file). Source kerja terbaru dari revisi sesi ini dipakai sebagai dasar. Dua perubahan diminta bersamaan oleh pengguna: Retro sesuai prompt/Excel yang dilampirkan dan koreksi kamera dari rekaman bug. Generator, orientasi portrait/landscape dan kontrol maze Retro tidak diubah.
+
+### Audit dan kamera
+
+Lokasi yang diperiksa: `src/main.ts` (pemilihan level/kemenangan), `src/game/retro-state.ts` dan `retro-board.ts` (Golden Gate/rumus rating), `src/services/local.ts` (level-best), `cosmetics.ts` (saldo/kostum), `cloud.ts` (Auth/Firestore), `netlify/functions/maze-room.ts` (Admin/settlement), `firestore.rules`, serta `modern.ts`/`comfort-camera.ts`.
+
+- Pencarian sisi kamera setiap frame dihapus. Collision tetap pada ray/sisi yang diminta pemain; tidak mencoba kanan/kiri/belakang demi memaksakan jarak.
+- Orbit vertikal positif sekarang memakai sin/cos pada radius tetap, bukan tinggi tangent dengan jarak horizontal tetap yang menyebabkan skala karakter berubah ketika pitch berubah.
+- Batas pitch menjadi −55° sampai 60°. Saat melihat ke atas, titik pandang benar-benar diarahkan ke atas, bukan hanya menyimpan nilai pitch sementara tinggi dipotong ke nol.
+- Collision/pemulihan jarak tetap berlaku pada sisi yang sama. Ruang sempit masih dapat memendekkan jarak; belum ada klaim seluruh arena sempit sudah diperlebar atau kenyamanan visual lulus pada perangkat fisik.
+
+### Retro B — Alur kuis
+
+- Panel sebelum level menawarkan Bonus Quiz OFF (bawaan) atau mata pelajaran/Random Mix saat bank tersedia. Level 2+ tetap normal dengan keterangan belum tersedia; tidak memakai ulang soal Level 1.
+- Kuis hanya dipicu setelah kemenangan. Reward dasar dengan rumus existing dicatat terlebih dahulu; skip atau layanan gagal tidak menghapusnya.
+- Tiga soal unik; Random Mix mengambil tiga mapel berbeda. Satu jawaban final per soal, pembahasan sesudah pengiriman sah, Next, hasil 0–3 dan skip. Konten ditampilkan sebagai teks/bidi, bukan HTML dari bank.
+- Ada stable attempt ID, pack version, status sesi dan tombol Resume Bonus Quiz pada Journey setelah refresh. Maze belum selesai tidak dipulihkan karena engine existing tidak menyimpan jalurnya; attempt tersebut aman dilewati tanpa bonus. Bukti finish dengan respons hilang dan kuis aktif dapat dilanjutkan/retry tanpa soal baru.
+
+### Retro C — Data dan review
+
+Lampiran berisi prompt dan XLSX, bukan JSON/ZIP yang disebut prompt. **500 baris asli dari XLSX** dikonversi ke `netlify/private/questions_level01_500_master.json`: 50 per 10 mapel, hanya L1/SD kelas 1, tanpa mengganti pertanyaan/opsi/kunci/pembahasan. Metadata SD/grade/subject/status diturunkan dari tab dan spesifikasi. Seluruh soal masih `draft_pedagogical_review`.
+
+Validator `scripts/validate_question_bank.py` dan tes TypeScript memeriksa jumlah, ID, duplikasi, 3 opsi distinct, kunci dan pembahasan. Ini bukan persetujuan akademik. `netlify/private/quiz-review.json` berisi daftar ID yang telah disetujui; daftar bawaan kosong. Draft tidak otomatis diaktifkan pada situs produksi. Rincian editorial dan pilot draft ada di `docs/RETRO_QUIZ.md`.
+
+Master bank/kunci hanya di function backend; tidak di `src`, `public`, `dist` atau koleksi Firestore yang bisa dibaca klien. Pemeriksaan build memastikan ID/master soal tidak ada di output frontend. Tiga proyeksi pertanyaan tanpa kunci hanya disediakan di fixture render pengujian; bukan asset build production.
+
+### Retro D — Auth, reward dan ekonomi
+
+- Function baru `retro-quiz` memakai Firebase Admin server-only yang sama, tanpa ketergantungan server Node multiplayer laptop.
+- Server memverifikasi Auth dan profil milik UID tersebut, memverifikasi trace legal ke Golden Gate Level 1 menggunakan engine yang sama, menghitung rating dasar, lalu menilai jawaban dari bank privat. Client `correctCount` tidak dipercaya. Trace bukan sistem anti-bot/anti-cheat lengkap; input waktu/error mengikuti bukti sesi dan validasi batas yang tersedia.
+- 3/3 memberi hasil run 2× dasar; 0/1/2 benar atau skip tetap dasar. Transaksi Firestore menyimpan session/answers/score dan maksimum hasil per profil/level. Retry/duplicate/replay tidak menambah reward penuh lagi.
+- Bintang dasar 1–3 pada profil tetap dipertahankan. `retroKnowledge` adalah progress tambahan milik server. Saldo total dihitung dari maksimum antara hasil dasar dan hasil terbaik kuis; jika dasar meningkat setelah kuis lebih lemah, total tidak ikut menggelembung. Contoh 2×2=4 lalu dasar 3 tetap total 4, bukan 5.
+- Settlement kostum membaca progress bonus tepercaya dalam transaksi. Client tidak bisa menulis `knowledge` pada profil atau menulis koleksi bonus/sesi sendiri. Read own-profile progress diizinkan lewat rules baru; session hanya melalui function.
+- Profil, ringkasan Retro, node level, peringkat dan saldo kostum memperhitungkan hasil tambahan tanpa mengganti currency atau aturan unlock.
+
+### Validasi dan batas
+
+**273 tes / 45 file lulus**, validator 500 soal lulus, build frontend lulus dan bundle function Node lulus. Tes mencakup skor 0–3, skip, MTK/Random Mix, kunci tidak dikirim sebelum jawab, jawaban final, trace Golden Gate, duplikasi/network retry, kepemilikan akun pada handler dengan adapter Auth/Firestore mock, reward-best dan ekonomi, serta regresi Retro/Adventure/realtime.
+
+Browser preview memverifikasi panel pre-level OFF/unavailable dan render maze Retro existing. Fixture DOM tiga ukuran (390×844 Arab RTL, 844×390 Mandarin/pinyin, 1024×768 Prancis beraksen) tidak mengalami horizontal/vertical overflow pada kasus yang diperiksa; target jawaban ponsel sekitar 46 px. Fixture hanya menguji render, bukan penilaian atau backend produksi.
+
+Belum diuji ke project Firebase/Netlify produksi atau emulator rules; belum uji kuis penuh dengan akun nyata, HP/tablet fisik atau native multi-touch baru. Kamera 3D masih perlu pilot visual; browser pengujian sebelumnya gagal membuat WebGL context. Tidak mengklaim kamera sudah nyaman hanya berdasarkan unit test.
+
+**Status: integrasi source selesai; review akademik pending; deployment dan pilot perangkat belum dilakukan.**
+
+### Pemasangan
+
+1. Salin delta ke source GitHub yang sudah berisi revisi sebelumnya; deploy ulang Netlify, termasuk function `retro-quiz` baru dan perubahan `maze-room`.
+2. Terbitkan rules Firestore dari `firestore.rules` pada project Firebase existing. Tidak ada perubahan rules RTDB.
+3. Untuk menguji 500 soal draft di preview, tambahkan environment Netlify `RETRO_QUIZ_DRAFT_ORIGIN=https://deploy-preview-1--maze-hunter.netlify.app` (sesuaikan nomor preview yang benar), lalu redeploy. Tanpa slash akhir/Markdown/path. Backend hanya menerima pengecualian draft dari origin deploy-preview yang persis sama; situs produksi tetap menunggu approved IDs. Hapus variable setelah pilot/review.
+4. Tetap gunakan `FIREBASE_SERVICE_ACCOUNT_JSON` server-only existing; tidak ada kredensial frontend baru. Jika function belum dikonfigurasi, Retro normal tetap dapat dimainkan dan kuis menyatakan belum tersedia. Jangan memasukkan credential ke GitHub.
+5. **PowerShell 1 dan 2 tidak perlu direstart** untuk delta ini. Update dilakukan pada frontend dan Netlify Functions. Buka ulang browser setelah deploy.
+
+Lihat `docs/RETRO_QUIZ.md` untuk review, struktur, keterbatasan dan konfigurasi. Tidak ada publikasi Netlify/GitHub atau perubahan akun Firebase langsung dari sesi ini.
+
 ## 2 November 2026 — Reference Camera & Traversal Pilot
 
 **Dasar pemasangan:** setelah Comfort Camera (9 file). Menggunakan video referensi pengguna sebagai arah perilaku, bukan menjanjikan hasil visual identik. Paket ini menerapkan kamera/gerakan dan pilot aktivitas; inventaris shortcut, efek sepatu, set kostum dan penggantian model besar tetap pending.

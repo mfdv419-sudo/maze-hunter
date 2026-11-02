@@ -71,7 +71,7 @@ export const handler: Handler = async (event) => {
     const wardrobeRef=getFirestore().doc(`families/${identity.uid}/wardrobes/${profileId}`);
     if(action==='wardrobe'){
       if(!Array.isArray(body.pending)||body.pending.length>80||body.pending.some((k:unknown)=>typeof k!=='string'||k.length>80))throw Error('Invalid wardrobe request');
-      const settled=await getFirestore().runTransaction(async tx=>{const [current,wallet]=await Promise.all([tx.get(profile.ref),tx.get(wardrobeRef)]);const result=settleWardrobe(current.data() as Profile,wallet.exists?wallet.data() as WardrobeWallet:undefined,body.pending);tx.set(wardrobeRef,result.wallet);return result;});
+      const settled=await getFirestore().runTransaction(async tx=>{const [current,wallet,knowledge]=await Promise.all([tx.get(profile.ref),tx.get(wardrobeRef),tx.get(getFirestore().doc(`families/${identity.uid}/retroKnowledge/${profileId}`))]);const result=settleWardrobe({...current.data(),knowledge:knowledge.exists?knowledge.data():undefined} as Profile,wallet.exists?wallet.data() as WardrobeWallet:undefined,body.pending);tx.set(wardrobeRef,result.wallet);return result;});
       return{statusCode:200,headers,body:JSON.stringify(settled)};
     }
     if(['create','join','random'].includes(action)){const storedWallet=await wardrobeRef.get();if(storedWallet.exists)data.wardrobe=storedWallet.data();}

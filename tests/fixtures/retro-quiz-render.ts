@@ -1,0 +1,6 @@
+import '../../src/style.css';
+import {showQuiz} from '../../src/ui/retro-quiz';
+// Rendering-only public projections of three supplied questions; no keys or fake scoring.
+const questions=[{"id": "MHR-L001-ARB-001", "subject": "Bahasa Arab", "question": "Apa arti kata atau ungkapan bahasa Arab “مَرْحَبًا” dalam bahasa Indonesia?", "options": ["halo", "tolong / silakan", "selamat malam saat bertemu"]}, {"id": "MHR-L001-ZHO-001", "subject": "Bahasa Mandarin", "question": "Apa arti kata atau ungkapan bahasa Mandarin “你好 (nǐ hǎo)” dalam bahasa Indonesia?", "options": ["tolong / silakan", "selamat tidur", "halo"]}, {"id": "MHR-L001-FRA-005", "subject": "Bahasa Prancis", "question": "Apa arti kata atau ungkapan bahasa Prancis “s’il vous plaît” dalam bahasa Indonesia?", "options": ["halo / selamat pagi", "tolong / silakan", "ya"]}];
+const index=Number(new URLSearchParams(location.search).get('q')||0);
+void showQuiz(async()=>{throw Error('Rendering fixture: backend deliberately absent');},'render-fixture-00001','render-'+index,{stage:'quiz_active',version:'render-only',level:1,baseReward:3,correct:0,questions:questions.map((q,i)=>({...q,answer:null})).slice(index).concat(questions.slice(0,index).map(q=>({...q,answer:null})))},false,()=>{});
