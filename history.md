@@ -1,5 +1,21 @@
 # Maze Hunter — riwayat revisi
 
+## 2 November 2026 — Bank Retro aktif 1–100 dan audit zoom kamera
+
+Menggantikan pembatas Level 1/draft pada integrasi kuis sebelumnya atas koreksi eksplisit pengguna. Lampiran baru memuat bank 2.000 soal dan README/manifest, **tidak memuat prompt implementasi terpisah**.
+
+- Konversi setia 2.000 soal aktif, 20 per level dan 2 per mapel per level. Normalisasi kode mapel ke kode existing; konten/opsi/kunci/pembahasan dipertahankan. Bank/kunci hanya dibundel backend. Bank 500/review lama tidak lagi dipakai runtime.
+- Checkbox berfungsi di level 1–100, OFF tetap normal, ON menampilkan 10 mapel dan Random Mix. Tidak ada filter draft atau environment preview baru. Untuk satu mapel: dua soal lokal dan satu soal level terdekat dengan kelas/mapel sama; Mix: tiga mapel lokal berbeda. Mengikuti README agar tetap tiga soal per kuis.
+- Validasi Golden Gate menerima level yang benar. Completion trace terpisah menyimpan seluruh halaman pada run sukses; reset saat salah. Ini memperbaiki penolakan bonus pada maze berpeta ganda tanpa mengubah path visual, generator, orientasi, timer atau scoring Retro.
+- Idempotensi, Auth, kunci privat dan reward maksimum sebelumnya dipertahankan; mulai attempt baru sesudah deploy karena versi bank berubah. Progress lama tetap disimpan.
+- Video baru mengonfirmasi lonjakan skala karakter. Kode mengonfirmasi boom memendek segera ketika ray menabrak, ditambah snap resolver kedua setelah interpolasi posisi. Audit lengkap: `docs/CAMERA_VIDEO_REVIEW.md`.
+- Pilot kamera memprioritaskan orbit sisi lapang, menahan arah hindar 1,2 detik, membatasi koreksi otomatis 0,85 rad/detik, serta probe luas tiap 150 ms. Putaran yang memasuki tepi dinding dibatasi jika posisi semula cukup lapang. Lerp chord koordinat dunia dan resolver kedua kamera normal dihapus. Yaw/pitch/tinggi tetap diratakan. Tidak mengganti FOV atau kontrol/gameplay.
+- **Belum menyelesaikan seluruh zoom di ruang tertutup**: collision masih dapat memendekkan radius ketika tidak ada sisi bebas. Pelebaran koridor/kapal atau fallback occlusion perlu keputusan arena; tidak ada janji jarak tetap mutlak atau kenyamanan perangkat lulus.
+
+Validasi: 277 tes/45 file lulus; tambahan tes orbit mengitari dinding terbatas lulus (total 12 tes kamera terarah). Build frontend, bundle Netlify Function dan validator 2.000 soal lulus. Seluruh ID bank tidak ada dalam JS production. Handler pengujian memverifikasi kuis production level 1–100, private keys, kepemilikan, retry dan hasil setelah semua peta level 100; adapter Auth/Firestore adalah mock pengujian, bukan koneksi produksi. Browser fixture level 100 memverifikasi checkbox → 10 mapel + Mix, tanpa scoring palsu. Uji kamera visual terblokir WebGL context Disabled; HP/tablet fisik dan alur akun nyata setelah deploy belum diuji.
+
+Pemasangan: timpa delta setelah paket sebelumnya, deploy Netlify termasuk retro-quiz, refresh dan mulai level baru. Tidak ada environment baru atau restart PowerShell 1/2. Rules Firestore dari paket Knowledge Bonus awal tetap perlu sudah diterapkan. Rincian: `docs/RETRO_QUIZ.md`. Tidak ada push/deploy/rules live dari sesi ini.
+
 ## 2 November 2026 — Quiz Setup Layout Hotfix
 
 Dipasang setelah Retro Knowledge Bonus & Camera Fix (23 file). Tidak ada perubahan scoring, bank, kamera, rules, environment atau server.

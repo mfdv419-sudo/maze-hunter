@@ -21,3 +21,38 @@ export function edgePan(x:number,width:number){const margin=Math.min(64,width*.1
 
 /** Keep collision on the requested camera ray; never search another orbit. */
 export function cameraFocus(pitch:number,distance:number){return pitch<0?distance*Math.tan(-clampPitch(pitch)):.2;}
+
+/** Persistent side selection. Probe ahead before contact; never jump to a new azimuth. */
+export class StableCameraOrbit {
+ private yaw:number|undefined;private side=0;private until=0;private nextProbe=0;private avoidance:number|undefined;
+ reset(){this.yaw=undefined;this.side=0;this.until=0;this.nextProbe=0;this.avoidance=undefined;}
+ step(target:T.Vector3,requestedYaw:number,horizontal:number,height:number,dt:number,time:number,resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3){
+  if(this.yaw===undefined)this.yaw=requestedYaw;
+  const point=(yaw:number)=>target.clone().add(new T.Vector3(-Math.sin(yaw)*horizontal,height,-Math.cos(yaw)*horizontal));
+  const wanted=Math.hypot(horizontal,height),clear=(yaw:number)=>resolve(target,point(yaw)).distanceTo(target);
+  const previous=this.yaw,requested=clear(requestedYaw),current=clear(previous),threshold=wanted*.94;
+  let goal=requestedYaw;
+  if(requested<threshold&&time<this.nextProbe&&this.avoidance!==undefined)goal=this.avoidance;
+  else if(requested<threshold){
+   this.nextProbe=time+.15;
+   let best=previous,bestScore=-Infinity;
+   // Hold one direction for a full second. Small nearby changes cannot flip sides.
+   for(const side of[-1,1]){if(this.side&&time<this.until&&side!==this.side)continue;
+    for(let i=1;i<=8;i++){const angle=previous+side*i*Math.PI/16,space=clear(angle),score=Math.min(space,wanted)-i*.035;
+     if(score>bestScore){bestScore=score;best=angle;}
+     if(space>=threshold)break;
+    }
+   }
+   if(clear(best)>current+.12){goal=best;const side=Math.sign(Math.atan2(Math.sin(best-previous),Math.cos(best-previous)));if(side!==this.side){this.side=side;this.until=time+1.2;}}
+   else goal=previous;
+   this.avoidance=goal;
+  }else {this.avoidance=undefined;if(time>=this.until)this.side=0;}
+  const error=Math.atan2(Math.sin(goal-previous),Math.cos(goal-previous)),limit=Math.max(0,Math.min(dt,.05))*(requested>=threshold?3.2:.85);
+  let next=previous+T.MathUtils.clamp(error,-limit,limit);
+  // Manual turn into a wall stops at the clear boundary instead of zooming inward.
+  if(current>=wanted*.8&&clear(next)<Math.min(current,wanted*.8)){
+   let lo=0,hi=1;for(let i=0;i<8;i++){const mid=(lo+hi)/2;if(clear(previous+(next-previous)*mid)>=Math.min(current,wanted*.8))lo=mid;else hi=mid;}next=previous+(next-previous)*lo;
+  }
+  this.yaw=next;return point(next);
+ }
+}

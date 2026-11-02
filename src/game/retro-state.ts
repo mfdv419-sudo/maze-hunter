@@ -12,6 +12,7 @@ export class RetroState {
   private lastReveal='';
   position: Point;
   path: Point[];
+  completionPath: Point[]=[];
   lives = 3;
   errors = 0;
   elapsed = 0;
@@ -50,6 +51,7 @@ export class RetroState {
     this.position = p;
     this.reveal(p);
     this.path.push({ ...p });
+    this.completionPath.push({...p});
     const f = center(this.board.finish);
     if (Math.hypot(p.x - f.x, p.y - f.y) < 0.3){if(this.finalPage)this.phase="won";else{this.pageIndex++;this.mapRevision++;this.resetPosition();}}
     return true;
@@ -57,6 +59,7 @@ export class RetroState {
   mistake() {
     if (this.phase !== "playing") return;
     this.errors++;
+    this.completionPath=[];
     this.resets++;
     if(this.pageIndex!==0){this.pageIndex=0;this.mapRevision++;}
     this.resetPosition();

@@ -554,7 +554,7 @@ async function playRetro(level: number,selected?:BonusChoice) {
         });
         if(choice.subject!=='OFF')await save();else void save();
       }
-      if(won&&choice.subject!=='OFF'){await finishBonus(api,choice,playerProfile.id,{path:s.path.map(p=>({x:Math.round(p.x*10000)/10000,y:Math.round(p.y*10000)/10000})),seconds:s.elapsed,errors:s.errors},lang==='en',progress=>{playerProfile.knowledge=progress;if(profile?.id===playerProfile.id)profile.knowledge=progress;cache();});if(token!==generation)return;}
+      if(won&&choice.subject!=='OFF'){await finishBonus(api,choice,playerProfile.id,{path:s.completionPath.map(p=>({x:Math.round(p.x*10000)/10000,y:Math.round(p.y*10000)/10000})),seconds:s.elapsed,errors:s.errors},lang==='en',progress=>{playerProfile.knowledge=progress;if(profile?.id===playerProfile.id)profile.knowledge=progress;cache();});if(token!==generation)return;}
       result(
         won,
         s.elapsed,

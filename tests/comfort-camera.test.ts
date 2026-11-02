@@ -23,3 +23,12 @@ it('resizing never overwrites the agreed field of view',()=>{const g:any=Object.
 
 import {cameraOrbit,cameraFocus} from '../src/game/comfort-camera';
 it('vertical orbit preserves radius and upward look has a real focus above the avatar',()=>{for(const degrees of[0,18,40,60]){const p=degrees*Math.PI/180,o=cameraOrbit(p,7.2);expect(Math.hypot(o.horizontal,o.height)).toBeCloseTo(7.2);}expect(cameraFocus(-45*Math.PI/180,7.2)).toBeCloseTo(7.2);});
+
+import {StableCameraOrbit} from '../src/game/comfort-camera';
+it('persistent orbit holds radius in free space and bounds every correction without alternating sides',()=>{
+ const c=new CameraCollision(),wall=new T.Mesh(new T.BoxGeometry(.4,10,12));wall.position.set(3,2,-1);c.register(wall);
+ const solver=new StableCameraOrbit(),target=new T.Vector3(0,1,0);let last=0,sign=0;
+ for(let i=0;i<180;i++){const p=solver.step(target,-.7,7,2,1/60,i/60,(a,b)=>c.resolve(a,b)),yaw=Math.atan2(-p.x,-p.z);expect(p.distanceTo(target)).toBeCloseTo(Math.hypot(7,2));if(i){const turn=Math.atan2(Math.sin(yaw-last),Math.cos(yaw-last));expect(Math.abs(turn)).toBeLessThanOrEqual(.85/60+.00001);if(i<60&&Math.abs(turn)>.0001){if(sign)expect(Math.sign(turn)).toBe(sign);sign=Math.sign(turn);}}last=yaw;}
+});
+it('an unobstructed orbit has constant avatar distance through a full horizontal sweep',()=>{const solver=new StableCameraOrbit(),t=new T.Vector3(2,3,4);for(let i=0;i<720;i++){const p=solver.step(t,i*.01,6.8,2.36,1/60,i/60,(_,p)=>p.clone());expect(p.distanceTo(t)).toBeCloseTo(Math.hypot(6.8,2.36));}});
+it('shifts around a finite obstruction toward a clear full-radius view',()=>{const c=new CameraCollision(),wall=new T.Mesh(new T.BoxGeometry(3,9,.4));wall.position.set(0,2,-3);c.register(wall);const t=new T.Vector3(0,1,0),solver=new StableCameraOrbit();let p=new T.Vector3();for(let i=0;i<240;i++)p=solver.step(t,0,7,2,1/60,i/60,(a,b)=>c.resolve(a,b));expect(c.resolve(t,p).distanceTo(t)).toBeGreaterThan(7);expect(Math.abs(p.x)).toBeGreaterThan(2);});
