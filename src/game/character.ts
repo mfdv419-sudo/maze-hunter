@@ -90,6 +90,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  const pack=body.getObjectByName('explorer-pack');let gait=0,landing=0,lastJump=0;
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
+  head.position.y=1;
   poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
   const walkStep=Math.floor(gait/Math.PI);root.userData.footfall=walk>.08&&walkStep!==root.userData.walkStep;root.userData.walkStep=walkStep;
@@ -123,7 +124,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   if((action?.hurtAge??100)<.35){const recoil=Math.sin(Math.max(0,action!.hurtAge!)/.35*Math.PI);body.rotation.x-=recoil*.16;arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*recoil*.2);}
   if(action?.defeated){const fall=smooth01((action.hurtAge??1)/.6);pivot.rotation.z=-fall*1.05;pivot.position.y=.65+fall*.16;}
   if((action?.pickup??100)<.4&&ground&&!active){arms[0].rotation.z=-.35;head.rotation.x=-.06;}
-  if(action?.swim){body.rotation.x=1.18;body.position.y=-.47;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
+  if(action?.swim){body.rotation.x=1.18;body.position.y=-.47;head.position.y=1.12;head.rotation.x=-1.05;arms.forEach((a,i)=>{a.rotation.x=-.4+Math.sin(time*4+i*Math.PI)*.5;a.rotation.z=(i?1:-1)*.5;});legs.forEach((l,i)=>l.rotation.x=Math.sin(time*6+i*Math.PI)*.3);}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
   centers.forEach((p,i)=>{const u=i/28,b=rest[i],angle=action?.swim?-1.18:0,ry=b.y-.43,rz=b.z+.19,y=.43+ry*Math.cos(angle)-rz*Math.sin(angle),z=-.19+ry*Math.sin(angle)+rz*Math.cos(angle);p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,y+Math.sin(time*2-u*3)*.025*u,z+Math.sin(time*2.3-u*4)*.045*u);});
   for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();if(i===0)normal.set(1,0,0);normal.addScaledVector(tangent,-normal.dot(tangent)).normalize();if(normal.lengthSq()<.1)normal.crossVectors(tangent,up).normalize();binormal.crossVectors(tangent,normal).normalize();const radius=.078*(1-i/28*.65);

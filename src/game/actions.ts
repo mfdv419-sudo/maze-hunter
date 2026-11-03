@@ -1,3 +1,4 @@
+import {forestJump,forestRules} from './forest-rules';
 import { clearSegment, type Maze, type Point } from "./maze";
 export type ActionKind = 'food-chili'|'food-watermelon'|'food-spinach'|'food-grenade'|'craft-grenade'|'lift'|'place'|'throw-object' | "jump" | "hit" | "dive" | "cake-normal" | "cake-red" | "cake-yellow" | "cake-green";
 export const JUMP_SECONDS = 0.68,
@@ -42,11 +43,11 @@ export function hitTargets(
   );
 }
 /** Shared client/server airborne boost; a third press cannot grant a third impulse. Times are seconds. */
-export interface JumpStamp {at:number;base:number;count:number;boost?:number}
-export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/(JUMP_SECONDS*Math.sqrt(j.boost||1)))*(j.boost||1);}
+export interface JumpStamp {at:number;base:number;count:number;boost?:number;profile?:'forest'}
+export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;if(j.profile==='forest'){return j.count===2?Math.max(0,forestJump(age,1.35)+j.base*Math.max(0,1-age/(forestRules.jumpRise+forestRules.jumpFall))):forestJump(age,forestRules.jumpHeight*(j.boost||1));}return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/(JUMP_SECONDS*Math.sqrt(j.boost||1)))*(j.boost||1);}
 export function nextJump(j:JumpStamp,now:number,boost=1):JumpStamp|null{
  const height=airborneHeight(j,now),age=now-j.at;
  if(age<.12)return null;
- if(height>.015){return j.count===1?{at:now,base:height,count:2}:null;}
- return boost>1?{at:now,base:0,count:1,boost:Math.min(4,boost)}:{at:now,base:0,count:1};
+ if(height>.015){return j.count===1?{at:now,base:height,count:2,...(j.profile?{profile:j.profile}:{})}:null;}
+ return boost>1?{at:now,base:0,count:1,boost:Math.min(4,boost),...(j.profile?{profile:j.profile}:{})}:{at:now,base:0,count:1,...(j.profile?{profile:j.profile}:{})};
 }

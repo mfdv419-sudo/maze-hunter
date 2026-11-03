@@ -1,6 +1,6 @@
 /** Original vector artwork. Decorative SVGs inherit accessible button labels. */
 export function forestIcon(name:string){
- const drawings:Record<string,string>={
+ const drawings:Record<string,string>={wave:'<path d="M15 25V13q0-4 4-4t4 4v10-15q0-4 4-4t4 4v16-12q0-4 4-4t4 4v17q0 12-13 14-9 0-13-8l-5-8q-2-5 3-5z" fill="#f1d296"/><path d="m5 8-2-4m7 2V2M3 15H0" stroke="#8ddde0" stroke-width="2"/>',
  cake:'<path fill="#f6cbb9" d="M8 17h32v22H8z"/><path fill="#fff1cd" d="M8 23h32v5H8z"/><path fill="#e68aa2" d="M8 30h32v4H8z"/><path fill="#fff1cd" d="M7 17q3-8 11-5 6-7 14 0 8-1 9 5z"/><circle fill="#e95249" cx="27" cy="10" r="5"/><path d="m27 6 4-4" stroke="#71b257"/>',
  chili:'<path fill="#e95546" d="M34 11C40 31 23 43 7 39c14-3 15-19 21-24z"/><path d="M29 16q-3-8 7-12" stroke="#78b44a" stroke-width="5"/><path d="m27 20-5 11" stroke="#ffaaa0" stroke-width="3"/>',
  spinach:'<path fill="#8fbd42" d="M24 40C3 29 4 7 16 7c9 1 9 16 8 33Z"/><path fill="#b8d35b" d="M24 40c-6-23 5-38 17-32 6 8-2 25-17 32Z"/><path d="m13 15 11 25L36 15" stroke="#e4ec9c" stroke-width="2"/>',

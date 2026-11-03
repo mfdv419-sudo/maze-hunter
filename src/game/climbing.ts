@@ -2,7 +2,7 @@ import {climbLift,smooth01} from './motion-quality';
 import type {Point} from './maze';
 export const climbDuration=(tree:boolean)=>tree?2.1:.9;
 export interface Ledge {kind?:'palm'|'rock'|'tree'|'log'|'cart'|'plane'|'wreck';point:Point;height:number;id:number;width?:number;depth?:number}
-export interface ClimbSave {phase:'ground'|'hanging'|'climbing'|'top'|'falling';ledge:number;elapsed:number;elevation:number;anchor:Point;edge:Point;cooldown:number}
+export interface ClimbSave {fromHeight?:number;phase:'ground'|'hanging'|'climbing'|'top'|'falling';ledge:number;elapsed:number;elevation:number;anchor:Point;edge:Point;cooldown:number}
 export class Climber {
  state:ClimbSave={phase:'ground',ledge:-1,elapsed:0,elevation:0,anchor:{x:0,y:0},edge:{x:0,y:0},cooldown:0};
  get elevation(){return this.state.elevation;}

@@ -1,5 +1,15 @@
 # Maze Hunter — riwayat revisi
 
+## 3 November 2026 — Forest Grove: traversal, Diamond/Sigil, oksigen dan koreksi UI
+
+Dasar: paket environment/HUD terakhir, Teks yang ditempel (1)(3).txt, screenshot bug dan referensi approved. Aturan terbaru menggantikan asumsi lama: tiga Diamond terpisah dari tiga Sigil; dua Sigil membuka akses; boss memerlukan tiga Diamond + dua Sigil + trigger arena. Pickup/persistence satu kali dan migrasi save pilot diperiksa. Kapasitas oksigen tidak dipercaya dari save; bonus penuh set diver menggunakan appearance yang telah diperiksa dari profil.
+
+Permukaan tebing/pohon/reruntuhan/deck/bibir waterfall dihubungkan ke resolver pilot, dengan step-up, landing saat kontak, dan grab/pull-up terpisah. Kaki tidak dipindahkan menembus bibir; Giant Tree diberi headroom. Profil jump pilot 1,15 unit, naik 0,34 detik dan turun 0,62 detik; profil area lain tidak berubah. Swim menenggelamkan badan/kaki dan menahan mata di atas air; dive memakai ring oksigen 22 detik, 90 detik untuk full set diver yang memenuhi syarat, konsekuensi habis memakai respawn existing. Ravine di bawah bridge tidak dianggap air.
+
+Material tileable dan UV ditambahkan; jalan menyambung dan bertepi lembut, tebing berelief, waterfall tersambung upper stream/tributary dengan ribbon/foam/spray. Semua angka koleksi dipindahkan ke Petunjuk bertab. Settings hanya audio dan sensitivitas; equipment/cake berada di Inventori. Notifikasi kecil di kiri. Ikon Sapaan SVG dan emote lokal tersedia tanpa menambah tombol aksi utama.
+
+Validasi: 310 tes/48 file lulus, ditambah pemeriksaan terfokus geometri model; frontend dan realtime build lulus. Dialog diperiksa pada viewport laptop/tablet/HP, ring oksigen dan inventory berfungsi pada fixture. Blok kamera gameplay normal diverifikasi tidak berubah. Renderer nyata gagal membuat WebGL context, sehingga kualitas visual 3D, kenyamanan/FPS perangkat fisik dan Online dua perangkat tidak diklaim telah terverifikasi. Detail per file dan batas ada di docs/FOREST_GROVE_TRAVERSAL_OBJECTIVES.md.
+
 ## 3 November 2026 — Koreksi Forest Grove: lingkungan, air, collision, HUD dan cinematic
 
 Acuan: screenshot kondisi salah serta MASTER REVISION Forest Grove; gambar approved tetap berasal dari Forest_Grove_Final(1).zip. Kamera gameplay tidak diganti sesuai larangan eksplisit prompt. Blok normal orbit/follow/input frame diverifikasi tetap sama. Cutscene menggunakan kamera terpisah, low angle/dolly keluar/orbit/final reveal, cue impact/roar dan fragmen sesuai material.
