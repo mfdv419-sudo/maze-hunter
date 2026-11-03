@@ -1,10 +1,11 @@
+import {pilotWallHeight} from './forest-pilot';
 import {batchStatic} from './static-model';
 import * as T from 'three';
 import type {AdventureArea} from './areas';
 import type {AdventureLayout} from './adventure-layout';
 import {biomeElevation} from './biome-layout';
 import {gorgeCliffTop} from './gorge-terrain';
-export function biomeWallTop(area:AdventureArea,x:number,z:number,l:AdventureLayout){if(l.pilot)return 2.8+Math.sin((Math.floor(x)+Math.floor(z))*.3)*.25;const base=biomeElevation(area,x,z,l);return area==='gorge'?gorgeCliffTop(x,z,l):base+(area==='mountain'?7.5+Math.abs(Math.sin(x*.6+z*.3))*3:area==='desert'?7.9+Math.sin(x*.12+z*.18)*.7:area==='sea'?6.7+Math.abs(Math.sin(x*.7-z*.4))*3:area==='volcano'?8.1+Math.floor((Math.sin(x*.6+z*.7)+1)*3)*.32:8.2+Math.sin(x*.31+z*.19)*.7+Math.cos(z*.27)*.45);}
+export function biomeWallTop(area:AdventureArea,x:number,z:number,l:AdventureLayout){if(l.pilot)return pilotWallHeight(x,z);const base=biomeElevation(area,x,z,l);return area==='gorge'?gorgeCliffTop(x,z,l):base+(area==='mountain'?7.5+Math.abs(Math.sin(x*.6+z*.3))*3:area==='desert'?7.9+Math.sin(x*.12+z*.18)*.7:area==='sea'?6.7+Math.abs(Math.sin(x*.7-z*.4))*3:area==='volcano'?8.1+Math.floor((Math.sin(x*.6+z*.7)+1)*3)*.32:8.2+Math.sin(x*.31+z*.19)*.7+Math.cos(z*.27)*.45);}
 const styles={classic:[0x647c51,0x7c9562],forest:[0x715e49,0x476f4c],desert:[0xb38a5d,0xe3bf86],mountain:[0x697781,0xa3abb0],coast:[0xa9a184,0xe2d3aa],sea:[0x557e89,0x92b6ac],volcano:[0x3e3c40,0x79635a],gorge:[0x8c927a,0xa6a58b]}as const;
 /** Exposed continuous rock/root faces, never tinted copies of the hedge block. Navigation stays solid. */
 export function biomeWalls(world:T.Group,l:AdventureLayout,area:AdventureArea){const root=new T.Group();root.name=`${area}-native-walls`;root.userData.cameraOccluder=true;const n=l.maze.grid.length,groups=new Map<string,{p:number[];c:number[];x:number;z:number}>(),color=new T.Color();

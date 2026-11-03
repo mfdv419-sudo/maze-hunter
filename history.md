@@ -1,5 +1,13 @@
 # Maze Hunter — riwayat revisi
 
+## 3 November 2026 — Koreksi Forest Grove: lingkungan, air, collision, HUD dan cinematic
+
+Acuan: screenshot kondisi salah serta MASTER REVISION Forest Grove; gambar approved tetap berasal dari Forest_Grove_Final(1).zip. Kamera gameplay tidak diganti sesuai larangan eksplisit prompt. Blok normal orbit/follow/input frame diverifikasi tetap sama. Cutscene menggunakan kamera terpisah, low angle/dolly keluar/orbit/final reveal, cue impact/roar dan fragmen sesuai material.
+
+Pilot SOLO Medium Map 01 mendapat tebing menyambung, kontur/lereng dan jalur tanah, instanced trees/vegetasi, air yang mengikuti depth field, waterfall bervolume, jembatan mengikuti jalur, props panjat/log/undakan dan arena berumput. Radius collision pilot dan substep penjaga memeriksa penghalang; tujuh patroli menjaga rute/objective. Model Binturong diperhalus tanpa mengganti rig atau kostum. Empat tombol SVG dipisahkan dengan CSS scoped, boss meter kecil kiri, progres teks kanan, ability horizontal dan shortcut kompatibel. Toast ability besar dihapus pada pilot. Retro/auth/ekonomi/protokol room tidak diganti.
+
+Validasi: 296 tes/47 file lulus; frontend dan realtime build lulus; geometry builder browser nol nilai tidak valid. HUD diperiksa dalam viewport HP portrait/landscape, tablet dan laptop; Help landscape tanpa scroll. Percobaan renderer nyata gagal membuat WebGL context. Kualitas scene 3D, FPS, kenyamanan kamera dan perangkat fisik/Online dua perangkat belum terverifikasi. Bug kamera masuk tubuh pada screenshot dipertahankan sebagai pekerjaan kamera terpisah, tidak diklaim selesai. Rincian per file, penerapan dan batas ada di docs/FOREST_GROVE_REVISION_2026-11-03.md.
+
 ## 2 November 2026 — Pilot Forest Grove, orbit radius dan countdown Retro
 
 Dasar: source terbaru yang sudah memuat bank 2.000 soal dan revisi dua soal. Delta digabung agar bisa ditimpa pada paket bank tersebut; ZIP kamera lima file yang dibatalkan tidak diperlukan. Prompt serta keempat gambar Forest_Grove_Final(1).zip diperiksa. Scope pilot tetap **SOLO / Medium / Map 01**, bukan seluruh map Adventure.

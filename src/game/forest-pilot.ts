@@ -1,9 +1,13 @@
 import type {AdventureLayout} from './adventure-layout';
 import {route,type Point} from './maze';
 export const pilotNames=['Forest Entrance','Deep Forest Hub','Green Cliffs','Ancient Ruins','Giant Tree','Guardian Sanctuary','Waterfall Valley'];
+export const PILOT_WATER_LEVEL=-.58;
+export function pilotWallHeight(x:number,z:number){return pilotGround(x,z)+3.2+Math.sin(x*.17+z*.11)*.55+Math.cos(z*.21)*.25;}
 export function pilotGround(x:number,y:number){
  const pool=Math.hypot(x-55.5,y-53.5),t=Math.max(0,Math.min(1,((x-61.5)*-6+(y-37.5)*16)/292)),channel=Math.hypot(x-(61.5-6*t),y-(37.5+16*t));
- return -2.8*Math.max(0,Math.min(1,(7-pool)/3),Math.min(1,(2.7-channel)/1.4));
+ const wet=Math.max(0,Math.min(1,(7-pool)/3),Math.min(1,(2.7-channel)/1.4));
+ const hill=1.8*Math.exp(-((x-12.5)**2+(y-23.5)**2)/150)+1.1*Math.exp(-((x-34.5)**2+(y-25.5)**2)/100)+.28*Math.sin(x*.19)*Math.sin(y*.14);
+ return wet>0?-2.8*wet:Math.max(0,hill)*Math.min(1,Math.max(0,(pool-7)/2),Math.max(0,(channel-2.7)/1.4));
 }
 export function forestPilotLayout():AdventureLayout{
  const n=73,grid=Array.from({length:n},()=>Array(n).fill(1));
@@ -25,8 +29,8 @@ export function forestPilotLayout():AdventureLayout{
  for(const [a,b]of[[nodes[2],{x:5,y:35}],[nodes[3],{x:66,y:29}],[nodes[6],{x:50,y:66}],[nodes[1],{x:24,y:55}]]as [Point,Point][])line([a,b],1);
  const gates=Array.from({length:9},(_,i)=>({x:30+i,y:18})),bridge=Array.from({length:7},(_,i)=>({x:31,y:29+i})),shortcut=Array.from({length:5},(_,i)=>({x:30+i,y:38})),exit=Array.from({length:7},(_,i)=>({x:45,y:6+i}));
  for(const p of [...gates,...bridge,...shortcut,...exit])grid[p.y][p.x]=1;
- const ledges:AdventureLayout['ledges']=[{id:800,point:{x:12,y:24},height:1.35,width:2,depth:2,kind:'rock'},{id:801,point:{x:10,y:27},height:.65,width:1.5,depth:1.5,kind:'rock'},{id:802,point:{x:34,y:25},height:2.8,kind:'tree'},...[0,1,2].map(i=>({id:803+i,point:{x:16+i*4,y:16},height:1.1,width:2.5,depth:1.6,kind:'rock' as const})),{id:10,point:{x:28,y:48},height:1,kind:'rock'},{id:11,point:{x:38,y:52},height:1,kind:'log'}];
+ const ledges:AdventureLayout['ledges']=[{id:800,point:{x:12,y:24},height:1.35,width:2,depth:2,kind:'rock'},{id:801,point:{x:10,y:27},height:.65,width:1.5,depth:1.5,kind:'rock'},{id:802,point:{x:34,y:25},height:2.8,kind:'tree'},...[0,1,2].map(i=>({id:803+i,point:{x:16+i*4,y:16},height:1.1,width:2.5,depth:1.6,kind:'rock' as const})),...[0,1,2].map(i=>({id:806+i,point:{x:9+i,y:25},height:.3+i*.3,width:1,depth:1,kind:'rock' as const})),{id:10,point:{x:28,y:48},height:1,kind:'rock'},{id:11,point:{x:38,y:52},height:1,kind:'log'}];
  const stars=[{x:12,y:24},{x:34,y:25},{x:20,y:16},{x:5,y:35},{x:66,y:29},{x:50,y:66},{x:24,y:55},{x:39,y:47},{x:59,y:56}];
  const zoneCells=grid.map((row,y)=>row.map((_,x)=>nodes.reduce((best,p,i)=>Math.hypot(x-p.x,y-p.y)<Math.hypot(x-nodes[best].x,y-nodes[best].y)?i:best,0)));
- return{pilot:{gates,bridge,shortcut,exit,switches:[{x:52,y:29},{x:56,y:29}],pool:nodes[6]},index:0,maze:{grid,start,finish,entrances:[start],seed:20261103},forest:{trunks:[],pillars:[...[[50,27],[50,34],[58,27],[58,34]].map(([x,y])=>({x:x-.5,y:y-.5})),{x:52,y:29},{x:56,y:29}],boulders:[],arenaRadius:7,cave:nodes[6],cabin:nodes[3],highland:nodes[2]},areas:nodes.map((point,zone)=>({point,zone})),zoneCells,ledges,stars,seals:[nodes[2],{x:54,y:33},nodes[6]],chests:[{x:24,y:55},{x:66,y:29},{x:50,y:66}],rivers:[],grass:[],vegetation:[{x:23,y:51,kind:'tall'},{x:39,y:48,kind:'rare'}],starts:[start],fortress:nodes[5],escapeRoutes:[Array.from({length:24},(_,i)=>({x:34+i,y:9}))],escapeConnector:exit,fastRiver:finish,patrols:[[{x:16,y:38},{x:20,y:42}],[{x:49,y:35},{x:53,y:32}]],bosses:[nodes[5]],solution:route(grid,start,nodes[4])};
+ return{pilot:{gates,bridge,shortcut,exit,switches:[{x:52,y:29},{x:56,y:29}],pool:nodes[6]},index:0,maze:{grid,start,finish,entrances:[start],seed:20261103},forest:{trunks:[],pillars:[...[[50,27],[50,34],[58,27],[58,34]].map(([x,y])=>({x:x-.5,y:y-.5})),{x:52,y:29},{x:56,y:29}],boulders:[],arenaRadius:7,cave:nodes[6],cabin:nodes[3],highland:nodes[2]},areas:nodes.map((point,zone)=>({point,zone})),zoneCells,ledges,stars,seals:[nodes[2],{x:54,y:33},nodes[6]],chests:[{x:24,y:55},{x:66,y:29},{x:50,y:66}],rivers:[],grass:[],vegetation:[{x:23,y:51,kind:'tall'},{x:39,y:48,kind:'rare'}],starts:[start],fortress:nodes[5],escapeRoutes:[Array.from({length:24},(_,i)=>({x:34+i,y:9}))],escapeConnector:exit,fastRiver:finish,patrols:[[{x:16,y:38},{x:20,y:42}],[{x:10,y:22},{x:14,y:22}],[{x:11,y:26},{x:14,y:25}],[{x:50,y:30},{x:53,y:31}],[{x:56,y:31},{x:57,y:33}],[{x:49,y:58},{x:51,y:60}],[{x:61,y:55},{x:62,y:52}]],bosses:[nodes[5]],solution:route(grid,start,nodes[4])};
 }

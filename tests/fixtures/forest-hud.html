@@ -2,5 +2,5 @@
 import '/src/style.css';import '/src/presentation.css';import '/src/forest-pilot.css';import {mountForestHud} from '/src/ui/forest-hud.ts';import {AdventureState} from '/src/game/adventure-state.ts';
 // Render-only controller: physical traversal/progression tested separately, no production API or fake rewards.
 const adventure=new AdventureState('medium',0,1,false,undefined,'forest',false,true);adventure.supplies.chili=2;adventure.supplies.spinach=1;adventure.supplies.watermelon=2;
-const controller={adventure,useAction:()=>false,selectWeapon:()=>true,setPaused:()=>{},setTouchSensitivity:()=>{},resetCamera:()=>{}};const hud=mountForestHud(document.querySelector('main'),controller,false);hud.update(adventure);
+const controller={adventure,useAction:()=>false,selectWeapon:()=>true,setPaused:()=>{},setTouchSensitivity:()=>{},resetCamera:()=>{}};const hud=mountForestHud(document.querySelector('main'),controller,false);hud.update(adventure);if(location.search.includes('boss')){const meter=document.createElement('div');meter.className='boss-meter';meter.innerHTML='<strong>Root King · PHASE 1</strong><progress max=12 value=10></progress><small>SHIELD DOWN · ATTACK!</small>';document.querySelector('main').append(meter);}
 </script></body></html>

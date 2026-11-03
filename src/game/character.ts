@@ -12,14 +12,14 @@ export interface Character {root:T.Group;animate:(time:number,speed:number,celeb
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='expedition-gear';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-explorer-refined';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
  const chest=box(body,.46,.49,.35,fur,0,.59,0,.12);
- const head=joint(body,0,1.0,.015,'head');const skull=box(head,.64,.49,.45,fur,0,0,0,.14);skull.scale.y=.96;
- const snout=addMesh(head,new T.CylinderGeometry(.075,.16,.3,10),muzzle,0,-.1,.3);snout.rotation.x=Math.PI/2;
- ell(head,ink,0,-.095,.465,.078,.052,.049);
+ const head=joint(body,0,1.0,.015,'head');const skull=box(head,.59,.47,.45,fur,0,0,0,.17);skull.scale.y=.96;
+ const snout=addMesh(head,new T.CylinderGeometry(.075,.135,.25,12),muzzle,0,-.1,.285);snout.rotation.x=Math.PI/2;
+ ell(head,ink,0,-.095,.425,.074,.052,.049);
  const smile=addMesh(head,new T.TorusGeometry(.065,.009,4,12,Math.PI),ink,0,-.16,.4);smile.rotation.z=Math.PI;
  const eyes:T.Group[]=[],brows:T.Mesh[]=[];
  for(const side of [-1,1]){
@@ -29,7 +29,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   ell(head,muzzle,side*.17,.015,.209,.12,.12,.035);
   const eye=joint(head,side*.168,.022,.244,'eye');eyes.push(eye);ell(eye,cream,0,0,0,.068,.08,.022);ell(eye,ink,0,-.002,.018,.047,.057,.015);ell(eye,cream,-side*.013,.025,.031,.016,.019,.007);
   const brow=box(head,.13,.025,.024,grey,side*.17,.135,.23,.01);brow.rotation.z=side*.13;brows.push(brow);
-  for(let i=0;i<3;i++){const curve=new T.QuadraticBezierCurve3(new T.Vector3(side*.115,-.095-i*.025,.32),new T.Vector3(side*.29,-.08-i*.05,.33),new T.Vector3(side*.43,-.055-i*.07,.31));addMesh(head,new T.TubeGeometry(curve,5,.005,4,false),cream);}
+  for(let i=0;i<3;i++){const curve=new T.QuadraticBezierCurve3(new T.Vector3(side*.115,-.095-i*.025,.32),new T.Vector3(side*.29,-.08-i*.05,.33),new T.Vector3(side*.36,-.055-i*.07,.31));addMesh(head,new T.TubeGeometry(curve,5,.005,4,false),cream);}
   const cheek=addMesh(head,new T.ConeGeometry(.06,.12,6),fur,side*.28,-.18,.04);cheek.rotation.z=side*2.1;
  }
  // Two-joint limbs retain volume at elbows and knees.
