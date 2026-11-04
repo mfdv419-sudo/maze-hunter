@@ -5,12 +5,29 @@ const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:numbe
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
 /** Separate gear follows the animated wrist/knee. Explicit bare remains an empty named group. */
 export function gloveModel(parent:T.Group,kind:string,side:number){
- const root=joint(parent,0,-.135,.025,'gloves');root.userData.gear=kind;if(kind==='bare')return root;
+ const root=joint(parent,0,-.135,.025,'gloves');root.userData.gear=kind;
+ if(kind==='bare'){
+  const fur=satin(0x343b40),pads=satin(0x6d7774);
+  ell(root,fur,0,-.035,.03,.091,.073,.088);
+  // Three forward-facing digits form one integrated silhouette, not upturned claws.
+  for(let i=0;i<3;i++){
+   ell(root,fur,(i-1)*.054,-.084,.106,.027,.041,.038);
+   ell(root,pads,(i-1)*.054,-.108,.137,.016,.011,.012);
+  }
+  ell(root,fur,side*.092,-.044,.052,.036,.049,.042);
+  return root;
+ }
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
  const cloth=satin(colors[kind]??colors.trail),dark=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- box(root,.168,.108,.164,cloth,0,-.02,0,.05);const cuff=addMesh(root,new T.CylinderGeometry(.087,.09,.055,10),dark,0,.052,0);cuff.scale.z=.94;box(root,.126,.022,.176,trim,0,.049,0,.01);
- const palm=ell(root,trim,0,-.055,.055,.076,.05,.03);palm.rotation.x=-.2;const thumb=addMesh(root,new T.CapsuleGeometry(.032,.05,3,7),cloth,side*.082,-.018,.03);thumb.rotation.z=side*.5;thumb.rotation.x=.28;
- for(let i=0;i<3;i++){const toe=ell(root,trim,(i-1)*.04,-.075,.098,.018,.024,.013);toe.rotation.x=-.3;const shell=addMesh(root,new T.CapsuleGeometry(.018,.022,2,5),cloth,(i-1)*.04,-.048,.072);shell.rotation.x=.82;}
+ const palm=ell(root,cloth,0,-.025,.035,.1,.077,.096);
+ const cuff=addMesh(root,new T.CylinderGeometry(.082,.09,.055,10),dark,0,.05,-.018);cuff.scale.z=.95;
+ box(root,.12,.015,.12,trim,0,.02,-.005,.01);
+ const thumb=ell(root,cloth,side*.087,-.057,.06,.037,.053,.046);thumb.rotation.z=side*.25;
+ for(let i=0;i<3;i++){
+  const digit=ell(root,cloth,(i-1)*.057,-.078,.133,.029,.039,.048);digit.rotation.z=(i-1)*-.07;
+  // Nails and paw pads face the ground; the glove no longer has three upward prongs.
+  ell(root,dark,(i-1)*.057,-.106,.165,.013,.009,.019);
+ }
  if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.027,.008,4,10),trim,side*.087,.055,-.02);ring.rotation.y=Math.PI/2;}
  if(kind==='desert')for(let i=0;i<2;i++)box(root,.185,.012,.175,trim,0,-.01-i*.035,0,.005);
  if(kind==='diver')box(root,.045,.035,.035,trim,0,.032,.095,.01);return batchStatic(root);

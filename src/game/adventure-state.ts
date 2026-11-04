@@ -93,7 +93,13 @@ export class AdventureState {
  get bossPhase(){const g=this.guards.find(g=>g.boss);return !g?1:g.hp/this.bossMaxHP<.3?3:g.hp/this.bossMaxHP<.7?2:1;}
  get zone(){return this.stage==='escape'&&!this.pilot?6:this.layout.zoneCells[Math.floor(this.position.y)]?.[Math.floor(this.position.x)]??0;}
  get limit(){return this.sample?1500:areaTime(this.area,this.difficulty);}
- sealUnlocked(index:number){if(this.pilot)return index===0?this.climber.elevation>=1.2:index===1?this.pilotSwitches.length===2:this.diving&&this.depth>.7;return !this.expedition||this.guards.filter(g=>g.quest===index%3).every(g=>g.dead);}
+ sealUnlocked(index:number){if(this.pilot){
+  if(index===0){const site=this.layout.seals[0],siteAltitude=pilotGround(site.x+.5,site.y+.5);const playerAltitude=pilotGround(this.position.x,this.position.y)+this.climber.elevation;
+   // The real world-space elevation unlocks this rune after reaching the platform.
+   return playerAltitude>=siteAltitude+.55||this.climbed.has(800)||this.climber.state.ledge===800;}
+  if(index===1)return this.pilotSwitches.length>=2;
+  return this.diving&&this.depth>.75;
+ }return !this.expedition||this.guards.filter(g=>g.quest===index%3).every(g=>g.dead);}
  questRemaining(index:number){return this.guards.filter(g=>g.quest===index%3&&!g.dead);}
  get bossVulnerable(){const g=this.guards.find(g=>g.boss);return !this.expedition||!!g&&this.elapsed>=(g.vulnerableAt??Infinity)&&this.elapsed<(g.vulnerableUntil??0);}
  get bossCleared(){return this.guards.some(g=>g.boss&&g.dead);}
@@ -205,7 +211,7 @@ export class AdventureState {
   if(predictOnly){this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;const next={x:c.position.x+c.velocity.x*dt,y:c.position.y+c.velocity.y*dt};if(c.ttl<=0||!clearSegment(this.grid,c.position,next,.04))return false;c.position=next;return true;});return;}
   settleRocks(this.fallenRocks,this.obstacles,this.elapsed,this.difficulty==='easy',this.grid,this.propMoves,this.layout.ledges,this.rockProtectedPoints);
   const pickup=(list:Point[],set:Set<number>,kind:string)=>list.forEach((p,i)=>{if((kind!=='star'||!this.expedition||!this.layout.ledges.some(l=>l.point.x===p.x&&l.point.y===p.y&&Math.max(jump,this.climber.elevation)<l.height-.12))&&(kind==='chest'||this.pilot&&kind==='seal'&&i===2||this.depth<.55)&&(kind!=='chest'||Math.abs(this.depth-aquaticChestDepth(this.area,i,p,this.layout))<.55)&&!set.has(i)&&(kind!=='seal'||this.sealUnlocked(i))&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.48){set.add(i);this.revision++;this.notify(kind);if(kind==='seal'){this.checkpoint=center(p);this.ammo=Math.min(8,this.ammo+2);}if(kind==='chest'){this.lastLoot={id:i,coins:5,keys:1,cakes:8-this.ammo,hearts:Math.min(1,3-this.lives)};this.ammo=8;this.supplies.chili+=2;this.supplies.watermelon+=2;this.supplies.spinach+=1;for(const k of ['red','yellow','green']as const)this.cakeStock[k]=Math.min(5,this.cakeStock[k]+1);this.lives=Math.min(3,this.lives+1);this.coins+=5;this.keys++;}}});
-  if(this.pilot)for(const [i,p]of this.layout.diamonds!.entries())if(!this.diamonds.has(i)&&this.depth<.5&&Math.hypot(this.position.x-p.x-.5,this.position.y-p.y-.5)<.55){this.diamonds.add(i);this.revision++;this.notify('diamond');}
+  if(this.pilot)for(const [i,p]of this.layout.diamonds!.entries())if(!this.diamonds.has(i)&&(i===2?this.diving&&this.depth>.8:this.depth<.5)&&Math.hypot(this.position.x-p.x-.5,this.position.y-p.y-.5)<.68){this.diamonds.add(i);this.revision++;this.notify('diamond');}
   pickup(this.layout.seals,this.seals,'seal');pickup(this.layout.stars,this.stars,'star');pickup(this.layout.chests,this.chests,'chest');
   if(this.expedition){
    if(this.area==='volcano'&&jump<.4&&cascadeSites(this.layout).some(p=>Math.hypot(this.position.x-p.x-p.dx*.6,this.position.y-p.y-p.dz*.6)<1.3))this.damage('environment');

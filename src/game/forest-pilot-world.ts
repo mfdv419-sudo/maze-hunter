@@ -54,8 +54,44 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  const switches=l.pilot!.switches.map(p=>{const h=pilotGround(p.x+.5,p.y+.5),m=add(new T.CylinderGeometry(.32,.38,.7,6),new T.MeshLambertMaterial({color:0x9271b7,emissive:0x171024}),p.x+.5,h+.35,p.y+.5,dynamic);add(new T.OctahedronGeometry(.15),new T.MeshBasicMaterial({color:0xe8d0ff}),p.x+.5,h+.9,p.y+.5,dynamic);return m;});
  const gates=[l.pilot!.gates,l.pilot!.bridge,l.pilot!.shortcut,l.pilot!.exit].map((cells,i)=>{const g=new T.Group();g.name=['sigil-sanctuary-gate','cliff-bridge-gate','tree-shortcut','boss-exit-gate'][i];for(const p of cells)add(new T.BoxGeometry(1,1.8,1),mat(i===0?0x8461ac:0x8b7555),p.x+.5,Math.max(0,pilotGround(p.x+.5,p.y+.5))+.9,p.y+.5,g);dynamic.add(g);return g;});
  // The water surface is clipped by exactly the same depth field used for swimming.
- const waterVertices:number[]=[];for(let z=33;z<62;z+=.25)for(let x=47;x<67;x+=.25){for(const tri of [[[x,z],[x+.25,z],[x,z+.25]],[[x+.25,z],[x+.25,z+.25],[x,z+.25]]]){if(tri.every(([a,b])=>pilotGround(a,b)<WATER-.015))for(const [a,b]of tri)waterVertices.push(a,WATER,b);}}
- const waterGeo=new T.BufferGeometry();waterGeo.setAttribute('position',new T.Float32BufferAttribute(waterVertices,3));waterGeo.computeVertexNormals();add(waterGeo,new T.MeshPhongMaterial({color:0x26a9c2,transparent:true,opacity:.9,shininess:85,side:T.DoubleSide}),0,0,0,dynamic).name='depth-matched-water';
+ const waterVertices:number[]=[],waterCell=.32;for(let z=31;z<68;z+=waterCell)for(let x=43;x<70;x+=waterCell){for(const tri of [[[x,z],[x+waterCell,z],[x,z+waterCell]],[[x+waterCell,z],[x+waterCell,z+waterCell],[x,z+waterCell]]]){if(tri.every(([a,b])=>pilotGround(a,b)<WATER-.015))for(const [a,b]of tri)waterVertices.push(a,WATER,b);}}
+ const waterGeo=new T.BufferGeometry();waterGeo.setAttribute('position',new T.Float32BufferAttribute(waterVertices,3));waterGeo.computeVertexNormals();add(waterGeo,new T.MeshPhongMaterial({color:0x2ba6c1,transparent:true,opacity:.59,depthWrite:false,shininess:80,side:T.DoubleSide}),0,0,0,dynamic).name='depth-matched-water';
+ // Underwater playground: kelp, sheltering stones and moving fish silhouettes.
+ // Every placement checks the shared physical floor so no model floats above the seabed.
+ const underwater=new T.Group();underwater.name='waterfall-valley-underwater';root.add(underwater);
+ const kelpMat=mat(0x2d8274),kelpLight=mat(0x6aaf7c),shellMat=mat(0xbba67e),fishMat=[mat(0xffc97b),mat(0x9de4d6),mat(0xf19b7c)];
+ const fishGroups:T.Group[]=[];
+ for(let i=0;i<23;i++){
+  const a=i*2.39996,r=2.2+(i*11%8)*.71,x=55.5+Math.cos(a)*r,z=53.5+Math.sin(a)*r,ground=pilotGround(x,z);
+  if(ground>WATER-2.0)continue;
+  const h=.85+(i%5)*.17;
+  const stem=new T.CatmullRomCurve3([new T.Vector3(x,ground+.02,z),new T.Vector3(x+.1,ground+h*.5,z-.08),new T.Vector3(x+Math.sin(i)*.25,ground+h,z+.15)]);
+  add(new T.TubeGeometry(stem,8,.046,5,false),i%3?kelpMat:kelpLight,0,0,0,underwater).name='underwater-kelp';
+  if(i%4===0){const rock=add(new T.DodecahedronGeometry(.37,0),stone,x+.4,ground+.2,z-.35,underwater);rock.scale.set(1.45,.5,1.2);}
+  if(i%5===0){const fish=new T.Group();fish.name='forest-pool-fish';const body=new T.Mesh(new T.SphereGeometry(.21,9,6),fishMat[i%3]);body.scale.set(1,.5,.5);fish.add(body);const tail=new T.Mesh(new T.ConeGeometry(.12,.2,5),fishMat[i%3]);tail.rotation.z=Math.PI/2;tail.position.x=-.23;fish.add(tail);fish.position.set(x,ground+h*.95,z);fish.userData.swimY=fish.position.y;underwater.add(fish);fishGroups.push(fish);}
+ }
+ // Two navigable stone arches lead players toward submerged collectibles, without extra invisible colliders.
+ for(const [ax,az] of [[53.5,55.5],[55.5,58.5]] as const){const floor=pilotGround(ax,az);if(floor>WATER-2.1)continue;
+  for(const side of[-1,1]){const pillar=add(new T.CylinderGeometry(.28,.38,1.4,7),stone,ax+side*1.2,floor+.7,az,underwater);pillar.rotation.z=side*.11;}
+  const lintel=add(new T.BoxGeometry(3.1,.35,.7),shellMat,ax,floor+1.55,az,underwater);lintel.rotation.z=.04;
+ }
+ // A clearly readable climb-and-lookout route: risers, rope-and-vine grips, and a reward beacon.
+ for(const ledge of l.ledges.filter(q=>q.id>=820&&q.id<=827)){
+  const x=ledge.point.x+.5,z=ledge.point.y+.5,floor=pilotGround(x,z),h=ledge.height;
+  for(const side of[-1,1]){
+   const vine=new T.CatmullRomCurve3([new T.Vector3(x+side*(ledge.width||1)*.48,floor+.05,z+.5),new T.Vector3(x+side*(ledge.width||1)*.48-.06,floor+h*.57,z+.52),new T.Vector3(x+side*(ledge.width||1)*.48+.09,floor+h+.05,z+.48)]);
+   add(new T.TubeGeometry(vine,10,.036,5,false),kelpLight,0,0,0,root).name='visible-climbing-vines';
+  }
+  if(ledge.id===823){
+   const marker=add(new T.OctahedronGeometry(.3,0),new T.MeshLambertMaterial({color:0xffd27e,emissive:0x7f4a13}),x,floor+h+.9,z);
+   marker.name='lookout-reward-beacon';
+   for(const side of[-1,1]){add(new T.CylinderGeometry(.075,.09,.85,7),wood,x+side*.92,floor+h+.42,z+.92);add(new T.BoxGeometry(1.9,.09,.12),wood,x,floor+h+.83,z+.92);}
+  }
+ }
+ // A clearly signposted, traversable-looking hazard near the upper trail.
+ for(let i=0;i<10;i++){const a=i*Math.PI*2/10,x=23.5+Math.cos(a)*1.43,z=20.2+Math.sin(a)*1.43;
+  const warning=add(new T.ConeGeometry(.11,.36,5),i%2?stone:shellMat,x,pilotGround(x,z)+.18,z,root);warning.name='cliff-gap-warning';
+ }
  // Dive tunnel stays below a clearly visible stone lintel, not a bridge over dry grass.
  add(new T.BoxGeometry(3.6,.45,1),stone,61.5,.15,37.5);for(const side of[-1,1])add(new T.BoxGeometry(.45,2.5,1),stone,61.5+side*1.8,-1,37.5);
  // Waterfall has volume and double-sided material: visible from front, side and rear.
@@ -104,5 +140,6 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  const spray=new T.InstancedMesh(new T.SphereGeometry(.035,5,4),foam,9);spray.name='waterfall-spray';dynamic.add(spray);const sprayPose=new T.Object3D();
  // Keep Sanctuary natural and unobstructed: a small engraved ring replaces the giant pink disc.
  const ring=add(new T.RingGeometry(3.7,3.82,40),mat(0xb3a888),34.5,pilotGround(34.5,9.5)+.015,9.5);ring.rotation.x=-Math.PI/2;
- const textures=new Set<T.Texture>();return {update(t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){const s=state?.();for(let i=0;i<9;i++){const age=(t*.9+i*.11)%1;const a=i*2.4;sprayPose.position.set(65.4+Math.cos(a)*age*.5,WATER+.03+Math.sin(age*Math.PI)*.45,40.5+Math.sin(a)*age*.7);sprayPose.scale.setScalar(1-age*.7);sprayPose.updateMatrix();spray.setMatrixAt(i,sprayPose.matrix);}spray.instanceMatrix.needsUpdate=true;sky.position.copy(camera.position);sky.visible=camera.position.y>WATER;streaks.forEach((m,i)=>{const age=(t*.7+i*.13)%1;m.position.y=sourceTop-age*fallHeight;m.position.x=66.4-age*.95;});gates.forEach((g,i)=>g.visible=i===0?!s?.sigilReady:i===1?!s?.pilotSwitches.includes(0):i===2?!s?.climbed.has(802):!s?.bossCleared);switches.forEach((m,i)=>(m.material as T.MeshLambertMaterial).emissive.set(s?.pilotSwitches.includes(i)?0x4aab6e:0x171024));ripples.forEach((m,i)=>{const age=(t*.6+i*.1)%1;m.scale.setScalar(.4+age*2);(m.material as T.MeshBasicMaterial).opacity=(1-age)*.5;if(i<5&&s?.swimming&&player){m.position.set(player.x+Math.sin(i)*.1,WATER+.025,player.y+Math.cos(i)*.1);m.visible=pilotGround(player.x,player.y)<WATER;}else {m.visible=true;m.position.set(65.45,WATER+.025,40.5);}});if(scene.fog instanceof T.Fog){const under=camera.position.y<WATER;scene.fog.color.set(under?0x418d99:0xc8e9ed);scene.fog.near=under?2:32;scene.fog.far=under?22:88;}},dispose(){skyTexture.dispose();sky.geometry.dispose();sky.material.dispose();scene.remove(sky);const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();for(const group of[root,dynamic])group.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>{for(const v of Object.values(m))if(v instanceof T.Texture)textures.add(v);m.dispose();});textures.forEach(t=>t.dispose());world.remove(root,dynamic);}};
+ const textures=new Set<T.Texture>();return {update(t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){const s=state?.();for(let i=0;i<9;i++){const age=(t*.9+i*.11)%1;const a=i*2.4;sprayPose.position.set(65.4+Math.cos(a)*age*.5,WATER+.03+Math.sin(age*Math.PI)*.45,40.5+Math.sin(a)*age*.7);sprayPose.scale.setScalar(1-age*.7);sprayPose.updateMatrix();spray.setMatrixAt(i,sprayPose.matrix);}spray.instanceMatrix.needsUpdate=true;sky.position.copy(camera.position);sky.visible=camera.position.y>WATER;
+ fishGroups.forEach((fish,i)=>{fish.rotation.y=t*.55+i*2.1;fish.position.y=Number(fish.userData.swimY)+Math.sin(t*1.3+i)*.12;});streaks.forEach((m,i)=>{const age=(t*.7+i*.13)%1;m.position.y=sourceTop-age*fallHeight;m.position.x=66.4-age*.95;});gates.forEach((g,i)=>g.visible=i===0?!s?.sigilReady:i===1?!s?.pilotSwitches.includes(0):i===2?!s?.climbed.has(802):!s?.bossCleared);switches.forEach((m,i)=>(m.material as T.MeshLambertMaterial).emissive.set(s?.pilotSwitches.includes(i)?0x4aab6e:0x171024));ripples.forEach((m,i)=>{const age=(t*.6+i*.1)%1;m.scale.setScalar(.4+age*2);(m.material as T.MeshBasicMaterial).opacity=(1-age)*.5;if(i<5&&s?.swimming&&player){m.position.set(player.x+Math.sin(i)*.1,WATER+.025,player.y+Math.cos(i)*.1);m.visible=pilotGround(player.x,player.y)<WATER;}else {m.visible=true;m.position.set(65.45,WATER+.025,40.5);}});if(scene.fog instanceof T.Fog){const under=camera.position.y<WATER;scene.fog.color.set(under?0x418d99:0xc8e9ed);scene.fog.near=under?2:32;scene.fog.far=under?22:88;}},dispose(){skyTexture.dispose();sky.geometry.dispose();sky.material.dispose();scene.remove(sky);const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();for(const group of[root,dynamic])group.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>{for(const v of Object.values(m))if(v instanceof T.Texture)textures.add(v);m.dispose();});textures.forEach(t=>t.dispose());world.remove(root,dynamic);}};
 }

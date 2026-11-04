@@ -69,3 +69,7 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 #game[data-screen=modern] .forest-pilot .forest-progress b{font-size:13px;min-width:14px;text-align:center;color:#ffd67d}
 @media(max-width:600px) and (orientation:portrait){#game[data-screen=modern] .forest-pilot .action-controls{width:196px!important;height:196px!important}#game[data-screen=modern] .forest-pilot #jump-action{width:78px!important;height:78px!important}#game[data-screen=modern] .forest-pilot #hit-action{right:82px!important;bottom:24px!important}#game[data-screen=modern] .forest-pilot .forest-merge{right:48px!important;bottom:98px!important}#game[data-screen=modern] .forest-pilot .forest-ability{right:116px!important;bottom:102px!important}#game[data-screen=modern] .forest-pilot .forest-progress{font-size:11px;max-width:46vw}}
 @media(max-height:480px){#game[data-screen=modern] .forest-pilot .action-controls{transform:scale(.9)!important;transform-origin:right bottom}#game[data-screen=modern] .forest-pilot .forest-progress{font-size:10px}}
+
+/* Forest Slice 01: inventory totals belong exclusively to the Adventure Guide (?). */
+#game[data-screen=modern] .forest-pilot .forest-progress{display:none!important}
+.forest-build-version{display:block;margin-top:10px;color:#b8d9c8;font-size:10px;letter-spacing:.02em}

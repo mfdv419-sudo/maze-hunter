@@ -4,9 +4,11 @@ export const pilotNames=['Forest Entrance','Deep Forest Hub','Green Cliffs','Anc
 export const PILOT_WATER_LEVEL=-.58;
 /** Build fingerprint for distinguishing the installed revision from cached deploys. */
 export const FOREST_PILOT_BUILD='FG-P0B-20261104';
+export const FOREST_SLICE_BUILD='FG-SLICE01-20261104';
 /** Swimming needs enough clearance below the hips and feet, not just wet terrain. */
 export const PILOT_SWIM_BOTTOM=-1.85;
-export function pilotVoid(x:number,z:number){return Math.abs(x-31.5)<2.8&&Math.abs(z-32.5)<1.25;}
+/** The original bridge gap plus a short, visible challenge gap on the upper cliff path. */
+export function pilotVoid(x:number,z:number){return (Math.abs(x-31.5)<2.8&&Math.abs(z-32.5)<1.25)||Math.hypot(x-23.5,z-20.2)<1.08;}
 const treeSitesCache=new WeakMap<AdventureLayout,{x:number;z:number;scale:number}[]>();
 export function pilotTreeSites(l:AdventureLayout){
  const cached=treeSitesCache.get(l);if(cached)return cached;
@@ -35,7 +37,7 @@ export function pilotGround(x:number,y:number){
  const channel=Math.hypot(x-(61.5-6*t),y-(37.5+16*t));
  const u=Math.max(0,Math.min(1,((x-65.5)*-5+(y-40.5)*2)/29));
  const tributary=Math.hypot(x-(65.5-5*u),y-(40.5+2*u));
- const wet=Math.max(0,Math.min(1,(1.65-tributary)/.8),Math.min(1,(7-pool)/3),Math.min(1,(2.7-channel)/1.4));
+ const wet=Math.max(0,Math.min(1,(1.65-tributary)/.8),Math.min(1,(11-pool)/4.4),Math.min(1,(2.7-channel)/1.4));
  const hill=(cx:number,cy:number,rx:number,ry:number,height:number)=>height*Math.exp(-(((x-cx)/rx)**2+((y-cy)/ry)**2));
  // Lower, middle and upper traversal bands instead of two isolated hills.
  const relief=
@@ -44,6 +46,8 @@ export function pilotGround(x:number,y:number){
    hill(34.5,9.5,9,9,1.85)+      // Guardian Sanctuary plateau
    hill(54.5,30,11,12,1.05)+    // Ancient Ruins approach
    hill(20,20,11,8,1.25)+        // Traversable upper cliff terrace
+   hill(20,18.8,5.5,5.3,3.5)+      // Lookout mountain: true upper playable ground
+   hill(16.5,23,5.5,6,1.2)+      // Approach shelf, visibly higher than forest floor
    hill(27,28,10,10,.95)+       // Cross-zone ridge connection
    hill(43,34,11,10,1.3)+       // Elevated ruins route: not a border hill
    hill(23.5,39,12,15,1.1)+     // Connecting foothills
@@ -56,14 +60,18 @@ export function pilotGround(x:number,y:number){
  const channelBank=Math.max(0,Math.min(1,(channel-2.5)/2));
  const tributaryBank=Math.max(0,Math.min(1,(tributary-1.55)/1.6));
  const dryHeight=Math.max(0,relief)*Math.min(poolBank,channelBank,tributaryBank);
- return wet>0?-2.8*wet:dryHeight;
+ // Broad, deep swim basin; a gentle shoal at the edge allows walk → swim → dive.
+ return wet>0?-(1.0*wet+3.25*Math.pow(wet,1.8)):dryHeight;
 }
 export function forestPilotLayout():AdventureLayout{
  const n=73,grid=Array.from({length:n},()=>Array(n).fill(1));
  const nodes=[{x:12,y:63},{x:32,y:49},{x:12,y:24},{x:54,y:30},{x:34,y:25},{x:34,y:9},{x:55,y:53}],start=nodes[0],finish={x:57,y:9};
  const clear=(p:Point,r:number)=>{for(let y=Math.max(1,p.y-r);y<Math.min(n-1,p.y+r+1);y++)for(let x=Math.max(1,p.x-r);x<Math.min(n-1,p.x+r+1);x++)if(Math.hypot(x-p.x,y-p.y)<=r+.4)grid[y][x]=0;};
  const line=(points:Point[],r=2)=>{for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],steps=Math.ceil(Math.hypot(a.x-b.x,a.y-b.y)*2);for(let t=0;t<=steps;t++)clear({x:Math.round(a.x+(b.x-a.x)*t/steps),y:Math.round(a.y+(b.y-a.y)*t/steps)},r);}};
- nodes.forEach((p,i)=>clear(p,i===5?7:i===1?7:i===6?8:i===2||i===4?8:5));clear(finish,3);
+ nodes.forEach((p,i)=>clear(p,i===5?7:i===1?7:i===6?11:i===2||i===4?8:5));clear(finish,3);
+ // A continuous high-altitude trail with two viable approaches to a view over the basin.
+ line([nodes[2],{x:15,y:23},{x:18,y:21},{x:20,y:19},{x:26,y:17},{x:30,y:21},nodes[4]],2);
+ line([{x:18,y:21},{x:17,y:17},{x:20,y:15},{x:26,y:17}],1);
  // Walkable ridge terraces, branching lookouts and alternative routes. These
  // clearings sit INSIDE the playable forest, not outside its boundary walls.
  for(const [x,y,r] of [[19,19,5],[26,22,5],[28,31,4],[43,34,5],[41,44,5]] as const)clear({x,y},r);
@@ -92,19 +100,38 @@ export function forestPilotLayout():AdventureLayout{
   if(y!==30&&y!==31)grid[y][50]=1;
   if(y!==30&&y!==31)grid[y][58]=1;
  }
- const ledges:AdventureLayout['ledges']=[{id:800,point:{x:12,y:24},height:1.35,width:2,depth:2,kind:'rock'},{id:801,point:{x:10,y:27},height:.65,width:1.5,depth:1.5,kind:'rock'},{id:802,point:{x:34,y:25},height:2.8,kind:'tree'},...[0,1,2].map(i=>({id:803+i,point:{x:16+i*4,y:16},height:1.1,width:2.5,depth:1.6,kind:'rock' as const})),...[0,1,2].map(i=>({id:806+i,point:{x:9+i,y:25},height:.3+i*.3,width:1,depth:1,kind:'rock' as const})),{id:10,point:{x:28,y:48},height:1,kind:'rock'},{id:11,point:{x:38,y:52},height:1,kind:'log'}];
- const stars=[{x:12,y:24},{x:34,y:25},{x:20,y:16},{x:5,y:35},{x:66,y:29},{x:50,y:66},{x:24,y:55},{x:39,y:47},{x:59,y:56}];
+ // Vertical Slice 01: every raised platform has a rendered prop AND a traversable collider.
+ // The low steps lead toward a lookout, and the side route borders a short spike pit.
+ const ledges:AdventureLayout['ledges']=[
+  {id:800,point:{x:12,y:24},height:1.1,width:2.2,depth:2.2,kind:'rock'},
+  {id:801,point:{x:10,y:27},height:.65,width:1.7,depth:1.7,kind:'rock'},
+  {id:802,point:{x:34,y:25},height:2.8,kind:'tree'},
+  ...[0,1,2].map(i=>({id:803+i,point:{x:16+i*4,y:16},height:1.05+i*.18,width:2.4,depth:1.6,kind:'rock' as const})),
+  ...[0,1,2].map(i=>({id:806+i,point:{x:9+i,y:25},height:.30+i*.32,width:1.15,depth:1.15,kind:'rock' as const})),
+  {id:820,point:{x:14,y:23},height:.52,width:1.8,depth:1.8,kind:'rock'},
+  {id:821,point:{x:16,y:22},height:.81,width:1.9,depth:1.8,kind:'rock'},
+  {id:822,point:{x:18,y:21},height:1.05,width:2.15,depth:1.9,kind:'rock'},
+  {id:823,point:{x:20,y:19},height:1.08,width:2.4,depth:2.35,kind:'rock'},
+  {id:824,point:{x:22,y:18},height:.75,width:1.65,depth:1.45,kind:'rock'},
+  {id:825,point:{x:25,y:18},height:1.1,width:2,depth:1.5,kind:'log'},
+  {id:826,point:{x:17,y:18},height:1.75,width:1.15,depth:1.15,kind:'tree'},
+  {id:827,point:{x:26,y:21},height:1.42,width:1.4,depth:1.4,kind:'rock'},
+  {id:10,point:{x:28,y:48},height:1,kind:'rock'},
+  {id:11,point:{x:38,y:52},height:1,kind:'log'},
+ ];
+ // Reuse the existing nine-star budget. The new lookout star is clearly above ground.
+ const stars=[{x:12,y:24},{x:34,y:25},{x:20,y:19},{x:5,y:35},{x:66,y:29},{x:50,y:66},{x:24,y:55},{x:39,y:47},{x:59,y:56}];
  const zoneCells=grid.map((row,y)=>row.map((_,x)=>nodes.reduce((best,p,i)=>Math.hypot(x-p.x,y-p.y)<Math.hypot(x-nodes[best].x,y-nodes[best].y)?i:best,0)));
  // Floor-level trees make the accessible forest feel alive. Previous foliage
  // existed almost entirely ABOVE the player's head on the wall tops. Each
  // trunk shares its center with the authoritative player/guard collider.
  const trunks:Point[]=[],occupied=new Set<string>();
- const protectedPoints:Point[]=[...nodes,start,finish,...stars,{x:15,y:22},{x:54,y:31},{x:52,y:59},...gates];
+ const protectedPoints:Point[]=[...nodes,start,finish,...stars,{x:21,y:16},{x:15,y:22},{x:54,y:31},{x:52,y:59},...gates];
  for(const [cx,cy,count,rad] of [[32,49,9,5],[12,24,11,6],[34,25,10,6],[54,30,8,4.7],[55,53,10,6],[26,22,7,4.4],[41,44,7,4.5]] as const){
   for(let i=0;i<count;i++){const a=(i+.27)*Math.PI*2/count, x=Math.round(cx+rad*Math.cos(a)),y=Math.round(cy+rad*Math.sin(a)),key=`${x},${y}`;
    if(grid[y]?.[x]!==0||occupied.has(key)||protectedPoints.some(p=>Math.hypot(p.x-x,p.y-y)<2.15)||trunks.some(p=>Math.hypot(p.x-x,p.y-y)<1.8)||pilotGround(x+.5,y+.5)<PILOT_WATER_LEVEL+.1)continue;
    trunks.push({x,y});occupied.add(key);
   }
  }
- return{diamonds:[{x:15,y:22},{x:54,y:31},{x:52,y:59}],pilot:{gates,bridge,shortcut,exit,switches:[{x:52,y:29},{x:56,y:29}],pool:nodes[6]},index:0,maze:{grid,start,finish,entrances:[start],seed:20261103},forest:{trunks,pillars:[...[[50,27],[50,34],[58,27],[58,34]].map(([x,y])=>({x:x-.5,y:y-.5})),{x:52,y:29},{x:56,y:29}],boulders:[],arenaRadius:7,cave:nodes[6],cabin:nodes[3],highland:nodes[2]},areas:nodes.map((point,zone)=>({point,zone})),zoneCells,ledges,stars,seals:[nodes[2],{x:54,y:33},nodes[6]],chests:[{x:24,y:55},{x:66,y:29},{x:50,y:66}],rivers:[],grass:[],vegetation:[{x:23,y:51,kind:'tall'},{x:39,y:48,kind:'rare'}],starts:[start],fortress:nodes[5],escapeRoutes:[Array.from({length:24},(_,i)=>({x:34+i,y:9}))],escapeConnector:exit,fastRiver:finish,patrols:[[{x:16,y:38},{x:20,y:42}],[{x:10,y:22},{x:14,y:22}],[{x:11,y:26},{x:14,y:25}],[{x:50,y:30},{x:53,y:31}],[{x:56,y:31},{x:57,y:33}],[{x:49,y:58},{x:51,y:60}],[{x:61,y:55},{x:62,y:52}]],bosses:[nodes[5]],solution:route(grid,start,nodes[4])};
+ return{diamonds:[{x:15,y:22},{x:54,y:31},{x:52,y:59}],pilot:{gates,bridge,shortcut,exit,switches:[{x:52,y:29},{x:56,y:29}],pool:nodes[6]},index:0,maze:{grid,start,finish,entrances:[start],seed:20261103},forest:{trunks,pillars:[...[[50,27],[50,34],[58,27],[58,34]].map(([x,y])=>({x:x-.5,y:y-.5})),{x:52,y:29},{x:56,y:29}],boulders:[],arenaRadius:7,cave:nodes[6],cabin:nodes[3],highland:nodes[2]},areas:nodes.map((point,zone)=>({point,zone})),zoneCells,ledges,stars,seals:[nodes[2],{x:54,y:33},nodes[6]],chests:[{x:21,y:16},{x:66,y:29},{x:50,y:66}],rivers:[],grass:[],vegetation:[{x:23,y:51,kind:'tall'},{x:39,y:48,kind:'rare'}],starts:[start],fortress:nodes[5],escapeRoutes:[Array.from({length:24},(_,i)=>({x:34+i,y:9}))],escapeConnector:exit,fastRiver:finish,patrols:[[{x:16,y:38},{x:20,y:42}],[{x:10,y:22},{x:14,y:22}],[{x:11,y:26},{x:14,y:25}],[{x:50,y:30},{x:53,y:31}],[{x:56,y:31},{x:57,y:33}],[{x:49,y:58},{x:51,y:60}],[{x:61,y:55},{x:62,y:52}]],bosses:[nodes[5]],solution:route(grid,start,nodes[4])};
 }
