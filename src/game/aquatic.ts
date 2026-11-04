@@ -1,4 +1,4 @@
-import {pilotGround,pilotVoid} from './forest-pilot';
+import {pilotGround,pilotVoid,PILOT_SWIM_BOTTOM} from './forest-pilot';
 import {shipSurface} from './expedition-landmarks';
 import type {AdventureLayout} from './adventure-layout';
 import type {AdventureArea} from './areas';
@@ -18,5 +18,5 @@ export function aquaticGround(area:AdventureArea,x:number,y:number,layout:Advent
  const d=Math.hypot(x-f.cave.x-.5,y-f.cave.y-.5);
  return Math.sin(x*.07)*.12-Math.max(0,1-d/5.2)*3.6;
 }
-export function aquaticSwimming(area:AdventureArea,p:Point,layout:AdventureLayout){return !(layout.pilot&&pilotVoid(p.x,p.y))&&(aquaticArea(area)||!!layout.pilot)&&aquaticGround(area,p.x,p.y,layout)<-1.05;}
+export function aquaticSwimming(area:AdventureArea,p:Point,layout:AdventureLayout){return !(layout.pilot&&pilotVoid(p.x,p.y))&&(aquaticArea(area)||!!layout.pilot)&&aquaticGround(area,p.x,p.y,layout)<(layout.pilot?PILOT_SWIM_BOTTOM:-1.05);}
 export function aquaticChestDepth(area:AdventureArea,index:number,p:Point,layout:AdventureLayout){return aquaticArea(area)?Math.max(0,-aquaticGround(area,p.x+.5,p.y+.5,layout)-.6):0;}

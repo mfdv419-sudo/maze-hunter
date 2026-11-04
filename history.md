@@ -419,3 +419,10 @@ Pengujian ini bukan pengukuran FPS di HP/tablet fisik atau latensi multiplayer m
 - **False blockers:** remove overhead ruins beam and waterfall-lip decorations from foot-level ledge collision; high-cliff trees no longer create invisible foot-level obstructions below their trunks.
 - Added focused Forest Grove P0 regression tests.
 - **Verification limit:** TypeScript syntax and pure terrain/layout checks were run locally. Full build, renderer tests, device/browser QA and actual deployment verification remain pending where npm dependencies or a graphics environment are unavailable. Do not claim physical device validation.
+
+## 2026-11-04 — Forest Grove P0B: playable terraces, ground-level forest, swim/guard alignment
+- Based on the user-supplied `maze-hunter-maze-1` branch and cumulative P0 changes. No camera gameplay code or Retro/Online camera controls changed.
+- More traversable elevated clearings and ridge paths, with floor-level forest trees using the same trunk points as the movement and NPC collision systems. Ancient Ruins has solid masonry boundary cells with multiple open doorways, shared by NPC and player collision. The earlier foliage had mostly been rendered on the *top of blocked wall cells*.
+- Swimming begins only with adequate body clearance; diving is clamped to leave foot-to-floor clearance instead of allowing the character root to sink into the ground. Non-swimming ground guards cannot enter deep-water floor cells.
+- A small `FG-P0B-20261104` fingerprint appears inside Adventure Guide (?) so testers can confirm the correct deploy is running, without adding permanent gameplay HUD clutter.
+- New regression tests check reachable objectives, locked arena, raised playable ground, tree placement, and swimming depth. **Requires full application build/3D device testing before approval.**

@@ -3,9 +3,9 @@ import type {ModernGame} from '../game/modern';
 import type {AdventureState} from '../game/adventure-state';
 import {audioVolumes,setAudioVolumes,isMuted,setMuted} from '../systems/audio';
 import {readPreferences,writePreferences} from '../services/preferences';
-import {pilotNames} from '../game/forest-pilot';
+import {pilotNames,FOREST_PILOT_BUILD} from '../game/forest-pilot';
 export function mountForestHud(root:HTMLElement,game:ModernGame,en:boolean){
- root.classList.add('forest-pilot');const abort=new AbortController(),made:HTMLElement[]=[];let selected='cake';
+ root.classList.add('forest-pilot');root.dataset.forestBuild=FOREST_PILOT_BUILD;const abort=new AbortController(),made:HTMLElement[]=[];let selected='cake';
  const text=(id:string,english:string)=>en?english:id;
  const button=(label:string,fn:()=>void,icon?:string)=>{const b=document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.onclick=fn;if(icon)b.innerHTML=forestIcon(icon);else b.textContent=label;return b;};
  const controls=text('WASD / panah: bergerak · Space: lompat · J/B: aksi · V: selam · Q/E: putar kamera · R/F: sudut kamera · 1–4: ability · X: merge · C: pilihan ability · M: peta · Esc: jeda/kembali.','WASD / arrows: move · Space: jump · J/B: action · V: dive · Q/E: camera yaw · R/F: camera pitch · 1–4: abilities · X: merge · C: ability bar · M: map · Esc: pause/back.');
@@ -21,6 +21,7 @@ export function mountForestHud(root:HTMLElement,game:ModernGame,en:boolean){
    if(index===1){const grid=document.createElement('div');grid.className='forest-equipment-grid';for(const kind of ['normal','red','yellow','green'] as const){const b=button(text('Kue ','Cake ')+kind,()=>{game.chooseCake(kind);game.selectWeapon('cake');selected='cake';},'cake');b.dataset.cakeColor=kind;const caption=document.createElement('span');caption.textContent=text({normal:'Klasik',red:'Merah',yellow:'Kuning',green:'Hijau'}[kind],kind);b.append(caption);grid.append(b);}grid.append(button(text('Taruh benda','Place object'),()=>game.useAction('place'),'lift'),button(text('Sapaan','Wave'),()=>{panel.dispatchEvent(new Event('forest-close'));game.wave();},'wave'));content.append(grid);}
    if(index===2){const p=document.createElement('p');p.textContent=controls;content.append(p);const tips=document.createElement('p');tips.textContent=text('Beda tinggi kecil: langsung melangkah. Lompat untuk mendarat; hanya tepian tinggi perlu diraih dan dipanjat. Di air: Action untuk selam, Jump untuk ke permukaan/lompat keluar. Ring oksigen berkurang saat di bawah air; kembali ke permukaan untuk pulih.','Small steps are automatic. Jump to land; only high ledges need a grab and pull-up. In water: Action dives, Jump surfaces or jumps out. The oxygen ring drains underwater; surface to recover.');content.append(tips);const reset=button(text('Reset kamera','Reset camera'),()=>game.resetCamera());reset.className='forest-reset';content.append(reset);}
   };tabs.forEach((label,i)=>{const b=button(label,()=>show(i));nav.append(b);});show(0);
+  const build=document.createElement('small');build.className='forest-build-id';build.textContent=`Forest build: ${FOREST_PILOT_BUILD}`;panel.append(build);
  });guide.className='icon-button';guide.textContent='?';tools.append(guide);
  const bar=document.createElement('div');bar.className='forest-quick-select';bar.hidden=true;bar.setAttribute('aria-label',text('Pilihan ability','Ability quick select'));
  const select=(kind:string)=>{if(!game.selectWeapon(kind as 'cake'|'chili'|'spinach'|'watermelon'))return;selected=kind;bar.querySelectorAll<HTMLButtonElement>('[data-ability]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ability===kind)));bar.hidden=true;ability.setAttribute('aria-expanded','false');};

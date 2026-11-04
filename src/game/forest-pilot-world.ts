@@ -27,7 +27,7 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
   const tri=(a:number[],b:number[],c:number[],hex:number)=>{vertices.push(...a,...b,...c);const v=new T.Color(hex);for(let i=0;i<3;i++)color.push(v.r,v.g,v.b);};
   for(let z=cz;z<Math.min(n,cz+12);z++)for(let x=cx;x<Math.min(n,cx+12);x++)if(solid(x,z)){
    for(const [dx,dz,ax,az,bx,bz]of [[0,-1,0,0,1,0],[1,0,1,0,1,1],[0,1,1,1,0,1],[-1,0,0,1,0,0]])if(!solid(x+dx,z+dz)){
-    for(let band=0;band<4;band++){const point=(t:number,f:number)=>{const px=x+ax+(bx-ax)*t,pz=z+az+(bz-az)*t,base=pilotGround(px,pz)-.15,top=pilotWallHeight(px,pz),inset=Math.sin(f*Math.PI)*Math.sin(t*Math.PI)*.13;return[px-dx*inset,base+(top-base)*f,pz-dz*inset];};for(let segment=0;segment<2;segment++){const a=point(segment/2,band/4),b=point((segment+1)/2,band/4),c=point((segment+1)/2,(band+1)/4),d=point(segment/2,(band+1)/4),hex=band===3?0x999c73:((x*11+z*7)%3===0?0xb5a48b:0xc6b598);tri(a,c,b,hex);tri(a,d,c,hex);}}
+    for(let band=0;band<4;band++){const point=(t:number,f:number)=>{const px=x+ax+(bx-ax)*t,pz=z+az+(bz-az)*t,base=pilotGround(px,pz)-.15,top=pilotWallHeight(px,pz),inset=Math.sin(f*Math.PI)*Math.sin(t*Math.PI)*.13;return[px-dx*inset,base+(top-base)*f,pz-dz*inset];};for(let segment=0;segment<2;segment++){const a=point(segment/2,band/4),b=point((segment+1)/2,band/4),c=point((segment+1)/2,(band+1)/4),d=point(segment/2,(band+1)/4),hex=x>=50&&x<=58&&z>=27&&z<=34?(band===3?0x858e80:0xa4a69b):band===3?0x999c73:((x*11+z*7)%3===0?0xb5a48b:0xc6b598);tri(a,c,b,hex);tri(a,d,c,hex);}}
    }
    const a=[x,pilotWallHeight(x,z),z],b=[x+1,pilotWallHeight(x+1,z),z],c=[x+1,pilotWallHeight(x+1,z+1),z+1],d=[x,pilotWallHeight(x,z+1),z+1];tri(a,c,b,0x699d49);tri(a,d,c,0x699d49);
   }
@@ -36,6 +36,9 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  // Reusable low-poly tree forms; all large trunks sit on the solid side, never in a walking lane.
  const prototypes=[forestTree(0),forestTree(1),forestTree(2)];
  for(const q of pilotTreeSites(l)){const tree=prototypes[(Math.floor(q.x)+Math.floor(q.z))%3].clone(true);tree.position.set(q.x,pilotWallHeight(q.x,q.z),q.z);tree.scale.set(q.scale,q.scale*1.25,q.scale);root.add(tree);}
+ // The actual playfields need trees at GROUND level; wall-top tree instances
+ // alone hide the forest canopy above the player's view.
+ for(const [i,p] of l.forest!.trunks.entries()){const x=p.x+.5,z=p.y+.5,tree=prototypes[i%3].clone(true),scale=.95+(i%5)*.12;tree.position.set(x,pilotGround(x,z),z);tree.scale.set(scale,scale*1.15,scale);root.add(tree);}
  // Collapse repeated trees into instance batches, retaining original geometry/material ownership.
  root.updateWorldMatrix(true,true);const inverse=root.matrixWorld.clone().invert(),treeBatches=new Map<T.BufferGeometry,{material:T.Material;matrices:T.Matrix4[]}>();
  for(const tree of [...root.children].filter(o=>o.type==='Group')){tree.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){let b=treeBatches.get(o.geometry);if(!b){b={material:o.material,matrices:[]};treeBatches.set(o.geometry,b);}b.matrices.push(inverse.clone().multiply(o.matrixWorld));}});root.remove(tree);}

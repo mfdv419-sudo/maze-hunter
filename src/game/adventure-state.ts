@@ -1,6 +1,6 @@
 import {ForestClimber,cliffSurfaces,traversalGrid} from './forest-traversal';
 import {forestRules} from './forest-rules';
-import {forestPilotLayout,pilotVoid,pilotGround} from './forest-pilot';
+import {forestPilotLayout,pilotVoid,pilotGround,PILOT_SWIM_BOTTOM} from './forest-pilot';
 import {trainingLayout} from './training-layout';
 import {handOrigin,projectileOrigin,releaseTime,type AvatarAction} from './avatar-actions';
 import {rockSupport,type RestingRock} from './rock-physics';
@@ -173,7 +173,10 @@ export class AdventureState {
  private moveGuard(p:Point,dx:number,dy:number,radius:number){
   if(!this.pilot)return moveSliding(this.grid,p,dx,dy,radius);
   const solids=[...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))],steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/.08));let out={...p};
-  const clear=(q:Point)=>solids.every(o=>Math.hypot(q.x-o.x-.5,q.y-o.y-.5)>=o.r+radius);
+  const clear=(q:Point)=>
+   // Guards without swimming abilities stay on the visible dry route.
+   pilotGround(q.x,q.y)>=PILOT_SWIM_BOTTOM&&
+   solids.every(o=>Math.hypot(q.x-o.x-.5,q.y-o.y-.5)>=o.r+radius);
   for(let i=0;i<steps;i++){const x=moveSliding(this.grid,out,dx/steps,0,radius);if(clear(x))out=x;const y=moveSliding(this.grid,out,0,dy/steps,radius);if(clear(y))out=y;}return out;
  }
  private updateHazards(jump:number){for(const h of this.hazards){if(h.resolved||this.elapsed<h.at)continue;h.resolved=true;if(h.kind==='rockfall'&&Object.keys(this.fallenRocks).length<ROCK_LIMIT){const p=safeRockPoint(h.point,this.grid);this.fallenRocks[`fallen-900-${h.id}`]=planRockRest(`fallen-900-${h.id}`,p,h.at,this.grid,this.fallenRocks,this.propMoves,this.layout.ledges,this.rockProtectedPoints);};if(this.expedition&&h.kind==='charge'){const g=this.guards.find(g=>g.boss&&!g.dead);if(g){const dx=h.point.x-g.position.x,dy=h.point.y-g.position.y,d=Math.hypot(dx,dy),k=this.area==='gorge'?Math.max(0,d-1.55)/(d||1):1;if(this.area==='gorge')g.dash={from:{...g.position},to:this.moveGuard(g.position,dx*k,dy*k,.4),at:this.elapsed,until:this.elapsed+.36};else g.position=this.moveGuard(g.position,dx*k,dy*k,.4);}}const d=Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y);let inside=d<h.radius;
@@ -197,7 +200,7 @@ export class AdventureState {
   if(!predictOnly&&!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
   jump=Math.max(jump,this.climber.elevation);
   if(!predictOnly&&jump<.08&&this.layout.rivers.some(p=>Math.floor(this.position.x)===p.x&&Math.floor(this.position.y)===p.y))this.damage('river');
-  if(!this.swimming){this.depth=0;this.diving=false;}else{const max=Math.max(0,-aquaticGround(this.area,this.position.x,this.position.y,this.layout)-.72),target=this.diving?Math.min(2.6,max):this.pilot&&Math.abs(this.position.x-61.5)<1.95&&Math.abs(this.position.y-37.5)<.65?Math.min(.8,max):0;this.depth+=Math.max(-dt*1.8,Math.min(dt*1.8,target-this.depth));}
+  if(!this.swimming){this.depth=0;this.diving=false;}else{const max=Math.max(0,-aquaticGround(this.area,this.position.x,this.position.y,this.layout)-(this.pilot?1.8:.72)),target=this.diving?Math.min(2.6,max):this.pilot&&Math.abs(this.position.x-61.5)<1.95&&Math.abs(this.position.y-37.5)<.65?Math.min(.8,max):0;this.depth+=Math.max(-dt*1.8,Math.min(dt*1.8,target-this.depth));}
   if(this.pilot&&!predictOnly){if(this.depth>.4){this.oxygen=Math.max(0,this.oxygen-Math.max(0,raw));if(this.oxygen===0){this.damage('river');this.notify('oxygen-empty');}}else this.oxygen=Math.min(this.oxygenCapacity,this.oxygen+dt*forestRules.oxygenRecovery);}
   if(predictOnly){this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;const next={x:c.position.x+c.velocity.x*dt,y:c.position.y+c.velocity.y*dt};if(c.ttl<=0||!clearSegment(this.grid,c.position,next,.04))return false;c.position=next;return true;});return;}
   settleRocks(this.fallenRocks,this.obstacles,this.elapsed,this.difficulty==='easy',this.grid,this.propMoves,this.layout.ledges,this.rockProtectedPoints);
