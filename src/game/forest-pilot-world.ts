@@ -58,8 +58,42 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  // Waterfall has volume and double-sided material: visible from front, side and rear.
  const sourceTop=pilotWallHeight(66.5,40.5)+.04,fallBottom=WATER,fallHeight=sourceTop-fallBottom,fallMaterial=new T.MeshPhongMaterial({color:0x56c4dc,transparent:true,opacity:.82,side:T.DoubleSide,shininess:70});
  const fall=new T.Group();fall.name='waterfall-volume';dynamic.add(fall);
- // Four overlapping curved ribbons grow from the upper stream and end in the same lower basin.
- for(let j=0;j<4;j++){const geo=new T.PlaneGeometry(.65,1,2,12),p=geo.attributes.position;for(let i=0;i<p.count;i++){const t=p.getY(i)+.5,across=p.getX(i);p.setXYZ(i,65.45+t*.95+Math.sin(t*Math.PI)*.08+j*.025,fallBottom+t*fallHeight,40.5+across+(j-1.5)*.48);}geo.computeVertexNormals();add(geo,fallMaterial,0,0,0,fall);}
+ // A continuous *volumetric* cascade with front, back and both side surfaces.
+ // Unlike overlapping billboard planes this stays readable from every walkable angle.
+ const cascade=new T.BufferGeometry(),fallVertices:number[]=[],fallUV:number[]=[];
+ const face=(a:T.Vector3,b:T.Vector3,c:T.Vector3,ta:[number,number],tb:[number,number],tc:[number,number])=>{
+  fallVertices.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);
+  fallUV.push(...ta,...tb,...tc);
+ };
+ const section=(t:number,w:number,back:boolean)=>{
+  const front=65.40+t*1.0+.11*Math.sin(t*Math.PI*1.7);
+  const depth=(.3+.1*Math.sin(t*Math.PI))*(back?1:0);
+  return new T.Vector3(front+depth,fallBottom+t*fallHeight,40.5+(w-.5)*2.65+.04*Math.sin(t*13+w*7));
+ };
+ const steps=24,across=12;
+ for(let i=0;i<steps;i++)for(let j=0;j<across;j++){
+  const t0=i/steps,t1=(i+1)/steps,w0=j/across,w1=(j+1)/across;
+  for(const rear of[false,true]){
+   const a=section(t0,w0,rear),b=section(t0,w1,rear),c=section(t1,w1,rear),d=section(t1,w0,rear);
+   face(a,b,c,[w0,t0],[w1,t0],[w1,t1]);face(a,c,d,[w0,t0],[w1,t1],[w0,t1]);
+  }
+ }
+ for(const w of[0,1])for(let i=0;i<steps;i++){
+  const t0=i/steps,t1=(i+1)/steps;
+  const a=section(t0,w,false),b=section(t0,w,true),c=section(t1,w,true),d=section(t1,w,false);
+  face(a,b,c,[0,t0],[1,t0],[1,t1]);face(a,c,d,[0,t0],[1,t1],[0,t1]);
+ }
+ cascade.setAttribute('position',new T.Float32BufferAttribute(fallVertices,3));
+ cascade.setAttribute('uv',new T.Float32BufferAttribute(fallUV,2));cascade.computeVertexNormals();
+ add(cascade,fallMaterial,0,0,0,fall).name='waterfall-continuous-volume';
+ // Thin, three-dimensional foam strands preserve the downward-flow reading from the side.
+ for(const w of[.08,.25,.5,.75,.92]){
+  const points=Array.from({length:17},(_,i)=>{
+   const q=section(i/16,w,false);q.x-=.025;return q;
+  });
+  const foamLine=new T.TubeGeometry(new T.CatmullRomCurve3(points),32,.014,4,false);
+  add(foamLine,foam,0,0,0,fall);
+ }
  const upperGeo=new T.PlaneGeometry(2,2,8,8);upperGeo.rotateX(-Math.PI/2);const up=upperGeo.attributes.position;for(let i=0;i<up.count;i++){const x=up.getX(i)+67.4,z=up.getZ(i)+40.5;up.setXYZ(i,x,pilotWallHeight(x,z)+.045,z);}upperGeo.computeVertexNormals();add(upperGeo,fallMaterial,0,0,0,dynamic).name='waterfall-upper-stream';
  for(const side of[-1,1]){const lip=add(new T.DodecahedronGeometry(.55),stone,66.4,sourceTop-.16,40.5+side*1.2);lip.scale.set(1.2,.6,1);}
  const streaks=Array.from({length:8},(_,i)=>add(new T.CapsuleGeometry(.025,.3,2,4),foam,65.4,1,39.65+i*.24,dynamic));

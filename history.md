@@ -410,3 +410,12 @@ Bagian ini adalah arah desain, belum merupakan penggantian model dalam paket ini
 Suite unit mencakup arah permukaan ekor pada beberapa pose, arah pole, panjang ruas lengan, dua hit Easy, waktu Retro, lintasan kamera, pantulan dan serialisasi tumpukan batu. Tes browser memakai UI jeda asli pada tiga ukuran layar dan memeriksa perubahan kamera serta posisi batu pada runtime game. Hasil validasi: 238 tes unit dan 2 tes browser lulus; build frontend dan server juga lulus.
 
 Pengujian ini bukan pengukuran FPS di HP/tablet fisik atau latensi multiplayer melalui koneksi internet pengguna. Pantulan batu merupakan presentasi deterministik dari state server; tidak memakai engine rigid-body 3D penuh. Peningkatan desain model besar di atas tetap merupakan rekomendasi.
+
+## 2026-11-03 — Forest Grove P0 world/collision revision (delta)
+
+- **Relief:** shared `pilotGround` now models broad highland, terrace, and lowland bands, with the water carving preserved. The renderer and traversal sample the same height function.
+- **Forest density:** prioritize instanced trees on the solid side of visible route edges, without planting trunks inside open maze cells.
+- **Waterfall:** replace intersecting flat ribbon planes with a contiguous two-sided 3D cascade, including side faces and 3D foam strands; keep source and pool coordinates aligned.
+- **False blockers:** remove overhead ruins beam and waterfall-lip decorations from foot-level ledge collision; high-cliff trees no longer create invisible foot-level obstructions below their trunks.
+- Added focused Forest Grove P0 regression tests.
+- **Verification limit:** TypeScript syntax and pure terrain/layout checks were run locally. Full build, renderer tests, device/browser QA and actual deployment verification remain pending where npm dependencies or a graphics environment are unavailable. Do not claim physical device validation.

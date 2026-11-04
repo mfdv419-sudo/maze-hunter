@@ -4,15 +4,52 @@ export const pilotNames=['Forest Entrance','Deep Forest Hub','Green Cliffs','Anc
 export const PILOT_WATER_LEVEL=-.58;
 export function pilotVoid(x:number,z:number){return Math.abs(x-31.5)<2.8&&Math.abs(z-32.5)<1.25;}
 const treeSitesCache=new WeakMap<AdventureLayout,{x:number;z:number;scale:number}[]>();
-export function pilotTreeSites(l:AdventureLayout){const cached=treeSitesCache.get(l);if(cached)return cached;const blocked=new Set([...l.pilot!.gates,...l.pilot!.bridge,...l.pilot!.shortcut,...l.pilot!.exit].map(q=>`${q.x},${q.y}`));const out:{x:number;z:number;scale:number}[]=[];for(let z=2;z<l.maze.grid.length-2;z+=2)for(let x=2;x<l.maze.grid.length-2;x+=2)if(l.maze.grid[z][x]===1&&!blocked.has(`${x},${z}`)&&(x*7+z*13)%9<3)out.push({x:x+.5,z:z+.5,scale:1.7+(x*13+z*7)%7*.16});treeSitesCache.set(l,out);return out;}
+export function pilotTreeSites(l:AdventureLayout){
+ const cached=treeSitesCache.get(l);if(cached)return cached;
+ const grid=l.maze.grid,n=grid.length,blocked=new Set([...l.pilot!.gates,...l.pilot!.bridge,...l.pilot!.shortcut,...l.pilot!.exit].map(q=>`${q.x},${q.y}`));
+ const out:{x:number;z:number;scale:number}[]=[];
+ for(let z=2;z<n-2;z++)for(let x=2;x<n-2;x++){
+  if(grid[z][x]!==1||blocked.has(`${x},${z}`))continue;
+  const edge=grid[z+1][x]===0||grid[z-1][x]===0||grid[z][x+1]===0||grid[z][x-1]===0;
+  const hash=(x*37+z*53+x*z*7)%101;
+  // Prioritize the visible rock/forest boundary instead of hiding the tree
+  // budget deep inside solid maze cells. All trunks remain on solid terrain.
+  const plant=edge?hash%5<3:x%2===0&&z%2===0&&hash%11<2;
+  if(plant)out.push({x:x+.5,z:z+.5,scale:(edge?1.35:1.55)+(hash%8)*.14});
+ }
+ treeSitesCache.set(l,out);return out;
+}
 export function pilotWallHeight(x:number,z:number){return Math.max(0,pilotGround(x,z))+3.2+Math.sin(x*.17+z*.11)*.55+Math.cos(z*.21)*.25;}
+/** Continuous ground shared by renderer, physics, and aquatic checks.
+ * Broad overlapping elevations form the three route heights; the entrance/hub
+ * remain gentle, while the river bed is carved from the *same* height field.
+ */
 export function pilotGround(x:number,y:number){
  if(pilotVoid(x,y))return -7;
- const pool=Math.hypot(x-55.5,y-53.5),t=Math.max(0,Math.min(1,((x-61.5)*-6+(y-37.5)*16)/292)),channel=Math.hypot(x-(61.5-6*t),y-(37.5+16*t));
- const u=Math.max(0,Math.min(1,((x-65.5)*-5+(y-40.5)*2)/29)),tributary=Math.hypot(x-(65.5-5*u),y-(40.5+2*u));
+ const pool=Math.hypot(x-55.5,y-53.5);
+ const t=Math.max(0,Math.min(1,((x-61.5)*-6+(y-37.5)*16)/292));
+ const channel=Math.hypot(x-(61.5-6*t),y-(37.5+16*t));
+ const u=Math.max(0,Math.min(1,((x-65.5)*-5+(y-40.5)*2)/29));
+ const tributary=Math.hypot(x-(65.5-5*u),y-(40.5+2*u));
  const wet=Math.max(0,Math.min(1,(1.65-tributary)/.8),Math.min(1,(7-pool)/3),Math.min(1,(2.7-channel)/1.4));
- const hill=1.8*Math.exp(-((x-12.5)**2+(y-23.5)**2)/150)+1.1*Math.exp(-((x-34.5)**2+(y-25.5)**2)/100)+.28*Math.sin(x*.19)*Math.sin(y*.14);
- return wet>0?-2.8*wet:Math.max(0,hill)*Math.min(1,Math.max(0,(pool-7)/2),Math.max(0,(channel-2.7)/1.4));
+ const hill=(cx:number,cy:number,rx:number,ry:number,height:number)=>height*Math.exp(-(((x-cx)/rx)**2+((y-cy)/ry)**2));
+ // Lower, middle and upper traversal bands instead of two isolated hills.
+ const relief=
+   hill(12.5,23.5,11.5,14.5,2.3)+ // Green Cliffs
+   hill(34.5,25.5,13,12,2.2)+     // Giant Tree upper routes
+   hill(34.5,9.5,9,9,1.85)+      // Guardian Sanctuary plateau
+   hill(54.5,30,11,12,.9)+       // Ancient Ruins
+   hill(23.5,39,12,15,.65)+      // Connecting foothills
+   hill(42,42,14,10,.6)+         // Woodland terrace
+   hill(37,58,13,11,.45)+        // Gentle lower woodland
+   hill(10,52,9,13,.6)+          // Entrance approach
+   .23*Math.sin(x*.18)*Math.cos(y*.16)+.12*Math.sin(x*.43+y*.19);
+ // Never build a floating bank over a swimming corridor.
+ const poolBank=Math.max(0,Math.min(1,(pool-6.7)/3));
+ const channelBank=Math.max(0,Math.min(1,(channel-2.5)/2));
+ const tributaryBank=Math.max(0,Math.min(1,(tributary-1.55)/1.6));
+ const dryHeight=Math.max(0,relief)*Math.min(poolBank,channelBank,tributaryBank);
+ return wet>0?-2.8*wet:dryHeight;
 }
 export function forestPilotLayout():AdventureLayout{
  const n=73,grid=Array.from({length:n},()=>Array(n).fill(1));
