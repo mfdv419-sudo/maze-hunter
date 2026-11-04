@@ -47,3 +47,57 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 .forest-collection-grid p:first-of-type{grid-column:auto!important}
 @media(max-width:600px) and (orientation:portrait){.forest-oxygen{left:18px;top:214px}}
 #game[data-screen=modern] .forest-dialog .forest-reset{width:auto!important;min-height:30px!important;padding:5px 12px!important;margin:10px 0 0!important;font-size:12px!important}
+
+
+/* Forest Grove action arc: Jump is the fixed centre; Cake/Action defines radius.
+   Normalised centres in units of --forest-action (S): Jump (2.30,1.95),
+   Action (0.90,1.95), Merge (1.40,3.02), Ability (1.40,0.88).
+   Every skill centre is ~1.40 S from Jump. This is intentionally scoped to
+   the Forest Grove HUD to preserve other modes and existing camera behaviour. */
+#game[data-screen=modern] .forest-pilot {
+  --forest-action: clamp(40px, min(9dvh, 12vw), 64px);
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc {
+  box-sizing: content-box;
+  width: calc(var(--forest-action) * 2.94) !important;
+  height: calc(var(--forest-action) * 3.55) !important;
+  right: max(12px, env(safe-area-inset-right)) !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  padding: 0 !important;
+  transform: none !important;
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .action-button {
+  transition: filter .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc #jump-action {
+  left: auto !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: calc(var(--forest-action) * 1.31) !important;
+  background: #315e91 !important;
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc #hit-action {
+  left: calc(var(--forest-action) * .40) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(var(--forest-action) * 1.45) !important;
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .forest-merge {
+  left: calc(var(--forest-action) * .90) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(var(--forest-action) * 2.52) !important;
+}
+#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .forest-ability {
+  left: calc(var(--forest-action) * .90) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(var(--forest-action) * .38) !important;
+}
+@media (pointer:fine) and (min-width:1000px) {
+  #game[data-screen=modern] .forest-pilot { --forest-action: 46px; }
+}
+@media (max-height:420px) and (orientation:landscape) {
+  #game[data-screen=modern] .forest-pilot { --forest-action: 40px; }
+}

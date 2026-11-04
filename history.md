@@ -1,5 +1,11 @@
 # Maze Hunter — riwayat revisi
 
+## 4 November 2026 — Forest Grove P0C: busur tombol ala MOBA dan Binturong tanpa tongkat
+
+Basis: branch maze-1 ditambah P0B kumulatif. Empat tombol kanan dipertahankan, tiga skill dalam satu warna disusun pada busur yang berpusat di tombol Jump; jarinya mengikuti jarak tombol Cake/Action terhadap Jump. Horizontal Ability Quick Select tidak diubah. Ikon Ability kini paw orisinal, Merge berupa penggabungan bintang, Jump berupa siluet gerak hewan. Layout di-scope hanya pada Forest Grove, menggunakan ukuran responsif menurut viewport dan tidak menyentuh kamera gameplay.
+
+Model trekking pole dihilangkan tanpa mengubah kontrak animasi lama; tangan telanjang memiliki palm, tiga jari dan ibu jari, kaki telanjang memiliki telapak dan tiga jari. Gerakan paw, ayunan langkah dan bob tubuh diperhalus; perlengkapan glove/boot, action, climb, swim serta kostum lama dipertahankan. Pemeriksaan Node dependency-free menguji geometri busur, tombol, ikon dan penghapusan mesh tongkat. Build lengkap dan hasil pada perangkat fisik belum dinyatakan lolos.
+
 ## 3 November 2026 — Forest Grove: traversal, Diamond/Sigil, oksigen dan koreksi UI
 
 Dasar: paket environment/HUD terakhir, Teks yang ditempel (1)(3).txt, screenshot bug dan referensi approved. Aturan terbaru menggantikan asumsi lama: tiga Diamond terpisah dari tiga Sigil; dua Sigil membuka akses; boss memerlukan tiga Diamond + dua Sigil + trigger arena. Pickup/persistence satu kali dan migrasi save pilot diperiksa. Kapasitas oksigen tidak dipercaya dari save; bonus penuh set diver menggunakan appearance yang telah diperiksa dari profil.
