@@ -19,7 +19,8 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  for(let i=0;i<pos.count;i++){const x=pos.getX(i)+n/2,z=pos.getZ(i)+n/2,h=pilotGround(x,z);pos.setXYZ(i,x,h-.025,z);uv.setXY(i,x/1.8,z/1.8);const boundary=Array.from({length:9},(_,j)=>solid(Math.floor(x)+(j%3)-1,Math.floor(z)+Math.floor(j/3)-1)).some(Boolean),c=new T.Color(h<WATER?0xa5a17b:boundary?0x80ad54:0x9dbf65);c.multiplyScalar(.95+.05*Math.sin(x*2+z));colors.push(c.r,c.g,c.b);}
  terrain.setAttribute('color',new T.Float32BufferAttribute(colors,3));terrain.computeVertexNormals();add(terrain,new T.MeshLambertMaterial({vertexColors:true,map:forestTexture('grass')}),0,0,0);
  // Contour-following dirt ribbons. Skip water and blocked cells rather than drawing through them.
- const trails=[[[12,63],[18,58],[32,49]],[[32,49],[22,43],[15,35],[12,24]],[[32,49],[44,43],[54,30]],[[32,49],[42,58],[55,53]],[[12,24],[12,15],[23,15],[27,21],[34,25]],[[55,53],[63,46],[63,24],[34,25]],[[12,24],[16,33],[24,32],[44,32],[54,30]],[[54,30],[61,37],[61,47],[55,53]],[[34,25],[32,38],[32,49]],[[34,25],[34,9],[57,9]]];
+ const legacyTrails=[[[12,63],[18,58],[32,49]],[[32,49],[22,43],[15,35],[12,24]],[[32,49],[44,43],[54,30]],[[32,49],[42,58],[55,53]],[[12,24],[12,15],[23,15],[27,21],[34,25]],[[55,53],[63,46],[63,24],[34,25]],[[12,24],[16,33],[24,32],[44,32],[54,30]],[[54,30],[61,37],[61,47],[55,53]],[[34,25],[32,38],[32,49]],[[34,25],[34,9],[57,9]]];
+ const trails=l.ring?l.ring.trails.map(path=>path.map(p=>[p.x,p.y])):legacyTrails;
  const trailPoints:number[]=[],trailColors:number[]=[];for(const points of trails){const curve=new T.CatmullRomCurve3(points.map(([x,z])=>new T.Vector3(x+.5,0,z+.5)),false,'centripetal'),steps=Math.ceil(curve.getLength()*5);for(let i=0;i<steps;i++){const a=curve.getPoint(i/steps),b=curve.getPoint((i+1)/steps),ta=curve.getTangent(i/steps),tb=curve.getTangent((i+1)/steps),sa=new T.Vector3(ta.z,0,-ta.x).multiplyScalar(.5),sb=new T.Vector3(tb.z,0,-tb.x).multiplyScalar(.5),quad=[a.clone().add(sa),b.clone().add(sb),b.clone().sub(sb),a.clone().sub(sa)];if(quad.some(p=>grid[Math.floor(p.z)]?.[Math.floor(p.x)]!==0||pilotGround(p.x,p.z)<WATER+.12))continue;for(const [left,right]of [[1,.7],[.7,-.7],[-.7,-1]]){const corners=[a.clone().addScaledVector(sa,left),b.clone().addScaledVector(sb,left),b.clone().addScaledVector(sb,right),a.clone().addScaledVector(sa,right)];for(const k of[0,2,1,0,3,2]){const q=corners[k],edge=k<2?left:right;trailPoints.push(q.x,pilotGround(q.x,q.z)+.055,q.z);trailColors.push(1,1,1,Math.abs(edge)>.9?0:1);}}}}
  const path=new T.BufferGeometry();path.setAttribute('position',new T.Float32BufferAttribute(trailPoints,3));path.setAttribute('color',new T.Float32BufferAttribute(trailColors,4));path.setAttribute('uv',new T.Float32BufferAttribute(trailPoints.flatMap((_,i)=>i%3===0?[trailPoints[i]/2,trailPoints[i+2]/2]:[]),2));path.computeVertexNormals();add(path,new T.MeshLambertMaterial({color:0xfff0ce,map:forestTexture('soil'),vertexColors:true,transparent:true,depthWrite:false}),0,0,0).name='contour-following-trails';
  // Chunked continuous cliffs: no isolated columns, no seams or decorative overhang into lanes.
@@ -44,6 +45,49 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  root.updateWorldMatrix(true,true);const inverse=root.matrixWorld.clone().invert(),treeBatches=new Map<T.BufferGeometry,{material:T.Material;matrices:T.Matrix4[]}>();
  for(const tree of [...root.children].filter(o=>o.type==='Group')){tree.traverse(o=>{if(o instanceof T.Mesh&&!Array.isArray(o.material)){let b=treeBatches.get(o.geometry);if(!b){b={material:o.material,matrices:[]};treeBatches.set(o.geometry,b);}b.matrices.push(inverse.clone().multiply(o.matrixWorld));}});root.remove(tree);}
  for(const [geometry,b]of treeBatches){const mesh=new T.InstancedMesh(geometry,b.material,b.matrices.length);b.matrices.forEach((m,i)=>mesh.setMatrixAt(i,m));mesh.computeBoundingSphere();mesh.name='instanced-forest-trees';root.add(mesh);}
+ // Ring-maze wayfinding is authored from the same zone/connector graph as
+ // physics. Beacons are small enough not to pretend to be solid platforms.
+ if(l.ring){
+  const posts=new T.Group();posts.name='ring-maze-zone-landmarks';root.add(posts);
+  const dark=mat(0x594a35),gold=mat(0xe8ce81);
+  const hues:Record<string,number>={entrance:0x7ed6a4,green:0x8bcf65,ruins:0xcbb18d,waterfall:0x75d2dc,chasm:0xdfab78,giant:0xa4d46f,underground:0xa48ec6,floating:0xf4e2a1,boss:0xf4a08f};
+  for(const zone of l.ring.zones){
+   const x=zone.point.x+.5,z=zone.point.y+.5,y=pilotGround(x,z);
+   // Actual accessible zone endpoints are not obstructed by art-only signage.
+   const column=new T.Group();column.position.set(x+.85,y,z+.85);column.name='zone-sign-'+zone.id;posts.add(column);
+   add(new T.CylinderGeometry(.065,.09,1.1,8),dark,0,.55,0,column);
+   const flag=add(new T.BoxGeometry(.55,.36,.07),mat(hues[zone.id]),.29,.93,.015,column);
+   flag.name='ring-zone-color-flag';
+   add(new T.BoxGeometry(.32,.06,.12),gold,.23,1.12,0,column);
+   if(zone.id==='boss'){
+    const halo=add(new T.TorusGeometry(4.75,.12,8,40),mat(0xe7a46a),-.85,.055,-.85,column);
+    halo.rotation.x=-Math.PI/2;halo.name='center-guardian-boss-ring';
+   }
+  }
+  if(l.ring.activeZones.includes('floating')){
+   const islands=new T.Group();islands.name='floating-land-playable-islands';posts.add(islands);
+   const rock=mat(0x8a8478),grass=mat(0x75b558),rail=mat(0x8b6444);
+   const platforms=l.ledges.filter(o=>o.id>=980&&o.id<=985);
+   for(const platform of platforms){const x=platform.point.x+.5,z=platform.point.y+.5,top=pilotGround(x,z)+platform.height;
+    const under=add(new T.DodecahedronGeometry(.85,0),rock,x,top-.37,z,islands);under.scale.set(1,.54,1);
+    add(new T.CylinderGeometry(.91,.78,.16,9),grass,x,top-.06,z,islands).name='floating-island-walkable-cap-'+platform.id;
+    for(let i=0;i<3;i++){const q=add(new T.IcosahedronGeometry(.1,0),gold,x+Math.sin(i*2.1)*.53,top+.08,z+Math.cos(i*2.1)*.53,islands);q.name='floating-magic-spark';}
+   }
+   // Visible rope connects consecutive walkable stepping islands; unlike
+   // the old fake bridge, each landing has a real ledge collider.
+   for(let i=1;i<platforms.length;i++){
+    const a=platforms[i-1],b=platforms[i],x=a.point.x+.5,z=a.point.y+.5,xx=b.point.x+.5,zz=b.point.y+.5;
+    const y=pilotGround(x,z)+a.height,yy=pilotGround(xx,zz)+b.height;
+    const rope=new T.CatmullRomCurve3([new T.Vector3(x,y+.12,z),new T.Vector3((x+xx)/2,(y+yy)/2-.15,(z+zz)/2),new T.Vector3(xx,yy+.12,zz)]);
+    add(new T.TubeGeometry(rope,12,.037,6,false),rail,0,0,0,islands).name='floating-island-rope-route';
+   }
+  }
+  for(const [i,tip]of l.ring.deadEnds.entries()){
+   const x=tip.x+.5,z=tip.y+.5,y=pilotGround(x,z);
+   const reward=add(new T.OctahedronGeometry(.23,0),mat(0xeed380),x,y+.55,z,posts);
+   reward.name='rewarded-dead-end-'+i;
+  }
+ }
  // Instance small vegetation in bounded chunks rather than adding thousands of individual draw calls.
  const sprigs:T.Matrix4[]=[],blossoms:T.Matrix4[][]=[[],[],[]],dummy=new T.Object3D();
  for(let i=0;i<1600;i++){const x=1+(i*17.137)%(n-2),z=1+(i*31.733)%(n-2),ix=Math.floor(x),iz=Math.floor(z);if(grid[iz]?.[ix]!==0||pilotGround(x,z)<WATER+.2)continue;const edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>solid(ix+a,iz+b));if(!edge&&i%5)continue;dummy.position.set(x,pilotGround(x,z)+.12,z);dummy.rotation.set(0,i*.7,.15*Math.sin(i));dummy.scale.set(.7+i%3*.2,1,.7+i%3*.2);dummy.updateMatrix();sprigs.push(dummy.matrix.clone());if(i%3===0){dummy.position.y+=.16;dummy.scale.setScalar(.8);dummy.updateMatrix();blossoms[i%3].push(dummy.matrix.clone());}}
@@ -263,7 +307,7 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  const ripples=Array.from({length:10},()=>{const m=add(new T.TorusGeometry(.3,.018,4,24),foam.clone(),65.45,WATER+.025,40.5,dynamic);m.rotation.x=-Math.PI/2;return m;});
  const spray=new T.InstancedMesh(new T.SphereGeometry(.035,5,4),foam,9);spray.name='waterfall-spray';dynamic.add(spray);const sprayPose=new T.Object3D();
  // Keep Sanctuary natural and unobstructed: a small engraved ring replaces the giant pink disc.
- const ring=add(new T.RingGeometry(3.7,3.82,40),mat(0xb3a888),34.5,pilotGround(34.5,9.5)+.015,9.5);ring.rotation.x=-Math.PI/2;
+ const ring=add(new T.RingGeometry(3.7,3.82,40),mat(0xb3a888),l.fortress.x+.5,pilotGround(l.fortress.x+.5,l.fortress.y+.5)+.015,l.fortress.y+.5);ring.rotation.x=-Math.PI/2;
  const textures=new Set<T.Texture>();return {update(t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){const s=state?.();for(let i=0;i<9;i++){const age=(t*.9+i*.11)%1;const a=i*2.4;sprayPose.position.set(65.4+Math.cos(a)*age*.5,WATER+.03+Math.sin(age*Math.PI)*.45,40.5+Math.sin(a)*age*.7);sprayPose.scale.setScalar(1-age*.7);sprayPose.updateMatrix();spray.setMatrixAt(i,sprayPose.matrix);}spray.instanceMatrix.needsUpdate=true;sky.position.copy(camera.position);sky.visible=camera.position.y>WATER;
- fishGroups.forEach((fish,i)=>{fish.rotation.y=t*.55+i*2.1;fish.position.y=Number(fish.userData.swimY)+Math.sin(t*1.3+i)*.12;});streaks.forEach((m,i)=>{const age=(t*.7+i*.13)%1;m.position.y=sourceTop-age*fallHeight;m.position.x=66.4-age*.95;});gates.forEach((g,i)=>g.visible=i===0?!s?.sigilReady:i===1?!s?.pilotSwitches.includes(0):i===2?!s?.climbed.has(802):!s?.bossCleared);switches.forEach((m,i)=>(m.material as T.MeshLambertMaterial).emissive.set(s?.pilotSwitches.includes(i)?0x4aab6e:0x171024));ripples.forEach((m,i)=>{const age=(t*.6+i*.1)%1;m.scale.setScalar(.4+age*2);(m.material as T.MeshBasicMaterial).opacity=(1-age)*.5;if(i<5&&s?.swimming&&player){m.position.set(player.x+Math.sin(i)*.1,WATER+.025,player.y+Math.cos(i)*.1);m.visible=pilotGround(player.x,player.y)<WATER;}else {m.visible=true;m.position.set(65.45,WATER+.025,40.5);}});if(scene.fog instanceof T.Fog){const under=camera.position.y<WATER;scene.fog.color.set(under?0x418d99:0xc8e9ed);scene.fog.near=under?2:32;scene.fog.far=under?22:88;}},dispose(){skyTexture.dispose();sky.geometry.dispose();sky.material.dispose();scene.remove(sky);const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();for(const group of[root,dynamic])group.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>{for(const v of Object.values(m))if(v instanceof T.Texture)textures.add(v);m.dispose();});textures.forEach(t=>t.dispose());world.remove(root,dynamic);}};
+ fishGroups.forEach((fish,i)=>{fish.rotation.y=t*.55+i*2.1;fish.position.y=Number(fish.userData.swimY)+Math.sin(t*1.3+i)*.12;});streaks.forEach((m,i)=>{const age=(t*.7+i*.13)%1;m.position.y=sourceTop-age*fallHeight;m.position.x=66.4-age*.95;});gates.forEach((g,i)=>g.visible=i===0?!(s?.layout.ring?s?.bossReady:s?.sigilReady):i===1?!s?.pilotSwitches.includes(0):i===2?!s?.climbed.has(802):!s?.bossCleared);switches.forEach((m,i)=>(m.material as T.MeshLambertMaterial).emissive.set(s?.pilotSwitches.includes(i)?0x4aab6e:0x171024));ripples.forEach((m,i)=>{const age=(t*.6+i*.1)%1;m.scale.setScalar(.4+age*2);(m.material as T.MeshBasicMaterial).opacity=(1-age)*.5;if(i<5&&s?.swimming&&player){m.position.set(player.x+Math.sin(i)*.1,WATER+.025,player.y+Math.cos(i)*.1);m.visible=pilotGround(player.x,player.y)<WATER;}else {m.visible=true;m.position.set(65.45,WATER+.025,40.5);}});if(scene.fog instanceof T.Fog){const under=camera.position.y<WATER;scene.fog.color.set(under?0x418d99:0xc8e9ed);scene.fog.near=under?2:32;scene.fog.far=under?22:88;}},dispose(){skyTexture.dispose();sky.geometry.dispose();sky.material.dispose();scene.remove(sky);const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();for(const group of[root,dynamic])group.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>{for(const v of Object.values(m))if(v instanceof T.Texture)textures.add(v);m.dispose();});textures.forEach(t=>t.dispose());world.remove(root,dynamic);}};
 }

@@ -53,9 +53,9 @@ export class AdventureState {
  invulnerableUntil=0;slowUntil=0;stunUntil=0;hits=0;lastHit=-100;lastThrow=-100;lastJump=-100;resetFogRevision=0;respawns=0;revision=0;message='';messageAt=-10;
  effectEvents:{id:number;source:'guard'|'boss'|'river'|'cake'|'environment'|'fall';point:Point;cake?:CakeKind}[]=[];effectId=0;
  phase:'playing'|'won'|'lost'='playing';reason:'time'|'lives'|'escape'|null=null;
- constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic',readonly training=false,pilot=false) {
+ constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic',readonly training=false,pilot=false,ring=false) {
   this.teamSize=team?.shared?Math.max(1,team.slots.length):1;
-  this.layout=pilot?forestPilotLayout():training?trainingLayout():sample?forestLayout():area==='classic'?adventureLayout(difficulty,mapIndex,variation):biomeLayout(area,difficulty,mapIndex,variation);const encounters=this.expedition&&!training&&!pilot?sealEncounters(this.layout):[];if(team)this.layout.seals=teamSealSites(this.layout,team,this.area);this.grid=this.layout.maze.grid.map(r=>[...r]);
+  this.layout=pilot?forestPilotLayout(ring?difficulty:undefined):training?trainingLayout():sample?forestLayout():area==='classic'?adventureLayout(difficulty,mapIndex,variation):biomeLayout(area,difficulty,mapIndex,variation);const encounters=this.expedition&&!training&&!pilot?sealEncounters(this.layout):[];if(team)this.layout.seals=teamSealSites(this.layout,team,this.area);this.grid=this.layout.maze.grid.map(r=>[...r]);
   this.obstacles=this.expedition&&!training&&!pilot?fieldObstacles(this.layout,this.area):[];
   if(pilot)this.climber=new ForestClimber();this.position=center(this.layout.maze.start);this.checkpoint={...this.position};
   this.guards=[...this.layout.patrols.map((p,i)=>({patrol:p,boss:false,elite:i>=adventureRules[difficulty].guards})),...this.layout.bosses.map(p=>({patrol:[p],boss:true,elite:false}))].map(({patrol,boss,elite})=>this.makeGuard(patrol,boss,elite));
@@ -84,7 +84,7 @@ export class AdventureState {
  get pilot(){return !!this.layout.pilot;}
  get sigilReady(){return this.seals.size>=(this.pilot?2:this.sealGoal);}
  interactPilot(){const p=this.layout.pilot;if(!p)return false;const i=p.switches.findIndex(q=>Math.hypot(q.x+.5-this.position.x,q.y+.5-this.position.y)<1.4);if(i<0||this.pilotSwitches.includes(i))return false;if(!this.pilotSwitches.includes(i)){this.pilotSwitches.push(i);this.revision++;this.notify('rune');}this.updatePilotGates();return true;}
- private updatePilotGates(){const p=this.layout.pilot;if(!p)return;const open=(list:Point[],yes:boolean)=>{if(yes)for(const q of list){this.grid[q.y][q.x]=0;this.broken.add(`${q.x},${q.y}`);}};open(p.gates,this.sigilReady);open(p.bridge,this.pilotSwitches.includes(0));open(p.shortcut,this.climbed.has(802));open(p.exit,this.bossCleared);}
+ private updatePilotGates(){const p=this.layout.pilot;if(!p)return;const open=(list:Point[],yes:boolean)=>{if(yes)for(const q of list){this.grid[q.y][q.x]=0;this.broken.add(`${q.x},${q.y}`);}};open(p.gates,this.layout.ring?this.bossReady:this.sigilReady);open(p.bridge,this.pilotSwitches.includes(0));open(p.shortcut,this.climbed.has(802));open(p.exit,this.bossCleared);}
  get sealGoal(){return Math.max(3,this.layout.seals.length);}
  get arenaRadius(){return this.layout.forest?.arenaRadius??4.2;}
  get bossMaxHP(){return Math.round({easy:8,medium:12,hard:18,extreme:24}[this.difficulty]*(1+.65*(this.teamSize-1)));}
@@ -203,7 +203,7 @@ export class AdventureState {
    const rise=pilotGround(next.x,next.y)-pilotGround(previous.x,previous.y),travel=Math.hypot(next.x-previous.x,next.y-previous.y);
    if(steepHubSidewall(next.x,next.y,travel,rise,jump)){next.x=previous.x;next.y=previous.y;}
   }
-  if(this.pilot&&this.depth<.7&&Math.abs(next.x-61.5)<1.95&&Math.abs(next.y-37.5)<.65){next.x=previous.x;next.y=previous.y;}
+  if(this.pilot&&!this.layout.ring&&this.depth<.7&&Math.abs(next.x-61.5)<1.95&&Math.abs(next.y-37.5)<.65){next.x=previous.x;next.y=previous.y;}
   const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.physicalLedges);this.position=climbing.position;if(this.pilot&&pilotVoid(this.position.x,this.position.y)){
    const safeBridge=this.physicalLedges.some(l=>l.id===828&&Math.abs(this.position.x-l.point.x-.5)<(l.width||1)/2-.07&&Math.abs(this.position.y-l.point.y-.5)<(l.depth||1)/2-.07&&this.climber.state.ledge===l.id&&this.climber.state.phase==='top');
    if(!safeBridge&&pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3){this.damage('fall');return;}

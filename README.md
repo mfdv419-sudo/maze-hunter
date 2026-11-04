@@ -32,7 +32,7 @@ The supplied production catalogue requires no Python or C++ during normal builds
 
 ## Documentation
 
-- `CHANGELOG.md`: the single development-history document and verification results.
+- `history.md`: canonical development history and verification results (includes archived CHANGELOG notes).
 - `docs/PROJECT_BRIEF.md`: current product/gameplay constraints.
 - `docs/VISUAL_GUIDE.md`: agreed biome art direction and implementation scope.
 - `docs/SETUP.md`: existing Firebase/account/environment setup.
