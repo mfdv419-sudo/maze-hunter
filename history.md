@@ -432,3 +432,13 @@ Pengujian ini bukan pengukuran FPS di HP/tablet fisik atau latensi multiplayer m
 - Swimming begins only with adequate body clearance; diving is clamped to leave foot-to-floor clearance instead of allowing the character root to sink into the ground. Non-swimming ground guards cannot enter deep-water floor cells.
 - A small `FG-P0B-20261104` fingerprint appears inside Adventure Guide (?) so testers can confirm the correct deploy is running, without adding permanent gameplay HUD clutter.
 - New regression tests check reachable objectives, locked arena, raised playable ground, tree placement, and swimming depth. **Requires full application build/3D device testing before approval.**
+
+
+## 2026-11-04 — Forest Grove handcrafted Waterfall Hub rebuild (candidate)
+- **Source of truth:** `src/game/forest-hub.ts` defines six named elevated play areas, six approach stair paths, and a three-section raised canopy bridge. Both the actual ground elevation and the 3D renderer consume these coordinates; bridge collisions are modeled as existing forest Ledges. Visible steep hub sidewalls now steer normal walking toward marked stair approaches, while jumping/climbing remain available.
+- **Scene:** walkable riverside commons, moss stair garden, high lookout, opposite-side terraces, open shelters, wayfinders, railings, cliff walls, and a two-tier central waterfall. One of the existing nine Stars is relocated to the upper overlook rather than increasing the budget.
+- **Safety:** original Green Cliffs gap receives a matching solid ledge/deck. Landing on the bridge should no longer be interpreted as an unsupported void fall when the character's ledge state is valid.
+- **UI:** action/merge/ability share a mathematically equal radius (20°, 45°, 70°) from the bottom-right screen corner; Jump remains separate. No permanent Diamond/Star/Sigil counters in the top-right HUD.
+- **Character:** shrink oversized circular paws, use smaller forward-facing digits, align bare-hand color with avatar fur, remove trekking-pole geometry.
+- **Regression:** preserve P0B `FOREST_PILOT_BUILD`, boss prerequisites, online/Retro routes, land camera settings, and existing saved-state fields. New build marker `FG-HUB-REBUILD01-20261104` appears in Adventure Guide (?).
+- **Testing boundary:** structural route and elevation checks performed from transpiled source; full npm build and visual/gameplay/device QA require dependencies and a 3D browser environment. This is a candidate, not approved visual parity.

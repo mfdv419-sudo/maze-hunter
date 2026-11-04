@@ -1,6 +1,7 @@
 import {ForestClimber,cliffSurfaces,traversalGrid} from './forest-traversal';
 import {forestRules} from './forest-rules';
 import {forestPilotLayout,pilotVoid,pilotGround,PILOT_SWIM_BOTTOM} from './forest-pilot';
+import {steepHubSidewall} from './forest-hub';
 import {trainingLayout} from './training-layout';
 import {handOrigin,projectileOrigin,releaseTime,type AvatarAction} from './avatar-actions';
 import {rockSupport,type RestingRock} from './rock-physics';
@@ -198,8 +199,15 @@ export class AdventureState {
   if(this.elapsed-this.lastHit>7)this.hits=0;
   if(this.awakening){dx=0;dy=0;}
   const previous={...this.position},next=moveSliding(this.pilot?traversalGrid(this.grid,this.physicalLedges,this.position,this.climber.elevation,jump):this.grid,this.position,dx*dt*this.speedFactor,dy*dt*this.speedFactor,this.pilot?.27:.13);
+  if(this.pilot&&!this.swimming&&this.climber.state.phase==='ground'){
+   const rise=pilotGround(next.x,next.y)-pilotGround(previous.x,previous.y),travel=Math.hypot(next.x-previous.x,next.y-previous.y);
+   if(steepHubSidewall(next.x,next.y,travel,rise,jump)){next.x=previous.x;next.y=previous.y;}
+  }
   if(this.pilot&&this.depth<.7&&Math.abs(next.x-61.5)<1.95&&Math.abs(next.y-37.5)<.65){next.x=previous.x;next.y=previous.y;}
-  const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.physicalLedges);this.position=climbing.position;if(this.pilot&&pilotVoid(this.position.x,this.position.y)&&pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3){this.damage('fall');return;}
+  const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.physicalLedges);this.position=climbing.position;if(this.pilot&&pilotVoid(this.position.x,this.position.y)){
+   const safeBridge=this.physicalLedges.some(l=>l.id===828&&Math.abs(this.position.x-l.point.x-.5)<(l.width||1)/2-.07&&Math.abs(this.position.y-l.point.y-.5)<(l.depth||1)/2-.07&&this.climber.state.ledge===l.id&&this.climber.state.phase==='top');
+   if(!safeBridge&&pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3){this.damage('fall');return;}
+  }
   if(this.expedition&&this.climber.elevation<.5&&!['hanging','climbing'].includes(this.climber.state.phase))for(const obstacle of [...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))]){if(this.layout.ledges.some(l=>l.point.x===obstacle.x&&l.point.y===obstacle.y&&this.propMoves[String(l.id)]))continue;const x=this.position.x-obstacle.x-.5,y=this.position.y-obstacle.y-.5,d=Math.hypot(x,y);if(d<obstacle.r+(this.pilot?.16:0)){const k=(obstacle.r+(this.pilot?.16:0))/Math.max(.001,d);this.position={x:obstacle.x+.5+(d?x:.001)*k,y:obstacle.y+.5+y*k};}}
   if(this.training){if(climbing.reached!==null)this.climbed.add(climbing.reached);this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;c.position.x+=c.velocity.x*dt;c.position.y+=c.velocity.y*dt;return c.ttl>0;});return;}
   if(!predictOnly&&climbing.reached!==null&&!this.climbed.has(climbing.reached)){this.climbed.add(climbing.reached);this.coins+=5;this.notify('climb');}

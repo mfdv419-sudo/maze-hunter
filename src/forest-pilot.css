@@ -73,3 +73,43 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 /* Forest Slice 01: inventory totals belong exclusively to the Adventure Guide (?). */
 #game[data-screen=modern] .forest-pilot .forest-progress{display:none!important}
 .forest-build-version{display:block;margin-top:10px;color:#b8d9c8;font-size:10px;letter-spacing:.02em}
+
+
+/* FG-HUB-REBUILD01: equal-radius quarter arc, centered ON THE SCREEN CORNER. */
+#game[data-screen=modern] .forest-pilot .action-controls{
+ --skill-r:clamp(116px,27dvh,162px);--skill-d:clamp(44px,10dvh,60px);
+ width:calc(var(--skill-r) + var(--skill-d))!important;
+ height:calc(var(--skill-r) + var(--skill-d))!important;
+ right:max(8px,env(safe-area-inset-right))!important;
+ bottom:max(8px,env(safe-area-inset-bottom))!important;
+ transform:none!important;pointer-events:none;
+}
+#game[data-screen=modern] .forest-pilot .action-controls .action-button:not(#jump-action){
+ width:var(--skill-d)!important;height:var(--skill-d)!important;min-width:0!important;min-height:0!important;
+ border-radius:50%;margin:0!important;padding:9px!important;pointer-events:auto;
+ background:linear-gradient(145deg,#207c91,#124459 58%,#0d2938)!important;
+ border:2px solid #e9cf88!important;box-shadow:none!important;filter:none!important;
+}
+/* cos(70°), cos(45°), cos(20°) with matching sin terms.
+   Each button CENTER is exactly --skill-r from the screen's bottom-right. */
+#game[data-screen=modern] .forest-pilot .forest-merge{
+ right:calc(var(--skill-r)*.342020 - var(--skill-d)/2)!important;
+ bottom:calc(var(--skill-r)*.939693 - var(--skill-d)/2)!important;
+ left:auto!important;top:auto!important;
+}
+#game[data-screen=modern] .forest-pilot #hit-action{
+ right:calc(var(--skill-r)*.707107 - var(--skill-d)/2)!important;
+ bottom:calc(var(--skill-r)*.707107 - var(--skill-d)/2)!important;
+ left:auto!important;top:auto!important;
+}
+#game[data-screen=modern] .forest-pilot .forest-ability{
+ right:calc(var(--skill-r)*.939693 - var(--skill-d)/2)!important;
+ bottom:calc(var(--skill-r)*.342020 - var(--skill-d)/2)!important;
+ left:auto!important;top:auto!important;
+}
+#game[data-screen=modern] .forest-pilot #jump-action{
+ width:clamp(66px,16dvh,82px)!important;height:clamp(66px,16dvh,82px)!important;
+ right:0!important;bottom:0!important;left:auto!important;top:auto!important;
+ box-shadow:none!important;pointer-events:auto;
+}
+@media(max-height:480px){#game[data-screen=modern] .forest-pilot .action-controls{transform:none!important}}

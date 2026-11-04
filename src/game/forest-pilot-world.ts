@@ -5,6 +5,7 @@ import type {AdventureLayout} from './adventure-layout';
 import type {AdventureState} from './adventure-state';
 import {pilotGround,pilotWallHeight,pilotTreeSites,PILOT_WATER_LEVEL as WATER} from './forest-pilot';
 import {forestTree} from './world-art';
+import {WATERFALL_HUB_TERRACES,WATERFALL_HUB_RAMPS,WATERFALL_HUB_BRIDGES,WATERFALL_HUB_HUTS} from './forest-hub';
 /** Shared grid is the solid boundary. Rock faces meet at exactly the same vertices. */
 export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,state?:()=>AdventureState|undefined){
  const root=new T.Group(),dynamic=new T.Group();root.name='forest-grove-pilot';root.userData.cameraOccluder=true;world.add(root,dynamic);
@@ -49,6 +50,121 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
  const instances=(g:T.BufferGeometry,m:T.Material,list:T.Matrix4[])=>{const mesh=new T.InstancedMesh(g,m,list.length);list.forEach((v,i)=>mesh.setMatrixAt(i,v));mesh.computeBoundingSphere();root.add(mesh);};const bladeVertices:number[]=[];for(let i=0;i<7;i++){const a=i*2.4,dx=Math.cos(a)*.14,dz=Math.sin(a)*.14,h=.22+i%3*.055;bladeVertices.push(-dz*.28,-.12,dx*.28,dz*.28,-.12,-dx*.28,dx,h,dz);}const blades=new T.BufferGeometry();blades.setAttribute('position',new T.Float32BufferAttribute(bladeVertices,3));blades.computeVertexNormals();leaf.side=T.DoubleSide;instances(blades,leaf,sprigs);blossoms.forEach((list,i)=>instances(new T.IcosahedronGeometry(.08,0),flower[i],list));
  // Decks follow the terrain and the direction of each existing connection. Rails are visual edge cues.
  for(const [cx,cz,w,d]of[[31.5,32.5,7,2],[32.5,38.5,5,2]]){for(let i=0;i<Math.ceil(w*3);i++){const x=cx-w/2+i/3;add(new T.BoxGeometry(.29,.1,d),wood,x,(cx===31.5?.1:pilotGround(x,cz)+.04),cz);}for(const side of[-1,1]){for(let i=0;i<4;i++){const x=cx-w/2+i*w/3;add(new T.BoxGeometry(.09,.8,.09),wood,x,(cx===31.5?.46:pilotGround(x,cz)+.4),cz+side*d/2);}const rail=add(new T.BoxGeometry(w,.07,.07),wood,cx,(cx===31.5?.82:pilotGround(cx,cz)+.76),cz+side*d/2);rail.rotation.z=cx===31.5?0:(pilotGround(cx+w/2,cz)-pilotGround(cx-w/2,cz))/w;}}
+ // Waterfall Hub rebuild: handcrafted, readable three-tier playfield.
+ // These structures occupy the same world coordinates as the authoritative
+ // pilotGround() stair heights and the walkable bridge Ledges in forestPilotLayout.
+ const hubGrass=mat(0x6bb748),hubEarth=mat(0xb79a70),hubStone=mat(0xa79c81),hubRail=mat(0x8a5838),hubRoof=mat(0x965b42),hubRoofTrim=mat(0xecc67c),hubGold=mat(0xffdc73),hubVine=mat(0x4b9563);
+ const platformDecor=new T.Group();platformDecor.name='waterfall-hub-handcrafted-playground';root.add(platformDecor);
+ // Batch repeated stair treads and bridge boards for smartphone GPU budgets.
+ const treadGroups:[T.Matrix4[],T.Matrix4[],T.Matrix4[]]=[[],[],[]],treadDummy=new T.Object3D();
+ const tread=(group:number,x:number,y:number,z:number,w:number,h:number,d:number,angle=0)=>{
+  treadDummy.position.set(x,y,z);treadDummy.rotation.set(0,angle,0);treadDummy.scale.set(w,h,d);treadDummy.updateMatrix();treadGroups[group].push(treadDummy.matrix.clone());
+ };
+ for(const terrace of WATERFALL_HUB_TERRACES){
+  const {x,z,w,d,top,name}=terrace;
+  // An earthy podium with a green, clearly navigable top; not an invisible hill.
+  const base=top>3?-.9:top>2?-1.25:-.7;
+  for(const side of[-1,1]){
+   const long=add(new T.BoxGeometry(w,.0+top-base,.24),hubEarth,x,(top+base)/2,z+side*(d/2-.15),platformDecor);
+   long.name='terrace-visible-cliff';
+   const short=add(new T.BoxGeometry(.24,.0+top-base,d),hubEarth,x+side*(w/2-.15),(top+base)/2,z,platformDecor);
+   short.name='terrace-visible-cliff';
+  }
+  add(new T.BoxGeometry(w-.55,.12,d-.55),hubGrass,x,top-.06,z,platformDecor).name='playable-moss-terrace-'+name.replace(/\s+/g,'-');
+  for(const side of[-1,1]){
+   // Edge posts are scenery only; walkable ground uses terrain/ledge collision.
+   for(let j=0;j<3;j++){
+    const px=x+side*(w/2-.52),pz=z+(j-1)*(d/3);
+    add(new T.CylinderGeometry(.07,.09,.72,7),hubRail,px,top+.36,pz,platformDecor);
+   }
+   add(new T.BoxGeometry(.085,.075,d*.72),hubRail,x+side*(w/2-.52),top+.69,z,platformDecor);
+  }
+ }
+ // Distinct staircases, rather than a slightly sloping hillside. The steps are
+ // decals on the actual continuous collision surface: no phantom step collider.
+ for(const ramp of WATERFALL_HUB_RAMPS){
+  const [ax,az]=ramp.from,[bx,bz]=ramp.to,dx=bx-ax,dz=bz-az,span=Math.hypot(dx,dz),steps=Math.max(5,Math.round(span*2.5));
+  for(let i=0;i<steps;i++){
+   const t=(i+.5)/steps,x=ax+dx*t,z=az+dz*t,y=pilotGround(x,z);
+   tread(i%4===0?0:1,x,y+.01,z,ramp.width*.82,.09,span/steps*.82,Math.atan2(dx,dz));
+  }
+  // Rope rail and climbing vines make the connection recognizable from afar.
+  for(const side of[-1,1]){
+   const nx=-dz/span,nz=dx/span,points:T.Vector3[]=[];
+   for(let i=0;i<=10;i++){
+    const t=i/10,x=ax+dx*t+nx*side*ramp.width*.43,z=az+dz*t+nz*side*ramp.width*.43;
+    points.push(new T.Vector3(x,pilotGround(x,z)+.85,z));
+    if(i%5===0)add(new T.CylinderGeometry(.075,.085,.83,7),hubRail,x,pilotGround(x,z)+.4,z,platformDecor);
+   }
+   add(new T.TubeGeometry(new T.CatmullRomCurve3(points),24,.045,5,false),iColor(side),0,0,0,platformDecor).name='handrail-following-stair';
+  }
+ }
+ function iColor(side:number){return side===-1?hubRail:hubVine;}
+ // The bridge deck and its physics share top heights with the Ledge records.
+ for(const bridge of WATERFALL_HUB_BRIDGES){
+  add(new T.BoxGeometry(bridge.w,.2,bridge.d),hubRail,bridge.x,bridge.top-.11,bridge.z,platformDecor).name='walkable-canopy-bridge-'+bridge.name;
+  const count=Math.ceil(bridge.w*3);
+  for(let i=0;i<count;i++){const px=bridge.x-bridge.w/2+(i+.5)*bridge.w/count;
+   tread(i%3?2:1,px,bridge.top+.008,bridge.z,bridge.w/count-.04,.025,bridge.d-.13);
+  }
+  for(const side of[-1,1]){
+   const zz=bridge.z+side*(bridge.d/2-.08);
+   for(let i=0;i<=3;i++){
+    const px=bridge.x-bridge.w/2+i*bridge.w/3;
+    add(new T.CylinderGeometry(.065,.08,.73,6),wood,px,bridge.top+.32,zz,platformDecor);
+   }
+   add(new T.BoxGeometry(bridge.w,.065,.075),hubRail,bridge.x,bridge.top+.66,zz,platformDecor);
+  }
+ }
+ for(const [i,material]of [hubStone,hubRoofTrim,wood].entries()){
+  const matrices=treadGroups[i];if(!matrices.length)continue;
+  const mesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),material,matrices.length);
+  matrices.forEach((matrix,j)=>mesh.setMatrixAt(j,matrix));mesh.computeBoundingSphere();
+  mesh.name='batched-walkable-stairs-and-bridge-boards';platformDecor.add(mesh);
+ }
+ // Little open-sided lodges: visually distinct landmarks, without solid fake
+ // door collisions or blocker volumes across the gameplay lanes.
+ for(const h of WATERFALL_HUB_HUTS){
+  const floor=pilotGround(h.x,h.z),house=new T.Group();house.position.set(h.x,floor,h.z);house.rotation.y=h.yaw;house.name='river-village-open-shelter';platformDecor.add(house);
+  add(new T.CylinderGeometry(1.35,1.5,.16,8),hubStone,0,.1,0,house);
+  for(const sx of[-1,1])for(const sz of[-1,1])add(new T.CylinderGeometry(.09,.11,1.45,7),hubRail,sx*.91,.86,sz*.91,house);
+  const roof=add(new T.ConeGeometry(1.83,.98,8),hubRoof,0,1.85,0,house);roof.rotation.y=Math.PI/8;
+  add(new T.CylinderGeometry(1.55,1.55,.12,8),hubRoofTrim,0,1.44,0,house);
+  const lamp=add(new T.OctahedronGeometry(.16,0),hubGold,0,1.37,0,house);lamp.name='shelter-lantern';
+ }
+ // Two-stage spillway in the PLAYABLE HUB, distinct from the distant main falls.
+ // Source aligns with the east lookout and terminates in the shared water basin.
+ const stagedCascade=new T.Group();stagedCascade.name='waterfall-hub-two-stage-cascade';platformDecor.add(stagedCascade);
+ const cascadeWater=new T.MeshPhongMaterial({color:0x5acada,transparent:true,opacity:.79,side:T.DoubleSide,depthWrite:false,shininess:85});
+ const cascadeMist=new T.MeshBasicMaterial({color:0xf0ffff,transparent:true,opacity:.78,side:T.DoubleSide,depthWrite:false});
+ const stagedFall=(from:[number,number,number],to:[number,number,number],width:number,name:string)=>{
+  const vertices:number[]=[],uvs:number[]=[],segments=18;
+  for(let i=0;i<segments;i++)for(const rear of[false,true]){
+   const p=(t:number,side:number)=>new T.Vector3(from[0]+(to[0]-from[0])*t+(side-.5)*width,from[1]+(to[1]-from[1])*t+.06*Math.sin(t*16+side*5),from[2]+(to[2]-from[2])*t+(rear?.22:0)+.1*Math.sin(t*6));
+   const t=i/segments,u=(i+1)/segments,quad=[p(t,0),p(t,1),p(u,1),p(u,0)];
+   for(const j of[0,1,2,0,2,3]){const q=quad[j];vertices.push(q.x,q.y,q.z);uvs.push(j===0||j===3?0:1,j>=2?u:t);}
+  }
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));g.computeVertexNormals();
+  add(g,cascadeWater,0,0,0,stagedCascade).name=name;
+  for(const edge of[-1,1]){
+   const points=Array.from({length:16},(_,i)=>{const t=i/15;return new T.Vector3(from[0]+(to[0]-from[0])*t+edge*width*.48,from[1]+(to[1]-from[1])*t,from[2]+(to[2]-from[2])*t+.09);});
+   add(new T.TubeGeometry(new T.CatmullRomCurve3(points),28,.025,5,false),cascadeMist,0,0,0,stagedCascade).name='spillway-foam';
+  }
+ };
+ stagedFall([64.3,4.25,47.8],[63.5,2.15,50.0],1.8,'upper-waterfall-tier');
+ stagedFall([63.5,2.15,50.0],[62.5,WATER,52.1],2.15,'lower-waterfall-tier');
+ for(const [x,z,y]of [[64.3,47.8,4.25],[63.5,50,2.15],[62.5,52.1,WATER]] as const){
+  const ring=add(new T.TorusGeometry(.43,.042,6,24),cascadeMist,x,y+.035,z,stagedCascade);ring.rotation.x=-Math.PI/2;
+  for(let i=0;i<5;i++){
+   const angle=i*Math.PI*2/5;
+   add(new T.IcosahedronGeometry(.12,0),cascadeMist,x+Math.sin(angle)*.38,y+.06,z+Math.cos(angle)*.32,stagedCascade);
+  }
+ }
+ // Viewpoint reward and an easy-to-see, useful path toward the river.
+ for(const [x,z]of [[44.5,58],[47,51.5],[51,45.5],[65.5,46.5],[66,57.5]] as const){
+  const y=pilotGround(x,z),base=add(new T.CylinderGeometry(.42,.52,.24,8),hubStone,x,y+.1,z,platformDecor);
+  base.name='route-wayfinder';add(new T.OctahedronGeometry(.22,0),hubGold,x,y+.51,z,platformDecor).name='route-wayfinder-glow';
+ }
  // Rune ruins are aligned with the state's round colliders, including their terrain elevation.
  for(const x of[50,58])for(const z of[27,34]){const h=pilotGround(x,z);add(new T.CylinderGeometry(.3,.38,2.1,7),stone,x,h+1.05,z);add(new T.BoxGeometry(.8,.22,.8),stone,x,h+2.15,z);}add(new T.BoxGeometry(8.6,.28,.7),stone,54,pilotGround(54,27)+2.4,27);
  const switches=l.pilot!.switches.map(p=>{const h=pilotGround(p.x+.5,p.y+.5),m=add(new T.CylinderGeometry(.32,.38,.7,6),new T.MeshLambertMaterial({color:0x9271b7,emissive:0x171024}),p.x+.5,h+.35,p.y+.5,dynamic);add(new T.OctahedronGeometry(.15),new T.MeshBasicMaterial({color:0xe8d0ff}),p.x+.5,h+.9,p.y+.5,dynamic);return m;});
@@ -87,6 +203,14 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
    marker.name='lookout-reward-beacon';
    for(const side of[-1,1]){add(new T.CylinderGeometry(.075,.09,.85,7),wood,x+side*.92,floor+h+.42,z+.92);add(new T.BoxGeometry(1.9,.09,.12),wood,x,floor+h+.83,z+.92);}
   }
+ }
+ // The Green Cliffs spike gap has a genuine landing deck, rather than a
+ // visual bridge over a separate invisible death region.
+ const gapDeck=l.ledges.find(q=>q.id===828);
+ if(gapDeck){const x=gapDeck.point.x+.5,z=gapDeck.point.y+.5,top=pilotGround(x,z)+gapDeck.height;
+  add(new T.BoxGeometry(gapDeck.width||3.4,.16,gapDeck.depth||1.65),wood,x,top-.08,z,root).name='spike-gap-solid-bridge';
+  for(const side of[-1,1])add(new T.BoxGeometry(gapDeck.width||3.4,.07,.065),hubRail,x,top+.52,z+side*.74,root);
+  for(let i=0;i<6;i++)add(new T.BoxGeometry(.48,.025,(gapDeck.depth||1.65)-.1),hubRoofTrim,x-1.35+i*.54,top+.01,z,root);
  }
  // A clearly signposted, traversable-looking hazard near the upper trail.
  for(let i=0;i<10;i++){const a=i*Math.PI*2/10,x=23.5+Math.cos(a)*1.43,z=20.2+Math.sin(a)*1.43;

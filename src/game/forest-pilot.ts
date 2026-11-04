@@ -1,10 +1,11 @@
 import type {AdventureLayout} from './adventure-layout';
 import {route,type Point} from './maze';
+import {waterfallHubHeight,WATERFALL_HUB_BRIDGES,WATERFALL_HUB_RAMPS,WATERFALL_HUB_TERRACES} from './forest-hub';
 export const pilotNames=['Forest Entrance','Deep Forest Hub','Green Cliffs','Ancient Ruins','Giant Tree','Guardian Sanctuary','Waterfall Valley'];
 export const PILOT_WATER_LEVEL=-.58;
 /** Build fingerprint for distinguishing the installed revision from cached deploys. */
 export const FOREST_PILOT_BUILD='FG-P0B-20261104';
-export const FOREST_SLICE_BUILD='FG-SLICE01-20261104';
+export const FOREST_SLICE_BUILD='FG-HUB-REBUILD01-20261104';
 /** Swimming needs enough clearance below the hips and feet, not just wet terrain. */
 export const PILOT_SWIM_BOTTOM=-1.85;
 /** The original bridge gap plus a short, visible challenge gap on the upper cliff path. */
@@ -61,7 +62,8 @@ export function pilotGround(x:number,y:number){
  const tributaryBank=Math.max(0,Math.min(1,(tributary-1.55)/1.6));
  const dryHeight=Math.max(0,relief)*Math.min(poolBank,channelBank,tributaryBank);
  // Broad, deep swim basin; a gentle shoal at the edge allows walk → swim → dive.
- return wet>0?-(1.0*wet+3.25*Math.pow(wet,1.8)):dryHeight;
+ const basin=wet>0?-(1.0*wet+3.25*Math.pow(wet,1.8)):dryHeight;
+ return waterfallHubHeight(x,y,basin);
 }
 export function forestPilotLayout():AdventureLayout{
  const n=73,grid=Array.from({length:n},()=>Array(n).fill(1));
@@ -69,6 +71,12 @@ export function forestPilotLayout():AdventureLayout{
  const clear=(p:Point,r:number)=>{for(let y=Math.max(1,p.y-r);y<Math.min(n-1,p.y+r+1);y++)for(let x=Math.max(1,p.x-r);x<Math.min(n-1,p.x+r+1);x++)if(Math.hypot(x-p.x,y-p.y)<=r+.4)grid[y][x]=0;};
  const line=(points:Point[],r=2)=>{for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],steps=Math.ceil(Math.hypot(a.x-b.x,a.y-b.y)*2);for(let t=0;t<=steps;t++)clear({x:Math.round(a.x+(b.x-a.x)*t/steps),y:Math.round(a.y+(b.y-a.y)*t/steps)},r);}};
  nodes.forEach((p,i)=>clear(p,i===5?7:i===1?7:i===6?11:i===2||i===4?8:5));clear(finish,3);
+ // Handcrafted Waterfall Hub corridors follow real stairs and connect both shores.
+ // They are opened before old routes and are also used by the world mesh.
+ for(const t of WATERFALL_HUB_TERRACES)clear({x:Math.round(t.x),y:Math.round(t.z)},Math.ceil(Math.min(t.w,t.d)/2));
+ for(const r of WATERFALL_HUB_RAMPS)line([{x:Math.round(r.from[0]),y:Math.round(r.from[1])},{x:Math.round(r.to[0]),y:Math.round(r.to[1])}],2);
+ line([{x:51,y:46},{x:55,y:46},{x:60,y:46},{x:65,y:46}],1);
+ line([{x:66,y:57},{x:63,y:53},{x:62,y:48}],2);
  // A continuous high-altitude trail with two viable approaches to a view over the basin.
  line([nodes[2],{x:15,y:23},{x:18,y:21},{x:20,y:19},{x:26,y:17},{x:30,y:21},nodes[4]],2);
  line([{x:18,y:21},{x:17,y:17},{x:20,y:15},{x:26,y:17}],1);
@@ -116,17 +124,21 @@ export function forestPilotLayout():AdventureLayout{
   {id:825,point:{x:25,y:18},height:1.1,width:2,depth:1.5,kind:'log'},
   {id:826,point:{x:17,y:18},height:1.75,width:1.15,depth:1.15,kind:'tree'},
   {id:827,point:{x:26,y:21},height:1.42,width:1.4,depth:1.4,kind:'rock'},
+  // The spike-gap bridge is supported by an actual physical Ledge. Landing
+  // here must NOT trigger a void death. Its visible deck is rendered below.
+  {id:828,point:{x:23,y:20},height:pilotGround(22.25,20.5)+.08-pilotGround(23.5,20.5),width:3.4,depth:1.65,kind:'rock'},
+  ...WATERFALL_HUB_BRIDGES.map((b,i)=>({id:940+i,point:{x:b.x-.5,y:b.z-.5},height:b.top-pilotGround(b.x,b.z),width:b.w,depth:b.d,kind:'rock' as const})),
   {id:10,point:{x:28,y:48},height:1,kind:'rock'},
   {id:11,point:{x:38,y:52},height:1,kind:'log'},
  ];
  // Reuse the existing nine-star budget. The new lookout star is clearly above ground.
- const stars=[{x:12,y:24},{x:34,y:25},{x:20,y:19},{x:5,y:35},{x:66,y:29},{x:50,y:66},{x:24,y:55},{x:39,y:47},{x:59,y:56}];
+ const stars=[{x:12,y:24},{x:34,y:25},{x:20,y:19},{x:5,y:35},{x:66,y:29},{x:50,y:66},{x:24,y:55},{x:51,y:45},{x:59,y:56}];
  const zoneCells=grid.map((row,y)=>row.map((_,x)=>nodes.reduce((best,p,i)=>Math.hypot(x-p.x,y-p.y)<Math.hypot(x-nodes[best].x,y-nodes[best].y)?i:best,0)));
  // Floor-level trees make the accessible forest feel alive. Previous foliage
  // existed almost entirely ABOVE the player's head on the wall tops. Each
  // trunk shares its center with the authoritative player/guard collider.
  const trunks:Point[]=[],occupied=new Set<string>();
- const protectedPoints:Point[]=[...nodes,start,finish,...stars,{x:21,y:16},{x:15,y:22},{x:54,y:31},{x:52,y:59},...gates];
+ const protectedPoints:Point[]=[...nodes,start,finish,...stars,...WATERFALL_HUB_TERRACES.map(t=>({x:t.x,y:t.z})),...WATERFALL_HUB_RAMPS.flatMap(r=>[{x:r.from[0],y:r.from[1]},{x:r.to[0],y:r.to[1]}]),...WATERFALL_HUB_BRIDGES.map(b=>({x:b.x,y:b.z})),{x:21,y:16},{x:15,y:22},{x:54,y:31},{x:52,y:59},...gates];
  for(const [cx,cy,count,rad] of [[32,49,9,5],[12,24,11,6],[34,25,10,6],[54,30,8,4.7],[55,53,10,6],[26,22,7,4.4],[41,44,7,4.5]] as const){
   for(let i=0;i<count;i++){const a=(i+.27)*Math.PI*2/count, x=Math.round(cx+rad*Math.cos(a)),y=Math.round(cy+rad*Math.sin(a)),key=`${x},${y}`;
    if(grid[y]?.[x]!==0||occupied.has(key)||protectedPoints.some(p=>Math.hypot(p.x-x,p.y-y)<2.15)||trunks.some(p=>Math.hypot(p.x-x,p.y-y)<1.8)||pilotGround(x+.5,y+.5)<PILOT_WATER_LEVEL+.1)continue;

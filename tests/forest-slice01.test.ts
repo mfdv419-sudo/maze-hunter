@@ -12,7 +12,7 @@ it('creates a playable lookout, multi-step Green Cliffs challenge and submerged 
  expect(layout.stars.some(s=>s.x===20&&s.y===19)).toBe(true);
  expect(pilotVoid(23.5,20.2)).toBe(true);
  expect(FOREST_PILOT_BUILD).toBe('FG-P0B-20261104'); // Preserve P0B regression contract.
- expect(FOREST_SLICE_BUILD).toMatch(/^FG-SLICE01/);
+ expect(FOREST_SLICE_BUILD).toMatch(/^FG-(SLICE01|HUB-REBUILD01)/);
 });
 
 it('preserves routes to all objectives while the locked boss arena is inaccessible',()=>{
