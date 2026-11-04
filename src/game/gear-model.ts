@@ -8,9 +8,9 @@ export function gloveModel(parent:T.Group,kind:string,side:number){
  const root=joint(parent,0,-.135,.025,'gloves');root.userData.gear=kind;if(kind==='bare')return root;
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
  const cloth=satin(colors[kind]??colors.trail),dark=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- box(root,.178,.118,.174,cloth,0,-.025,0,.04);const cuff=addMesh(root,new T.CylinderGeometry(.087,.09,.055,10),dark,0,.052,0);cuff.scale.z=.94;box(root,.13,.024,.185,trim,0,.049,0,.01);
- const thumb=addMesh(root,new T.CapsuleGeometry(.035,.055,3,7),cloth,side*.09,-.035,.04);thumb.rotation.z=side*.42;thumb.rotation.x=.45;
- for(let i=0;i<3;i++){const finger=addMesh(root,new T.CapsuleGeometry(.023,.035,2,6),kind==='trail'?trim:cloth,(i-1)*.044,-.056,.076);finger.rotation.x=Math.PI/2;box(root,.032,.012,.035,dark,(i-1)*.044,.025,.035,.005);}
+ box(root,.168,.108,.164,cloth,0,-.02,0,.05);const cuff=addMesh(root,new T.CylinderGeometry(.087,.09,.055,10),dark,0,.052,0);cuff.scale.z=.94;box(root,.126,.022,.176,trim,0,.049,0,.01);
+ const palm=ell(root,trim,0,-.055,.055,.076,.05,.03);palm.rotation.x=-.2;const thumb=addMesh(root,new T.CapsuleGeometry(.032,.05,3,7),cloth,side*.082,-.018,.03);thumb.rotation.z=side*.5;thumb.rotation.x=.28;
+ for(let i=0;i<3;i++){const toe=ell(root,trim,(i-1)*.04,-.075,.098,.018,.024,.013);toe.rotation.x=-.3;const shell=addMesh(root,new T.CapsuleGeometry(.018,.022,2,5),cloth,(i-1)*.04,-.048,.072);shell.rotation.x=.82;}
  if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.027,.008,4,10),trim,side*.087,.055,-.02);ring.rotation.y=Math.PI/2;}
  if(kind==='desert')for(let i=0;i<2;i++)box(root,.185,.012,.175,trim,0,-.01-i*.035,0,.005);
  if(kind==='diver')box(root,.045,.035,.035,trim,0,.032,.095,.01);return batchStatic(root);

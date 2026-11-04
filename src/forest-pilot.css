@@ -30,7 +30,7 @@
 
 #game[data-screen=modern] .forest-pilot .minimap-panel.expanded{width:min(80vw,80dvh)!important;height:min(80vw,80dvh)!important;top:50%!important;left:50%!important;right:auto!important;transform:translate(-50%,-50%)!important;z-index:30}
 /* Pilot revision: no collection HUD; compact, isolated dialog component styles. */
-.forest-pilot .forest-progress{display:none!important}
+.forest-pilot .forest-progress{display:flex!important}
 #game[data-screen=modern] .forest-dialog .forest-panel{display:block!important;position:relative;width:min(560px,calc(100vw - 28px))!important;max-height:calc(100dvh - 28px)!important;min-height:0!important;overflow:auto!important;padding:18px!important;border-radius:22px!important;text-align:left!important;box-sizing:border-box!important}
 #game[data-screen=modern] .forest-dialog .forest-panel h2{font-size:22px!important;line-height:1.2!important;margin:0 42px 14px 0!important;padding:0!important}
 #game[data-screen=modern] .forest-dialog .forest-close{position:absolute!important;top:12px!important;right:12px!important;left:auto!important;display:grid!important;place-items:center!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;padding:6px!important;margin:0!important;border:1px solid #7c93a0!important;border-radius:10px!important;box-shadow:none!important;background:#254355!important}.forest-close svg{width:100%;height:100%}
@@ -49,55 +49,23 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 #game[data-screen=modern] .forest-dialog .forest-reset{width:auto!important;min-height:30px!important;padding:5px 12px!important;margin:10px 0 0!important;font-size:12px!important}
 
 
-/* Forest Grove action arc: Jump is the fixed centre; Cake/Action defines radius.
-   Normalised centres in units of --forest-action (S): Jump (2.30,1.95),
-   Action (0.90,1.95), Merge (1.40,3.02), Ability (1.40,0.88).
-   Every skill centre is ~1.40 S from Jump. This is intentionally scoped to
-   the Forest Grove HUD to preserve other modes and existing camera behaviour. */
-#game[data-screen=modern] .forest-pilot {
-  --forest-action: clamp(40px, min(9dvh, 12vw), 64px);
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc {
-  box-sizing: content-box;
-  width: calc(var(--forest-action) * 2.94) !important;
-  height: calc(var(--forest-action) * 3.55) !important;
-  right: max(12px, env(safe-area-inset-right)) !important;
-  bottom: max(12px, env(safe-area-inset-bottom)) !important;
-  padding: 0 !important;
-  transform: none !important;
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .action-button {
-  transition: filter .12s, box-shadow .12s;
-  -webkit-tap-highlight-color: transparent;
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc #jump-action {
-  left: auto !important;
-  right: 0 !important;
-  top: auto !important;
-  bottom: calc(var(--forest-action) * 1.31) !important;
-  background: #315e91 !important;
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc #hit-action {
-  left: calc(var(--forest-action) * .40) !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: calc(var(--forest-action) * 1.45) !important;
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .forest-merge {
-  left: calc(var(--forest-action) * .90) !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: calc(var(--forest-action) * 2.52) !important;
-}
-#game[data-screen=modern] .forest-pilot .action-controls.forest-action-arc .forest-ability {
-  left: calc(var(--forest-action) * .90) !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: calc(var(--forest-action) * .38) !important;
-}
-@media (pointer:fine) and (min-width:1000px) {
-  #game[data-screen=modern] .forest-pilot { --forest-action: 46px; }
-}
-@media (max-height:420px) and (orientation:landscape) {
-  #game[data-screen=modern] .forest-pilot { --forest-action: 40px; }
-}
+/* P0D HUD polish: ML-style arc, clean map, compact progress */
+#game[data-screen=modern] .forest-pilot .action-controls{width:210px!important;height:210px!important;right:max(10px,env(safe-area-inset-right))!important;bottom:max(10px,env(safe-area-inset-bottom))!important;pointer-events:none}
+#game[data-screen=modern] .forest-pilot .action-controls .action-button{pointer-events:auto;background:radial-gradient(circle at 35% 28%,#2b6f96 0 18%,#173c53 52%,#10293a 100%)!important;border:2px solid #f0d69a!important;box-shadow:none!important;filter:none!important;color:#fff4d1!important}
+#game[data-screen=modern] .forest-pilot .action-controls .action-button:after{content:'';position:absolute;inset:6px;border-radius:999px;border:1px solid rgba(255,239,188,.18)}
+#game[data-screen=modern] .forest-pilot #jump-action{right:0!important;bottom:0!important;width:84px!important;height:84px!important;background:radial-gradient(circle at 35% 28%,#3f95d1 0 16%,#22567c 48%,#16384f 100%)!important}
+#game[data-screen=modern] .forest-pilot #hit-action{right:90px!important;bottom:28px!important;left:auto!important;top:auto!important}
+#game[data-screen=modern] .forest-pilot .forest-merge{right:52px!important;bottom:104px!important;left:auto!important;top:auto!important}
+#game[data-screen=modern] .forest-pilot .forest-ability{right:124px!important;bottom:108px!important;left:auto!important;top:auto!important}
+#game[data-screen=modern] .forest-pilot .minimap-panel{padding:8px 8px 20px!important;background:linear-gradient(180deg,#16394de8,#102736ee)!important;border:2px solid #d9c78a!important;box-shadow:none!important;cursor:pointer;overflow:hidden}
+#game[data-screen=modern] .forest-pilot .minimap-panel:before{content:'';position:absolute;inset:6px;border-radius:14px;border:1px solid rgba(255,245,208,.12);pointer-events:none}
+#game[data-screen=modern] .forest-pilot .minimap-panel .minimap-hint{position:absolute;right:10px;bottom:4px;font-size:9px;letter-spacing:.08em;color:#d8ecd9;opacity:.82;pointer-events:none}
+#game[data-screen=modern] .forest-pilot .minimap-panel.expanded .minimap-hint{font-size:11px;bottom:8px;right:12px}
+#game[data-screen=modern] .forest-pilot .minimap-panel .minimap-legend{bottom:4px;left:8px;background:none;padding:0;font-size:10px;color:#ffe7b4}
+#game[data-screen=modern] .forest-pilot .forest-tools{gap:8px}
+#game[data-screen=modern] .forest-pilot .forest-tools .icon-button{background:linear-gradient(180deg,#203e61f2,#132c46f2);box-shadow:none;border:2px solid #d9c78a;border-radius:16px;color:#fff1c8}
+#game[data-screen=modern] .forest-pilot .forest-progress{position:absolute;right:max(14px,env(safe-area-inset-right));top:calc(var(--forest-map) + 16px);display:flex;flex-direction:column;gap:4px;align-items:flex-end;max-width:38vw;font-size:12px;color:#fff0c6;text-shadow:0 1px 2px #0f2430;pointer-events:none}
+#game[data-screen=modern] .forest-pilot .forest-progress span{display:inline-flex;gap:6px;align-items:center;padding:1px 0}
+#game[data-screen=modern] .forest-pilot .forest-progress b{font-size:13px;min-width:14px;text-align:center;color:#ffd67d}
+@media(max-width:600px) and (orientation:portrait){#game[data-screen=modern] .forest-pilot .action-controls{width:196px!important;height:196px!important}#game[data-screen=modern] .forest-pilot #jump-action{width:78px!important;height:78px!important}#game[data-screen=modern] .forest-pilot #hit-action{right:82px!important;bottom:24px!important}#game[data-screen=modern] .forest-pilot .forest-merge{right:48px!important;bottom:98px!important}#game[data-screen=modern] .forest-pilot .forest-ability{right:116px!important;bottom:102px!important}#game[data-screen=modern] .forest-pilot .forest-progress{font-size:11px;max-width:46vw}}
+@media(max-height:480px){#game[data-screen=modern] .forest-pilot .action-controls{transform:scale(.9)!important;transform-origin:right bottom}#game[data-screen=modern] .forest-pilot .forest-progress{font-size:10px}}
