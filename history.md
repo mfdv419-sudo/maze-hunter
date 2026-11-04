@@ -1760,3 +1760,10 @@ Pastikan variabel tersedia pada konteks **Deploy previews** yang sedang dipakai.
 Tes boundary memakai nilai sintetis hanya untuk membangun output sementara, memeriksa bahwa lima field publik tersedia dan variabel lain tidak ikut terbawa, kemudian menghapus build sementara. Ia tidak melakukan login Firebase, tidak menghubungi layanan, dan bukan preview online dengan data palsu.
 
 Deploy nyata, pemindaian Netlify, login Firebase dan multiplayer tetap memerlukan pengujian di akun Anda. Tidak ada commit/push/deploy remote yang dilakukan dalam pengerjaan paket ini.
+
+## 2026-11-04 — FG-CORRECTION-01 (targeted control & combat repair)
+- Added a shared four-button Adventure action pad for pilot and non-pilot worlds, with three skill-button centres on the same quarter-circle radius from the bottom-right corner. New scoped CSS loads after previous presentation styles, overriding conflicting old layouts consistently on phone/tablet/laptop. Retro screen unaffected.
+- Restored explicit cleanup of forest HUD when online room ends; the generic action pad is destroyed on exit.
+- Forest Grove boss hits now use the same three-warning-hit sequence before losing a life as guard hits, with a short post-hit immunity window. Pilot boss damage returns to checkpoint rather than resetting the entire ring on Hard/Extreme. Boss vulnerability interval on pilot extended to improve counterattack opportunities.
+- Added a regression test for boss hit progression and invulnerability.
+- Scope limit: this does NOT implement a new maze world, improve non-solid props, or overhaul boss art; those remain outstanding, and the build/visual gameplay have not been verified on device.

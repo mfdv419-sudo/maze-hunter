@@ -129,14 +129,14 @@ export class AdventureState {
  damage(source:'guard'|'boss'|'river'|'environment'|'fall') {
   if(this.training)return;
   if(this.phase!=='playing'||this.awakening||this.elapsed<this.invulnerableUntil)return;
-  this.effectEvents.push({id:++this.effectId,source,point:{...this.position}});this.effectEvents=this.effectEvents.slice(-32);this.invulnerableUntil=this.elapsed+1.4;
+  this.effectEvents.push({id:++this.effectId,source,point:{...this.position}});this.effectEvents=this.effectEvents.slice(-32);this.invulnerableUntil=this.elapsed+(source==='boss'&&this.pilot?1.9:1.4);
   if(this.shield&&source!=='river'&&source!=='fall'){this.shield=0;this.notify('shield');return;}
   this.projectiles=this.projectiles.filter(c=>c.owner!=='player'||c.shooter!==undefined||!(c.delay&&c.launchAngle!==undefined));this.avatarAction=undefined;
-  if(source==='guard') {if(this.elapsed-this.lastHit>7)this.hits=0;this.lastHit=this.elapsed;this.hits++;
+  if(source==='guard'||source==='boss'&&this.pilot) {if(this.elapsed-this.lastHit>7)this.hits=0;this.lastHit=this.elapsed;this.hits++;
    if(this.hits===1){this.slowUntil=this.elapsed+3;this.notify('slow');return;}
    if(this.hits===2){this.stunUntil=this.elapsed+1;this.notify('stun');return;}}
   if(this.carried){delete this.propMoves[this.carried];this.carried=null;}this.depth=0;this.diving=false;this.oxygen=this.oxygenCapacity;this.climber.reset();this.lives--;this.respawns++;this.hits=0;this.slowUntil=0;this.stunUntil=0;this.projectiles=[];
-  const reset=source==='boss'&&this.difficulty!=='medium'&&this.stage!=='escape';
+  const reset=source==='boss'&&!this.pilot&&this.difficulty!=='medium'&&this.stage!=='escape';
   this.position={...(reset?center(this.layout.maze.start):this.checkpoint)};
   if(reset)this.resetFogRevision++;
   this.notify(reset?'boss-reset':'respawn');if(this.lives<=0){this.phase='lost';this.reason='lives';}
@@ -156,7 +156,7 @@ export class AdventureState {
  private warn(kind:Hazard['kind'],point:Point,radius:number,delay=1.5,from=point){this.hazards.push({id:++this.hazardId,kind,point:{...point},from:{...from},radius,at:this.elapsed+delay,end:this.elapsed+delay+.55,resolved:false});}
  private bossSkill(g:Guard){if(this.expedition){
   const phase=this.bossPhase,k=Math.floor(this.elapsed/2)%5,delay=phase===3?1.1:1.55;
-  g.vulnerableAt=this.elapsed+delay;g.vulnerableUntil=this.elapsed+delay+(phase===3?1.4:1.9);
+  g.vulnerableAt=this.elapsed+delay;g.vulnerableUntil=this.elapsed+delay+(this.pilot?3.1:phase===3?1.4:1.9);
   if(this.area==='gorge'){
    // Stone monarch: readable slams, a charge and staggered falling rocks, no forest roots or lightning.
    const attack=Math.floor(this.elapsed/4.6)%3;
