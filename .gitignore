@@ -1,0 +1,23 @@
+# Dependencies and generated builds
+node_modules/
+dist/
+build/
+coverage/
+.netlify/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+service-account.json
+*service-account*.json
+*.pem
+*.key
+
+# Editor and operating system
+.DS_Store
+Thumbs.db
+.vscode/
