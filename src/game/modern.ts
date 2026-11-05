@@ -51,6 +51,8 @@ import {AdventureState} from "./adventure-state";
 import {goldGate,seedGuardian,collectible} from "./adventure-props";
 import * as T from "three";
 import { createBinturong, type Character } from "./character";
+import {babyDragon} from './pet-dragon';
+import {relicWeaponModel,type RelicWeaponForm} from './relic-weapon';
 import {
   jumpHeight,
   JUMP_SECONDS,
@@ -108,7 +110,7 @@ export class ModernGame {
   private items:{kind:'diamond'|'seal'|'star'|'chest';index:number;point:Point;group:T.Group}[]=[];
   private guardModels:T.Group[]=[];
   private fieldModels:{model:T.Group;warning:T.Mesh}[]=[];
-  private dormantModel?:T.Group;private mousePreferences=readPreferences();
+  private dormantModel?:T.Group;private pet?:T.Group;private relicWeapons?:Record<RelicWeaponForm,T.Group>;private mousePreferences=readPreferences();
   private warningModels:T.Mesh[]=[];
   private riverModels:{point:Point;mesh:T.Mesh}[]=[];
   private grassModels:{point:Point;mesh:T.Group}[]=[];
@@ -367,6 +369,7 @@ export class ModernGame {
     this.hero.root.add(this.heroIcing);
     this.foodShots=new T.InstancedMesh(new T.IcosahedronGeometry(.12),new T.MeshBasicMaterial({color:0xffffff}),120);this.foodShots.count=0;this.foodShots.frustumCulled=false;this.world.add(this.foodShots);
     this.world.add(this.hero.root);
+    if(this.adventure?.layout.ring){this.pet=babyDragon();this.pet.scale.setScalar(.9/U);this.world.add(this.pet);const grip=this.hero.root.getObjectByName('right-hand-grip');if(grip){this.relicWeapons={blade:relicWeaponModel('blade'),spear:relicWeaponModel('spear'),staff:relicWeaponModel('staff')};for(const weapon of Object.values(this.relicWeapons)){weapon.visible=false;grip.add(weapon);}}}
     this.marker = goldGate();this.marker.scale.y=1.4;
     this.marker.position.set(this.maze.finish.x+.5,this.terrain(this.maze.finish.x+.5,this.maze.finish.y+.5),this.maze.finish.y+.5);
     this.world.add(this.marker);
@@ -628,13 +631,14 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     );
   }
   private paintMinimap() {
-    if(!this.minimap)return;const ctx=this.minimap.getContext('2d')!;const n=this.maze.grid.length,span=this.expandedMap?n:Math.min(17,n),unit=180/span;
-    const ox=this.expandedMap?0:Math.max(0,Math.min(n-span,this.position.x-span/2)),oy=this.expandedMap?0:Math.max(0,Math.min(n-span,this.position.y-span/2));
+    if(!this.minimap)return;const ctx=this.minimap.getContext('2d')!,ring=this.adventure?.layout.ring;const layer=ring?Object.values(ring.layers).find(l=>this.position.x>=l.origin.x&&this.position.x<l.origin.x+l.size&&this.position.y>=l.origin.y&&this.position.y<l.origin.y+l.size):undefined;const n=layer?.size||this.maze.grid.length,x0=layer?.origin.x||0,y0=layer?.origin.y||0,span=this.expandedMap?n:Math.min(17,n),unit=180/span;
+    const ox=this.expandedMap?x0:Math.max(x0,Math.min(x0+n-span,this.position.x-span/2)),oy=this.expandedMap?y0:Math.max(y0,Math.min(y0+n-span,this.position.y-span/2));
     ctx.setTransform(512/180,0,0,512/180,0,0);
     ctx.fillStyle='#102f3b';ctx.fillRect(0,0,180,180);ctx.save();ctx.beginPath();ctx.rect(0,0,180,180);ctx.clip();ctx.translate(-ox*unit,-oy*unit);
     for(const k of this.explored){const [x,y]=k.split(',').map(Number);ctx.fillStyle=this.maze.grid[y]?.[x]?'#536c69':this.current.has(k)?'#d4e1b3':'#709588';ctx.fillRect(x*unit,y*unit,Math.ceil(unit),Math.ceil(unit));}
     for(const item of this.items)if(item.group.visible&&(!this.adventure?.pilot||this.explored.has(`${item.point.x},${item.point.y}`))){ctx.fillStyle=item.kind==='diamond'?'#73cfff':item.kind==='seal'?'#67e4df':item.kind==='star'?'#ffdb7b':'#e8a669';if(item.kind==='seal'||item.kind==='diamond'){const x=(item.point.x+.5)*unit,y=(item.point.y+.5)*unit,r=Math.max(3,unit*.35);ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r,y);ctx.closePath();ctx.fill();}else ctx.fillRect((item.point.x+.2)*unit,(item.point.y+.2)*unit,Math.max(3,unit*.6),Math.max(3,unit*.6));}
     for(const g of this.adventure?.guards||[])if(!g.dead&&this.current.has(`${Math.floor(g.position.x)},${Math.floor(g.position.y)}`)){ctx.fillStyle=g.boss?'#ffc363':'#e78b83';ctx.fillRect(g.position.x*unit-2,g.position.y*unit-2,4,4);}
+    if(ring)for(const p of ring.portals){if(p.point.x<x0||p.point.x>=x0+n||p.point.y<y0||p.point.y>=y0+n)continue;ctx.fillStyle=p.kind==='hidden'?'#73c98b':p.kind==='mystic'?'#c68bff':'#f4d284';ctx.beginPath();ctx.arc((p.point.x+.5)*unit,(p.point.y+.5)*unit,Math.max(2.5,unit*.22),0,Math.PI*2);ctx.fill();}
     if(this.adventure?.gateOpen||this.explored.has(`${this.maze.finish.x},${this.maze.finish.y}`)){ctx.fillStyle='#ffcb67';ctx.fillRect(this.maze.finish.x*unit,this.maze.finish.y*unit,unit,unit);}
     if(this.adventure){const a=this.adventure;
       for(const area of a.layout.areas){if(!this.explored.has(`${area.point.x},${area.point.y}`)&&!(area.zone===5&&a.seals.size===a.sealGoal))continue;ctx.fillStyle=area.zone===5?'#ffd277':area.zone===2?'#ecaa9a':'#a9dad2';ctx.beginPath();ctx.arc((area.point.x+.5)*unit,(area.point.y+.5)*unit,3,0,Math.PI*2);ctx.fill();ctx.font='bold 8px sans-serif';ctx.fillText(area.zone===5?'K':area.zone===2?'S':area.zone===3?'T':'•',(area.point.x+.5)*unit+3,(area.point.y+.5)*unit-2);}
@@ -715,6 +719,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const elevation=(this.adventure?.swimming?(this.adventure.pilot?-1.08:-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed));
     const drawnElevation=climbingPose?this.hero.root.position.y+(elevation-this.hero.root.position.y)*(1-Math.exp(-dt*20)):elevation;
     this.hero.root.position.set(this.position.x,drawnElevation,this.position.y);
+    if(this.pet){const side=-Math.cos(this.angle)*.7,back=-Math.sin(this.angle)*.9,targetX=this.position.x+side+back,targetZ=this.position.y+Math.sin(this.angle)*.7-Math.cos(this.angle)*.9,petY=this.terrain(targetX,targetZ)+1.05+Math.sin(this.time*3)*.08;this.pet.position.x+=(targetX-this.pet.position.x)*(1-Math.exp(-dt*5));this.pet.position.z+=(targetZ-this.pet.position.z)*(1-Math.exp(-dt*5));this.pet.position.y+=(petY-this.pet.position.y)*(1-Math.exp(-dt*6));this.pet.rotation.y=this.angle+Math.sin(this.time*2)*.12;}if(this.relicWeapons){const form=this.adventure?.relicWeaponForm;for(const [kind,weapon] of Object.entries(this.relicWeapons) as [RelicWeaponForm,T.Group][])weapon.visible=form===kind;}
     const shadow = this.hero.root.getObjectByName("ground-shadow");
     if (shadow) {
       shadow.position.y=this.terrain(this.position.x,this.position.y)+(this.adventure?.climber.state.phase==='top'?this.adventure.climber.elevation:0)+0.005-this.hero.root.position.y;

@@ -12,7 +12,7 @@ export interface Character {root:T.Group;animate:(time:number,speed:number,celeb
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-explorer-refined';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v2';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
@@ -23,9 +23,9 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  const smile=addMesh(head,new T.TorusGeometry(.065,.009,4,12,Math.PI),ink,0,-.16,.4);smile.rotation.z=Math.PI;
  const eyes:T.Group[]=[],brows:T.Mesh[]=[];
  for(const side of [-1,1]){
-  const ear=addMesh(head,new T.ConeGeometry(.085,.17,5),fur,side*.265,.27,-.025);ear.scale.z=.65;ear.rotation.z=-side*.23;
-  const inner=addMesh(head,new T.ConeGeometry(.044,.09,5),muzzle,side*.27,.27,.024);inner.scale.z=.4;
-  for(let i=0;i<2;i++){const tuft=addMesh(head,new T.ConeGeometry(.023,.105-i*.02,5),i?grey:fur,side*(.28+i*.03),.36-i*.015,-.03);tuft.rotation.z=-side*(.2+i*.3);}
+  const ear=addMesh(head,new T.ConeGeometry(.085,.17,9),fur,side*.265,.27,-.025);ear.scale.z=.65;ear.rotation.z=-side*.23;
+  const inner=addMesh(head,new T.ConeGeometry(.044,.09,9),muzzle,side*.27,.27,.024);inner.scale.z=.4;
+  for(let i=0;i<2;i++){const tuft=addMesh(head,new T.ConeGeometry(.023,.105-i*.02,9),i?grey:fur,side*(.28+i*.03),.36-i*.015,-.03);tuft.rotation.z=-side*(.2+i*.3);}
   ell(head,muzzle,side*.17,.015,.209,.12,.12,.035);
   const eye=joint(head,side*.168,.022,.244,'eye');eyes.push(eye);ell(eye,cream,0,0,0,.068,.08,.022);ell(eye,ink,0,-.002,.018,.047,.057,.015);ell(eye,cream,-side*.013,.025,.031,.016,.019,.007);
   const brow=box(head,.13,.025,.024,grey,side*.17,.135,.23,.01);brow.rotation.z=side*.13;brows.push(brow);
@@ -35,8 +35,12 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  // Two-joint limbs retain volume at elbows and knees.
  const arms:T.Group[]=[],elbows:T.Group[]=[],legs:T.Group[]=[],knees:T.Group[]=[];
  for(const side of [-1,1]){
-  const arm=joint(body,side*.29,.78,0,'shoulder');arms.push(arm);addMesh(arm,new T.CapsuleGeometry(.077,.14,3,8),fur,0,-.095,0);
-  const elbow=joint(arm,0,-.22,0,'elbow');elbows.push(elbow);addMesh(elbow,new T.CapsuleGeometry(.073,.1,3,8),fur,0,-.055,0);ell(elbow,fur,0,-.142,.014,.064,.057,.067);
+  // A slimmer shoulder recessed into the torso avoids a stray upright block beside the head.
+  const arm=joint(body,side*.275,.725,0,'shoulder');arms.push(arm);
+  addMesh(arm,new T.CapsuleGeometry(.065,.105,4,10),fur,0,-.088,0);
+  const elbow=joint(arm,0,-.195,0,'elbow');elbows.push(elbow);
+  addMesh(elbow,new T.CapsuleGeometry(.060,.072,4,10),fur,0,-.045,0);
+  ell(elbow,fur,0,-.12,.012,.064,.058,.063);
   const leg=joint(body,side*.14,.35,0,'hip');legs.push(leg);addMesh(leg,new T.CapsuleGeometry(.082,.09,3,8),fur,0,-.055,0);const knee=joint(leg,0,-.14,0,'knee');knees.push(knee);addMesh(knee,new T.CapsuleGeometry(.075,.06,3,8),fur,0,-.035,0);box(knee,.18,.1,.25,fur,0,-.11,.05,.045);
   for(let i=0;i<3;i++)ell(knee,muzzle,(i-1)*.038,-.105,.145,.013,.01,.014);
  }
@@ -70,8 +74,16 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  }
  if(a.back==='wings')for(const side of [-1,1]){const wing=ell(body,moon,side*.34,.65,-.23,.3,.14,.045);wing.rotation.z=side*.4;for(let i=0;i<3;i++)ell(body,cream,side*(.23+i*.09),.65-i*.04,-.27,.11,.04,.022);}
  expeditionWearables(body,head,arms,legs,a);
- // One continuous tapered tube; no detached cylinder segments while the tail bends.
- const tail=joint(body,0,0,0,'prehensile-tail');const rest=new T.CatmullRomCurve3([new T.Vector3(0,.43,-.19),new T.Vector3(-.13,.3,-.44),new T.Vector3(-.4,.29,-.74),new T.Vector3(-.6,.44,-.88),new T.Vector3(-.58,.65,-.84),new T.Vector3(-.4,.75,-.72)]).getPoints(28);
+ // The root of the tail is embedded in the pelvis and transitions continuously into the curve.
+ // Starting behind the torso surface creates a visible seam/disconnected appendage in profile.
+ const tail=joint(body,0,0,0,'prehensile-tail');
+ ell(tail,fur,0,.37,-.16,.128,.125,.17).name='tail-root-blend';
+ const rest=new T.CatmullRomCurve3([
+  new T.Vector3(0,.37,-.10),new T.Vector3(0,.34,-.28),
+  new T.Vector3(-.09,.32,-.46),new T.Vector3(-.33,.29,-.70),
+  new T.Vector3(-.52,.41,-.86),new T.Vector3(-.53,.59,-.86),
+  new T.Vector3(-.38,.72,-.75)
+ ]).getPoints(28);
  const centers=rest.map(v=>v.clone()),geo=new T.BufferGeometry(),positions=new Float32Array(29*9*3),normals=new Float32Array(positions.length),indices:number[]=[];
  for(let i=0;i<28;i++)for(let j=0;j<8;j++){const k=i*9+j;indices.push(k,k+1,k+9,k+1,k+10,k+9);}geo.setIndex(indices);geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setAttribute('normal',new T.BufferAttribute(normals,3));geo.boundingSphere=new T.Sphere(new T.Vector3(-.3,.5,-.5),1.1);const tailMesh=addMesh(tail,geo,fur);tailMesh.name='continuous-tail-surface';
  const charm=joint(tail,0,0,0,'tail-charm');if(a.tail==='bow')for(const side of [-1,1]){const q=addMesh(charm,new T.ConeGeometry(.075,.12,5),pink,side*.06,0,0);q.rotation.z=side*Math.PI/2;}if(a.tail==='leaf')addMesh(charm,new T.TorusGeometry(.065,.018,5,12),leaf).rotation.x=Math.PI/2;if(a.tail==='star')addMesh(charm,new T.OctahedronGeometry(.075),gold,0,-.055,0);
@@ -126,8 +138,15 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   if((action?.pickup??100)<.4&&ground&&!active){arms[0].rotation.z=-.35;head.rotation.x=-.06;}
   if(action?.swim){body.rotation.x=1.02;body.position.y=-.5;head.position.y=1.08;head.rotation.x=-.86;arms.forEach((a,i)=>{a.rotation.x=-.28+Math.sin(time*4.6+i*Math.PI)*.62;a.rotation.z=(i?1:-1)*.38;elbows[i].rotation.x=-.22+Math.sin(time*4.6+i*Math.PI)*.22;});legs.forEach((l,i)=>{l.rotation.x=Math.sin(time*6.4+i*Math.PI)*.38;knees[i].rotation.x=.22+Math.sin(time*6.4+i*Math.PI+.8)*.14;});}
   const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
-  centers.forEach((p,i)=>{const u=i/28,b=rest[i],angle=action?.swim?-1.18:0,ry=b.y-.43,rz=b.z+.19,y=.43+ry*Math.cos(angle)-rz*Math.sin(angle),z=-.19+ry*Math.sin(angle)+rz*Math.cos(angle);p.set(b.x+Math.sin(time*2.1-u*3)*.045*u+lag*u*u-(action?.showBack?.35:0)*u,y+Math.sin(time*2-u*3)*.025*u,z+Math.sin(time*2.3-u*4)*.045*u);});
-  for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();if(i===0)normal.set(1,0,0);normal.addScaledVector(tangent,-normal.dot(tangent)).normalize();if(normal.lengthSq()<.1)normal.crossVectors(tangent,up).normalize();binormal.crossVectors(tangent,normal).normalize();const radius=.078*(1-i/28*.65);
+  const rootPoint=rest[0];
+  centers.forEach((p,i)=>{const u=i/28,b=rest[i],angle=action?.swim?-.98:0,
+   ry=b.y-rootPoint.y,rz=b.z-rootPoint.z,
+   y=rootPoint.y+ry*Math.cos(angle)-rz*Math.sin(angle),
+   z=rootPoint.z+ry*Math.sin(angle)+rz*Math.cos(angle);
+   p.set(b.x+Math.sin(time*2.1-u*3)*.035*u+lag*u*u-(action?.showBack?.35:0)*u,
+    y+Math.sin(time*2-u*3)*.025*u,z+Math.sin(time*2.3-u*4)*.038*u);
+  });
+  for(let i=0;i<29;i++){tangent.copy(centers[Math.min(28,i+1)]).sub(centers[Math.max(0,i-1)]).normalize();if(i===0)normal.set(1,0,0);normal.addScaledVector(tangent,-normal.dot(tangent)).normalize();if(normal.lengthSq()<.1)normal.crossVectors(tangent,up).normalize();binormal.crossVectors(tangent,normal).normalize();const radius=.092*(1-i/28*.70);
    for(let j=0;j<9;j++){const a=j/8*Math.PI*2,c=Math.cos(a),s=Math.sin(a),k=(i*9+j)*3;for(let axis=0;axis<3;axis++){const v=normal.getComponent(axis)*c+binormal.getComponent(axis)*s;positions[k+axis]=centers[i].getComponent(axis)+v*radius;normals[k+axis]=v;}}}
   geo.attributes.position.needsUpdate=geo.attributes.normal.needsUpdate=true;charm.position.copy(centers[24]);
   if(posed){const blend=1-Math.exp(-dt*(active?60:action?.climb==='climbing'||action?.climb==='hanging'?12:18));poseJoints.forEach((q,i)=>{q.rotation.x=previousPose[i].x+(q.rotation.x-previousPose[i].x)*blend;q.rotation.y=previousPose[i].y+(q.rotation.y-previousPose[i].y)*blend;q.rotation.z=previousPose[i].z+(q.rotation.z-previousPose[i].z)*blend;});}posed=true;

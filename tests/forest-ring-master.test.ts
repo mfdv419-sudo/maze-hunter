@@ -2,46 +2,64 @@ import {describe,it,expect} from 'vitest';
 import {forestRing,ringProgression,FOREST_RING_BUILD} from '../src/game/forest-ring';
 import {forestPilotLayout} from '../src/game/forest-pilot';
 import {AdventureState} from '../src/game/adventure-state';
+import {FOREST_LAYERS} from '../src/game/forest-world-design';
 import {route} from '../src/game/maze';
 
 const difficulties=['easy','medium','hard','extreme'] as const;
-describe('Forest Grove Extreme-first Ring Maze (SOLO Map 01)',()=>{
- it('generates 7 zones for Extreme and strictly increasing playable footprints',()=>{
-  const all=ringProgression();
-  expect(all.map(q=>q.active)).toEqual([3,5,6,7]);
-  expect(all.map(q=>q.walkable)).toEqual([...all.map(q=>q.walkable)].sort((a,b)=>a-b));
-  expect(all.map(q=>q.links)).toEqual([...all.map(q=>q.links)].sort((a,b)=>a-b));
-  expect(all[3].walkable).toBeGreaterThan(all[0].walkable*1.4);
-  expect(FOREST_RING_BUILD).toMatch(/^FG-RING-MASTER/);
- });
- it.each(difficulties)('makes %s boss inaccessible before two objectives + three Diamonds, but escapable after boss win',(difficulty)=>{
-  const r=forestRing(difficulty),l=forestPilotLayout(difficulty);
-  expect(l.ring?.version).toBe(FOREST_RING_BUILD);
-  expect(l.maze.start).toEqual(r.entry);
-  expect(l.fortress).toEqual(r.center);
-  expect(route(l.maze.grid,l.maze.start,l.fortress)).toHaveLength(0);
-  for(const point of [...l.diamonds!,...l.seals])expect(route(l.maze.grid,l.maze.start,point).length).toBeGreaterThan(0);
-  const after=l.maze.grid.map(row=>[...row]);
-  for(const cell of Object.values(r.gates).flat())after[cell.y][cell.x]=0;
-  expect(route(after,l.maze.start,l.fortress).length).toBeGreaterThan(0);
-  expect(route(after,l.fortress,l.maze.finish).length).toBeGreaterThan(0);
-  expect(l.stars).toHaveLength(9);
- });
- it('boss gate unlock requires BOTH three Diamond and two Sigil on active Ring Maze',()=>{
-  const a=new AdventureState('extreme',0,1,false,undefined,'forest',false,true,true);
-  expect(a.layout.ring).toBeDefined();
-  a.seals=new Set([0,1]);a.step(0,0,0,0,0);
-  expect(a.grid[a.layout.pilot!.gates[0].y][a.layout.pilot!.gates[0].x]).toBe(1);
-  a.diamonds=new Set([0,1,2]);a.step(0,0,0,0,0);
-  expect(a.grid[a.layout.pilot!.gates[0].y][a.layout.pilot!.gates[0].x]).toBe(0);
-  expect(a.bossAwake).toBe(false);
- });
- it('keeps optional zone content progressively rather than leaving dead empty corridors',()=>{
+describe('Forest Grove Extreme master world',()=>{
+ it('uses separate Surface, Underground and Floating coordinate layers',()=>{
   const r=forestRing('extreme');
-  expect(r.passages.some(p=>p.kind==='tunnel'&&p.reward==='xp')).toBe(true);
-  expect(r.passages.some(p=>p.kind==='sky')).toBe(true);
-  expect(r.passages.some(p=>p.kind==='bridge')).toBe(true);
-  expect(r.deadEnds.length).toBeGreaterThan(4);
-  for(const zone of r.zones.filter(z=>z.id!=='boss'))expect(route(r.grid,r.entry,zone.point).length).toBeGreaterThan(0);
+  expect(r.size).toBe(320);
+  expect(r.layers.surface.size).toBe(181);
+  expect(r.layers.underground.size).toBe(121);
+  expect(r.layers.floating.size).toBe(101);
+  expect(r.zones.some(z=>z.layer==='underground')).toBe(true);
+  expect(r.zones.some(z=>z.layer==='floating')).toBe(true);
+  expect(FOREST_RING_BUILD).toMatch(/^FG-EXTREME-MASTER/);
+ });
+ it('does not expose one complete physical ring connecting all arenas',()=>{
+  const r=forestRing('extreme');
+  const start=r.entry;
+  // Only the two authored opening arenas are physically reachable from Entry.
+  expect(route(r.grid,start,r.zones.find(z=>z.id==='waterfall')!.point).length).toBeGreaterThan(0);
+  expect(route(r.grid,start,r.zones.find(z=>z.id==='green')!.point).length).toBeGreaterThan(0);
+  for(const id of ['ruins','chasm','giant','ug-xp','sky-1'] as const)expect(route(r.grid,start,r.zones.find(z=>z.id===id)!.point)).toHaveLength(0);
+ });
+ it('gives each playable arena A/B choices and a return portal',()=>{
+  const r=forestRing('extreme');
+  for(const id of ['waterfall','green','ruins','chasm','giant','ug-flooded','ug-relic','ug-xp','ug-cross','sky-1','sky-2','sky-3'] as const){
+   if(!r.activeZones.includes(id))continue;
+   const slots=new Set(r.portals.filter(p=>p.arena===id).map(p=>p.slot));
+   expect(slots.has('A')).toBe(true);expect(slots.has('B')).toBe(true);expect(slots.has('RETURN')).toBe(true);
+  }
+ });
+ it('keeps all Extreme playgrounds reachable through controlled random gates',()=>{
+  for(let mapIndex=0;mapIndex<20;mapIndex++){const r=forestRing('extreme',mapIndex,1),adj=new Map<string,string[]>();for(const p of r.portals.filter(p=>p.slot!=='RETURN')){const row=adj.get(p.arena)||[];row.push(p.destination);adj.set(p.arena,row);}const seen=new Set<string>(['waterfall','green']),queue=[...seen];while(queue.length){const a=queue.shift()!;for(const b of adj.get(a)||[])if(!seen.has(b)){seen.add(b);queue.push(b);}}for(const id of ['ruins','chasm','giant','ug-flooded','ug-relic','ug-xp','ug-cross','sky-1','sky-2','sky-3'])expect(seen.has(id)).toBe(true);}
+ });
+ it('keeps gate randomization deterministic for a map but variable across seeds',()=>{
+  const a=forestRing('extreme',0,1).portals.filter(p=>p.slot!=='RETURN').map(p=>p.destination).join(',');
+  const b=forestRing('extreme',0,1).portals.filter(p=>p.slot!=='RETURN').map(p=>p.destination).join(',');
+  const c=forestRing('extreme',1,1).portals.filter(p=>p.slot!=='RETURN').map(p=>p.destination).join(',');
+  expect(a).toBe(b);expect(c).not.toBe(a);
+ });
+ it('requires Diamonds, Sigils and enough relic parts before boss access',()=>{
+  const a=new AdventureState('extreme',0,1,false,undefined,'forest',false,true,true);
+  a.seals=new Set([0,1]);a.diamonds=new Set([0,1,2]);a.step(0,0,0,0,0);
+  expect(a.bossReady).toBe(false);
+  const ids=a.layout.ring!.rewardPieces.slice(0,4).map(p=>p.id);a.relics=new Set(ids);a.step(0,0,0,0,0);
+  expect(a.bossReady).toBe(false);expect(a.assembleRelicWeapon('blade')).toBe(true);a.step(0,0,0,0,0);
+  expect(a.bossReady).toBe(true);
+  expect(a.grid[a.layout.pilot!.gates[0].y][a.layout.pilot!.gates[0].x]).toBe(0);
+ });
+ it('scales active world content by difficulty while Extreme remains master',()=>{
+  const all=ringProgression();
+  expect(all.map(x=>x.active)).toEqual([...all.map(x=>x.active)].sort((a,b)=>a-b));
+  expect(all.at(-1)!.active).toBeGreaterThan(all[0].active);
+  expect(forestRing('easy').activeZones.some(z=>z.startsWith('ug-'))).toBe(false);
+  expect(forestRing('hard').activeZones.some(z=>z.startsWith('ug-'))).toBe(true);
+  expect(forestRing('extreme').activeZones.some(z=>z.startsWith('sky-'))).toBe(true);
+ });
+ it.each(difficulties)('%s layout uses authoritative grid and layer metadata',(difficulty)=>{
+  const l=forestPilotLayout(difficulty,0,1);expect(l.ring).toBeDefined();expect(l.maze.grid.length).toBe(320);expect(l.ring!.layers).toBe(FOREST_LAYERS);
  });
 });

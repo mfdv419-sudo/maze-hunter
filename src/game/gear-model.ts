@@ -3,34 +3,42 @@ import {addMesh,joint,roundBox,satin} from './model-parts';
 import {batchStatic} from './static-model';
 const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.025)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
-/** Separate gear follows the animated wrist/knee. Explicit bare remains an empty named group. */
+/** Four articulated-looking fingers, a thumb and a narrower wrist.
+ * All digits grow from a rounded palm instead of being isolated ball tips.
+ * This model is shared by bare hands and every glove style.
+ */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.135,.025,'gloves');root.userData.gear=kind;
- if(kind==='bare'){
-  const fur=satin(furColor),pads=satin(0x727772);
-  ell(root,fur,0,-.035,.032,.072,.055,.073);
-  // Three forward-facing digits form one integrated silhouette, not upturned claws.
-  for(let i=0;i<3;i++){
-   ell(root,fur,(i-1)*.043,-.077,.092,.022,.032,.036);
-   ell(root,pads,(i-1)*.043,-.102,.118,.011,.007,.009);
-  }
-  ell(root,fur,side*.067,-.047,.051,.026,.038,.036);
-  return root;
- }
+ const root=joint(parent,0,-.135,.025,'paw-hand');root.userData.gear=kind;
+ const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
- const cloth=satin(colors[kind]??colors.trail),dark=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- const palm=ell(root,cloth,0,-.025,.031,.078,.061,.077);
- const cuff=addMesh(root,new T.CylinderGeometry(.082,.09,.055,10),dark,0,.05,-.018);cuff.scale.z=.95;
- box(root,.12,.015,.12,trim,0,.02,-.005,.01);
- const thumb=ell(root,cloth,side*.071,-.051,.052,.029,.039,.036);thumb.rotation.z=side*.25;
- for(let i=0;i<3;i++){
-  const digit=ell(root,cloth,(i-1)*.046,-.074,.107,.023,.03,.036);digit.rotation.z=(i-1)*-.07;
-  // Nails and paw pads face the ground; the glove no longer has three upward prongs.
-  ell(root,dark,(i-1)*.046,-.094,.132,.009,.006,.01);
+ const hand=satin(bare?furColor:colors[kind]??colors.trail);
+ const cuffColor=satin(kind==='desert'?0x8e7859:0x253c43);
+ const trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
+ // The mitten's palm follows the forearm; at this scale it should not read as a ball.
+ box(root,.148,.145,.112,hand,0,-.055,.048,.052).name='paw-palm';
+ if(!bare){
+  const cuff=addMesh(root,new T.CylinderGeometry(.074,.079,.047,12),cuffColor,0,.049,.016);
+  cuff.scale.z=.86;cuff.name='paw-cuff';
+  box(root,.103,.012,.13,trim,0,.018,.03,.006);
  }
- if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.027,.008,4,10),trim,side*.087,.055,-.02);ring.rotation.y=Math.PI/2;}
- if(kind==='desert')for(let i=0;i<2;i++)box(root,.185,.012,.175,trim,0,-.01-i*.035,0,.005);
- if(kind==='diver')box(root,.045,.035,.035,trim,0,.032,.095,.01);return batchStatic(root);
+ // Four visible fingers have individual silhouettes, but share material and the palm.
+ // Their tips point down / slightly forward, never upward like claws.
+ const lengths=[.032,.043,.041,.029];
+ for(let i=0;i<4;i++){
+  const finger=addMesh(root,new T.CapsuleGeometry(.014,lengths[i],4,8),hand,
+   (i-1.5)*.037,-.135-(lengths[i]-.032)*.08,.094);
+  finger.rotation.x=-.13;finger.rotation.z=(i-1.5)*.055;
+  finger.name=`paw-finger-${i+1}`;
+ }
+ // A smaller opposing thumb, partly embedded in the palm.
+ const thumb=addMesh(root,new T.CapsuleGeometry(.019,.030,4,8),hand,side*.081,-.083,.067);
+ thumb.rotation.z=side*.58;thumb.rotation.x=-.26;thumb.name='paw-thumb';
+ if(kind==='climber'){
+  const ring=addMesh(root,new T.TorusGeometry(.024,.006,4,10),trim,side*.075,.045,-.015);
+  ring.rotation.y=Math.PI/2;
+ }
+ if(kind==='diver')box(root,.034,.014,.028,trim,0,.033,.09,.006);
+ return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){
  const root=joint(parent,0,-.095,.055,'boots');root.userData.gear=kind;if(kind==='bare')return root;

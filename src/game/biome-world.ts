@@ -1,4 +1,5 @@
 import {forestPilotWorld} from './forest-pilot-world';
+import {forestMasterWorld} from './forest-master-world';
 import type {AdventureState} from './adventure-state';
 import {expeditionAdditions} from './expedition-additions';
 import {expeditionEffects} from './expedition-effects';
@@ -12,6 +13,7 @@ import {biomeElevation} from './biome-layout';
 import {forestTree,groundTexture} from './world-art';
 import {batchStatic} from './static-model';
 export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea,state?:()=>AdventureState|undefined){
+ if(layout.pilot&&layout.ring)return forestMasterWorld(scene,world,layout,state);
  if(layout.pilot)return forestPilotWorld(scene,world,layout,state);
  if(area==='gorge')return gorgeWorld(scene,world,layout);
  const additions=expeditionAdditions(world,layout,area,layout.maze.grid.length<70);const walls=biomeWalls(world,layout,area),effects=expeditionEffects(world,layout,area);
