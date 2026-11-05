@@ -4,23 +4,19 @@ import {batchStatic} from './static-model';
 const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.025)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
 /** Single stylized binturong paw shared by home preview and in-game avatar.
- * Paw-first silhouette: no explicit human-like finger geometry and no duplicate hand mass.
+ * One paw silhouette only: no explicit fingers, no front "second hand", no glove cuff.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='single-paw-v5';
+ const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='single-animal-paw-v6';
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
- const paw=satin(bare?furColor:colors[kind]??colors.trail),cuffColor=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- // One continuous stylized paw. No separate finger rods/pads and no second hand mesh.
- const wrist=addMesh(root,new T.CylinderGeometry(.057,.068,.11,12),paw,0,.032,.014);wrist.name='paw-wrist';wrist.scale.z=.88;
- const palm=box(root,.145,.125,.112,paw,0,-.055,.052,.045);palm.name='paw-single-volume';
- // A broad rounded toe/front pad extends the silhouette without reading as human fingers.
- const front=ell(root,paw,0,-.112,.095,.071,.040,.052);front.name='paw-front-pad';
- // Very shallow underside pad: part of the same paw silhouette, not an extra hand.
- const pad=ell(root,satin(bare?0x4d5558:0x39494c),0,-.073,.111,.052,.024,.020);pad.name='paw-underside-pad';
- if(!bare){const cuff=addMesh(root,new T.CylinderGeometry(.067,.071,.038,12),cuffColor,0,.052,.014);cuff.scale.z=.86;cuff.name='paw-cuff';box(root,.098,.010,.105,trim,0,.026,.033,.005);}
- if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.019,.005,4,10),trim,side*.058,.041,-.008);ring.rotation.y=Math.PI/2;}
- if(kind==='diver')box(root,.030,.012,.024,trim,0,.018,.098,.005);
+ const paw=satin(bare?furColor:colors[kind]??colors.trail);
+ // The wrist overlaps the paw core so the silhouette reads as one continuous limb.
+ const wrist=addMesh(root,new T.CapsuleGeometry(.058,.075,4,10),paw,0,.015,.018);wrist.name='paw-integrated-wrist';
+ const core=ell(root,paw,0,-.068,.067,.078,.070,.092);core.name='paw-single-core';core.rotation.x=-.12;
+ // Outfit variation is color/material only. Do not add separate finger/cuff geometry.
+ if(kind==='climber'){const mark=addMesh(root,new T.TorusGeometry(.018,.004,4,10),satin(0xffd386),side*.052,.004,.018);mark.rotation.y=Math.PI/2;mark.name='paw-gear-mark';}
+ if(kind==='diver'){const mark=box(root,.038,.010,.030,satin(0x83d6cc),0,-.004,.142,.005);mark.name='paw-gear-mark';}
  return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){

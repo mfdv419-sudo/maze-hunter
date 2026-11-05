@@ -12,7 +12,7 @@ export interface Character {root:T.Group;animate:(time:number,speed:number,celeb
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v5';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v6';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
@@ -107,7 +107,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
   const walkStep=Math.floor(gait/Math.PI);root.userData.footfall=walk>.08&&walkStep!==root.userData.walkStep;root.userData.walkStep=walkStep;
   body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.set(-walk*.045,0,0);chest.scale.y=1+Math.sin(time*2)*.012;
-  for(let i=0;i<2;i++){const swing=i?-stride:stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
+  for(let i=0;i<2;i++){const swing=i?stride:-stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   if(action?.cameraLook!==undefined&&walk<.04){const angle=Math.atan2(Math.sin(action.cameraLook),Math.cos(action.cameraLook));if(Math.abs(angle)<1.15)head.rotation.y=angle*.65;}
   const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
