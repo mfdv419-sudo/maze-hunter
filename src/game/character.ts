@@ -12,7 +12,7 @@ export interface Character {root:T.Group;animate:(time:number,speed:number,celeb
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v3';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v5';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
@@ -40,7 +40,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   addMesh(arm,new T.CapsuleGeometry(.065,.105,4,10),fur,0,-.088,0);
   const elbow=joint(arm,0,-.195,0,'elbow');elbows.push(elbow);
   addMesh(elbow,new T.CapsuleGeometry(.060,.072,4,10),fur,0,-.045,0);
-  ell(elbow,fur,0,-.12,.012,.064,.058,.063);
+  // Keep the forearm continuous; do not add a second spherical mass at the wrist/paw junction.
   const leg=joint(body,side*.14,.35,0,'hip');legs.push(leg);addMesh(leg,new T.CapsuleGeometry(.082,.09,3,8),fur,0,-.055,0);const knee=joint(leg,0,-.14,0,'knee');knees.push(knee);addMesh(knee,new T.CapsuleGeometry(.075,.06,3,8),fur,0,-.035,0);box(knee,.18,.1,.25,fur,0,-.11,.05,.045);
   for(let i=0;i<3;i++)ell(knee,muzzle,(i-1)*.038,-.105,.145,.013,.01,.014);
  }

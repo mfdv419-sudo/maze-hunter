@@ -1825,3 +1825,12 @@ Validation performed in this environment:
 - Previously validated Extreme topology: 40 physical-connectivity seeds with Entry reaching only Entry/Waterfall/Green; 80 gate-graph seeds with required arena reachability and valid boss/escape paths.
 - Quiz bank check: Levels 1, 41, 61 and 100 each contain 20 active questions across 10 subjects.
 - Full `npm run build` is not claimed here: this container runs Node 22.16 while the repository requires Node >=24.12 <25, and the local dependency install is incomplete. Netlify Node 24 remains the authoritative full-build check.
+
+
+## 2026-11-05 — Forest Grove Extreme RESET05
+- Fixed the actual runtime difficulty binding: Forest Grove rebuild is now activated only by Extreme Map 0; Medium no longer silently receives the Extreme world.
+- Forest selection forces Extreme while the master rebuild is being validated; Easy/Medium/Hard Forest buttons are disabled instead of routing to the legacy/polished Medium world.
+- Removed legacy Forest action-button positioning ownership; `adventure-action-pad.css` is the single action-pad geometry source.
+- Reworked the Binturong hand as one stylized paw volume (`single-paw-v5`) and removed the overlapping forearm-end sphere that could read as a second hand. No explicit human-like finger/thumb meshes are generated.
+- Extreme build fingerprint: `FG-EXTREME-RESET-05-20261105`.
+- Added architecture regression tests for Extreme/Medium routing, runtime Map 0 binding, paw duplication, and HUD source precedence.

@@ -3,29 +3,24 @@ import {addMesh,joint,roundBox,satin} from './model-parts';
 import {batchStatic} from './static-model';
 const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.025)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
-/** Compact four-finger paw with a real palm + opposing thumb.
- * Rounded-box digits read as fingers at game-camera distance better than capsule rods.
- * This shared model is used by home preview and in-game avatar, avoiding two hand geometries.
+/** Single stylized binturong paw shared by home preview and in-game avatar.
+ * Paw-first silhouette: no explicit human-like finger geometry and no duplicate hand mass.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.092,.020,'paw-hand');root.userData.gear=kind;root.userData.handModel='integrated-paw-v4';
+ const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='single-paw-v5';
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
- const hand=satin(bare?furColor:colors[kind]??colors.trail),cuffColor=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- // Wrist bridge overlaps the forearm and palm so the hand reads as one continuous limb, never a detached glove.
- const wrist=addMesh(root,new T.CylinderGeometry(.062,.071,.105,12),hand,0,.026,.018);wrist.name='paw-wrist-bridge';wrist.scale.z=.86;
- box(root,.136,.112,.094,hand,0,-.038,.046,.034).name='paw-palm';
- if(!bare){const cuff=addMesh(root,new T.CylinderGeometry(.069,.076,.046,12),cuffColor,0,.045,.018);cuff.scale.z=.82;cuff.name='paw-cuff';box(root,.102,.012,.112,trim,0,.014,.036,.006);}
- // Four separate fingers: small rounded pads, with a shallow fan. No claw-like upward rods.
- const lengths=[.050,.058,.057,.047];
- for(let i=0;i<4;i++){
-  const finger=box(root,.026,lengths[i],.034,hand,(i-1.5)*.032,-.116-(lengths[i]-.05)*.16,.089,.012);
-  finger.rotation.z=(i-1.5)*.055;finger.rotation.x=-.08;finger.name=`paw-finger-${i+1}`;
- }
- // Opposing thumb is embedded into the palm edge so it cannot appear detached.
- const thumb=box(root,.032,.050,.037,hand,side*.065,-.064,.062,.013);thumb.rotation.z=side*.52;thumb.rotation.x=-.16;thumb.name='paw-thumb';
- if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.021,.005,4,10),trim,side*.069,.038,-.012);ring.rotation.y=Math.PI/2;}
- if(kind==='diver')box(root,.032,.013,.026,trim,0,.027,.087,.006);
+ const paw=satin(bare?furColor:colors[kind]??colors.trail),cuffColor=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
+ // One continuous stylized paw. No separate finger rods/pads and no second hand mesh.
+ const wrist=addMesh(root,new T.CylinderGeometry(.057,.068,.11,12),paw,0,.032,.014);wrist.name='paw-wrist';wrist.scale.z=.88;
+ const palm=box(root,.145,.125,.112,paw,0,-.055,.052,.045);palm.name='paw-single-volume';
+ // A broad rounded toe/front pad extends the silhouette without reading as human fingers.
+ const front=ell(root,paw,0,-.112,.095,.071,.040,.052);front.name='paw-front-pad';
+ // Very shallow underside pad: part of the same paw silhouette, not an extra hand.
+ const pad=ell(root,satin(bare?0x4d5558:0x39494c),0,-.073,.111,.052,.024,.020);pad.name='paw-underside-pad';
+ if(!bare){const cuff=addMesh(root,new T.CylinderGeometry(.067,.071,.038,12),cuffColor,0,.052,.014);cuff.scale.z=.86;cuff.name='paw-cuff';box(root,.098,.010,.105,trim,0,.026,.033,.005);}
+ if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.019,.005,4,10),trim,side*.058,.041,-.008);ring.rotation.y=Math.PI/2;}
+ if(kind==='diver')box(root,.030,.012,.024,trim,0,.018,.098,.005);
  return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){

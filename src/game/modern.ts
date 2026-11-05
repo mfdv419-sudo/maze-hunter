@@ -306,7 +306,7 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    if(options.adventureMap!==undefined)this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample,options.questTeam,options.area||'classic',!!options.training,!options.online&&!options.training&&!options.forestSample&&options.area==='forest'&&options.adventureMap===0,options.area==='forest'&&options.adventureMap===0);
+    if(options.adventureMap!==undefined){const extremeForest=options.area==='forest'&&options.difficulty==='extreme'&&options.adventureMap===0&&!options.forestSample&&!options.training;this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample,options.questTeam,options.area||'classic',!!options.training,!options.online&&extremeForest,extremeForest);}
     if(this.adventure?.pilot&&options.divingEquipment){this.adventure.oxygenCapacity=forestRules.diveTankOxygen;this.adventure.oxygen=forestRules.diveTankOxygen;}
     this.maze = this.adventure ? {...this.adventure.layout.maze,grid:this.adventure.grid} : modernMaze(options.difficulty, options.seed);
     this.position = this.adventure ? {...this.adventure.position} : center(this.maze.entrances[options.entrance % 4]);
