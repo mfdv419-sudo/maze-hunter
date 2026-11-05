@@ -1,70 +1,29 @@
-/* Shared Adventure touch targets, loaded LAST after every legacy/presentation rule.
-   ALL Adventure areas/devices use one corner-centred Mobile-Legends-style arc.
-   The viewport bottom-right corner is the arc centre; Jump sits at the arc apex.
-   No UI changes to Retro or the established gameplay camera. */
+/* ONE authoritative Adventure action pad. No area-specific positioning is allowed elsewhere.
+   All four control centres sit on one arc whose centre is the viewport bottom-right corner. */
 #game[data-screen="modern"] .play-screen.adventure-pad{
- --mh-pad-radius:clamp(116px,28dvh,158px);
- --mh-pad-button:clamp(44px,10dvh,56px);
- --mh-pad-jump:clamp(66px,15dvh,82px);
+ --mh-pad-radius:160px;--mh-pad-button:42px;--mh-pad-jump:66px;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls{
  position:absolute!important;z-index:24!important;display:block!important;
- width:calc(var(--mh-pad-radius) + var(--mh-pad-jump)/2)!important;
- height:calc(var(--mh-pad-radius) + var(--mh-pad-jump)/2)!important;
- right:max(8px,env(safe-area-inset-right))!important;
- bottom:max(8px,env(safe-area-inset-bottom))!important;
- top:auto!important;left:auto!important;
- padding:0!important;margin:0!important;
- transform:none!important;pointer-events:none!important;
+ width:205px!important;height:205px!important;right:max(0px,env(safe-area-inset-right))!important;
+ bottom:max(0px,env(safe-area-inset-bottom))!important;top:auto!important;left:auto!important;
+ padding:0!important;margin:0!important;transform:none!important;pointer-events:none!important;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{
  position:absolute!important;display:grid!important;place-items:center!important;
- width:var(--mh-pad-button)!important;height:var(--mh-pad-button)!important;
- min-width:0!important;min-height:0!important;max-width:none!important;
- padding:10px!important;margin:0!important;box-sizing:border-box!important;
- border:2px solid #edd195!important;border-radius:999px!important;
- background:radial-gradient(circle at 35% 24%,#347d96,#153c52 65%,#102b40)!important;
- color:#fff2cc!important;box-shadow:none!important;filter:none!important;
- text-shadow:none!important;transform:none!important;
- pointer-events:auto!important;touch-action:manipulation!important;
+ width:var(--mh-pad-button)!important;height:var(--mh-pad-button)!important;min-width:0!important;min-height:0!important;
+ padding:8px!important;margin:0!important;border:2px solid #ead092!important;border-radius:50%!important;
+ background:radial-gradient(circle at 34% 24%,#2f8298,#153d54 68%,#102c40)!important;color:#fff0c8!important;
+ box-shadow:0 4px 12px #071a2566!important;pointer-events:auto!important;touch-action:manipulation!important;
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%!important;height:100%!important;display:block!important;pointer-events:none}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{
- width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;
- right:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-jump)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-jump)/2)!important;
- top:auto!important;left:auto!important;
- background:radial-gradient(circle at 35% 25%,#479dd9,#285c88 65%,#173a5b)!important;
-}
-/* Small controls flank Jump on the same corner-centred arc. Centres use angles 82°, 64°, 18°; Jump is the 45° apex. */
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{
- right:calc(var(--mh-pad-radius)*.139173 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.990268 - var(--mh-pad-button)/2)!important;
- left:auto!important;top:auto!important;
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{
- right:calc(var(--mh-pad-radius)*.438371 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.898794 - var(--mh-pad-button)/2)!important;
- left:auto!important;top:auto!important;
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{
- right:calc(var(--mh-pad-radius)*.951057 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.309017 - var(--mh-pad-button)/2)!important;
- left:auto!important;top:auto!important;
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.48!important;filter:grayscale(.3)!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:focus-visible{outline:3px solid #fff4ba!important;outline-offset:2px}
-#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select{
- position:absolute;z-index:27;right:max(15px,env(safe-area-inset-right));
- bottom:calc(var(--mh-pad-radius) + var(--mh-pad-button) + 6px);
- display:flex;gap:7px;padding:8px;border-radius:18px;
- border:1px solid #e9d49f;background:#102d43ed;
-}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%!important;height:100%!important;pointer-events:none}
+/* centres on R=160: Merge 85°, Action 65°, Jump 45°, Ability 20°. */
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:calc(160px*.087156 - 21px)!important;bottom:calc(160px*.996195 - 21px)!important;left:auto!important;top:auto!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:calc(160px*.422618 - 21px)!important;bottom:calc(160px*.906308 - 21px)!important;left:auto!important;top:auto!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;right:calc(160px*.707107 - 33px)!important;bottom:calc(160px*.707107 - 33px)!important;left:auto!important;top:auto!important;background:radial-gradient(circle at 34% 24%,#4ba5dd,#285e8d 67%,#173c5e)!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:calc(160px*.939693 - 21px)!important;bottom:calc(160px*.342020 - 21px)!important;left:auto!important;top:auto!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.46!important;filter:grayscale(.28)!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select{position:absolute;z-index:27;right:18px;bottom:188px;display:flex;gap:7px;padding:8px;border-radius:18px;border:1px solid #e9d49f;background:#102d43ed}
 #game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select[hidden]{display:none}
-#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select button{
- width:clamp(40px,9dvh,50px);height:clamp(40px,9dvh,50px);min-width:0;min-height:0;
- border-radius:50%;padding:9px;border:2px solid #a3c2ae;
- background:#1a4b58;color:#f9ebcc;
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select svg{width:100%;height:100%}
-@media(max-height:410px){#game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-radius:112px;--mh-pad-button:44px;--mh-pad-jump:66px}}
+#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select button{width:42px;height:42px;min-width:0;min-height:0;border-radius:50%;padding:8px;border:2px solid #a3c2ae;background:#1a4b58;color:#f9ebcc}
+@media(max-height:520px){#game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-radius:142px;--mh-pad-button:40px;--mh-pad-jump:62px}#game[data-screen="modern"] .play-screen.adventure-pad .action-controls{transform:scale(.89)!important;transform-origin:bottom right!important}}

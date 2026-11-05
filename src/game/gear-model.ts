@@ -4,19 +4,28 @@ import {batchStatic} from './static-model';
 const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.025)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
 /** Single stylized binturong paw shared by home preview and in-game avatar.
- * One paw silhouette only: no explicit fingers, no front "second hand", no glove cuff.
+ * Paw-first silhouette: no explicit human-like finger geometry and no duplicate hand mass.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='single-animal-paw-v6';
+ const root=joint(parent,0,-.112,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='binturong-paw-3digit-v7';
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
- const paw=satin(bare?furColor:colors[kind]??colors.trail);
- // The wrist overlaps the paw core so the silhouette reads as one continuous limb.
- const wrist=addMesh(root,new T.CapsuleGeometry(.058,.075,4,10),paw,0,.015,.018);wrist.name='paw-integrated-wrist';
- const core=ell(root,paw,0,-.068,.067,.078,.070,.092);core.name='paw-single-core';core.rotation.x=-.12;
- // Outfit variation is color/material only. Do not add separate finger/cuff geometry.
- if(kind==='climber'){const mark=addMesh(root,new T.TorusGeometry(.018,.004,4,10),satin(0xffd386),side*.052,.004,.018);mark.rotation.y=Math.PI/2;mark.name='paw-gear-mark';}
- if(kind==='diver'){const mark=box(root,.038,.010,.030,satin(0x83d6cc),0,-.004,.142,.005);mark.name='paw-gear-mark';}
+ const paw=satin(bare?furColor:colors[kind]??colors.trail),pad=satin(bare?0x4a5356:0x34484b),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
+ // ONE animal paw only: tapered wrist -> flattened palm -> three short integrated digits.
+ // Digits are rounded paw toes, not human fingers and not a second hand mesh.
+ const wrist=addMesh(root,new T.CylinderGeometry(.052,.061,.105,10),paw,0,.034,.008);wrist.name='paw-wrist-blend';wrist.scale.z=.88;
+ const palm=ell(root,paw,0,-.058,.048,.078,.061,.067);palm.name='paw-palm';
+ palm.scale.x*=1.06;palm.scale.y*=.92;
+ const toeX=[-.052,0,.052];
+ for(let i=0;i<3;i++){
+  const toe=ell(root,paw,toeX[i],-.112,.102,.028,.024,.047);toe.name=`paw-digit-${i+1}`;toe.rotation.x=-.13;toe.rotation.z=(i-1)*-.07;
+  const toePad=ell(root,pad,toeX[i],-.126,.128,.018,.012,.015);toePad.name=`paw-toe-pad-${i+1}`;
+ }
+ const centerPad=ell(root,pad,0,-.082,.109,.047,.020,.026);centerPad.name='paw-center-pad';
+ // Costume trim may wrap the wrist but must never create another hand volume.
+ if(!bare){const band=addMesh(root,new T.TorusGeometry(.058,.007,5,16),trim,0,.041,.009);band.rotation.x=Math.PI/2;band.scale.z=.86;band.name='paw-wrist-trim';}
+ if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.017,.004,4,10),trim,side*.052,.038,-.006);ring.rotation.y=Math.PI/2;}
+ if(kind==='diver')box(root,.026,.010,.020,trim,0,.015,.101,.005);
  return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){

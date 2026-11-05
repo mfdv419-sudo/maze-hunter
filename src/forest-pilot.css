@@ -58,3 +58,9 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 .forest-npc-dialog{max-width:520px!important}.forest-npc-role{display:block;color:#e6c77d;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}.forest-npc-speech{font-size:16px;line-height:1.5;padding:12px 14px;border-radius:12px;background:#18384b;border:1px solid #8ebba055}
 
 /* RESET05: action button geometry is intentionally owned only by adventure-action-pad.css. */
+
+/* RESET07: compact Forest HUD. Back arrow and repeated area title are intentionally removed. */
+#game[data-screen=modern] .forest-pilot #exit-game,#game[data-screen=modern] .forest-pilot .playbar>div:nth-child(2){display:none!important}
+#game[data-screen=modern] .forest-pilot .minimap-panel{width:118px!important;height:118px!important;border-radius:18px!important}
+#game[data-screen=modern] .forest-pilot .forest-tools{right:140px!important}
+#game[data-screen=modern] .forest-pilot .minimap-hint{display:none!important}
