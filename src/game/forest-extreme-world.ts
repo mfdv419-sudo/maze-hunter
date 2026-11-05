@@ -4,7 +4,7 @@ import type {ForestRing,RingPassage,RingPortal,RingZone} from './forest-ring';
 import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,arenaPoint,type ForestArenaId} from './forest-world-design';
 import {applyForestSiteCollision,forestExtremeWorldSites,type ForestWorldSite} from './forest-rpg';
 
-export const FOREST_EXTREME_BUILD='FG-EXTREME-RESET-07-20261105';
+export const FOREST_EXTREME_BUILD='FG-EXTREME-VISION-08-20261105';
 const point=(x:number,y:number):Point=>({x:Math.round(x),y:Math.round(y)});
 const same=(a:Point,b:Point)=>a.x===b.x&&a.y===b.y;
 const discrete=(pts:Point[])=>{const out:Point[]=[];for(let i=0;i<pts.length;i++){if(!i){out.push(pts[i]);continue;}const a=pts[i-1],b=pts[i],steps=Math.max(1,Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y))*3);for(let j=1;j<=steps;j++){const p=point(a.x+(b.x-a.x)*j/steps,a.y+(b.y-a.y)*j/steps);if(!same(p,out[out.length-1]))out.push(p);}}return out;};
@@ -21,10 +21,21 @@ export function forestExtremeRing(mapIndex=0,variation=1):ForestRing{
  const block=(p:Point,r=1)=>{for(let y=p.y-r;y<=p.y+r;y++)for(let x=p.x-r;x<=p.x+r;x++)if(grid[y]?.[x]!==undefined)grid[y][x]=1;};
  const draw=(pts:Point[],r=1)=>{const path=discrete(pts);path.forEach(p=>carve(p,r));trails.push(path);return path;};
  const connect=(id:string,from:ForestArenaId,to:ForestArenaId,kind:RingPassage['kind'],via:Point[]=[],reward?:RingPassage['reward'])=>{const path=draw([arenaPoint(from),...via,arenaPoint(to)],2);passages.push({id,from,to,kind,reward,path});};
- // Irregular playgrounds: several overlapping clearings, vertical pockets and internal branches. No arena is just a circular floor.
- for(const z of zones){const r=z.radius;carve(z.point,Math.max(7,r-5));for(let i=0;i<5;i++){const a=i*1.256+(hash(z.id)%29)/17,dist=r*(.48+(i%2)*.16),p=point(z.point.x+Math.sin(a)*dist,z.point.y+Math.cos(a)*dist);carve(p,Math.max(4,Math.round(r*.36)));draw([z.point,p],2);}if(!['entrance','inner','boss'].includes(z.id)){for(let i=0;i<4;i++){const a=i*1.71+(hash(z.id+'branch')%31)/13,end=point(z.point.x+Math.sin(a)*(r*.66+i*1.2),z.point.y+Math.cos(a)*(r*.66+i*1.2));const branch=draw([z.point,end],1);deadEnds.push(branch.at(-1)!);passages.push({id:`ext-${z.id}-branch-${i}`,from:z.id,to:z.id,kind:i===1?'stairs':i===2?'vine':'trail',optional:true,reward:i===0?'chest':i===1?'star':'xp',path:branch});}}
-  // solid terrain masses inside the larger spaces; leave broad playable lanes around them.
-  if(z.layer==='surface'&&!['entrance','inner','boss'].includes(z.id))for(let i=0;i<4;i++){const a=i*1.57+.4,p=point(z.point.x+Math.sin(a)*r*.52,z.point.y+Math.cos(a)*r*.52);block(p,i%2?2:1);}
+ // Authored arena mazes: every major arena has real junctions, alternate routes, loops and rewarding dead ends.
+ // This deliberately avoids the old fake-zigzag pattern where a corridor bends but never offers a choice.
+ for(const z of zones){
+  const r=z.radius;carve(z.point,Math.max(6,r-7));
+  if(['entrance','inner','boss'].includes(z.id)){carve(z.point,Math.max(6,r-6));continue;}
+  const phase=(hash(z.id)%37)/17;
+  const nodes=Array.from({length:7},(_,i)=>{const a=phase+i*Math.PI*2/7,dist=r*(i%2?.62:.48);return point(z.point.x+Math.sin(a)*dist,z.point.y+Math.cos(a)*dist);});
+  // Three genuine choices from the arena heart.
+  for(const i of [0,2,5]){const path=draw([z.point,nodes[i]],2);passages.push({id:`ext-${z.id}-choice-${i}`,from:z.id,to:z.id,kind:i===2?'stairs':i===5?'vine':'trail',optional:true,path});}
+  // Braided local maze: two loops plus a cross-link so routes can reconnect.
+  for(const [a,b,k] of [[0,1,'trail'],[1,2,'trail'],[2,3,'stairs'],[3,4,'trail'],[4,5,'vine'],[5,6,'trail'],[6,0,'trail'],[1,5,'trail']] as const){const path=draw([nodes[a],nodes[b]],1);passages.push({id:`ext-${z.id}-maze-${a}-${b}`,from:z.id,to:z.id,kind:k,optional:true,path});}
+  // Two long convincing dead ends with rewards; choosing wrong is still worthwhile.
+  for(const [i,node] of [[0,nodes[3]],[1,nodes[6]]] as const){const a=phase+1.13+i*2.27,end=point(node.x+Math.sin(a)*r*.38,node.y+Math.cos(a)*r*.38);const branch=draw([node,end],1);deadEnds.push(branch.at(-1)!);passages.push({id:`ext-${z.id}-dead-${i}`,from:z.id,to:z.id,kind:'trail',optional:true,reward:i===0?'chest':'xp',path:branch});}
+  // Terrain islands split sight-lines so the whole route cannot be read from one position.
+  if(z.layer==='surface')for(let i=0;i<5;i++){const a=phase+i*1.31+.4,p=point(z.point.x+Math.sin(a)*r*.42,z.point.y+Math.cos(a)*r*.42);block(p,i%3===0?2:1);}
  }
  // ONLY two physical routes leave Entry. Every other arena transition is discovered via portals/shortcuts.
  const e=arenaPoint('entrance');

@@ -79,36 +79,36 @@ export function forestExtremeWorldSites(active:ForestArenaId[]):ForestWorldSite[
   const p=arenaPoint(arena);out.push({id:`ext-${arena}-${id}`,arena,kind,point:{x:p.x+dx,y:p.y+dy},label,solid,reward,xp,npc});
  };
  // Entry hub: visibly populated orientation/rest area.
- add('entrance','guide','camp',-7,-5,['Pos Penjelajah','Explorer Post'],undefined,'spring-water',8,{role:'clue',name:['Raka Penjelajah','Raka the Explorer'],clue:['Waterfall di kiri dan Green Cliffs di kanan. Gerbang tersembunyi tidak selalu berada di jalur utama.','Waterfall lies left and Green Cliffs right. Hidden gates are not always on the main trail.']});
+ add('entrance','guide','camp',-7,-5,['Pos Penjelajah','Explorer Post'],undefined,'spring-water',8,{role:'clue',name:['Raka Penjelajah','Raka the Explorer'],clue:['Kalau ingin menemukan jalan keluar, cari Pohon Raksasa. Puncaknya terlihat dari banyak tempat. Tapi jangan mendekat sebelum mengumpulkan tiga Batu Mfeer biru dan setidaknya satu item rahasia dari reruntuhan.','If you want the way out, find the Giant Tree. Its crown can be seen from many places. Do not approach it before collecting three blue Mfeer Stones and at least one secret item from the ruins.']});
  add('entrance','quartermaster','market',7,-4,['Kios Perbekalan','Supply Stall'],{w:4,d:3},undefined,0,{role:'merchant',name:['Mira','Mira'],clue:['Bawa material kembali untuk dijual atau dirakit.','Bring materials back to sell or craft.']});
  // Waterfall Valley: watermill, market, camp, clue NPC, gathering and underwater reward.
  add('waterfall','watermill','hut',-11,-8,['Kincir Air Tua','Old Water Mill'],{w:5,d:4});
  add('waterfall','merchant','market',10,8,['Pasar Tepian Air','Waterside Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Nara','Nara']});
- add('waterfall','ranger','camp',9,2,['Camp Ranger','Ranger Camp'],undefined,'spring-water',14,{role:'clue',name:['Bimo Ranger','Ranger Bimo'],clue:['Arus di balik air terjun menyembunyikan jalan ke gua bawah air.','The current behind the waterfall hides a route into an underwater cave.']});
+ add('waterfall','ranger','camp',9,2,['Camp Ranger','Ranger Camp'],undefined,'spring-water',14,{role:'clue',name:['Bimo Ranger','Ranger Bimo'],clue:['Air yang paling dingin mengalir dari bawah batu tua. Ikuti arusnya; ada reruntuhan terendam dan sesuatu yang berkilau biru di kedalaman.','The coldest water flows from beneath the old stones. Follow the current; submerged ruins and something blue-glowing wait below.']});
  add('waterfall','sunken','activity',-5,11,['Peti Tenggelam','Sunken Cache'],undefined,'crystal-shard',22);
  add('waterfall','herbs','gather',11,-4,['Herba Sungai','River Herbs'],undefined,'river-herb',12);
  // Green Cliffs: village/market/clue and climbing challenge.
  add('green','village','treehouse',7,-8,['Desa Tebing','Cliff Village'],{w:6,d:4});
  add('green','merchant','market',9,-1,['Kios Tebing','Cliff Stall'],{w:4,d:3},undefined,0,{role:'merchant',name:['Tala','Tala']});
- add('green','climber','camp',-8,7,['Pos Pendaki','Climber Camp'],undefined,'camp-meal',16,{role:'clue',name:['Sena','Sena'],clue:['Akar besar dan jembatan rusak membentuk jalur menuju Wind Shrine.','The large roots and broken bridge form the route to the Wind Shrine.']});
+ add('green','climber','camp',-8,7,['Pos Pendaki','Climber Camp'],undefined,'camp-meal',16,{role:'clue',name:['Sena','Sena'],clue:['Kalau melihat akar setinggi rumah dan angin terasa lebih kuat, kamu sudah dekat jalur menuju dataran tinggi. Salah satu cabangnya menyimpan jalan rahasia.','When the roots rise as high as a house and the wind grows stronger, you are near the high route. One branch hides a secret path.']});
  add('green','wind','shrine',-7,-9,['Wind Shrine','Wind Shrine'],{w:3,d:3});
  add('green','race','activity',3,10,['Tantangan Panjat','Climb Challenge'],undefined,'dragon-treat',24);
  // Ancient Ruins: scholar, relic merchant, puzzle, archive, tower.
  add('ruins','archive','hut',-9,-4,['Archive Tua','Old Archive'],{w:5,d:4});
  add('ruins','merchant','market',9,7,['Pasar Relik','Relic Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Ira Kolektor','Ira the Collector']});
- add('ruins','scholar','camp',-7,7,['Camp Arkeolog','Archaeologist Camp'],undefined,'herbal-tonic',18,{role:'clue',name:['Prof. Arga','Professor Arga'],clue:['Tiga simbol pada patung membuka jalur crypt dan ruang relic.','Three statue symbols open the crypt route and relic chamber.']});
+ add('ruins','scholar','camp',-7,7,['Camp Arkeolog','Archaeologist Camp'],undefined,'herbal-tonic',18,{role:'clue',name:['Prof. Arga','Professor Arga'],clue:['Reruntuhan yang tenggelam bukan sekadar hiasan. Cari tiga relief yang menghadap danau; salah satunya menunjukkan tempat item rahasia disembunyikan.','The submerged ruins are not decoration. Find the three reliefs facing the lake; one points to where the secret item is hidden.']});
  add('ruins','statues','activity',0,-9,['Puzzle Patung','Statue Puzzle'],undefined,'ancient-coin',26);
  add('ruins','tower','tower',8,-9,['Menara Pengawas','Watchtower'],{w:4,d:4});
  // Chasm: miner market, clue NPC, bridge repair and cave.
  add('chasm','miner-market','market',-10,8,['Camp Penambang','Miner Camp'],{w:5,d:4},undefined,0,{role:'merchant',name:['Dara Miner','Miner Dara']});
- add('chasm','foreman','camp',8,8,['Pos Mandor','Foreman Post'],undefined,'camp-meal',18,{role:'clue',name:['Jati','Jati'],clue:['Jalur bawah bukan void seluruhnya. Cari ledge bertanda lampu untuk turun aman.','The lower route is not all void. Follow lit ledges for a safe descent.']});
+ add('chasm','foreman','camp',8,8,['Pos Mandor','Foreman Post'],undefined,'camp-meal',18,{role:'clue',name:['Jati','Jati'],clue:['Di jurang, jalur tercepat bukan selalu yang paling tinggi. Cari lampu tua di dinding; itu menandai pijakan aman dan jalan menuju cache.','In the chasm, the fastest route is not always the highest one. Old lamps mark safe ledges and the route to a hidden cache.']});
  add('chasm','lift','activity',9,-1,['Perbaiki Lift','Repair Lift'],undefined,'iron-ore',26);
  add('chasm','side-cave','cave',9,-9,['Gua Samping','Side Cave'],{w:4,d:3});
  add('chasm','rope-cache','gather',-8,-8,['Cache Tali','Rope Cache'],undefined,'rope-fiber',14);
  // Giant Tree: canopy village, visible merchant, tree spirit clue, nest and root gathering.
  add('giant','canopy-village','treehouse',7,-7,['Desa Kanopi','Canopy Village'],{w:7,d:5});
  add('giant','merchant','market',10,1,['Pasar Kanopi','Canopy Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Lumi','Lumi']});
- add('giant','spirit','shrine',-8,7,['Shrine Roh Pohon','Tree Spirit Shrine'],{w:3,d:3},undefined,18,{role:'clue',name:['Roh Akar','Root Spirit'],clue:['Cabang tertinggi menuju gerbang langit. Akar berlubang menyembunyikan Gate A.','The highest branch leads to the sky gate. A hollow root hides Gate A.']});
+ add('giant','spirit','shrine',-8,7,['Shrine Roh Pohon','Tree Spirit Shrine'],{w:3,d:3},undefined,18,{role:'clue',name:['Roh Akar','Root Spirit'],clue:['Pohon Raksasa bukan tujuan biasa. Saat tiga Batu Mfeer dan item rahasia sudah siap, akar di bawahnya akan bereaksi. Cabang tertinggi hanya untuk mereka yang ingin mencari jalur langit.','The Giant Tree is no ordinary destination. When the three Mfeer Stones and the secret item are ready, its roots will react. The highest branch is for those seeking the sky route.']});
  add('giant','nest','activity',-9,-8,['Sarang Tersembunyi','Hidden Nest'],undefined,'dragon-treat',28);
  add('giant','root','gather',-10,10,['Akar Berenergi','Living Root'],undefined,'nature-fiber',16);
  // Underground layer.
