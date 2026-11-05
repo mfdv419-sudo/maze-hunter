@@ -2,9 +2,10 @@ import type {Grid,Point} from './maze';
 import {route} from './maze';
 import type {ForestRing,RingPassage,RingPortal,RingZone} from './forest-ring';
 import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,arenaPoint,type ForestArenaId} from './forest-world-design';
-import {applyForestSiteCollision,forestExtremeWorldSites,type ForestWorldSite} from './forest-rpg';
+import {applyForestSiteCollision,forestExtremeWorldSites,forestNpcWorldPoint,type ForestWorldSite} from './forest-rpg';
+import {pilotWaterDepth} from './forest-pilot';
 
-export const FOREST_EXTREME_BUILD='FG-EXTREME-VISION-08-20261105';
+export const FOREST_EXTREME_BUILD='FG-EXTREME-VISION-09-20261106';
 const point=(x:number,y:number):Point=>({x:Math.round(x),y:Math.round(y)});
 const same=(a:Point,b:Point)=>a.x===b.x&&a.y===b.y;
 const discrete=(pts:Point[])=>{const out:Point[]=[];for(let i=0;i<pts.length;i++){if(!i){out.push(pts[i]);continue;}const a=pts[i-1],b=pts[i],steps=Math.max(1,Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y))*3);for(let j=1;j<=steps;j++){const p=point(a.x+(b.x-a.x)*j/steps,a.y+(b.y-a.y)*j/steps);if(!same(p,out[out.length-1]))out.push(p);}}return out;};
@@ -68,7 +69,10 @@ export function forestExtremeRing(mapIndex=0,variation=1):ForestRing{
  const protectedPoints=[e,exit,...zones.map(z=>z.point),...portals.flatMap(p=>[p.point,p.destinationPoint]),...rewardPieces.map(r=>r.point)];
  const routeRewards=['forest-berry','crystal-shard','ancient-coin','dragon-treat'] as const;
  const pockets:ForestWorldSite[]=deadEnds.slice(0,14).map((p,i)=>({id:`ext-route-pocket-${i}`,arena:zones.filter(z=>!['entrance','inner','boss'].includes(z.id)).sort((a,b)=>Math.hypot(a.point.x-p.x,a.point.y-p.y)-Math.hypot(b.point.x-p.x,b.point.y-p.y))[0]?.id||'waterfall',kind:i%4===0?'activity':'gather',point:{...p},label:i%4===0?['Tantangan Jalur','Trail Challenge']:['Cache Tersembunyi','Hidden Cache'],reward:routeRewards[i%routeRewards.length],xp:12+i}));
- const content=applyForestSiteCollision(grid,[...forestExtremeWorldSites(ids),...pockets],protectedPoints);
+ const rawContent=[...forestExtremeWorldSites(ids),...pockets];
+ // NPCs must stand on dry, reachable terrain. Relocate authored site anchors before collision is committed.
+ for(const s of rawContent){if(!s.npc)continue;const wp=forestNpcWorldPoint(s);if(pilotWaterDepth(wp.x,wp.y)<=.18)continue;const candidates=[[0,-6],[6,0],[-6,0],[0,6],[7,-5],[-7,-5]] as const;for(const [dx,dy] of candidates){const ox=s.point.x,oy=s.point.y;s.point={x:ox+dx,y:oy+dy};const q=forestNpcWorldPoint(s);if(grid[Math.round(q.y)]?.[Math.round(q.x)]===0&&pilotWaterDepth(q.x,q.y)<=.18)break;s.point={x:ox,y:oy};}}
+ const content=applyForestSiteCollision(grid,rawContent,protectedPoints);
  const opened=grid.map(r=>[...r]);bossGate.forEach(p=>opened[p.y][p.x]=0);escapeGate.forEach(p=>opened[p.y][p.x]=0);const toBoss=route(opened,arenaPoint('inner'),arenaPoint('boss')),escape=route(opened,arenaPoint('boss'),exit);if(!toBoss.length||!escape.length)throw Error('Extreme rebuild final arc disconnected');
  return{version:FOREST_EXTREME_BUILD,difficulty:'extreme',size:n,center:arenaPoint('boss'),entry:e,exit,zones,passages,portals,trails,grid,gates:{boss:bossGate,escape:escapeGate,bridge:[],shortcut:[]},deadEnds,activeZones:ids,paths:{toBoss,escape},layers:FOREST_LAYERS,rewardPieces,content};
 }

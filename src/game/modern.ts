@@ -465,6 +465,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.updateVision();
     this.renderer.setAnimationLoop((t) => this.frame(t));
   }
+  projectForestPoint(x:number,z:number,height=1.75){const v=new T.Vector3(x*U,this.terrain(x,z)+height,z*U).project(this.camera),r=this.host.getBoundingClientRect();return{x:(v.x*.5+.5)*r.width,y:(-.5*v.y+.5)*r.height,visible:v.z>-1&&v.z<1&&v.x>-1.2&&v.x<1.2&&v.y>-1.2&&v.y<1.2};}
   captureBackdrop(){this.previewMode=true;this.paused=true;if(this.adventure){const p=this.adventure.layout.areas[this.adventure.area==='gorge'?1:2].point;this.position={x:p.x+.5,y:p.y+2.5};this.adventure.position={...this.position};}this.cameraYaw=this.desiredCameraYaw=this.adventure?.area==='gorge'?Math.PI+.5:Math.PI+.2;this.cameraPitch=this.desiredPitch=this.adventure?.area==='gorge'?.8:.85;this.acc=0;this.updateVision();this.frame(performance.now());this.renderer.render(this.scene,this.camera);return this.renderer.domElement.toDataURL('image/png');}
   skipAwakening(){this.skippedAwakening=this.adventure?.bossAwakeAt??-1;this.acc=0;}
   setTouchSensitivity(value:number){this.mousePreferences.touchSensitivity=T.MathUtils.clamp(value,.3,2);}

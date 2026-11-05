@@ -8,6 +8,7 @@ export type ForestItemId=
  |'iron-ore'|'rope-fiber'|'nature-fiber'|'dark-ore'|'cloud-crystal'|'sky-fiber'
  |'dragon-treat'|'guardian-token';
 export type ForestInventory=Record<ForestItemId,number>;
+
 export const forestItemInfo:Record<ForestItemId,{name:[string,string];kind:'food'|'drink'|'material'|'pet'|'treasure';hp?:number;stamina?:number;price?:number}>={
  'forest-berry':{name:['Berry Hutan','Forest Berry'],kind:'food',hp:20,price:5},
  'spring-water':{name:['Air Mata Air','Spring Water'],kind:'drink',stamina:45,price:5},
@@ -140,5 +141,12 @@ export function applyForestSiteCollision(grid:Grid,sites:ForestWorldSite[],prote
  }
  return accepted;
 }
+
+export function forestNpcOffset(site:ForestWorldSite):Point{
+ const side=site.kind==='market'?1:-1;
+ const d=Math.max(1.25,Math.min(2.1,(site.solid?.w||2)*.42));
+ return {x:side*d,y:.45};
+}
+export function forestNpcWorldPoint(site:ForestWorldSite):Point{const o=forestNpcOffset(site);return{x:site.point.x+.5+o.x,y:site.point.y+.5+o.y};}
 
 export const forestMarketOffers:(ForestItemId)[]=['forest-berry','spring-water','camp-meal','herbal-tonic','oxygen-flask','dragon-treat'];

@@ -5,7 +5,7 @@ import {pilotGround,PILOT_WATER_LEVEL as WATER,PILOT_UNDERGROUND_WATER_LEVEL as 
 import {FOREST_ARENAS,FOREST_LAYERS} from './forest-world-design';
 import {biomeSky} from './biome-scenery';
 import {groundTexture,forestTree} from './world-art';
-import type {ForestWorldSite} from './forest-rpg';
+import {forestNpcOffset,type ForestWorldSite} from './forest-rpg';
 
 const mat=(c:number)=>new T.MeshLambertMaterial({color:c,flatShading:true});
 const add=(parent:T.Object3D,g:T.BufferGeometry,m:T.Material,x:number,y:number,z:number)=>{const q=new T.Mesh(g,m);q.position.set(x,y,z);parent.add(q);return q;};
@@ -15,7 +15,7 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const grid=l.maze.grid,n=grid.length;
  const leafTex=groundTexture('leaf'),pathTex=groundTexture('path'),stoneTex=groundTexture('stone');
  leafTex.repeat.set(32,32);pathTex.repeat.set(24,24);stoneTex.repeat.set(12,12);
- const grass=new T.MeshLambertMaterial({color:0x83b956,map:leafTex}),soil=new T.MeshLambertMaterial({color:0x9a623d,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x2aaed1,transparent:true,opacity:.78,depthWrite:false,shininess:125,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0x835231,map:pathTex,flatShading:true});
+ const grass=new T.MeshLambertMaterial({color:0x83b956,map:leafTex}),soil=new T.MeshLambertMaterial({color:0x9a623d,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x2aaed1,transparent:true,opacity:.78,depthWrite:false,shininess:125,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0x6b482c,map:pathTex,flatShading:true});
  // Terrain visual and physics now share pilotGround(). No square walkable-tile floor exists in Extreme.
  const heightField=(ox:number,oz:number,size:number,segments:number,material:T.Material,name:string)=>{
   const geo=new T.PlaneGeometry(size,size,segments,segments);geo.rotateX(-Math.PI/2);geo.translate(ox+size/2,0,oz+size/2);
@@ -27,15 +27,16 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  heightField(190,10,121,72,new T.MeshLambertMaterial({color:0x5b5747,map:stoneTex}),'underground-cave-floor');
  // Natural collision boundary: continuous tall cliff faces matching blocked navigation cells.
  // Every blocked edge adjacent to a playable cell receives visible rock; no invisible wall gaps.
- const cliffGeo=new T.BoxGeometry(1,1,1),cliffCapGeo=new T.BoxGeometry(1.04,.16,1.04),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],dummy=new T.Object3D();
+ const cliffGeo=new T.BoxGeometry(1,1,1),cliffCapGeo=new T.BoxGeometry(1.04,.16,1.04),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],cliffTreeSeeds:{x:number;y:number;z:number;seed:number}[]=[],dummy=new T.Object3D();
  for(let z=2;z<179;z++)for(let x=2;x<179;x++){
   if(grid[z]?.[x]!==1)continue;const edge=grid[z-1]?.[x]===0||grid[z+1]?.[x]===0||grid[z]?.[x-1]===0||grid[z]?.[x+1]===0;if(!edge)continue;
   const base=pilotGround(x+.5,z+.5),h=3.6+((x*17+z*23)%5)*.34;
   dummy.position.set(x+.5,base+h/2,z+.5);dummy.scale.set(1.02,h,1.02);dummy.rotation.y=0;dummy.updateMatrix();cliffMatrices.push(dummy.matrix.clone());
-  dummy.position.set(x+.5,base+h+.02,z+.5);dummy.scale.set(1,1,1);dummy.updateMatrix();capMatrices.push(dummy.matrix.clone());
+  dummy.position.set(x+.5,base+h+.02,z+.5);dummy.scale.set(1,1,1);dummy.updateMatrix();capMatrices.push(dummy.matrix.clone());if((x*7+z*11)%19===0)cliffTreeSeeds.push({x:x+.5,y:base+h+.04,z:z+.5,seed:x*997+z});
  }
  const cliffs=new T.InstancedMesh(cliffGeo,earthCliff,cliffMatrices.length);cliffMatrices.forEach((m,i)=>cliffs.setMatrixAt(i,m));cliffs.name='authoritative-earth-cliff-boundary';root.add(cliffs);
- const caps=new T.InstancedMesh(cliffCapGeo,moss,capMatrices.length);capMatrices.forEach((m,i)=>caps.setMatrixAt(i,m));caps.name='grass-cliff-caps';root.add(caps);
+  const caps=new T.InstancedMesh(cliffCapGeo,moss,capMatrices.length);capMatrices.forEach((m,i)=>caps.setMatrixAt(i,m));caps.name='grass-cliff-caps';root.add(caps);
+ for(const t of cliffTreeSeeds.slice(0,90)){const tree=forestTree(t.seed);tree.position.set(t.x,t.y,t.z);tree.scale.setScalar(1.9+(t.seed%5)*.12);tree.name='cliff-top-canopy-tree';root.add(tree);}
  // Water mesh is sampled from the explicit water volume. It follows the carved terrain instead of a generic circle/rectangle.
  const waterVerts:number[]=[],waterIdx:number[]=[];let wi=0;const waterLevel=(x:number,z:number)=>{const d=Math.hypot(x-33,z-110);return d<21?-.58:null;};
  for(let z=88;z<132;z++)for(let x=11;x<56;x++){const level=waterLevel(x+.5,z+.5);if(level===null||pilotGround(x+.5,z+.5)>=level-.04)continue;waterVerts.push(x,level,z,x+1,level,z,x+1,level,z+1,x,level,z+1);waterIdx.push(wi,wi+1,wi+2,wi,wi+2,wi+3);wi+=4;}
@@ -80,7 +81,25 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
   else if(s.kind==='shrine'){add(g,new T.CylinderGeometry(1.2,1.4,.3,8),ruin,0,.15,0);for(const side of[-1,1])add(g,new T.CylinderGeometry(.15,.2,2.1,8),ruin,side*.8,1.05,0);add(g,new T.OctahedronGeometry(.42,0),purple,0,1.55,0);}
   else if(s.kind==='cave'){for(const side of[-1,1]){const q=add(g,new T.DodecahedronGeometry(1.25,0),rock,side*1.25,.85,0);q.scale.y=1.4;}add(g,new T.BoxGeometry(1.5,.2,1.8),dark,0,.05,0);}
   else {const marker=add(g,new T.CylinderGeometry(.52,.7,.18,10),s.kind==='gather'?leaf:gold,0,.1,0);marker.name='interactive-'+s.kind;add(g,new T.OctahedronGeometry(.24,0),s.kind==='gather'?leaf:purple,0,.65,0);}
-  if(s.npc){const npc=new T.Group();npc.name='npc-'+s.npc.role+'-'+s.id;npc.position.set((s.solid?.w||2)*.6,0,.3);g.add(npc);const bodyColor=s.npc.role==='merchant'?0xd7a553:s.npc.role==='clue'?0x69a98d:s.npc.role==='quest'?0x8b69c9:0x6c8db1;add(npc,new T.CapsuleGeometry(.29,.5,4,8),mat(bodyColor),0,.62,0);add(npc,new T.SphereGeometry(.29,10,7),mat(0x74533f),0,1.18,0);for(const side of[-1,1]){const ear=add(npc,new T.ConeGeometry(.105,.24,6),mat(0x74533f),side*.18,1.42,0);ear.rotation.z=side*.18;const arm=add(npc,new T.CylinderGeometry(.07,.09,.48,6),mat(bodyColor),side*.34,.65,0);arm.rotation.z=side*.35;}const tail=add(npc,new T.TorusGeometry(.34,.055,6,18,Math.PI*1.25),mat(0x74533f),-.18,.62,-.2);tail.rotation.x=Math.PI/2;tail.name='npc-tail';const badge=add(npc,new T.CircleGeometry(.12,10),new T.MeshBasicMaterial({color:s.npc.role==='merchant'?0xffd96c:s.npc.role==='clue'?0x8fe8d0:0xd8c5ff,side:T.DoubleSide}),0,1.47,.08);badge.name='npc-role-badge';if(s.npc.role==='merchant'){const hat=add(npc,new T.ConeGeometry(.32,.28,8),stallRoof,0,1.42,0);hat.name='merchant-hat';add(npc,new T.BoxGeometry(.34,.26,.08),gold,.34,.65,.05).name='merchant-satchel';}else if(s.npc.role==='clue'){const scroll=add(npc,new T.BoxGeometry(.42,.28,.045),cloth,.34,.72,.08);scroll.rotation.z=-.18;scroll.name='clue-scroll';}else if(s.npc.role==='quest'){add(npc,new T.OctahedronGeometry(.13,0),purple,0,1.72,0).name='quest-marker';}}
+  if(s.npc){const npc=new T.Group();npc.name='npc-'+s.npc.role+'-'+s.id;const no=forestNpcOffset(s);npc.position.set(no.x,0,no.y);g.add(npc);
+   // Readable woodland NPC: one coherent low-poly animal character, never capsule/sphere placeholders.
+   const role=s.npc.role,fur=mat(role==='merchant'?0x9b6a43:role==='clue'?0x6d5a46:role==='quest'?0x705b7d:0x6a6658),cream=mat(0xe8d6b5),outfit=mat(role==='merchant'?0x3d7f74:role==='clue'?0x4f6f8d:role==='quest'?0x765a9a:0x7f6b4f),darkNpc=mat(0x29343a),pink=mat(0xd98f88);
+   const torso=add(npc,new T.SphereGeometry(1,10,7),fur,0,.62,0);torso.scale.set(.34,.48,.28);torso.name='npc-torso';
+   const belly=add(npc,new T.SphereGeometry(1,10,7),cream,0,.59,.245);belly.scale.set(.22,.30,.045);belly.name='npc-belly';
+   const head=add(npc,new T.SphereGeometry(1,12,8),fur,0,1.15,.015);head.scale.set(.31,.29,.28);head.name='npc-head';
+   const muzzle=add(npc,new T.SphereGeometry(1,10,7),cream,0,1.08,.255);muzzle.scale.set(.17,.11,.09);muzzle.name='npc-muzzle';
+   add(npc,new T.SphereGeometry(.055,8,6),darkNpc,0,1.10,.345).name='npc-nose';
+   for(const side of[-1,1]){const ear=add(npc,new T.ConeGeometry(.11,.25,7),fur,side*.20,1.39,0);ear.rotation.z=-side*.16;const inner=add(npc,new T.ConeGeometry(.055,.13,6),pink,side*.20,1.405,.015);inner.rotation.z=-side*.16;add(npc,new T.SphereGeometry(.045,8,6),darkNpc,side*.105,1.20,.278).name='npc-eye';
+    const arm=add(npc,new T.CapsuleGeometry(.055,.25,3,6),outfit,side*.31,.70,.02);arm.rotation.z=-side*.30;const paw=add(npc,new T.SphereGeometry(1,8,6),fur,side*.39,.55,.05);paw.scale.set(.09,.07,.09);paw.name='npc-paw';
+    const leg=add(npc,new T.CapsuleGeometry(.065,.20,3,6),fur,side*.14,.22,0);const foot=add(npc,new T.SphereGeometry(1,8,6),darkNpc,side*.14,.07,.08);foot.scale.set(.11,.06,.16);}
+   const vest=add(npc,new T.BoxGeometry(.48,.42,.12),outfit,0,.70,.24);vest.name='npc-role-outfit';
+   const tail=add(npc,new T.TorusGeometry(.34,.06,7,20,Math.PI*1.35),fur,-.20,.48,-.18);tail.rotation.x=Math.PI/2;tail.name='npc-tail';
+   if(role==='merchant'){const hat=add(npc,new T.CylinderGeometry(.28,.34,.10,10),stallRoof,0,1.44,0);add(npc,new T.ConeGeometry(.25,.22,9),stallRoof,0,1.56,0);add(npc,new T.BoxGeometry(.23,.28,.08),gold,.30,.65,.15).name='merchant-satchel';}
+   if(role==='clue'){const scroll=add(npc,new T.BoxGeometry(.34,.24,.04),cloth,.28,.66,.20);scroll.rotation.z=-.20;scroll.name='clue-scroll';add(npc,new T.OctahedronGeometry(.10,0),new T.MeshBasicMaterial({color:0x8fe8d0}),0,1.62,0).name='clue-marker';}
+   if(role==='quest')add(npc,new T.OctahedronGeometry(.13,0),purple,0,1.62,0).name='quest-marker';
+   if(role==='rest')add(npc,new T.SphereGeometry(.10,8,6),new T.MeshBasicMaterial({color:0xffd96c}),0,1.62,0).name='rest-marker';
+   npc.userData.collisionRadius=.44;npc.userData.role=role;
+  }
  };
  ring.content.forEach(renderSite);
  // Forest ecology pass: dense canopy on solid boundary cells plus soft understory on safe open shoulders.
