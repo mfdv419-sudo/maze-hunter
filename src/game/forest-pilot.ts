@@ -5,6 +5,7 @@ import {FOREST_ARENAS,FOREST_LAYERS,arenaPoint,layerOfPoint} from './forest-worl
 import {waterfallHubHeight,WATERFALL_HUB_BRIDGES,WATERFALL_HUB_RAMPS,WATERFALL_HUB_TERRACES} from './forest-hub';
 export const pilotNames=['Forest Entrance','Deep Forest Hub','Green Cliffs','Ancient Ruins','Giant Tree','Guardian Sanctuary','Waterfall Valley'];
 export const PILOT_WATER_LEVEL=-.58;
+export const PILOT_UNDERGROUND_WATER_LEVEL=-2.65;
 /** Build fingerprint for distinguishing the installed revision from cached deploys. */
 export const FOREST_PILOT_BUILD='FG-P0B-20261104';
 export const FOREST_SLICE_BUILD='FG-HUB-REBUILD01-20261104';
@@ -53,10 +54,19 @@ export function pilotGround(x:number,y:number){
  }
  const wf=arenaPoint('waterfall'),green=arenaPoint('green'),giant=arenaPoint('giant'),ruins=arenaPoint('ruins'),chasm=arenaPoint('chasm'),boss=arenaPoint('boss');
  const waterD=Math.hypot(x-wf.x,y-wf.y);
- const waterBasin=waterD<17?-(1.25+(17-waterD)/17*3.2):0;
- const relief=hill(green.x,green.y,24,23,4.5)+hill(giant.x,giant.y,26,24,3.8)+hill(ruins.x,ruins.y,23,20,1.6)+hill(chasm.x,chasm.y,24,22,2.4)+hill(boss.x,boss.y,18,18,1.4)+.18*Math.sin(x*.11)*Math.cos(y*.09);
- return waterD<17?waterBasin:Math.max(0,relief);
+ const waterBasin=waterD<20?-(1.25+(20-waterD)/20*3.6):0;
+ const chasmD=Math.hypot(x-chasm.x,y-chasm.y),ravine=chasmD<12?-(.7+(12-chasmD)/12*2.4):0;
+ const relief=hill(green.x,green.y,24,23,4.5)+hill(giant.x,giant.y,26,24,3.8)+hill(ruins.x,ruins.y,23,20,1.6)+hill(chasm.x,chasm.y,28,24,1.2)+hill(boss.x,boss.y,18,18,1.4)+.18*Math.sin(x*.11)*Math.cos(y*.09);
+ return waterD<20?waterBasin:chasmD<12?ravine:Math.max(0,relief);
 }
+/** Explicit water volume. Terrain height and water are intentionally separate so dry caves/chasm depressions never become swimming zones. */
+export function pilotWaterLevelAt(x:number,y:number):number|null{
+ const layer=layerOfPoint({x,y});
+ if(layer==='surface'){const wf=arenaPoint('waterfall');return Math.hypot(x-wf.x,y-wf.y)<20?PILOT_WATER_LEVEL:null;}
+ if(layer==='underground'){const flooded=arenaPoint('ug-flooded');return Math.hypot(x-flooded.x,y-flooded.y)<14?PILOT_UNDERGROUND_WATER_LEVEL:null;}
+ return null;
+}
+export function pilotWaterDepth(x:number,y:number){const level=pilotWaterLevelAt(x,y);return level===null?0:Math.max(0,level-pilotGround(x,y));}
 export function forestPilotLayout(difficulty?:Difficulty,mapIndex=0,variation=1):AdventureLayout{
  if(difficulty)return forestRingPilotLayout(difficulty,mapIndex,variation);
  const n=73,grid=Array.from({length:n},()=>Array(n).fill(1));
@@ -153,7 +163,7 @@ function forestRingPilotLayout(difficulty:Difficulty,mapIndex=0,variation=1):Adv
  const seals=[{x:green.x-5,y:green.y+2},{x:ruins.x-4,y:ruins.y-2},{x:waterfall.x+4,y:waterfall.y-4}];
  const stars=ring.deadEnds.slice(0,9),chests=ring.deadEnds.slice(3,6);
  const areas=ring.zones.map((z,i)=>({point:z.point,zone:i})),zoneCells=grid.map((row,y)=>row.map((_,x)=>areas.reduce((best,a,i)=>Math.hypot(a.point.x-x,a.point.y-y)<Math.hypot(areas[best].point.x-x,areas[best].point.y-y)?i:best,0)));
- const patrols=ring.zones.filter(z=>!['boss','entrance','inner'].includes(z.id)).flatMap(z=>{const p=z.point,base=[[{x:p.x-3,y:p.y},{x:p.x+3,y:p.y}],[{x:p.x,y:p.y-3},{x:p.x,y:p.y+3}]];if(z.id==='ug-xp')base.push([{x:p.x-6,y:p.y-4},{x:p.x+5,y:p.y-4}],[{x:p.x-5,y:p.y+5},{x:p.x+6,y:p.y+4}],[{x:p.x-7,y:p.y},{x:p.x,y:p.y+7}],[{x:p.x,y:p.y-7},{x:p.x+7,y:p.y}]);return base;});
+ const patrols=ring.zones.filter(z=>!['boss','entrance','inner'].includes(z.id)).flatMap(z=>{const p=z.point;let base=z.id==='waterfall'?[[{x:p.x-7,y:p.y+19},{x:p.x+7,y:p.y+19}],[{x:p.x-6,y:p.y-19},{x:p.x+6,y:p.y-19}]]:[[{x:p.x-3,y:p.y},{x:p.x+3,y:p.y}],[{x:p.x,y:p.y-3},{x:p.x,y:p.y+3}]];if(z.id==='ug-xp')base.push([{x:p.x-6,y:p.y-4},{x:p.x+5,y:p.y-4}],[{x:p.x-5,y:p.y+5},{x:p.x+6,y:p.y+4}],[{x:p.x-7,y:p.y},{x:p.x,y:p.y+7}],[{x:p.x,y:p.y-7},{x:p.x+7,y:p.y}]);return base.filter(path=>path.every(q=>grid[q.y]?.[q.x]===0&&pilotWaterDepth(q.x+.5,q.y+.5)<.18));});
  const ledges:AdventureLayout['ledges']=[];let lid=800;
  const rock=(p:Point,dx:number,dy:number,h:number,w=2,d=2)=>ledges.push({id:lid++,point:{x:p.x+dx,y:p.y+dy},height:h,width:w,depth:d,kind:'rock'});
  const log=(p:Point,dx:number,dy:number,h=.65)=>ledges.push({id:lid++,point:{x:p.x+dx,y:p.y+dy},height:h,width:3,depth:.8,kind:'log'});
@@ -169,6 +179,16 @@ function forestRingPilotLayout(difficulty:Difficulty,mapIndex=0,variation=1):Adv
  ledges.push({id:lid++,point:{x:giant.x,y:giant.y},height:4.2,width:3,depth:3,kind:'tree'});rock(giant,-6,4,2.2,3.2,3.2);rock(giant,5,2,3.1,3.4,3.4);log(giant,0,-7,.8);
  const ugxp=ring.zones.find(z=>z.id==='ug-xp')?.point;if(ugxp){rock(ugxp,-7,2,.7,2.5,2.5);rock(ugxp,5,-5,1.15,3,2.2);log(ugxp,3,6,.65);}
  if(difficulty==='extreme'){for(const a of ['sky-1','sky-2','sky-3'] as const){const p=nearest(a);rock(p,-4,2,1.2,3.5,3.5);rock(p,4,-2,2.2,4.5,4.5);log(p,0,6,.7);}}
+ if(difficulty==='extreme'){
+  // Geometry/collision truth: every visible Green-Cliffs stair and major platform has a matching physical ledge.
+  for(let i=0;i<8;i++)ledges.push({id:lid++,point:{x:green.x-7+i*2-.5,y:green.y+7-i-.5},height:.18+i*.38,width:2.1,depth:2,kind:'rock'});
+  // The large visible lookout deck is a real landing/climb surface too.
+  ledges.push({id:lid++,point:{x:green.x+7-.5,y:green.y-5-.5},height:3.1,width:8,depth:5,kind:'rock'});
+  // Chasm visual bridges are genuine landing surfaces, not decorative meshes over a death zone.
+  for(const dz of[-5,5])ledges.push({id:lid++,point:{x:chasm.x-.5,y:chasm.y+dz-.5},height:.68,width:11,depth:1.8,kind:'log'});
+  // Giant Tree canopy platforms match the rendered disks and can be stood on/climbed to.
+  for(let i=0;i<3;i++){const a=i*2.094;ledges.push({id:lid++,point:{x:giant.x+Math.sin(a)*4.5-.5,y:giant.y+Math.cos(a)*4.5-.5},height:4+i*2.7,width:8.8,depth:8.8,kind:'tree'});}
+ }
  const forest={trunks:[] as Point[],pillars:[] as Point[],boulders:[] as Point[],arenaRadius:12,cave:nearest('ug-flooded'),cabin:ruins,highland:green};
  return{ring,index:0,maze:{grid,start:ring.entry,finish:ring.exit,entrances:[ring.entry],seed:20261105+mapIndex*17+variation},pilot:{gates:ring.gates.boss,bridge:ring.gates.bridge,shortcut:ring.gates.shortcut,exit:ring.gates.escape,switches:[{x:ruins.x-2,y:ruins.y},{x:ruins.x+2,y:ruins.y}],pool:waterfall},diamonds:objective,seals,stars,chests,areas,zoneCells,ledges,forest,fortress:ring.center,bosses:[ring.center],patrols,escapeRoutes:[ring.paths.escape],escapeConnector:ring.gates.escape,fastRiver:ring.exit,starts:[ring.entry],solution:ring.paths.toBoss,rivers:[],grass:[],vegetation:[]};
 }

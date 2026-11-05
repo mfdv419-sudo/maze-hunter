@@ -1,6 +1,6 @@
 import {ForestClimber,cliffSurfaces,traversalGrid} from './forest-traversal';
 import {forestRules} from './forest-rules';
-import {forestPilotLayout,pilotVoid,pilotGround} from './forest-pilot';
+import {forestPilotLayout,pilotVoid,pilotGround,pilotWaterDepth} from './forest-pilot';
 import {steepHubSidewall} from './forest-hub';
 import {trainingLayout} from './training-layout';
 import {handOrigin,projectileOrigin,releaseTime,type AvatarAction} from './avatar-actions';
@@ -41,7 +41,7 @@ export class AdventureState {
  consumeForestItem(id:ForestItemId){if(!this.forestInventory[id])return false;const item=forestItemInfo[id];if(item.kind==='material'||item.kind==='treasure')return false;this.forestInventory[id]--;if(item.hp)this.hp=Math.min(this.maxHp,this.hp+item.hp);if(item.stamina)this.stamina=Math.min(this.maxStamina,this.stamina+item.stamina);if(id==='oxygen-flask')this.oxygen=Math.min(this.oxygenCapacity,this.oxygen+this.oxygenCapacity*.65);if(id==='dragon-treat')this.petBond=Math.min(100,this.petBond+8);this.notify('item-used');this.revision++;return true;}
  buyForestItem(id:ForestItemId){if(!this.layout.ring||!this.nearbyForestSite||this.nearbyForestSite.kind!=='market'||!forestMarketOffers.includes(id))return false;const price=forestItemInfo[id].price||1;if(this.coins<price)return false;this.coins-=price;this.addForestItem(id);this.notify('bought');return true;}
  sellForestItem(id:ForestItemId){const site=this.nearbyForestSite,info=forestItemInfo[id];if(!site||site.kind!=='market'||!this.forestInventory[id]||!['material','treasure'].includes(info.kind))return false;this.forestInventory[id]--;this.coins+=Math.max(1,Math.ceil((info.price||2)*.6));this.notify('sold');this.revision++;return true;}
- interactForestSite(){const site=this.nearbyForestSite;if(!site)return false;if(site.kind==='market'){this.notify('market');return true;}if(site.kind==='camp'){this.hp=Math.min(this.maxHp,this.hp+35);this.stamina=this.maxStamina;this.checkpoint={...this.position};}if(!this.worldClaims.has(site.id)){this.worldClaims.add(site.id);if(site.reward)this.addForestItem(site.reward);this.addXP(site.xp||10);if(site.kind==='activity')this.coins+=6;if(site.kind==='gather')this.coins+=2;this.petBond=Math.min(100,this.petBond+(site.kind==='activity'?2:1));}this.notify(site.kind==='camp'?'rest':'site');this.revision++;return true;}
+ interactForestSite(){const site=this.nearbyForestSite;if(!site)return false;if(site.npc?.role==='merchant'||site.kind==='market'){this.notify('market');return true;}if(site.npc?.role==='clue'){this.message=site.npc.clue?.[0]||site.label[0];this.messageAt=this.elapsed;this.revision++;return true;}if(site.npc?.role==='quest'){if(!this.worldClaims.has(site.id)){this.worldClaims.add(site.id);this.addXP(site.xp||20);if(site.reward)this.addForestItem(site.reward);this.coins+=8;}this.notify('quest');this.revision++;return true;}if(site.kind==='camp'||site.npc?.role==='rest'){this.hp=Math.min(this.maxHp,this.hp+35);this.stamina=this.maxStamina;this.checkpoint={...this.position};}if(!this.worldClaims.has(site.id)){this.worldClaims.add(site.id);if(site.reward)this.addForestItem(site.reward);this.addXP(site.xp||10);if(site.kind==='activity')this.coins+=6;if(site.kind==='gather')this.coins+=2;this.petBond=Math.min(100,this.petBond+(site.kind==='activity'?2:1));}this.notify(site.kind==='camp'?'rest':'site');this.revision++;return true;}
  diamonds=new Set<number>();xp=0;relics=new Set<string>();relicWeaponForm:'blade'|'spear'|'staff'|null=null;petBond=0;gateCooldown=-10;oxygen=forestRules.oxygen;oxygenCapacity=forestRules.oxygen;
  get adventureLevel(){return Math.min(50,1+Math.floor(this.xp/100));}
  get adventureXPBoost(){return this.layout.ring?Math.min(.1,(this.adventureLevel-1)*.005):0;}
@@ -201,7 +201,7 @@ export class AdventureState {
   const solids=[...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))],steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/.08));let out={...p};
   const clear=(q:Point)=>
    // Guards without swimming abilities stay on the visible dry route.
-   pilotGround(q.x,q.y)>=-1.02&&
+   pilotWaterDepth(q.x,q.y)<.18&&
    solids.every(o=>Math.hypot(q.x-o.x-.5,q.y-o.y-.5)>=o.r+radius);
   for(let i=0;i<steps;i++){const x=moveSliding(this.grid,out,dx/steps,0,radius);if(clear(x))out=x;const y=moveSliding(this.grid,out,0,dy/steps,radius);if(clear(y))out=y;}return out;
  }

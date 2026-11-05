@@ -1,15 +1,16 @@
-/* Shared Adventure touch targets, loaded LAST after legacy/presentation rules.
-   The three skill centers have exactly equal radial distance to the viewport corner.
+/* Shared Adventure touch targets, loaded LAST after every legacy/presentation rule.
+   ALL Adventure areas/devices use one corner-centred Mobile-Legends-style arc.
+   The viewport bottom-right corner is the arc centre; Jump sits at the arc apex.
    No UI changes to Retro or the established gameplay camera. */
 #game[data-screen="modern"] .play-screen.adventure-pad{
- --mh-pad-radius:clamp(112px,27dvh,152px);
- --mh-pad-button:clamp(45px,10dvh,58px);
- --mh-pad-jump:clamp(66px,15dvh,84px);
+ --mh-pad-radius:clamp(116px,28dvh,158px);
+ --mh-pad-button:clamp(44px,10dvh,56px);
+ --mh-pad-jump:clamp(66px,15dvh,82px);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls{
  position:absolute!important;z-index:24!important;display:block!important;
- width:calc(var(--mh-pad-radius) + var(--mh-pad-button)/2)!important;
- height:calc(var(--mh-pad-radius) + var(--mh-pad-button)/2)!important;
+ width:calc(var(--mh-pad-radius) + var(--mh-pad-jump)/2)!important;
+ height:calc(var(--mh-pad-radius) + var(--mh-pad-jump)/2)!important;
  right:max(8px,env(safe-area-inset-right))!important;
  bottom:max(8px,env(safe-area-inset-bottom))!important;
  top:auto!important;left:auto!important;
@@ -30,23 +31,25 @@
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%!important;height:100%!important;display:block!important;pointer-events:none}
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{
  width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;
- right:0!important;bottom:0!important;top:auto!important;left:auto!important;
+ right:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-jump)/2)!important;
+ bottom:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-jump)/2)!important;
+ top:auto!important;left:auto!important;
  background:radial-gradient(circle at 35% 25%,#479dd9,#285c88 65%,#173a5b)!important;
 }
-/* Centres at R*[cos(70),sin(70)], R*[cos(45),sin(45)], R*[cos(20),sin(20)]. */
+/* Small controls flank Jump on the same corner-centred arc. Centres use angles 82°, 64°, 18°; Jump is the 45° apex. */
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{
- right:calc(var(--mh-pad-radius)*.342020 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.939693 - var(--mh-pad-button)/2)!important;
+ right:calc(var(--mh-pad-radius)*.139173 - var(--mh-pad-button)/2)!important;
+ bottom:calc(var(--mh-pad-radius)*.990268 - var(--mh-pad-button)/2)!important;
  left:auto!important;top:auto!important;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{
- right:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.707107 - var(--mh-pad-button)/2)!important;
+ right:calc(var(--mh-pad-radius)*.438371 - var(--mh-pad-button)/2)!important;
+ bottom:calc(var(--mh-pad-radius)*.898794 - var(--mh-pad-button)/2)!important;
  left:auto!important;top:auto!important;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{
- right:calc(var(--mh-pad-radius)*.939693 - var(--mh-pad-button)/2)!important;
- bottom:calc(var(--mh-pad-radius)*.342020 - var(--mh-pad-button)/2)!important;
+ right:calc(var(--mh-pad-radius)*.951057 - var(--mh-pad-button)/2)!important;
+ bottom:calc(var(--mh-pad-radius)*.309017 - var(--mh-pad-button)/2)!important;
  left:auto!important;top:auto!important;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.48!important;filter:grayscale(.3)!important}

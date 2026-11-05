@@ -1805,3 +1805,23 @@ Validation performed in this environment:
 - Forest Ring generation simulated for 30 seeds × 4 difficulties after content collision; zero arena portal reachability failures.
 - Extreme sample: 37 content sites, 8 trail/dead-end reward pockets, 7 markets.
 - Full `npm run build` was not executed here because project dependencies are not installed in this runtime and the available Node version is 22 while the repository requires Node 24. Netlify remains the authoritative full build check.
+
+## 2026-11-05 — FG-EXTREME-REBUILD-04 (dedicated Extreme world rebuild)
+- Extreme no longer extends the Medium generator. `forestRing('extreme')` now routes to the dedicated `forest-extreme-world.ts` baseline (`FG-EXTREME-REBUILD-04-20261105`). Easy/Medium/Hard remain outside this generator and can later be derived from the approved master.
+- The Extreme master includes Surface, Underground and Floating layers; only Waterfall Valley and Green Cliffs are physically reachable from Entry. Other arenas require authored Gate A/Gate B/Return links or deliberate shortcuts, preventing the previous easy physical leaks between arenas.
+- Added visible, interactive world NPC roles (merchant, clue, quest, rest) tied to authored sites. Extreme currently contains 54 content sites, including visible market stalls and 19 NPC sites (8 merchants, 8 clue NPCs).
+- Water is now an explicit volume separate from terrain elevation. Waterfall basin and Flooded Cavern can be true swim zones while dry Chasm/Underground depressions no longer become water accidentally.
+- Waterfall land-guard patrols are generated on dry banks and rejected when any patrol point intersects actual water depth. This addresses pangolin/guard spawning or patrolling in the basin.
+- Added collision-matched physical ledges for visible Green-Cliffs stairs/lookout, Chasm bridges and Giant Tree canopy platforms. Solid authored world sites use the same source records for rendering and navigation blockers.
+- Updated shared Adventure action-pad override for all Adventure areas/devices. The bottom-right viewport corner is the arc center and Jump is positioned at the arc apex; legacy Adventure layouts are overridden by this stylesheet. Retro remains unaffected.
+- Reworked avatar paw geometry to `integrated-paw-v4`: an overlapping wrist bridge connects forearm to palm, targeting the detached round-glove appearance rather than merely changing finger count.
+- Adventure Bag keeps item-category content and now shows explicit empty storage slots so the inventory reads as an RPG bag rather than a text-only status panel.
+- Added lightweight `retro-quiz-availability` Netlify function that checks the bundled question bank without Firebase Admin/login. Client availability checks use it first and fall back to the existing full quiz service. Netlify function bundling explicitly includes `questions_2000_master.json`.
+- Added `forest-extreme-rebuild04.test.ts` regression coverage for Extreme-vs-Medium binding, required layers, merchant/clue NPC content, A/B/Return portals, boss/escape reachability, dry guard patrols and Green lookout collision.
+
+Validation performed in this environment:
+- TypeScript syntax transpilation passed for all modified TypeScript files.
+- Strict isolated TypeScript check passed for the Extreme generator, ring, RPG, pilot terrain/water and aquatic logic.
+- Previously validated Extreme topology: 40 physical-connectivity seeds with Entry reaching only Entry/Waterfall/Green; 80 gate-graph seeds with required arena reachability and valid boss/escape paths.
+- Quiz bank check: Levels 1, 41, 61 and 100 each contain 20 active questions across 10 subjects.
+- Full `npm run build` is not claimed here: this container runs Node 22.16 while the repository requires Node >=24.12 <25, and the local dependency install is incomplete. Netlify Node 24 remains the authoritative full-build check.

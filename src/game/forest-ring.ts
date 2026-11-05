@@ -2,8 +2,10 @@ import type {Difficulty,Grid,Point} from './maze';
 import {route} from './maze';
 import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,activeSurfaceArenas,arenaPoint,gatePools,type ForestArenaId,type ForestLayerId} from './forest-world-design';
 import {applyForestSiteCollision,forestWorldSites,type ForestWorldSite} from './forest-rpg';
+import {forestExtremeRing,FOREST_EXTREME_BUILD} from './forest-extreme-world';
 
 export const FOREST_RING_BUILD='FG-RPG-MASTER-03-20261105';
+export {FOREST_EXTREME_BUILD};
 export type RingZoneId=ForestArenaId;
 export type RingConnector='trail'|'stairs'|'bridge'|'water'|'tunnel'|'vine'|'sky'|'portal';
 export interface RingZone {id:RingZoneId;point:Point;layer:ForestLayerId;mandatory:boolean;radius:number;label:string}
@@ -20,11 +22,11 @@ const pick=<T>(items:T[],key:string)=>items[hash(key)%items.length];
 const point=(x:number,y:number):Point=>({x:Math.round(x),y:Math.round(y)}),same=(a:Point,b:Point)=>a.x===b.x&&a.y===b.y;
 function discrete(points:Point[]):Point[]{const out:Point[]=[];for(let i=0;i<points.length;i++){if(i===0){out.push(points[i]);continue;}const a=points[i-1],b=points[i],steps=Math.max(1,Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y))*3);for(let j=1;j<=steps;j++){const p=point(a.x+(b.x-a.x)*j/steps,a.y+(b.y-a.y)*j/steps);if(!same(p,out[out.length-1]))out.push(p);}}return out;}
 export function forestRing(difficulty:Difficulty,mapIndex=0,variation=1):ForestRing{
+ if(difficulty==='extreme')return forestExtremeRing(mapIndex,variation);
  const n=FOREST_MASTER_SIZE,grid:Grid=Array.from({length:n},()=>Array(n).fill(1));
  const enabled=new Set<ForestArenaId>(['entrance','inner','boss',...activeSurfaceArenas[difficulty]]);
- if(difficulty==='hard'||difficulty==='extreme')for(const id of ['ug-flooded','ug-relic','ug-xp','ug-cross'] as ForestArenaId[])enabled.add(id);
- if(difficulty==='extreme')for(const id of ['sky-1','sky-2','sky-3'] as ForestArenaId[])enabled.add(id);
- const zones=[...enabled].map(id=>{const a=FOREST_ARENAS[id];return{id,point:arenaPoint(id),layer:a.layer,mandatory:['entrance','waterfall','green','ruins','inner','boss'].includes(id),radius:a.radius,label:a.label};});
+ if(difficulty==='hard')for(const id of ['ug-flooded','ug-relic','ug-xp','ug-cross'] as ForestArenaId[])enabled.add(id);
+  const zones=[...enabled].map(id=>{const a=FOREST_ARENAS[id];return{id,point:arenaPoint(id),layer:a.layer,mandatory:['entrance','waterfall','green','ruins','inner','boss'].includes(id),radius:a.radius,label:a.label};});
  const trails:Point[][]=[],passages:RingPassage[]=[],deadEnds:Point[]=[];
  const carve=(p:Point,r=1)=>{for(let y=p.y-r;y<=p.y+r;y++)for(let x=p.x-r;x<=p.x+r;x++)if(y>1&&x>1&&y<n-2&&x<n-2&&Math.hypot(x-p.x,y-p.y)<=r+.35)grid[y][x]=0;};
  const block=(p:Point,r=1)=>{for(let y=p.y-r;y<=p.y+r;y++)for(let x=p.x-r;x<=p.x+r;x++)if(grid[y]?.[x]!==undefined)grid[y][x]=1;};
@@ -61,8 +63,7 @@ export function forestRing(difficulty:Difficulty,mapIndex=0,variation=1):ForestR
 
  const backbone:Partial<Record<ForestArenaId,Partial<Record<'A'|'B',ForestArenaId>>>>={
   waterfall:{B:'chasm'},green:{B:'ruins'},chasm:{B:'giant'},
-  ...(difficulty==='hard'||difficulty==='extreme'?{ruins:{A:'ug-relic'},'ug-relic':{A:'ug-cross'},'ug-cross':{A:'ug-xp'},'ug-xp':{A:'ug-flooded'}}:{}),
-  ...(difficulty==='extreme'?{giant:{B:'sky-1'},'sky-1':{A:'sky-2'},'sky-2':{A:'sky-3'}}:{})
+  ...(difficulty==='hard'?{ruins:{A:'ug-relic'},'ug-relic':{A:'ug-cross'},'ug-cross':{A:'ug-xp'},'ug-xp':{A:'ug-flooded'}}:{})
  };
  const gatePos=(id:ForestArenaId,slot:'A'|'B'|'RETURN')=>{const a=FOREST_ARENAS[id],p=arenaPoint(id),ang=slot==='A'?-2.2:slot==='B'?.55:2.7,dist=a.radius*.72;return point(p.x+Math.sin(ang)*dist,p.y+Math.cos(ang)*dist);};
  const destinationSpawn=(id:ForestArenaId)=>{const p=arenaPoint(id),r=FOREST_ARENAS[id].radius;return point(p.x,p.y+Math.min(5,r*.3));};

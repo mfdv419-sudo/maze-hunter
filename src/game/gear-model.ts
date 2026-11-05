@@ -8,12 +8,13 @@ const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:num
  * This shared model is used by home preview and in-game avatar, avoiding two hand geometries.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.128,.026,'paw-hand');root.userData.gear=kind;root.userData.handModel='four-finger-paw-v3';
+ const root=joint(parent,0,-.092,.020,'paw-hand');root.userData.gear=kind;root.userData.handModel='integrated-paw-v4';
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
  const hand=satin(bare?furColor:colors[kind]??colors.trail),cuffColor=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- // Palm stays visibly connected to the forearm and is wider than it is deep.
- box(root,.142,.120,.098,hand,0,-.050,.050,.038).name='paw-palm';
+ // Wrist bridge overlaps the forearm and palm so the hand reads as one continuous limb, never a detached glove.
+ const wrist=addMesh(root,new T.CylinderGeometry(.062,.071,.105,12),hand,0,.026,.018);wrist.name='paw-wrist-bridge';wrist.scale.z=.86;
+ box(root,.136,.112,.094,hand,0,-.038,.046,.034).name='paw-palm';
  if(!bare){const cuff=addMesh(root,new T.CylinderGeometry(.069,.076,.046,12),cuffColor,0,.045,.018);cuff.scale.z=.82;cuff.name='paw-cuff';box(root,.102,.012,.112,trim,0,.014,.036,.006);}
  // Four separate fingers: small rounded pads, with a shallow fan. No claw-like upward rods.
  const lengths=[.050,.058,.057,.047];
@@ -22,7 +23,7 @@ export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343
   finger.rotation.z=(i-1.5)*.055;finger.rotation.x=-.08;finger.name=`paw-finger-${i+1}`;
  }
  // Opposing thumb is embedded into the palm edge so it cannot appear detached.
- const thumb=box(root,.035,.055,.040,hand,side*.071,-.076,.068,.014);thumb.rotation.z=side*.52;thumb.rotation.x=-.16;thumb.name='paw-thumb';
+ const thumb=box(root,.032,.050,.037,hand,side*.065,-.064,.062,.013);thumb.rotation.z=side*.52;thumb.rotation.x=-.16;thumb.name='paw-thumb';
  if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.021,.005,4,10),trim,side*.069,.038,-.012);ring.rotation.y=Math.PI/2;}
  if(kind==='diver')box(root,.032,.013,.026,trim,0,.027,.087,.006);
  return root;

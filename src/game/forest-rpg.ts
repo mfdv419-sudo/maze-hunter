@@ -31,7 +31,8 @@ export const forestItemInfo:Record<ForestItemId,{name:[string,string];kind:'food
 export function emptyForestInventory():ForestInventory{return Object.fromEntries(Object.keys(forestItemInfo).map(k=>[k,0])) as ForestInventory;}
 
 export type ForestSiteKind='market'|'camp'|'activity'|'gather'|'hut'|'shrine'|'tower'|'treehouse'|'cave';
-export interface ForestWorldSite {id:string;arena:ForestArenaId;kind:ForestSiteKind;point:Point;label:[string,string];solid?:{w:number;d:number};reward?:ForestItemId;xp?:number}
+export type ForestNpcRole='merchant'|'clue'|'quest'|'rest';
+export interface ForestWorldSite {id:string;arena:ForestArenaId;kind:ForestSiteKind;point:Point;label:[string,string];solid?:{w:number;d:number};reward?:ForestItemId;xp?:number;npc?:{role:ForestNpcRole;name:[string,string];clue?:[string,string]}}
 const site=(arena:ForestArenaId,id:string,kind:ForestSiteKind,dx:number,dy:number,label:[string,string],solid?:{w:number;d:number},reward?:ForestItemId,xp?:number):ForestWorldSite=>{const p=arenaPoint(arena);return{id:`${arena}-${id}`,arena,kind,point:{x:p.x+dx,y:p.y+dy},label,solid,reward,xp};};
 export function forestWorldSites(active:ForestArenaId[]):ForestWorldSite[]{const enabled=new Set(active),all:ForestWorldSite[]=[
  site('waterfall','watermill','hut',-10,-7,['Kincir Air Tua','Old Water Mill'],{w:4,d:3}),
@@ -68,6 +69,66 @@ export function forestWorldSites(active:ForestArenaId[]):ForestWorldSite[]{const
  site('boss','outer-west','shrine',-8,5,['Pilar Outer Ring','Outer Ring Pillar'],{w:2,d:2}),
  site('boss','outer-east','shrine',8,5,['Pilar Outer Ring','Outer Ring Pillar'],{w:2,d:2}),
  ];return all.filter(s=>enabled.has(s.arena));}
+
+
+
+/** Extreme-only authored content. This is intentionally denser than the legacy Medium-derived content. */
+export function forestExtremeWorldSites(active:ForestArenaId[]):ForestWorldSite[]{
+ const enabled=new Set(active),out:ForestWorldSite[]=[];
+ const add=(arena:ForestArenaId,id:string,kind:ForestSiteKind,dx:number,dy:number,label:[string,string],solid?:{w:number;d:number},reward?:ForestItemId,xp?:number,npc?:ForestWorldSite['npc'])=>{
+  const p=arenaPoint(arena);out.push({id:`ext-${arena}-${id}`,arena,kind,point:{x:p.x+dx,y:p.y+dy},label,solid,reward,xp,npc});
+ };
+ // Entry hub: visibly populated orientation/rest area.
+ add('entrance','guide','camp',-7,-5,['Pos Penjelajah','Explorer Post'],undefined,'spring-water',8,{role:'clue',name:['Raka Penjelajah','Raka the Explorer'],clue:['Waterfall di kiri dan Green Cliffs di kanan. Gerbang tersembunyi tidak selalu berada di jalur utama.','Waterfall lies left and Green Cliffs right. Hidden gates are not always on the main trail.']});
+ add('entrance','quartermaster','market',7,-4,['Kios Perbekalan','Supply Stall'],{w:4,d:3},undefined,0,{role:'merchant',name:['Mira','Mira'],clue:['Bawa material kembali untuk dijual atau dirakit.','Bring materials back to sell or craft.']});
+ // Waterfall Valley: watermill, market, camp, clue NPC, gathering and underwater reward.
+ add('waterfall','watermill','hut',-11,-8,['Kincir Air Tua','Old Water Mill'],{w:5,d:4});
+ add('waterfall','merchant','market',10,8,['Pasar Tepian Air','Waterside Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Nara','Nara']});
+ add('waterfall','ranger','camp',9,2,['Camp Ranger','Ranger Camp'],undefined,'spring-water',14,{role:'clue',name:['Bimo Ranger','Ranger Bimo'],clue:['Arus di balik air terjun menyembunyikan jalan ke gua bawah air.','The current behind the waterfall hides a route into an underwater cave.']});
+ add('waterfall','sunken','activity',-5,11,['Peti Tenggelam','Sunken Cache'],undefined,'crystal-shard',22);
+ add('waterfall','herbs','gather',11,-4,['Herba Sungai','River Herbs'],undefined,'river-herb',12);
+ // Green Cliffs: village/market/clue and climbing challenge.
+ add('green','village','treehouse',7,-8,['Desa Tebing','Cliff Village'],{w:6,d:4});
+ add('green','merchant','market',9,-1,['Kios Tebing','Cliff Stall'],{w:4,d:3},undefined,0,{role:'merchant',name:['Tala','Tala']});
+ add('green','climber','camp',-8,7,['Pos Pendaki','Climber Camp'],undefined,'camp-meal',16,{role:'clue',name:['Sena','Sena'],clue:['Akar besar dan jembatan rusak membentuk jalur menuju Wind Shrine.','The large roots and broken bridge form the route to the Wind Shrine.']});
+ add('green','wind','shrine',-7,-9,['Wind Shrine','Wind Shrine'],{w:3,d:3});
+ add('green','race','activity',3,10,['Tantangan Panjat','Climb Challenge'],undefined,'dragon-treat',24);
+ // Ancient Ruins: scholar, relic merchant, puzzle, archive, tower.
+ add('ruins','archive','hut',-9,-4,['Archive Tua','Old Archive'],{w:5,d:4});
+ add('ruins','merchant','market',9,7,['Pasar Relik','Relic Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Ira Kolektor','Ira the Collector']});
+ add('ruins','scholar','camp',-7,7,['Camp Arkeolog','Archaeologist Camp'],undefined,'herbal-tonic',18,{role:'clue',name:['Prof. Arga','Professor Arga'],clue:['Tiga simbol pada patung membuka jalur crypt dan ruang relic.','Three statue symbols open the crypt route and relic chamber.']});
+ add('ruins','statues','activity',0,-9,['Puzzle Patung','Statue Puzzle'],undefined,'ancient-coin',26);
+ add('ruins','tower','tower',8,-9,['Menara Pengawas','Watchtower'],{w:4,d:4});
+ // Chasm: miner market, clue NPC, bridge repair and cave.
+ add('chasm','miner-market','market',-10,8,['Camp Penambang','Miner Camp'],{w:5,d:4},undefined,0,{role:'merchant',name:['Dara Miner','Miner Dara']});
+ add('chasm','foreman','camp',8,8,['Pos Mandor','Foreman Post'],undefined,'camp-meal',18,{role:'clue',name:['Jati','Jati'],clue:['Jalur bawah bukan void seluruhnya. Cari ledge bertanda lampu untuk turun aman.','The lower route is not all void. Follow lit ledges for a safe descent.']});
+ add('chasm','lift','activity',9,-1,['Perbaiki Lift','Repair Lift'],undefined,'iron-ore',26);
+ add('chasm','side-cave','cave',9,-9,['Gua Samping','Side Cave'],{w:4,d:3});
+ add('chasm','rope-cache','gather',-8,-8,['Cache Tali','Rope Cache'],undefined,'rope-fiber',14);
+ // Giant Tree: canopy village, visible merchant, tree spirit clue, nest and root gathering.
+ add('giant','canopy-village','treehouse',7,-7,['Desa Kanopi','Canopy Village'],{w:7,d:5});
+ add('giant','merchant','market',10,1,['Pasar Kanopi','Canopy Market'],{w:4,d:3},undefined,0,{role:'merchant',name:['Lumi','Lumi']});
+ add('giant','spirit','shrine',-8,7,['Shrine Roh Pohon','Tree Spirit Shrine'],{w:3,d:3},undefined,18,{role:'clue',name:['Roh Akar','Root Spirit'],clue:['Cabang tertinggi menuju gerbang langit. Akar berlubang menyembunyikan Gate A.','The highest branch leads to the sky gate. A hollow root hides Gate A.']});
+ add('giant','nest','activity',-9,-8,['Sarang Tersembunyi','Hidden Nest'],undefined,'dragon-treat',28);
+ add('giant','root','gather',-10,10,['Akar Berenergi','Living Root'],undefined,'nature-fiber',16);
+ // Underground layer.
+ add('ug-flooded','explorer','camp',-8,8,['Camp Penjelajah Gua','Cave Explorer Camp'],undefined,'oxygen-flask',18,{role:'clue',name:['Kiko','Kiko'],clue:['Terowongan kering di sisi timur mengarah ke Cross Tunnel.','The dry eastern tunnel leads to the Cross Tunnel.']});
+ add('ug-relic','altar','shrine',7,-7,['Altar Relik','Relic Altar'],{w:4,d:4});
+ add('ug-xp','arena','activity',0,8,['Arena XP','XP Arena'],undefined,'guardian-token',40,{role:'quest',name:['Penjaga Arena','Arena Keeper']});
+ add('ug-cross','trader','market',-7,-7,['Pedagang Bawah Tanah','Underground Trader'],{w:4,d:3},undefined,0,{role:'merchant',name:['Mako','Mako']});
+ // Floating layer.
+ add('sky-1','camp','camp',-6,6,['Camp Langit','Sky Camp'],undefined,'spring-water',16,{role:'clue',name:['Awan','Awan'],clue:['Ikuti arus angin yang ditandai vane; jangan melompat ke awan dekoratif.','Follow the currents marked by wind vanes; decorative clouds are not platforms.']});
+ add('sky-1','merchant','market',7,4,['Kios Langit','Sky Stall'],{w:4,d:3},undefined,0,{role:'merchant',name:['Sora','Sora']});
+ add('sky-2','guardian','activity',0,-8,['Guardian Hub','Guardian Hub'],undefined,'guardian-token',34,{role:'quest',name:['Sky Keeper','Sky Keeper']});
+ add('sky-3','shrine','shrine',7,-7,['Sky Shrine','Sky Shrine'],{w:4,d:4});
+ add('sky-3','crystal','gather',-7,8,['Kristal Awan','Cloud Crystal'],undefined,'cloud-crystal',22);
+ // Final arc.
+ add('inner','rest','camp',-7,6,['Camp Gerbang Dalam','Inner Gate Camp'],undefined,'camp-meal',20,{role:'rest',name:['Penjaga Gerbang','Gate Keeper'],clue:['Rakit senjata relic sebelum memasuki Boss Core.','Assemble the relic weapon before entering the Boss Core.']});
+ add('inner','forge','shrine',7,5,['Stasiun Perakitan','Relic Assembly Station'],{w:4,d:4});
+ add('boss','outer-west','tower',-9,6,['Pilar Outer Ring Barat','West Outer Ring Pillar'],{w:3,d:3});
+ add('boss','outer-east','tower',9,6,['Pilar Outer Ring Timur','East Outer Ring Pillar'],{w:3,d:3});
+ return out.filter(s=>enabled.has(s.arena));
+}
 
 export function applyForestSiteCollision(grid:Grid,sites:ForestWorldSite[],protectedPoints:Point[]):ForestWorldSite[]{
  const accepted:ForestWorldSite[]=[];
