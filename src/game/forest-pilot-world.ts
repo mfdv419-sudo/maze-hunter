@@ -64,7 +64,7 @@ export function forestPilotWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,s
     halo.rotation.x=-Math.PI/2;halo.name='center-guardian-boss-ring';
    }
   }
-  if(l.ring.activeZones.includes('floating')){
+  if(l.ring.activeZones.includes('sky-1')){
    const islands=new T.Group();islands.name='floating-land-playable-islands';posts.add(islands);
    const rock=mat(0x8a8478),grass=mat(0x75b558),rail=mat(0x8b6444);
    const platforms=l.ledges.filter(o=>o.id>=980&&o.id<=985);
