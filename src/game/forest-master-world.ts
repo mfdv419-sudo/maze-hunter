@@ -4,6 +4,7 @@ import type {AdventureState} from './adventure-state';
 import {pilotGround,PILOT_WATER_LEVEL as WATER} from './forest-pilot';
 import {FOREST_ARENAS,FOREST_LAYERS} from './forest-world-design';
 import {biomeSky} from './biome-scenery';
+import type {ForestWorldSite} from './forest-rpg';
 
 const mat=(c:number)=>new T.MeshLambertMaterial({color:c,flatShading:true});
 const add=(parent:T.Object3D,g:T.BufferGeometry,m:T.Material,x:number,y:number,z:number)=>{const q=new T.Mesh(g,m);q.position.set(x,y,z);parent.add(q);return q;};
@@ -31,6 +32,20 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  // Underground chambers and Floating Land receive distinct silhouettes on their own coordinate layers.
  for(const zone of ring.zones.filter(z=>z.layer==='underground')){const y=pilotGround(zone.point.x,zone.point.y);for(let i=0;i<7;i++){const a=i*Math.PI*2/7;add(root,new T.OctahedronGeometry(.45,0),purple,zone.point.x+Math.sin(a)*8,y+.7,zone.point.y+Math.cos(a)*8);}}
  for(const zone of ring.zones.filter(z=>z.layer==='floating')){const y=pilotGround(zone.point.x,zone.point.y);const island=add(root,new T.CylinderGeometry(zone.radius*.7,zone.radius*.45,1.4,12),rock,zone.point.x,y-.7,zone.point.y);island.name='floating-island-solid-base';add(root,new T.CylinderGeometry(zone.radius*.68,zone.radius*.68,.24,12),grass,zone.point.x,y-.08,zone.point.y);}
+ // RPG world-content pass. These structures are driven by ring.content, the same data used
+ // to alter navigation collision, so visible solid props cannot be walked through.
+ const stallRoof=mat(0xb65f46),leaf=mat(0x4f8f54),cloth=mat(0xe2c174),dark=mat(0x4b423c);
+ const renderSite=(s:ForestWorldSite)=>{const y=pilotGround(s.point.x+.5,s.point.y+.5),g=new T.Group();g.position.set(s.point.x+.5,y,s.point.y+.5);g.name='forest-site-'+s.id;g.userData.siteId=s.id;root.add(g);
+  if(s.kind==='market'){for(const side of[-1,1])add(g,new T.BoxGeometry(.18,1.6,.18),wood,side*1.05,.8,-.45);add(g,new T.BoxGeometry(2.5,.16,1.55),stallRoof,0,1.65,-.1);add(g,new T.BoxGeometry(2.1,.7,.65),wood,0,.35,.25);for(let i=-1;i<=1;i++)add(g,new T.SphereGeometry(.16,7,5),i%2?gold:purple,i*.45,.82,.05);}
+  else if(s.kind==='camp'){add(g,new T.CylinderGeometry(.55,.7,.14,8),dark,0,.08,0);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;const log=add(g,new T.CylinderGeometry(.08,.08,1.05,6),wood,Math.sin(a)*.55,.15,Math.cos(a)*.55);log.rotation.z=Math.PI/2;log.rotation.y=a;}add(g,new T.ConeGeometry(.35,.8,8),new T.MeshBasicMaterial({color:0xffa34d,transparent:true,opacity:.8}),0,.55,0);}
+  else if(s.kind==='hut'||s.kind==='treehouse'||s.kind==='tower'){const w=s.solid?.w||3,d=s.solid?.d||3,h=s.kind==='tower'?4.6:2.4;add(g,new T.BoxGeometry(w*.82,h,d*.82),s.kind==='treehouse'?wood:ruin,0,h/2,0);const roof=add(g,new T.ConeGeometry(Math.max(w,d)*.62,1,4),s.kind==='treehouse'?leaf:stallRoof,0,h+.48,0);roof.rotation.y=Math.PI/4;if(s.kind==='treehouse')for(const side of[-1,1])add(g,new T.CylinderGeometry(.18,.25,2.2,7),wood,side*w*.3,-1.1,0);}
+  else if(s.kind==='shrine'){add(g,new T.CylinderGeometry(1.2,1.4,.3,8),ruin,0,.15,0);for(const side of[-1,1])add(g,new T.CylinderGeometry(.15,.2,2.1,8),ruin,side*.8,1.05,0);add(g,new T.OctahedronGeometry(.42,0),purple,0,1.55,0);}
+  else if(s.kind==='cave'){for(const side of[-1,1]){const q=add(g,new T.DodecahedronGeometry(1.25,0),rock,side*1.25,.85,0);q.scale.y=1.4;}add(g,new T.BoxGeometry(1.5,.2,1.8),dark,0,.05,0);}
+  else {const marker=add(g,new T.CylinderGeometry(.52,.7,.18,10),s.kind==='gather'?leaf:gold,0,.1,0);marker.name='interactive-'+s.kind;add(g,new T.OctahedronGeometry(.24,0),s.kind==='gather'?leaf:purple,0,.65,0);}
+ };
+ ring.content.forEach(renderSite);
+ // Ambient detail clusters make the long traversal readable without creating invisible blockers.
+ for(const z of ring.zones.filter(z=>z.layer==='surface'&&!['entrance','inner','boss'].includes(z.id))){for(let i=0;i<14;i++){const a=i*2.399+(z.point.x%7)*.13,r=z.radius*(.55+(i%4)*.1),x=z.point.x+Math.sin(a)*r,zz=z.point.y+Math.cos(a)*r;if(ring.content.some(c=>Math.hypot(c.point.x-x,c.point.y-zz)<3))continue;const y=pilotGround(x,zz);if(i%3===0){const trunk=add(root,new T.CylinderGeometry(.14,.2,1.5,7),wood,x,y+.75,zz);trunk.name='ambient-tree';add(root,new T.ConeGeometry(.7,1.4,7),leaf,x,y+1.8,zz);}else {const b=add(root,new T.DodecahedronGeometry(.28+(i%3)*.1,0),rock,x,y+.25,zz);b.name='ambient-rock-nonsolid';}}}
  // Two gates + return gate per arena, exactly matching portal collision points.
  for(const p of ring.portals){const y=pilotGround(p.point.x+.5,p.point.y+.5),g=new T.Group();g.position.set(p.point.x+.5,y,p.point.y+.5);g.name='portal-'+p.id;root.add(g);const c=p.kind==='hidden'?0x58a96f:p.kind==='mystic'?0xa96cff:0xe4c26e,m=mat(c);const arch=add(g,new T.TorusGeometry(.85,.14,8,28,Math.PI),m,0,.9,0);arch.rotation.z=Math.PI;for(const side of[-1,1])add(g,new T.CylinderGeometry(.12,.16,1.6,7),wood,side*.85,.75,0);const core=add(g,new T.CircleGeometry(.68,20),new T.MeshBasicMaterial({color:c,transparent:true,opacity:p.kind==='hidden'?.18:.5,side:T.DoubleSide,depthWrite:false}),0,.85,.02);core.rotation.y=Math.PI/2;}
  for(const piece of ring.rewardPieces){const y=pilotGround(piece.point.x+.5,piece.point.y+.5);const q=add(root,new T.OctahedronGeometry(.36,0),purple,piece.point.x+.5,y+.7,piece.point.y+.5);q.name='relic-piece-'+piece.id;}

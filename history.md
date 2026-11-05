@@ -1785,3 +1785,23 @@ Deploy nyata, pemindaian Netlify, login Firebase dan multiplayer tetap memerluka
 - `src/game/character.ts`: Recess and slim the shoulders, embed the tail root into the pelvis with a continuous skinned-looking blend, and use a stable root-relative tail curve for walk, swim and idle motion. Slightly smooth ear polygon geometry.
 - `tests/character-proportions.test.ts`: Add regression checks for four digits, thumb, tail-parenting and procedural tube root continuity.
 - Scope intentionally **does not** modify world layout, collision, boss, Retro or UI; the current 73x73 Forest Ring is still not a fully rebuilt Extreme world. TS syntax transpilation passed; project build, rendered 3D, and device testing are not verified in this environment.
+
+## 2026-11-05 — FG-RPG-MASTER-03 (RPG foundation + world-content collision truth)
+- Forest Grove Ring build bumped to `FG-RPG-MASTER-03-20261105`.
+- Added `src/game/forest-rpg.ts` as a shared source of truth for RPG item metadata, market offers, camps/markets/activities/gathering points and solid world-site footprints.
+- Solid world sites are applied to the same navigation grid used by player and guard movement. Each candidate blocker is accepted only when the arena center remains connected to protected portal/reward points. Visible market/hut/shrine/treehouse/tower geometry is rendered from the same `ring.content` records.
+- Extreme now contains 37 world-content sites in the generated master world, including 7 markets and 8 rewarding trail/dead-end pockets. Wrong turns can award EXP/items instead of being empty travel.
+- Added RPG health state: 100 HP and 100 stamina. Damage now reduces HP first; boss damage is tuned so roughly three unprotected normal boss hits are lethal instead of immediately consuming lives. Death/respawn refills HP/stamina and still consumes a life.
+- Added compact HP + stamina HUD at top-left. Nearby interactive sites are shown in the status line.
+- Added Adventure Bag (`🎒`) with consumables, materials, treasure, pet items, relic/weapon status, use actions and market buy/sell actions. Food/drink can recover HP/stamina; dragon treats raise pet bond; oxygen flask supports underwater recovery.
+- Added camps as heal/stamina/checkpoint sites, gathering/activity rewards, merchant trading, Inner Gate rest camp, relic assembly station and Boss Outer Ring staging pillars.
+- Added richer 3D site rendering for markets, camps, huts/treehouses, towers, shrines and caves plus non-blocking ambient vegetation/rock detail. Ambient decoration is intentionally non-solid; all props intended to block movement derive their blocker from `ring.content`.
+- Rebuilt shared avatar hand geometry to `four-finger-paw-v3`: flatter connected palm, four short rounded fingers and embedded opposing thumb. `createBinturong` model version is now `forest-paw-tail-v3`, so home preview and gameplay share the same hand builder.
+- Added `tests/forest-rpg-master.test.ts` for portal reachability after content collision, Extreme content density and market recovery metadata.
+
+Validation performed in this environment:
+- Syntax transpilation passed for all modified TypeScript files.
+- Strict pure-logic TypeScript check passed for `adventure-state.ts`, `forest-rpg.ts`, `forest-ring.ts` and `forest-world-design.ts`.
+- Forest Ring generation simulated for 30 seeds × 4 difficulties after content collision; zero arena portal reachability failures.
+- Extreme sample: 37 content sites, 8 trail/dead-end reward pockets, 7 markets.
+- Full `npm run build` was not executed here because project dependencies are not installed in this runtime and the available Node version is 22 while the repository requires Node 24. Netlify remains the authoritative full build check.

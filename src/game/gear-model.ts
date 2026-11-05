@@ -3,41 +3,28 @@ import {addMesh,joint,roundBox,satin} from './model-parts';
 import {batchStatic} from './static-model';
 const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.025)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
 const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
-/** Four articulated-looking fingers, a thumb and a narrower wrist.
- * All digits grow from a rounded palm instead of being isolated ball tips.
- * This model is shared by bare hands and every glove style.
+/** Compact four-finger paw with a real palm + opposing thumb.
+ * Rounded-box digits read as fingers at game-camera distance better than capsule rods.
+ * This shared model is used by home preview and in-game avatar, avoiding two hand geometries.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.135,.025,'paw-hand');root.userData.gear=kind;
+ const root=joint(parent,0,-.128,.026,'paw-hand');root.userData.gear=kind;root.userData.handModel='four-finger-paw-v3';
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
- const hand=satin(bare?furColor:colors[kind]??colors.trail);
- const cuffColor=satin(kind==='desert'?0x8e7859:0x253c43);
- const trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
- // The mitten's palm follows the forearm; at this scale it should not read as a ball.
- box(root,.148,.145,.112,hand,0,-.055,.048,.052).name='paw-palm';
- if(!bare){
-  const cuff=addMesh(root,new T.CylinderGeometry(.074,.079,.047,12),cuffColor,0,.049,.016);
-  cuff.scale.z=.86;cuff.name='paw-cuff';
-  box(root,.103,.012,.13,trim,0,.018,.03,.006);
- }
- // Four visible fingers have individual silhouettes, but share material and the palm.
- // Their tips point down / slightly forward, never upward like claws.
- const lengths=[.032,.043,.041,.029];
+ const hand=satin(bare?furColor:colors[kind]??colors.trail),cuffColor=satin(kind==='desert'?0x8e7859:0x253c43),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
+ // Palm stays visibly connected to the forearm and is wider than it is deep.
+ box(root,.142,.120,.098,hand,0,-.050,.050,.038).name='paw-palm';
+ if(!bare){const cuff=addMesh(root,new T.CylinderGeometry(.069,.076,.046,12),cuffColor,0,.045,.018);cuff.scale.z=.82;cuff.name='paw-cuff';box(root,.102,.012,.112,trim,0,.014,.036,.006);}
+ // Four separate fingers: small rounded pads, with a shallow fan. No claw-like upward rods.
+ const lengths=[.050,.058,.057,.047];
  for(let i=0;i<4;i++){
-  const finger=addMesh(root,new T.CapsuleGeometry(.014,lengths[i],4,8),hand,
-   (i-1.5)*.037,-.135-(lengths[i]-.032)*.08,.094);
-  finger.rotation.x=-.13;finger.rotation.z=(i-1.5)*.055;
-  finger.name=`paw-finger-${i+1}`;
+  const finger=box(root,.026,lengths[i],.034,hand,(i-1.5)*.032,-.116-(lengths[i]-.05)*.16,.089,.012);
+  finger.rotation.z=(i-1.5)*.055;finger.rotation.x=-.08;finger.name=`paw-finger-${i+1}`;
  }
- // A smaller opposing thumb, partly embedded in the palm.
- const thumb=addMesh(root,new T.CapsuleGeometry(.019,.030,4,8),hand,side*.081,-.083,.067);
- thumb.rotation.z=side*.58;thumb.rotation.x=-.26;thumb.name='paw-thumb';
- if(kind==='climber'){
-  const ring=addMesh(root,new T.TorusGeometry(.024,.006,4,10),trim,side*.075,.045,-.015);
-  ring.rotation.y=Math.PI/2;
- }
- if(kind==='diver')box(root,.034,.014,.028,trim,0,.033,.09,.006);
+ // Opposing thumb is embedded into the palm edge so it cannot appear detached.
+ const thumb=box(root,.035,.055,.040,hand,side*.071,-.076,.068,.014);thumb.rotation.z=side*.52;thumb.rotation.x=-.16;thumb.name='paw-thumb';
+ if(kind==='climber'){const ring=addMesh(root,new T.TorusGeometry(.021,.005,4,10),trim,side*.069,.038,-.012);ring.rotation.y=Math.PI/2;}
+ if(kind==='diver')box(root,.032,.013,.026,trim,0,.027,.087,.006);
  return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){

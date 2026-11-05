@@ -1,8 +1,9 @@
 import type {Difficulty,Grid,Point} from './maze';
 import {route} from './maze';
 import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,activeSurfaceArenas,arenaPoint,gatePools,type ForestArenaId,type ForestLayerId} from './forest-world-design';
+import {applyForestSiteCollision,forestWorldSites,type ForestWorldSite} from './forest-rpg';
 
-export const FOREST_RING_BUILD='FG-EXTREME-MASTER-02-20261105';
+export const FOREST_RING_BUILD='FG-RPG-MASTER-03-20261105';
 export type RingZoneId=ForestArenaId;
 export type RingConnector='trail'|'stairs'|'bridge'|'water'|'tunnel'|'vine'|'sky'|'portal';
 export interface RingZone {id:RingZoneId;point:Point;layer:ForestLayerId;mandatory:boolean;radius:number;label:string}
@@ -12,7 +13,7 @@ export interface ForestRing {
  version:string;difficulty:Difficulty;size:number;center:Point;entry:Point;exit:Point;
  zones:RingZone[];passages:RingPassage[];portals:RingPortal[];trails:Point[][];grid:Grid;
  gates:{boss:Point[];escape:Point[];bridge:Point[];shortcut:Point[]};
- deadEnds:Point[];activeZones:RingZoneId[];paths:{toBoss:Point[];escape:Point[]};layers:typeof FOREST_LAYERS;rewardPieces:{id:string;arena:RingZoneId;point:Point}[];
+ deadEnds:Point[];activeZones:RingZoneId[];paths:{toBoss:Point[];escape:Point[]};layers:typeof FOREST_LAYERS;rewardPieces:{id:string;arena:RingZoneId;point:Point}[];content:ForestWorldSite[];
 }
 const hash=(s:string)=>{let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 const pick=<T>(items:T[],key:string)=>items[hash(key)%items.length];
@@ -69,11 +70,17 @@ export function forestRing(difficulty:Difficulty,mapIndex=0,variation=1):ForestR
   const back=gatePos(id,'RETURN');carve(back,1);portals.push({id:`${id}-return`,arena:id,slot:'RETURN',kind:'return',point:back,destination:'entrance',destinationPoint:{x:e.x,y:e.y-3}});
  }
  const exit={x:e.x+7,y:e.y};carve(exit,2);draw([e,exit],1);
+ const rewardPieces=[...enabled].flatMap(id=>{const a=FOREST_ARENAS[id];if(!a.reward)return[];const p=arenaPoint(id);return[{id:a.reward,arena:id,point:{x:p.x+Math.min(6,a.radius-3),y:p.y}}];});
+ // Arena content and collision share one definition. Solid stalls/buildings become navigation blockers only
+ // when they do not disconnect the arena center from its portals/reward/entry points.
+ const protectedPoints=[e,exit,...portals.flatMap(p=>[p.point,p.destinationPoint]),...rewardPieces.map(r=>r.point),...zones.map(z=>z.point)];
+ const routeRewards=['forest-berry','crystal-shard','ancient-coin','dragon-treat'] as const;
+ const trailContent:ForestWorldSite[]=deadEnds.slice(0,difficulty==='easy'?4:difficulty==='medium'?6:8).map((p,i)=>{const arena=zones.filter(z=>!['entrance','inner','boss'].includes(z.id)).sort((a,b)=>Math.hypot(a.point.x-p.x,a.point.y-p.y)-Math.hypot(b.point.x-p.x,b.point.y-p.y))[0]?.id||'waterfall';return{id:`trail-pocket-${i}`,arena,kind:i%3===0?'activity':'gather',point:{...p},label:i%3===0?['Tantangan Jalur','Trail Challenge']:['Cache Tersembunyi','Hidden Cache'],reward:routeRewards[i%routeRewards.length],xp:10+i*2};});
+ const content=applyForestSiteCollision(grid,[...forestWorldSites([...enabled]),...trailContent],protectedPoints);
  const opened=grid.map(r=>[...r]);for(const p of bossGate)opened[p.y][p.x]=0;for(const p of escapeGate)opened[p.y][p.x]=0;
  const toBoss=route(opened,arenaPoint('inner'),arenaPoint('boss')),escape=route(opened,arenaPoint('boss'),exit);
  if(!toBoss.length||!escape.length)throw Error('Forest master boss/escape topology disconnected');
- const rewardPieces=[...enabled].flatMap(id=>{const a=FOREST_ARENAS[id];if(!a.reward)return[];const p=arenaPoint(id);return[{id:a.reward,arena:id,point:{x:p.x+Math.min(6,a.radius-3),y:p.y}}];});
- return{version:FOREST_RING_BUILD,difficulty,size:n,center:arenaPoint('boss'),entry:e,exit,zones,passages,portals,trails,grid,gates:{boss:bossGate,escape:escapeGate,bridge:[],shortcut:[]},deadEnds,activeZones:[...enabled],paths:{toBoss,escape},layers:FOREST_LAYERS,rewardPieces};
+ return{version:FOREST_RING_BUILD,difficulty,size:n,center:arenaPoint('boss'),entry:e,exit,zones,passages,portals,trails,grid,gates:{boss:bossGate,escape:escapeGate,bridge:[],shortcut:[]},deadEnds,activeZones:[...enabled],paths:{toBoss,escape},layers:FOREST_LAYERS,rewardPieces,content};
 }
 export function forestRingAreaCount(difficulty:Difficulty){return forestRing(difficulty).activeZones.filter(z=>!['entrance','inner','boss'].includes(z)).length;}
 export function ringProgression(){return(['easy','medium','hard','extreme'] as const).map(d=>{const r=forestRing(d);return{difficulty:d,active:forestRingAreaCount(d),walkable:r.grid.reduce((n,row)=>n+row.filter(v=>v===0).length,0),links:r.passages.length,portals:r.portals.length};});}
