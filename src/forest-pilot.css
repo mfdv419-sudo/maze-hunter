@@ -76,3 +76,12 @@ body .game-toast.forest-notice{position:fixed!important;left:max(18px,env(safe-a
 #game[data-screen=modern] .forest-pilot .joystick{width:136px!important;height:136px!important;left:28px!important;bottom:28px!important;opacity:.78}
 @media(max-height:560px){#game[data-screen=modern] .forest-pilot .forest-mission{top:98px;width:280px;font-size:10px;padding:8px 10px}.forest-mission>b{font-size:12px}.forest-world-dialogue{max-width:320px!important}.forest-enemy-meter{top:62px!important}}
 @media(max-width:720px){#game[data-screen=modern] .forest-pilot .forest-health{width:245px!important;max-width:58vw!important}.forest-mission{width:235px!important;max-width:58vw!important}.forest-world-dialogue{width:260px!important;max-width:68vw!important}}
+
+/* MAZE11 supervision corrections: quest is contextual, not permanent; dialogue never covers it. */
+#game[data-screen=modern] .forest-pilot .forest-mission{opacity:0;transform:translateY(-8px);pointer-events:none;transition:opacity .2s ease,transform .2s ease}
+#game[data-screen=modern] .forest-pilot .forest-mission.visible{opacity:1;transform:none}
+#game[data-screen=modern] .forest-pilot .forest-world-dialogue{width:min(300px,34vw)!important;max-width:300px!important;padding:9px 12px 10px 13px!important}
+#game[data-screen=modern] .forest-pilot .forest-world-dialogue b{font-size:12px!important}
+#game[data-screen=modern] .forest-pilot .forest-world-dialogue p{font-size:12px!important;line-height:1.32!important}
+#game[data-screen=modern] .forest-pilot .forest-health .forest-status-line{display:none!important}
+@media(max-width:720px){#game[data-screen=modern] .forest-pilot .forest-world-dialogue{width:220px!important;max-width:58vw!important}}

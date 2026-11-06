@@ -15,7 +15,7 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const grid=l.maze.grid,n=grid.length;
  const leafTex=groundTexture('leaf'),pathTex=groundTexture('path'),stoneTex=groundTexture('stone');
  leafTex.repeat.set(32,32);pathTex.repeat.set(24,24);stoneTex.repeat.set(12,12);
- const grass=new T.MeshLambertMaterial({color:0x78ad4f,map:leafTex}),soil=new T.MeshLambertMaterial({color:0xa56b3f,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x2aaed1,transparent:true,opacity:.78,depthWrite:false,shininess:125,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0x8a5a33,map:pathTex,flatShading:true});
+ const grass=new T.MeshLambertMaterial({color:0x78ad4f,map:leafTex}),soil=new T.MeshLambertMaterial({color:0xa56b3f,map:pathTex}),forestSoil=new T.MeshLambertMaterial({color:0x9a7048,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x2aaed1,transparent:true,opacity:.78,depthWrite:false,shininess:125,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0xa06f45,map:pathTex,flatShading:true});
  // Terrain visual and physics now share pilotGround(). No square walkable-tile floor exists in Extreme.
  const heightField=(ox:number,oz:number,size:number,segments:number,material:T.Material,name:string)=>{
   const geo=new T.PlaneGeometry(size,size,segments,segments);geo.rotateX(-Math.PI/2);geo.translate(ox+size/2,0,oz+size/2);
@@ -23,7 +23,7 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,pilotGround(x,z)-.035);}
   pos.needsUpdate=true;geo.computeVertexNormals();const mesh=new T.Mesh(geo,material);mesh.name=name;mesh.receiveShadow=true;root.add(mesh);return mesh;
  };
- heightField(0,0,181,120,grass,'surface-organic-heightfield');
+ heightField(0,0,181,120,forestSoil,'surface-organic-heightfield');
  heightField(190,10,121,72,new T.MeshLambertMaterial({color:0x5b5747,map:stoneTex}),'underground-cave-floor');
  // Natural collision boundary: continuous tall cliff faces matching blocked navigation cells.
  // Every blocked edge adjacent to a playable cell receives visible rock; no invisible wall gaps.
@@ -42,6 +42,9 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  for(let z=88;z<132;z++)for(let x=11;x<56;x++){const level=waterLevel(x+.5,z+.5);if(level===null||pilotGround(x+.5,z+.5)>=level-.04)continue;waterVerts.push(x,level,z,x+1,level,z,x+1,level,z+1,x,level,z+1);waterIdx.push(wi,wi+1,wi+2,wi,wi+2,wi+3);wi+=4;}
  if(waterVerts.length){const wg=new T.BufferGeometry();wg.setAttribute('position',new T.Float32BufferAttribute(waterVerts,3));wg.setIndex(waterIdx);wg.computeVertexNormals();const w=new T.Mesh(wg,waterMat);w.name='waterfall-valley-deep-water-volume';root.add(w);}
  const ring=l.ring!;
+ // Forest floor is soil-first, like a natural trail system. Grass is layered as soft shoulders/arena patches,
+ // so the whole map never reads as one flat green carpet.
+ for(const z of ring.zones.filter(z=>z.layer==='surface')){const y=pilotGround(z.point.x+.5,z.point.y+.5)+.008;for(let i=0;i<5;i++){const a=i*1.257+(z.point.x%5)*.2,r=Math.max(3.8,z.radius*(.32+.08*(i%3))),patch=add(root,new T.CircleGeometry(r,24),grass,z.point.x+.5+Math.sin(a)*r*.55,y+.002,z.point.y+.5+Math.cos(a)*r*.55);patch.rotation.x=-Math.PI/2;patch.scale.set(1.35,.72,1);patch.name='natural-grass-floor-patch';}}
  // Soil paths are rendered from the same authored passage graph; they are visual guidance, never collision walls.
  const ribbon=(pts:{x:number;y:number}[],width=2.4)=>{if(pts.length<2)return;const v:number[]=[],idx:number[]=[];for(let i=0;i<pts.length;i++){const p=pts[i],a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)],dx=b.x-a.x,dz=b.y-a.y,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len,y=pilotGround(p.x+.5,p.y+.5)+.018;v.push(p.x+.5+nx*width/2,y,p.y+.5+nz*width/2,p.x+.5-nx*width/2,y,p.y+.5-nz*width/2);if(i){const k=i*2;idx.push(k-2,k-1,k,k-1,k+1,k);}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();const m=new T.Mesh(g,soil);m.name='forest-natural-soil-path';root.add(m);};
  ring.passages.filter(p=>p.path.length>2&&ring.zones.find(z=>z.id===p.from)?.layer==='surface').forEach(p=>ribbon(p.path,p.kind==='trail'?4.4:3.2));

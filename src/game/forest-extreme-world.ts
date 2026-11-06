@@ -5,7 +5,7 @@ import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,arenaPoint,type ForestAre
 import {applyForestSiteCollision,forestExtremeWorldSites,forestNpcWorldPoint,type ForestWorldSite} from './forest-rpg';
 import {pilotWaterDepth} from './forest-pilot';
 
-export const FOREST_EXTREME_BUILD='FG-EXTREME-MAZE-10-20261106';
+export const FOREST_EXTREME_BUILD='FG-EXTREME-MAZE-11-20261106';
 const point=(x:number,y:number):Point=>({x:Math.round(x),y:Math.round(y)});
 const same=(a:Point,b:Point)=>a.x===b.x&&a.y===b.y;
 const discrete=(pts:Point[])=>{const out:Point[]=[];for(let i=0;i<pts.length;i++){if(!i){out.push(pts[i]);continue;}const a=pts[i-1],b=pts[i],steps=Math.max(1,Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y))*3);for(let j=1;j<=steps;j++){const p=point(a.x+(b.x-a.x)*j/steps,a.y+(b.y-a.y)*j/steps);if(!same(p,out[out.length-1]))out.push(p);}}return out;};

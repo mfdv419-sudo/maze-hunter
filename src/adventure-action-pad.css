@@ -1,21 +1,50 @@
-/* MAZE10 — one authoritative four-button quarter-circle action pad.
-   All button CENTERS lie on the same radius from the bottom-right screen corner. */
-#game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-r:132px;--mh-pad-small:48px;--mh-pad-jump:78px}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls{position:absolute!important;z-index:24!important;inset:0!important;width:auto!important;height:auto!important;padding:0!important;margin:0!important;transform:none!important;pointer-events:none!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{position:absolute!important;display:grid!important;place-items:center!important;width:var(--mh-pad-small)!important;height:var(--mh-pad-small)!important;min-width:0!important;min-height:0!important;padding:8px!important;margin:0!important;border:2px solid #ead092!important;border-radius:50%!important;background:radial-gradient(circle at 34% 24%,#2c7797,#173e59 70%,#102c40)!important;color:#fff0c8!important;box-shadow:0 5px 13px #071a2577!important;pointer-events:auto!important;touch-action:manipulation!important}
+/* MAZE11 — one authoritative four-button action pad.
+   Jump is the large apex button; Merge, Action/Throw, Ability share one clean arc.
+   No extra selector/belt is allowed over the pad. */
+#game[data-screen="modern"] .play-screen.adventure-pad{
+  --mh-pad-small:50px;
+  --mh-pad-jump:82px;
+  --mh-safe-r:max(22px,env(safe-area-inset-right));
+  --mh-safe-b:max(18px,env(safe-area-inset-bottom));
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls{
+  position:absolute!important;z-index:24!important;inset:0!important;
+  width:auto!important;height:auto!important;padding:0!important;margin:0!important;
+  transform:none!important;pointer-events:none!important;
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{
+  position:absolute!important;display:grid!important;place-items:center!important;
+  width:var(--mh-pad-small)!important;height:var(--mh-pad-small)!important;
+  min-width:0!important;min-height:0!important;padding:8px!important;margin:0!important;
+  border:2px solid #ead092!important;border-radius:50%!important;
+  background:radial-gradient(circle at 34% 24%,#2c7797,#173e59 70%,#102c40)!important;
+  color:#fff0c8!important;box-shadow:0 5px 13px #071a2577!important;
+  pointer-events:auto!important;touch-action:manipulation!important;
+}
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%!important;height:100%!important;pointer-events:none}
-/* Same r≈132 from the physical bottom-right corner: Action 25°, Jump 45°, Ability 65°, Merge 82°. */
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:120px!important;bottom:56px!important;transform:translate(50%,50%)!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;right:93px!important;bottom:93px!important;transform:translate(50%,50%)!important;background:radial-gradient(circle at 34% 24%,#50a9df,#2a6598 66%,#173c5e)!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:56px!important;bottom:120px!important;transform:translate(50%,50%)!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:18px!important;bottom:131px!important;transform:translate(50%,50%)!important}
+/* Arc from the physical bottom-right corner.
+   Jump is apex; small buttons sweep upward-left with generous separation. */
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{
+  width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;
+  right:calc(var(--mh-safe-r) + 10px)!important;bottom:calc(var(--mh-safe-b) + 10px)!important;
+  transform:none!important;background:radial-gradient(circle at 34% 24%,#50a9df,#2a6598 66%,#173c5e)!important;
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{
+  right:calc(var(--mh-safe-r) + 92px)!important;bottom:calc(var(--mh-safe-b) + 12px)!important;transform:none!important;
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{
+  right:calc(var(--mh-safe-r) + 126px)!important;bottom:calc(var(--mh-safe-b) + 72px)!important;transform:none!important;
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{
+  right:calc(var(--mh-safe-r) + 104px)!important;bottom:calc(var(--mh-safe-b) + 137px)!important;transform:none!important;
+}
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.46!important;filter:grayscale(.28)!important}
-/* Legacy ability selector is intentionally disabled. Ability choice belongs in Bag/Guide, not floating over gameplay. */
-#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select{display:none!important}
+#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select,
+#game[data-screen="modern"] .play-screen.adventure-pad .forest-item-belt{display:none!important}
 @media(max-height:560px),(max-width:760px){
- #game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-r:110px;--mh-pad-small:42px;--mh-pad-jump:68px}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:100px!important;bottom:47px!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{right:78px!important;bottom:78px!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:47px!important;bottom:100px!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:15px!important;bottom:109px!important}
+ #game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-small:44px;--mh-pad-jump:72px}
+ #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{right:calc(var(--mh-safe-r) + 6px)!important;bottom:calc(var(--mh-safe-b) + 6px)!important}
+ #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:calc(var(--mh-safe-r) + 78px)!important;bottom:calc(var(--mh-safe-b) + 8px)!important}
+ #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:calc(var(--mh-safe-r) + 106px)!important;bottom:calc(var(--mh-safe-b) + 59px)!important}
+ #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:calc(var(--mh-safe-r) + 88px)!important;bottom:calc(var(--mh-safe-b) + 113px)!important}
 }

@@ -26,3 +26,11 @@
 - Widened soil paths and added brown soil clearings so Surface is not a single green carpet.
 - Corrected hand paw local axis and foot sole/pad orientation; paws continue the limb direction instead of projecting outward.
 - Added prebuild audit `audit-extreme-maze10.mjs` for these acceptance requirements.
+
+## FG-EXTREME-MAZE-11 — 2026-11-06
+- Fixed Adventure action-pad regression: one clean four-button arc only; removed overlapping layout behavior.
+- Merchant interaction is explicit: Action button becomes shop button and is always enabled near merchants.
+- Main Quest panel is contextual/temporary instead of permanently covering gameplay; hidden while NPC dialogue is active.
+- NPC dialogue remains anchored to the NPC and no longer competes with the quest panel.
+- Surface art direction changed to soil-first forest floor with layered grass patches, dirt paths, and lighter natural earth cliffs instead of an all-green carpet/dark brown walls.
+- Build: FG-EXTREME-MAZE-11-20261106.
