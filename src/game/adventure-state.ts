@@ -199,10 +199,11 @@ export class AdventureState {
  private moveGuard(p:Point,dx:number,dy:number,radius:number){
   if(!this.pilot)return moveSliding(this.grid,p,dx,dy,radius);
   const solids=[...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))],steps=Math.max(1,Math.ceil(Math.hypot(dx,dy)/.08));let out={...p};
-  const clear=(q:Point)=>
-   // Guards without swimming abilities stay on the visible dry route.
-   pilotWaterDepth(q.x,q.y)<.18&&
-   solids.every(o=>Math.hypot(q.x-o.x-.5,q.y-o.y-.5)>=o.r+radius);
+  const clear=(q:Point)=>{
+   if(pilotWaterDepth(q.x,q.y)>=.18||!solids.every(o=>Math.hypot(q.x-o.x-.5,q.y-o.y-.5)>=o.r+radius))return false;
+   for(const s of this.layout.ring?.content||[]){if(!s.solid)continue;const cx=s.point.x+.5,cy=s.point.y+.5,hx=s.solid.w*.41+radius,hy=s.solid.d*.41+radius;if(Math.abs(q.x-cx)<hx&&Math.abs(q.y-cy)<hy)return false;}
+   return true;
+  };
   for(let i=0;i<steps;i++){const x=moveSliding(this.grid,out,dx/steps,0,radius);if(clear(x))out=x;const y=moveSliding(this.grid,out,0,dy/steps,radius);if(clear(y))out=y;}return out;
  }
  private guardDryRoute(from:Point,to:Point){
@@ -235,7 +236,8 @@ export class AdventureState {
    if(!safeBridge&&pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3){this.damage('fall');return;}
   }
   if(this.expedition&&this.climber.elevation<.5&&!['hanging','climbing'].includes(this.climber.state.phase))for(const obstacle of [...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))]){if(this.layout.ledges.some(l=>l.point.x===obstacle.x&&l.point.y===obstacle.y&&this.propMoves[String(l.id)]))continue;const x=this.position.x-obstacle.x-.5,y=this.position.y-obstacle.y-.5,d=Math.hypot(x,y);if(d<obstacle.r+(this.pilot?.16:0)){const k=(obstacle.r+(this.pilot?.16:0))/Math.max(.001,d);this.position={x:obstacle.x+.5+(d?x:.001)*k,y:obstacle.y+.5+y*k};}}
-  if(this.layout.ring&&this.climber.elevation<.45&&!['hanging','climbing'].includes(this.climber.state.phase))for(const site of this.layout.ring.content){if(!site.npc)continue;const p=forestNpcWorldPoint(site),x=this.position.x-p.x,y=this.position.y-p.y,d=Math.hypot(x,y),r=.46+(this.pilot?.16:0);if(d<r){const k=r/Math.max(.001,d);this.position={x:p.x+(d?x:.001)*k,y:p.y+y*k};}}
+  if(this.layout.ring&&this.climber.elevation<1.1&&!['hanging','climbing'].includes(this.climber.state.phase))for(const site of this.layout.ring.content){if(!site.npc)continue;const p=forestNpcWorldPoint(site),x=this.position.x-p.x,y=this.position.y-p.y,d=Math.hypot(x,y),r=.62+(this.pilot?.16:0);if(d<r){const k=r/Math.max(.001,d);this.position={x:p.x+(d?x:.001)*k,y:p.y+(d?y:.001)*k};}}
+  if(this.layout.ring&&this.climber.elevation<1.1&&!['hanging','climbing'].includes(this.climber.state.phase))for(const site of this.layout.ring.content){if(!site.solid)continue;const cx=site.point.x+.5,cy=site.point.y+.5,hx=site.solid.w*.41+.18,hy=site.solid.d*.41+.18,dx=this.position.x-cx,dy=this.position.y-cy;if(Math.abs(dx)>=hx||Math.abs(dy)>=hy)continue;const px=hx-Math.abs(dx),py=hy-Math.abs(dy);if(px<py)this.position.x=cx+(dx<0?-hx:hx);else this.position.y=cy+(dy<0?-hy:hy);}
   if(this.training){if(climbing.reached!==null)this.climbed.add(climbing.reached);this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;c.position.x+=c.velocity.x*dt;c.position.y+=c.velocity.y*dt;return c.ttl>0;});return;}
   if(!predictOnly&&climbing.reached!==null&&!this.climbed.has(climbing.reached)){this.climbed.add(climbing.reached);this.coins+=5;this.notify('climb');}
   if(!predictOnly&&!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
@@ -295,6 +297,7 @@ export class AdventureState {
    if(this.respawns!==respawnsBefore){keep.length=0;break;}if(!hit)keep.push(cake);}
   this.projectiles=keep;
 
+  if(this.layout.ring&&!predictOnly){for(const site of this.layout.ring.content){if(site.npc||!site.reward||this.worldClaims.has(site.id)||!['gather','activity'].includes(site.kind))continue;const p={x:site.point.x+.5,y:site.point.y+.5};if(Math.hypot(this.position.x-p.x,this.position.y-p.y)<.72){this.worldClaims.add(site.id);this.addForestItem(site.reward);this.addXP(site.xp||10);this.coins+=site.kind==='activity'?6:2;this.petBond=Math.min(100,this.petBond+1);this.notify('pickup');this.revision++;}}}
   if(this.pilot&&!predictOnly){this.updateRingPortals();this.collectRingRewards();}
   const finish=center(this.layout.maze.finish);
   if(Math.hypot(this.position.x-finish.x,this.position.y-finish.y)<.45){if(this.gateOpen)this.phase='won';else if(this.elapsed-this.messageAt>3)this.notify('gate');}

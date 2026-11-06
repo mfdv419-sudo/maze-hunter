@@ -14,3 +14,15 @@
 - Changed cliff soil to neutral earth brown and guaranteed visible canopy trees on selected cliff-top solid cells.
 - Bumped Extreme build to FG-EXTREME-VISION-09-20261106.
 - Added VISION09 prebuild audit for NPC model/collision/water placement, NPC-anchored dialogue, action-pad ownership, paw model, cliff color and canopy presence.
+
+## FG-EXTREME-MAZE-10 — 2026-11-06
+- Replaced long Entry travel corridors with genuine braided maze connectors: parallel choices, cross-links, loops and rewarding dead ends.
+- Removed unrequested gameplay quick belt and disabled floating ability selector; Adventure action pad is again the only four-button control surface.
+- Rebuilt action-pad geometry so all four button centers share one radius from the bottom-right corner.
+- Expanded minimap now frames explored territory instead of the entire 181x181 layer; undiscovered portals are hidden.
+- Solid shops/ruins/NPCs use runtime collision instead of mutating or silently disabling maze collision.
+- NPC placement requires dry reachable terrain; merchant/clue NPC cannot silently fall back into water.
+- Added visible world pickup meshes and auto-pickup for gather/activity rewards.
+- Widened soil paths and added brown soil clearings so Surface is not a single green carpet.
+- Corrected hand paw local axis and foot sole/pad orientation; paws continue the limb direction instead of projecting outward.
+- Added prebuild audit `audit-extreme-maze10.mjs` for these acceptance requirements.

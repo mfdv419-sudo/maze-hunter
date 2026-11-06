@@ -11,18 +11,20 @@ export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343
  const bare=kind==='bare';const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
  const fur=satin(bare?furColor:colors[kind]??colors.trail),pad=satin(0x4f3d44),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
  // One compact animal paw: narrow wrist, broad soft palm, three stubby toe lobes integrated into the front edge.
- const wrist=addMesh(root,new T.CylinderGeometry(.050,.061,.095,10),fur,0,.036,.012);wrist.name='paw-wrist';
- const palm=box(root,.178,.126,.145,fur,0,-.042,.060,.054);palm.name='paw-palm-integrated';
- for(const [i,x] of [-.055,0,.055].entries()){
-  const digit=ell(root,fur,x,-.088,.126,.047,.037,.054);digit.name=`paw-digit-${i+1}`;
-  const tipPad=ell(root,pad,x,-.102,.164,.025,.015,.020);tipPad.name=`paw-toe-pad-${i+1}`;
+ const wrist=addMesh(root,new T.CylinderGeometry(.050,.058,.105,10),fur,0,.028,.008);wrist.name='paw-wrist';
+ // Paw follows the forearm axis downward. It does NOT project sideways/outward like a mitten.
+ const palm=box(root,.174,.145,.112,fur,0,-.070,.018,.050);palm.name='paw-palm-integrated';
+ for(const [i,x] of [-.052,0,.052].entries()){
+  const digit=ell(root,fur,x,-.154,.030,.044,.041,.047);digit.name=`paw-digit-${i+1}`;
+  const tipPad=ell(root,pad,x,-.160,.075,.023,.017,.016);tipPad.name=`paw-toe-pad-${i+1}`;
  }
- const centerPad=ell(root,pad,0,-.060,.142,.060,.024,.037);centerPad.name='paw-center-pad';
+ // Pads live on the palm face; they do not define the silhouette or point the paw outward.
+ const centerPad=ell(root,pad,0,-.092,.078,.058,.030,.020);centerPad.name='paw-center-pad';
  if(!bare){const band=addMesh(root,new T.TorusGeometry(.056,.006,5,16),trim,0,.040,.012);band.rotation.x=Math.PI/2;band.scale.z=.86;band.name='paw-wrist-trim';}
  return root;
 }
 export function bootModel(parent:T.Group,kind:string,side:number){
- const root=joint(parent,0,-.088,.045,'boots');root.userData.gear=kind;if(kind==='bare'){const fur=satin(0x343b40),pad=satin(0x5b4d52);const sole=box(root,.225,.115,.27,fur,0,-.018,.07,.06);sole.name='bare-foot-paw';for(const [i,x] of [-.07,0,.07].entries()){const toe=ell(root,fur,x,.012,.205,.052,.040,.068);toe.name=`foot-paw-digit-${i+1}`;ell(root,pad,x,-.02,.245,.028,.014,.024).name=`foot-toe-pad-${i+1}`;}ell(root,pad,0,-.075,.145,.075,.023,.052).name='foot-center-pad';return root;}
+ const root=joint(parent,0,-.088,.045,'boots');root.userData.gear=kind;if(kind==='bare'){const fur=satin(0x343b40),pad=satin(0x5b4d52);const sole=box(root,.225,.12,.255,fur,0,-.012,.055,.055);sole.name='bare-foot-paw';for(const [i,x] of [-.068,0,.068].entries()){const toe=ell(root,fur,x,-.005,.172,.050,.044,.060);toe.name=`foot-paw-digit-${i+1}`;ell(root,pad,x,-.067,.178,.027,.014,.022).name=`foot-toe-pad-${i+1}`;}ell(root,pad,0,-.074,.070,.074,.018,.048).name='foot-center-pad';return root;}
  const colors:Record<string,number>={trail:0x926f4c,climber:0xba6244,desert:0xc8ae7d,diver:0x315b68};
  const leather=satin(colors[kind]??colors.trail),sole=satin(kind==='desert'?0x755e43:0x243841),trim=satin(kind==='diver'?0x7ed5cf:0xf0dbad);
  box(root,.208,.135,.292,leather,0,0,.015,.045);box(root,.215,.041,.31,sole,0,-.073,.022,.014);box(root,.184,kind==='climber'?.16:.105,.188,leather,0,.075,-.035,.035);box(root,.193,.028,.195,trim,0,kind==='climber'?.15:.118,-.035,.012);box(root,.19,.052,.135,sole,0,-.002,.105,.02);

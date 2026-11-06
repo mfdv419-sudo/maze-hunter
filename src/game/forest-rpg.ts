@@ -113,7 +113,7 @@ export function forestExtremeWorldSites(active:ForestArenaId[]):ForestWorldSite[
  add('giant','nest','activity',-9,-8,['Sarang Tersembunyi','Hidden Nest'],undefined,'dragon-treat',28);
  add('giant','root','gather',-10,10,['Akar Berenergi','Living Root'],undefined,'nature-fiber',16);
  // Underground layer.
- add('ug-flooded','explorer','camp',-8,8,['Camp Penjelajah Gua','Cave Explorer Camp'],undefined,'oxygen-flask',18,{role:'clue',name:['Kiko','Kiko'],clue:['Terowongan kering di sisi timur mengarah ke Cross Tunnel.','The dry eastern tunnel leads to the Cross Tunnel.']});
+ add('ug-flooded','explorer','camp',-8,8,['Camp Penjelajah Gua','Cave Explorer Camp'],undefined,'oxygen-flask',18,{role:'clue',name:['Kiko','Kiko'],clue:['Cari terowongan yang lebih kering dan tanda pahatan lama; jalur itu biasanya membawa penjelajah lebih jauh ke jaringan bawah tanah.','Look for the drier tunnel and the old carved markings; that route usually carries explorers deeper into the underground network.']});
  add('ug-relic','altar','shrine',7,-7,['Altar Relik','Relic Altar'],{w:4,d:4});
  add('ug-xp','arena','activity',0,8,['Arena XP','XP Arena'],undefined,'guardian-token',40,{role:'quest',name:['Penjaga Arena','Arena Keeper']});
  add('ug-cross','trader','market',-7,-7,['Pedagang Bawah Tanah','Underground Trader'],{w:4,d:3},undefined,0,{role:'merchant',name:['Mako','Mako']});
@@ -131,15 +131,11 @@ export function forestExtremeWorldSites(active:ForestArenaId[]):ForestWorldSite[
  return out.filter(s=>enabled.has(s.arena));
 }
 
-export function applyForestSiteCollision(grid:Grid,sites:ForestWorldSite[],protectedPoints:Point[]):ForestWorldSite[]{
- const accepted:ForestWorldSite[]=[];
- for(const s of sites){if(!s.solid){accepted.push(s);continue;}const cells:Point[]=[];const hw=Math.floor(s.solid.w/2),hd=Math.floor(s.solid.d/2);
-  for(let y=s.point.y-hd;y<=s.point.y+hd;y++)for(let x=s.point.x-hw;x<=s.point.x+hw;x++)if(grid[y]?.[x]===0&&!protectedPoints.some(p=>Math.hypot(p.x-x,p.y-y)<2.2))cells.push({x,y});
-  if(!cells.length){accepted.push(s);continue;}const old=cells.map(p=>grid[p.y][p.x]);cells.forEach(p=>grid[p.y][p.x]=1);
-  const center=arenaPoint(s.arena),targets=protectedPoints.filter(p=>Math.hypot(p.x-center.x,p.y-center.y)<30);const ok=targets.every(p=>route(grid,center,p).length>0);
-  if(!ok)cells.forEach((p,i)=>grid[p.y][p.x]=old[i]);accepted.push(s);
- }
- return accepted;
+export function applyForestSiteCollision(grid:Grid,sites:ForestWorldSite[],_protectedPoints:Point[]):ForestWorldSite[]{
+ // World structures no longer mutate the maze graph. Their visual footprints are enforced
+ // by runtime AABB collision for player/guards, so a shop or ruin cannot silently cut a route.
+ for(const site of sites){if(!site.solid||site.kind==='cave')continue;const x=Math.round(site.point.x),y=Math.round(site.point.y);if(grid[y]?.[x]!==0)throw Error(`Solid forest site must stand on reachable terrain: ${site.id}`);}
+ return sites;
 }
 
 export function forestNpcOffset(site:ForestWorldSite):Point{
