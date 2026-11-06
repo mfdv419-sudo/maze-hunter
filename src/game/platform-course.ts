@@ -1,0 +1,3 @@
+import type {AdventureLayout} from './adventure-layout';import type {AdventureArea} from './areas';
+export function platformCourse(l:AdventureLayout,area:AdventureArea){if(area!=='gorge'&&area!=='volcano')return null;const p=l.areas.find(a=>a.zone===4)!.point;return{x:p.x+.5,y:p.y+.5,kind:area==='volcano'?'lava' as const:'abyss' as const,stones:[-2.4,-1.2,0,1.2,2.4].map((x,i)=>({x:p.x+.5+x,y:p.y+.5+(i%2?.45:-.45)}))};}
+export function courseDanger(l:AdventureLayout,area:AdventureArea,x:number,y:number,easy=l.maze.grid.length<70){const c=platformCourse(l,area);return!!c&&Math.abs(x-c.x)<2.9&&Math.abs(y-c.y)<1.35&&!c.stones.some(p=>Math.hypot(p.x-x,p.y-y)<(easy?.68:.49));}
