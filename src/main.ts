@@ -1,4 +1,5 @@
 import {mountForestHud} from './ui/forest-hud';
+import {mountAdventureActionPad} from './ui/adventure-action-pad';
 import {chooseRetroBonus,startBonus,finishBonus,pendingBonus,resumeBonus,type BonusChoice} from './ui/retro-quiz';
 import {retroQuizRequest} from './services/cloud';
 import {mountDialogPages} from './ui/dialog-pages';
@@ -37,6 +38,9 @@ import {readPreferences,writePreferences,furColors} from "./services/preferences
 import {bindJoystick} from "./game/touch-controls";
 import "./style.css";
 import "./presentation.css";
+import "./home-ui.css";
+import "./ui-pages.css";
+import "./retro-ui.css";
 import "./adventure-hud.css";
 import "./adventure-action-pad.css";
 import "./forest-pilot.css";
@@ -668,6 +672,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const supplies=document.createElement('details');supplies.className='supply-belt';supplies.innerHTML='<summary>'+tr('BEKAL & KEKUATAN','SUPPLIES & POWERS')+'</summary><p class="weapon-state" role="status"></p><div>'+[['food-cake',tr('Kue','Cake')],['food-chili',tr('Cabe','Chili')],['food-watermelon',tr('Semangka','Watermelon')],['food-spinach',tr('Bayam','Spinach')],['food-grenade',tr('Granat','Grenade')],['craft-grenade',tr('Gabung cake + cabe','Merge cake + chili')],['lift',tr('Angkat','Lift')],['place',tr('Taruh','Place')],['throw-object',tr('Lempar objek','Throw object')]].map(([k,t])=>`<button type="button" data-supply="${k}">${t} <small></small></button>`).join('')+'</div>';el('game-stage').after(supplies);supplies.addEventListener('toggle',()=>{if(supplies.open)document.querySelector('.voice-panel')?.removeAttribute('open');});supplies.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-supply]');if(b){const k=b.dataset.supply!.replace('food-','');if(['cake','chili','watermelon','grenade'].includes(k)){if(modern.selectWeapon(k as EquippedWeapon)){supplies.querySelector('summary')!.textContent=weaponLabels[k as EquippedWeapon][lang==='id'?0:1]+' · Hit';supplies.querySelectorAll('[data-supply]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));supplies.open=false;toast(tr('Senjata dipilih. Tekan Hit untuk menggunakan.','Weapon selected. Press Hit to use.'));}}else modern.useAction(b.dataset.supply as any);e.stopPropagation();}});
   cakePicker.classList.add('inventory-cakes');supplies.querySelector('div')!.append(cakePicker);
   let forestHud:ReturnType<typeof mountForestHud>|undefined;
+  let adventurePad:ReturnType<typeof mountAdventureActionPad>|undefined;
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
     training,questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,
@@ -694,6 +699,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       : undefined,
     onAdventure:(state)=>{
       if(token!==generation||screen!=='modern')return;
+      adventurePad?.update(state);
       forestHud?.update(state);
       if(state.training){el('hud-stats').textContent='∞';objectives.textContent=tr('LATIHAN · Tanpa batas waktu atau hadiah','PRACTICE · No timer or rewards');el('play-hint').textContent=tr('Coba kamera, lompat, batu pelontar dan panjat · Keluar untuk memilih maze','Try the camera, jumps, spring stone and climbing · Exit to choose a maze');return;}
       supplies.querySelectorAll<HTMLButtonElement>('[data-supply]').forEach(b=>{const k=b.dataset.supply!.replace('food-','');if(k in foodNames){b.title=foodNames[k as keyof typeof foodNames][lang==='id'?0:1];b.setAttribute('aria-label',b.title);}b.disabled=k in state.supplies?state.supplies[k as keyof typeof state.supplies]<=0:k==='craft-grenade'?state.ammo<1||state.supplies.chili<1:k==='lift'?state.elapsed>=state.strengthUntil||!!state.carried:k==='place'||k==='throw-object'?!state.carried:false;b.querySelector('small')!.textContent=k in state.supplies?String(state.supplies[k as keyof typeof state.supplies]):k==='lift'?Math.max(0,Math.ceil(state.strengthUntil-state.elapsed))+'s':k==='place'||k==='throw-object'?state.carried?'✓':'—':'';});
@@ -765,9 +771,9 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     });
   }
   const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();
-  if(modern.adventure?.pilot)forestHud=mountForestHud(el('game-stage').parentElement!,modern,lang==='en');
+  if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');if(modern.adventure.pilot)forestHud=mountForestHud(playScreen,modern,lang==='en');}
   const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
-  cleanup=()=>{forestHud?.dispose();unbind();};
+  cleanup=()=>{forestHud?.dispose();adventurePad?.dispose();unbind();};
   if (room) {
     const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.setAttribute('aria-label',tr('Chat online','Online chat'));chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
     const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};

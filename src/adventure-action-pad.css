@@ -1,63 +1,29 @@
-/* UI CONTRACT 12 — sole owner of Adventure action button geometry.
-   All four button centres lie on one arc whose centre is the physical bottom-right corner. */
-#game[data-screen="modern"] .play-screen.adventure-pad {
-  --mh-pad-radius: clamp(148px, 25vmin, 190px);
-  --mh-pad-small: clamp(44px, 6.5vmin, 52px);
-  --mh-pad-jump: clamp(72px, 10.5vmin, 86px);
-  --mh-safe-r: max(10px, env(safe-area-inset-right));
-  --mh-safe-b: max(10px, env(safe-area-inset-bottom));
+/* JOB 1 UI13 — ACTION PAD OWNER.
+   Exactly one owner for Jump, Action/Throw, Ability, Merge. No other stylesheet may position them. */
+#game[data-screen="modern"] .play-screen.adventure-pad{
+  --pad-small:clamp(46px,7vmin,56px);
+  --pad-jump:clamp(74px,11vmin,88px);
+  --pad-r1:clamp(18px,3.1vmin,28px);
+  --pad-r2:clamp(66px,10.5vmin,84px);
+  --pad-r3:clamp(112px,18vmin,138px);
+  --pad-r4:clamp(142px,23vmin,174px);
+  --pad-gold:#e8cb83;--pad-navy:#12384f;--pad-navy-hi:#267396;
+}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls{position:absolute;z-index:28;inset:0;pointer-events:none}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{position:absolute;display:grid;place-items:center;width:var(--pad-small);height:var(--pad-small);min-width:0;min-height:0;margin:0;padding:9px;border:2px solid var(--pad-gold);border-radius:50%;background:radial-gradient(circle at 34% 24%,var(--pad-navy-hi),var(--pad-navy) 68%,#0c2638);color:#fff1c6;box-shadow:0 6px 16px #06131e66;pointer-events:auto;touch-action:manipulation;transition:transform .12s ease,filter .12s ease}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:active{transform:scale(.94);filter:brightness(1.1)}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.42;filter:saturate(.45);pointer-events:none}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{display:block;width:100%;height:100%;pointer-events:none}
+/* One quarter-arc, all centres referenced to the physical bottom-right corner.
+   merge≈82°, ability≈58°, action≈34°, jump≈12°. */
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:calc(var(--pad-r1) - var(--pad-small)/2);bottom:calc(var(--pad-r4) - var(--pad-small)/2)}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:calc(var(--pad-r2) - var(--pad-small)/2);bottom:calc(var(--pad-r3) - var(--pad-small)/2)}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:calc(var(--pad-r3) - var(--pad-small)/2);bottom:calc(var(--pad-r2) - var(--pad-small)/2)}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{width:var(--pad-jump);height:var(--pad-jump);right:calc(var(--pad-r4) - var(--pad-jump)/2);bottom:calc(var(--pad-r1) - var(--pad-jump)/2);background:radial-gradient(circle at 34% 24%,#3b87a7,#16455f 68%,#0b2a3d)}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls small{display:none}
+#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select{display:none}
+@media(max-height:520px) and (orientation:landscape){
+  #game[data-screen="modern"] .play-screen.adventure-pad{--pad-small:44px;--pad-jump:70px;--pad-r1:20px;--pad-r2:64px;--pad-r3:106px;--pad-r4:136px}
 }
 
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls {
-  position:absolute;
-  z-index:24;
-  inset:0;
-  width:auto;
-  height:auto;
-  margin:0;
-  padding:0;
-  pointer-events:none;
-}
-
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button {
-  position:absolute;
-  display:grid;
-  place-items:center;
-  width:var(--mh-pad-small);
-  height:var(--mh-pad-small);
-  min-width:0;
-  min-height:0;
-  margin:0;
-  padding:8px;
-  border:2px solid #ead092;
-  border-radius:50%;
-  background:radial-gradient(circle at 34% 24%,#2c7797,#173e59 70%,#102c40);
-  color:#fff0c8;
-  box-shadow:0 5px 13px #071a2577;
-  pointer-events:auto;
-  touch-action:manipulation;
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button svg { width:100%; height:100%; pointer-events:none; }
-
-/* One visual quarter-arc from the physical bottom-right corner.
-   These are the only position declarations for the four action buttons. */
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .forest-merge {
-  right:clamp(14px,3.5vmin,26px);
-  bottom:clamp(126px,24vmin,166px);
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .forest-ability {
-  right:clamp(52px,10vmin,78px);
-  bottom:clamp(110px,20vmin,148px);
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > #hit-action {
-  right:clamp(88px,16vmin,122px);
-  bottom:clamp(76px,14vmin,108px);
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > #jump-action {
-  width:var(--mh-pad-jump);
-  height:var(--mh-pad-jump);
-  right:clamp(102px,19vmin,138px);
-  bottom:clamp(18px,4.5vmin,34px);
-  background:radial-gradient(circle at 34% 24%,#50a9df,#2a6598 66%,#173c5e);
-}
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button:disabled { opacity:.46; filter:grayscale(.28); }
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action[data-interaction="harvest"]{background:radial-gradient(circle at 34% 24%,#b8954e,#6c542d 70%,#46371f)}

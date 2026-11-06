@@ -7,6 +7,7 @@ const world=read('src/game/forest-master-world.ts');
 const modern=read('src/game/modern.ts');
 const hud=read('src/ui/forest-hud.ts');
 const css=read('src/adventure-action-pad.css');
+const padTs=read('src/ui/adventure-action-pad.ts');
 const pilotCss=read('src/forest-pilot.css');
 const adventureHud=read('src/adventure-hud.css');
 const gear=read('src/game/gear-model.ts');
@@ -22,9 +23,9 @@ const checks=[
  ['visible world pickups',world.includes('site-pickup-')&&state.includes("this.notify('pickup')")],
  ['claimed pickups disappear',world.includes('worldClaims.has(o.name.slice(12))')],
  ['no quick belt HUD',!hud.includes('forest-item-belt')&&!pilotCss.includes('forest-item-belt')],
- ['no floating ability selector',adventureHud.includes('.adventure-action-select')&&adventureHud.includes('.forest-item-belt')&&adventureHud.includes('display: none')],
- ['authoritative four-button action pad',css.includes('sole owner of Adventure action button geometry')&&css.includes('#jump-action')&&css.includes('#hit-action')&&css.includes('.forest-ability')&&css.includes('.forest-merge')&&!css.includes('!important')],
- ['action pad responsive without override layers',css.includes('clamp(72px, 10.5vmin, 86px)')&&css.includes('clamp(148px, 25vmin, 190px)')&&!css.includes('@media')],
+ ['no floating ability selector',!padTs.includes('adventure-action-select')],
+ ['authoritative four-button action pad',css.includes('ACTION PAD OWNER')&&css.includes('#jump-action')&&css.includes('#hit-action')&&css.includes('.forest-ability')&&css.includes('.forest-merge')&&!css.includes('!important')],
+ ['action pad responsive without override layers',css.includes('--pad-small:clamp(')&&css.includes('--pad-jump:clamp(')&&css.includes('--pad-r4:clamp(')&&!css.includes('!important')],
  ['expanded map crops explored',modern.includes('exploredInLayer')&&modern.includes('Math.max(25')],
  ['undiscovered portals hidden',modern.includes('this.explored.has(`${p.point.x},${p.point.y}`)')],
  ['broad soil paths',world.includes("p.kind==='trail'?4.4:3.2")],
