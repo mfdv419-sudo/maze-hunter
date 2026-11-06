@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const files=['src/adventure-hud.css','src/adventure-action-pad.css','src/forest-pilot.css'];
+let failed=false;
+const pass=(name,ok)=>{console.log((ok?'PASS ':'FAIL ')+name);if(!ok)failed=true;};
+for(const f of files){const s=read(f);pass(`${f} has no !important`,!s.includes('!important'));}
+const forest=read('src/forest-pilot.css');
+const forbiddenForest=['.minimap-panel','.forest-tools','.joystick','.action-controls','#jump-action','#hit-action','.forest-ability','.forest-merge','.forest-health','.forest-mission','.forest-world-dialogue','.forest-enemy-meter','.forest-oxygen'];
+pass('forest CSS does not own global HUD geometry',forbiddenForest.every(x=>!forest.includes(x)));
+const pad=read('src/adventure-action-pad.css');
+pass('action pad owns only action controls',!['.minimap-panel','.joystick','.forest-tools','.forest-health','.forest-mission'].some(x=>pad.includes(x)));
+pass('action pad contains exactly four positional owners', ['.forest-merge','.forest-ability','#hit-action','#jump-action'].every(x=>pad.includes(x)));
+const hud=read('src/adventure-hud.css');
+pass('HUD owns minimap/tools/joystick/health', ['.minimap-panel','.forest-tools','.joystick','.forest-health'].every(x=>hud.includes(x)));
+const legacy=read('src/presentation.css');
+const legacyAdventureImportant=[...legacy.matchAll(/([^{}]+)\{([^{}]*!important[^{}]*)\}/g)].filter(m=>/(action-hit|action-jump|joystick|minimap-panel|adventure-hud-stack|data-screen=modern.*playbar)/.test(m[1]));
+pass('legacy presentation has no Adventure geometry !important',legacyAdventureImportant.length===0);
+const main=read('src/main.ts');
+const order=['./style.css','./presentation.css','./adventure-hud.css','./adventure-action-pad.css','./forest-pilot.css'].map(x=>main.indexOf(x));
+pass('CSS import ownership order is stable',order.every((v,i)=>v>=0&&(i===0||v>order[i-1])));
+if(failed)process.exit(2);

@@ -8,6 +8,7 @@ const modern=read('src/game/modern.ts');
 const hud=read('src/ui/forest-hud.ts');
 const css=read('src/adventure-action-pad.css');
 const pilotCss=read('src/forest-pilot.css');
+const adventureHud=read('src/adventure-hud.css');
 const gear=read('src/game/gear-model.ts');
 const checks=[
  ['build id',ext.includes("FG-EXTREME-MAZE-11-20261106")],
@@ -21,9 +22,9 @@ const checks=[
  ['visible world pickups',world.includes('site-pickup-')&&state.includes("this.notify('pickup')")],
  ['claimed pickups disappear',world.includes('worldClaims.has(o.name.slice(12))')],
  ['no quick belt HUD',!hud.includes('forest-item-belt')&&!pilotCss.includes('forest-item-belt')],
- ['no floating ability selector',css.includes('.adventure-action-select')&&css.includes('.forest-item-belt{display:none!important}')],
- ['authoritative four-button action pad',css.includes('one authoritative four-button action pad')&&css.includes('#jump-action')&&css.includes('#hit-action')&&css.includes('.forest-ability')&&css.includes('.forest-merge')],
- ['action pad separated on small screens',css.includes('max-height:560px')&&css.includes('--mh-pad-jump:72px')],
+ ['no floating ability selector',adventureHud.includes('.adventure-action-select')&&adventureHud.includes('.forest-item-belt')&&adventureHud.includes('display: none')],
+ ['authoritative four-button action pad',css.includes('sole owner of Adventure action button geometry')&&css.includes('#jump-action')&&css.includes('#hit-action')&&css.includes('.forest-ability')&&css.includes('.forest-merge')&&!css.includes('!important')],
+ ['action pad responsive without override layers',css.includes('clamp(72px, 10.5vmin, 86px)')&&css.includes('clamp(148px, 25vmin, 190px)')&&!css.includes('@media')],
  ['expanded map crops explored',modern.includes('exploredInLayer')&&modern.includes('Math.max(25')],
  ['undiscovered portals hidden',modern.includes('this.explored.has(`${p.point.x},${p.point.y}`)')],
  ['broad soil paths',world.includes("p.kind==='trail'?4.4:3.2")],

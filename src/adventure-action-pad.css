@@ -1,50 +1,63 @@
-/* MAZE11 — one authoritative four-button action pad.
-   Jump is the large apex button; Merge, Action/Throw, Ability share one clean arc.
-   No extra selector/belt is allowed over the pad. */
-#game[data-screen="modern"] .play-screen.adventure-pad{
-  --mh-pad-small:50px;
-  --mh-pad-jump:82px;
-  --mh-safe-r:max(22px,env(safe-area-inset-right));
-  --mh-safe-b:max(18px,env(safe-area-inset-bottom));
+/* UI CONTRACT 12 — sole owner of Adventure action button geometry.
+   All four button centres lie on one arc whose centre is the physical bottom-right corner. */
+#game[data-screen="modern"] .play-screen.adventure-pad {
+  --mh-pad-radius: clamp(148px, 25vmin, 190px);
+  --mh-pad-small: clamp(44px, 6.5vmin, 52px);
+  --mh-pad-jump: clamp(72px, 10.5vmin, 86px);
+  --mh-safe-r: max(10px, env(safe-area-inset-right));
+  --mh-safe-b: max(10px, env(safe-area-inset-bottom));
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls{
-  position:absolute!important;z-index:24!important;inset:0!important;
-  width:auto!important;height:auto!important;padding:0!important;margin:0!important;
-  transform:none!important;pointer-events:none!important;
+
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls {
+  position:absolute;
+  z-index:24;
+  inset:0;
+  width:auto;
+  height:auto;
+  margin:0;
+  padding:0;
+  pointer-events:none;
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{
-  position:absolute!important;display:grid!important;place-items:center!important;
-  width:var(--mh-pad-small)!important;height:var(--mh-pad-small)!important;
-  min-width:0!important;min-height:0!important;padding:8px!important;margin:0!important;
-  border:2px solid #ead092!important;border-radius:50%!important;
-  background:radial-gradient(circle at 34% 24%,#2c7797,#173e59 70%,#102c40)!important;
-  color:#fff0c8!important;box-shadow:0 5px 13px #071a2577!important;
-  pointer-events:auto!important;touch-action:manipulation!important;
+
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button {
+  position:absolute;
+  display:grid;
+  place-items:center;
+  width:var(--mh-pad-small);
+  height:var(--mh-pad-small);
+  min-width:0;
+  min-height:0;
+  margin:0;
+  padding:8px;
+  border:2px solid #ead092;
+  border-radius:50%;
+  background:radial-gradient(circle at 34% 24%,#2c7797,#173e59 70%,#102c40);
+  color:#fff0c8;
+  box-shadow:0 5px 13px #071a2577;
+  pointer-events:auto;
+  touch-action:manipulation;
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%!important;height:100%!important;pointer-events:none}
-/* Arc from the physical bottom-right corner.
-   Jump is apex; small buttons sweep upward-left with generous separation. */
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{
-  width:var(--mh-pad-jump)!important;height:var(--mh-pad-jump)!important;
-  right:calc(var(--mh-safe-r) + 10px)!important;bottom:calc(var(--mh-safe-b) + 10px)!important;
-  transform:none!important;background:radial-gradient(circle at 34% 24%,#50a9df,#2a6598 66%,#173c5e)!important;
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button svg { width:100%; height:100%; pointer-events:none; }
+
+/* One visual quarter-arc from the physical bottom-right corner.
+   These are the only position declarations for the four action buttons. */
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .forest-merge {
+  right:clamp(14px,3.5vmin,26px);
+  bottom:clamp(126px,24vmin,166px);
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{
-  right:calc(var(--mh-safe-r) + 92px)!important;bottom:calc(var(--mh-safe-b) + 12px)!important;transform:none!important;
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .forest-ability {
+  right:clamp(52px,10vmin,78px);
+  bottom:clamp(110px,20vmin,148px);
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{
-  right:calc(var(--mh-safe-r) + 126px)!important;bottom:calc(var(--mh-safe-b) + 72px)!important;transform:none!important;
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > #hit-action {
+  right:clamp(88px,16vmin,122px);
+  bottom:clamp(76px,14vmin,108px);
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{
-  right:calc(var(--mh-safe-r) + 104px)!important;bottom:calc(var(--mh-safe-b) + 137px)!important;transform:none!important;
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > #jump-action {
+  width:var(--mh-pad-jump);
+  height:var(--mh-pad-jump);
+  right:clamp(102px,19vmin,138px);
+  bottom:clamp(18px,4.5vmin,34px);
+  background:radial-gradient(circle at 34% 24%,#50a9df,#2a6598 66%,#173c5e);
 }
-#game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.46!important;filter:grayscale(.28)!important}
-#game[data-screen="modern"] .play-screen.adventure-pad .adventure-action-select,
-#game[data-screen="modern"] .play-screen.adventure-pad .forest-item-belt{display:none!important}
-@media(max-height:560px),(max-width:760px){
- #game[data-screen="modern"] .play-screen.adventure-pad{--mh-pad-small:44px;--mh-pad-jump:72px}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{right:calc(var(--mh-safe-r) + 6px)!important;bottom:calc(var(--mh-safe-b) + 6px)!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{right:calc(var(--mh-safe-r) + 78px)!important;bottom:calc(var(--mh-safe-b) + 8px)!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{right:calc(var(--mh-safe-r) + 106px)!important;bottom:calc(var(--mh-safe-b) + 59px)!important}
- #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{right:calc(var(--mh-safe-r) + 88px)!important;bottom:calc(var(--mh-safe-b) + 113px)!important}
-}
+#game[data-screen="modern"] .play-screen.adventure-pad .action-controls > .action-button:disabled { opacity:.46; filter:grayscale(.28); }
