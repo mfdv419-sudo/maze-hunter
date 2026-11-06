@@ -38,9 +38,6 @@ import {readPreferences,writePreferences,furColors} from "./services/preferences
 import {bindJoystick} from "./game/touch-controls";
 import "./style.css";
 import "./presentation.css";
-import "./home-ui.css";
-import "./ui-pages.css";
-import "./retro-ui.css";
 import "./adventure-hud.css";
 import "./adventure-action-pad.css";
 import "./forest-pilot.css";
@@ -770,7 +767,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
       if (e.detail === 0) modern.useAction(kind);
     });
   }
-  const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();
+  if(!modern.adventure){const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();}
   if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');if(modern.adventure.pilot)forestHud=mountForestHud(playScreen,modern,lang==='en');}
   const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
   cleanup=()=>{forestHud?.dispose();adventurePad?.dispose();unbind();};

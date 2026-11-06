@@ -4,7 +4,6 @@ export function bindJoystick(root:HTMLElement,game:{joystick:{x:number;y:number}
  const controller=new AbortController(),signal=controller.signal;
  const size=104*prefs.controlScale;
  const bottom=()=>Math.min(prefs.bottom,root.clientHeight*.18);
- const actions=root.querySelector<HTMLElement>('.action-controls');if(actions){actions.style.transform=`scale(${prefs.controlScale})`;actions.style.transformOrigin='right bottom';actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;}
  stick.style.width=`${size}px`;stick.style.height=`${size}px`;
  stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;
  let pointer:number|null=null,origin={x:0,y:0};
@@ -28,6 +27,6 @@ export function bindJoystick(root:HTMLElement,game:{joystick:{x:number;y:number}
  },{signal});
  root.addEventListener('pointermove',e=>{if(pointer===e.pointerId)control(e);},{signal});
  for(const name of ['pointerup','pointercancel','lostpointercapture'] as const)root.addEventListener(name,e=>{if(pointer===e.pointerId)reset();},{signal});
- window.addEventListener('blur',reset,{signal});let lastWidth=root.clientWidth,lastHeight=root.clientHeight;window.addEventListener('resize',()=>{const major=Math.abs(root.clientWidth-lastWidth)>4||Math.abs(root.clientHeight-lastHeight)>80;lastWidth=root.clientWidth;lastHeight=root.clientHeight;if(!major)return;reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;if(actions)actions.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;},{signal});
+ window.addEventListener('blur',reset,{signal});let lastWidth=root.clientWidth,lastHeight=root.clientHeight;window.addEventListener('resize',()=>{const major=Math.abs(root.clientWidth-lastWidth)>4||Math.abs(root.clientHeight-lastHeight)>80;lastWidth=root.clientWidth;lastHeight=root.clientHeight;if(!major)return;reset();stick.style.top='';stick.style.left=`max(${prefs.left}px,env(safe-area-inset-left))`;stick.style.bottom=`max(${bottom()}px,env(safe-area-inset-bottom))`;},{signal});
  return()=>{controller.abort();reset();};
 }
