@@ -1,8 +1,12 @@
-# JOB 1D — Responsive Gameplay UI17
+# Maze Hunter — JOB 1E Approved UI18
 
-- Gameplay HUD scales continuously from viewport size, not device labels.
-- Action-pad keeps one approved arc while radius/button sizes scale with vmin/clamp.
-- Utility rail aligns from the same minimap edge/gap variables.
-- Dynamic joystick scales continuously.
-- ModernGame camera distance and FOV adapt on every ResizeObserver update, including resized laptop windows.
-- Home and world/map remain out of scope.
+Scope: gameplay UI only. No Home or map/world layout changes.
+
+- Move transient gameplay guidance from center toast to a lightweight text note below Main Quest.
+- Stop Forest HUD from overriding action-pad icons/disabled states; action-pad controller is sole owner.
+- Re-space the three small action buttons around Jump using the approved arc proportions.
+- Make minimap utility rail exactly match minimap height and vertically center all four utility buttons.
+- Reduce font weight and visual density across HUD labels/chips/quest text.
+- Keep responsive sizing and dynamic joystick behavior from UI17.
+- Adventure generic toast is suppressed while final Adventure HUD is mounted; pickup/audio feedback remains.
+- No !important in owned UI CSS.
