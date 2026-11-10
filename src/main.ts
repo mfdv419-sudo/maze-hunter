@@ -768,7 +768,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     });
   }
   if(!modern.adventure){const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();}
-  if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');if(modern.adventure.pilot)forestHud=mountForestHud(playScreen,modern,lang==='en');}
+  if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');forestHud=mountForestHud(playScreen,modern,lang==='en');}
   const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
   cleanup=()=>{forestHud?.dispose();adventurePad?.dispose();unbind();};
   if (room) {

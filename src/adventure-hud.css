@@ -1,77 +1,187 @@
-/* JOB 1B UI15 — FINAL LOCKED in-game Adventure HUD geometry. Home/menu out of scope. */
-#game[data-screen="modern"] .play-screen{
- --hud-gold:#e6c16f;--hud-navy:#102a3b;--hud-cream:#fff2cf;
- --hud-map:clamp(108px,14vmin,126px);--hud-tool:clamp(36px,4.8vmin,42px);
+/* JOB 1C UI16 — APPROVED Adventure gameplay HUD.
+   One owner for all in-game Adventure HUD geometry. No forced overrides. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud{
+  --hud-gold:#e7bf61;
+  --hud-gold-soft:#f6d987;
+  --hud-navy:#102a3b;
+  --hud-navy-2:#0b2130;
+  --hud-cream:#fff2cf;
+  --hud-coral:#ee625b;
+  --hud-cyan:#53bfe8;
+  --hud-map:clamp(112px,15vmin,144px);
+  --hud-tool:clamp(38px,5.1vmin,46px);
 }
-#game[data-screen="modern"] .play-screen .playbar,
-#game[data-screen="modern"] .play-screen .adventure-hud-stack,
-#game[data-screen="modern"] .play-screen #interaction-info,
-#game[data-screen="modern"] .play-screen #play-hint,
-#game[data-screen="modern"] .play-screen #quest-log,
-#game[data-screen="modern"] .play-screen .supply-belt,
-#game[data-screen="modern"] .play-screen .cake-picker,
-#game[data-screen="modern"] .play-screen #dive-action,
-#game[data-screen="modern"] .play-screen .zone-discovery,
-#game[data-screen="modern"] .play-screen .forest-item-belt,
-#game[data-screen="modern"] .play-screen .minimap-hint{display:none}
 
-/* Character status: left-top only. */
-#game[data-screen="modern"] .play-screen .forest-health{position:absolute;z-index:20;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));width:clamp(246px,29vw,334px);padding:8px 10px 7px;border:1.5px solid #e6c16fa6;border-radius:17px;background:#102a3beb;color:var(--hud-cream);box-shadow:0 6px 18px #06131e42;pointer-events:none}
-#game[data-screen="modern"] .forest-health-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;font-size:10px;color:#f7de9a}
-#game[data-screen="modern"] .forest-level{font-weight:900}
-#game[data-screen="modern"] .forest-xp-label{opacity:.88}
-#game[data-screen="modern"] .forest-health-row{display:grid;grid-template-columns:18px 1fr 52px;gap:7px;align-items:center;font-size:11px}
-#game[data-screen="modern"] .forest-health-row+.forest-health-row{margin-top:5px}
-#game[data-screen="modern"] .forest-health-track{height:8px;border-radius:99px;background:#071923;overflow:hidden;border:1px solid #ffffff1f}
-#game[data-screen="modern"] .forest-health-fill,#game[data-screen="modern"] .forest-stamina-fill,#game[data-screen="modern"] .forest-xp-fill{display:block;height:100%;width:100%;transition:width .18s ease}
-#game[data-screen="modern"] .forest-health-fill{background:linear-gradient(90deg,#d94f52,#f07b64)}
-#game[data-screen="modern"] .forest-stamina-fill{background:linear-gradient(90deg,#dfad3e,#f1d469)}
-#game[data-screen="modern"] .forest-health-value,#game[data-screen="modern"] .forest-stamina-value{text-align:right;font-size:10px}
-#game[data-screen="modern"] .forest-xp-track{height:4px;margin-top:6px;border-radius:99px;background:#071923;overflow:hidden}
-#game[data-screen="modern"] .forest-xp-fill{background:linear-gradient(90deg,#57c3ae,#93dfc8)}
+/* Legacy gameplay chrome is not part of the approved Adventure HUD. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .playbar,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .adventure-hud-stack,
+#game[data-screen="modern"] .play-screen.adventure-final-hud #interaction-info,
+#game[data-screen="modern"] .play-screen.adventure-final-hud #play-hint,
+#game[data-screen="modern"] .play-screen.adventure-final-hud #quest-log,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .supply-belt,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .cake-picker,
+#game[data-screen="modern"] .play-screen.adventure-final-hud #dive-action,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .zone-discovery,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-item-belt,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-hint{
+  display:none;
+}
+
+/* LEFT TOP — character condition. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-health{
+  position:absolute;z-index:30;
+  top:max(14px,env(safe-area-inset-top));
+  left:max(14px,env(safe-area-inset-left));
+  width:clamp(286px,31vw,386px);
+  min-height:96px;
+  padding:9px 12px 9px 84px;
+  border:2px solid var(--hud-gold);
+  border-radius:22px;
+  background:linear-gradient(180deg,#123448f2,#0b2435f2);
+  color:var(--hud-cream);
+  box-shadow:0 8px 24px #06131e52;
+  pointer-events:none;
+}
+#game[data-screen="modern"] .forest-avatar-badge{
+  position:absolute;left:9px;top:9px;width:64px;height:64px;
+  display:grid;place-items:center;
+  border:2px solid var(--hud-gold);border-radius:50%;
+  background:radial-gradient(circle at 40% 30%,#315a5e,#132d39 72%);
+  box-shadow:inset 0 0 0 3px #102330aa;
+  font-size:29px;
+}
+#game[data-screen="modern"] .forest-avatar-badge .forest-level{
+  position:absolute;left:50%;bottom:-15px;transform:translateX(-50%);
+  min-width:56px;padding:2px 7px;border:1.5px solid var(--hud-gold);border-radius:999px;
+  background:#102a3bf5;color:#fff0c5;text-align:center;font-size:10px;line-height:18px;
+}
+#game[data-screen="modern"] .forest-health-body{display:grid;gap:6px}
+#game[data-screen="modern"] .forest-health-row,
+#game[data-screen="modern"] .forest-xp-row{
+  display:grid;grid-template-columns:20px 1fr 58px;align-items:center;gap:7px;
+  font-size:11px;font-weight:800;
+}
+#game[data-screen="modern"] .forest-health-row>span{font-size:19px;line-height:1}
+#game[data-screen="modern"] .forest-xp-row>span{color:#f2c861;font-size:10px;font-weight:900}
+#game[data-screen="modern"] .forest-health-track,
+#game[data-screen="modern"] .forest-xp-track{
+  overflow:hidden;border-radius:999px;background:#061a25;border:1px solid #ffffff24;
+}
+#game[data-screen="modern"] .forest-health-track{height:12px}
+#game[data-screen="modern"] .forest-xp-track{height:8px}
+#game[data-screen="modern"] .forest-health-fill,
+#game[data-screen="modern"] .forest-stamina-fill,
+#game[data-screen="modern"] .forest-xp-fill{display:block;height:100%;transition:width .18s ease}
+#game[data-screen="modern"] .forest-health-fill{background:linear-gradient(90deg,#dd4650,#fa7766)}
+#game[data-screen="modern"] .forest-stamina-fill{background:linear-gradient(90deg,#e1aa33,#f4d05d)}
+#game[data-screen="modern"] .forest-xp-fill{background:linear-gradient(90deg,#d39d2d,#f2cf5a)}
+#game[data-screen="modern"] .forest-health-value,
+#game[data-screen="modern"] .forest-stamina-value,
+#game[data-screen="modern"] .forest-xp-label{text-align:right;font-size:10px}
 #game[data-screen="modern"] .forest-status-line{display:none}
 
-/* Progress chips beside navigation, not mixed into health. */
-#game[data-screen="modern"] .play-screen .forest-progress{position:absolute;z-index:21;top:max(14px,env(safe-area-inset-top));right:calc(max(14px,env(safe-area-inset-right)) + var(--hud-map) + var(--hud-tool) + 24px);display:flex;gap:6px;align-items:center;pointer-events:none}
-#game[data-screen="modern"] .forest-progress-chip{display:flex;align-items:center;gap:5px;min-height:30px;padding:4px 9px;border:1.5px solid #e6c16f96;border-radius:999px;background:#102a3be8;color:#fff0ca;font-size:10px;font-weight:800;box-shadow:0 4px 12px #06131e36;white-space:nowrap}
-#game[data-screen="modern"] .forest-progress-chip i{font-style:normal;font-size:13px}
+/* TOP CENTER — compact progression, matching the approved mockup. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-progress{
+  position:absolute;z-index:30;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;pointer-events:none;
+}
+#game[data-screen="modern"] .forest-progress-chip{
+  display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 13px;
+  border:2px solid var(--hud-gold);border-radius:999px;
+  background:linear-gradient(180deg,#163c50f2,#0b2738f2);color:#fff1cd;
+  box-shadow:0 5px 14px #06131e45;font-size:11px;font-weight:900;white-space:nowrap;
+}
+#game[data-screen="modern"] .forest-progress-chip i{font-style:normal;font-size:15px;color:#f4cd68}
+#game[data-screen="modern"] .forest-progress-chip[data-progress="mfeer"] i{color:#60d9ff}
+#game[data-screen="modern"] .forest-progress-chip[data-progress="sigil"] i{color:#d98cff}
 
-/* Navigation group: minimap + proportional utility buttons. */
-#game[data-screen="modern"] .play-screen .minimap-panel{position:absolute;z-index:22;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));width:var(--hud-map);height:var(--hud-map);padding:5px;border:1.5px solid #e6c16fa8;border-radius:18px;background:#0d2635e8;box-shadow:0 5px 18px #06131e4d;pointer-events:auto;cursor:pointer}
-#game[data-screen="modern"] .play-screen .minimap-panel canvas{display:block;width:100%;height:100%;border-radius:13px;image-rendering:auto}
-#game[data-screen="modern"] .play-screen .minimap-north{position:absolute;top:6px;left:50%;transform:translateX(-50%);padding:1px 5px;border-radius:7px;background:#0e2736c7;color:#ffdb82;font-size:9px;font-weight:900;pointer-events:none}
-#game[data-screen="modern"] .play-screen .minimap-legend{display:none}
-#game[data-screen="modern"] .play-screen .minimap-panel.expanded{position:fixed;z-index:60;top:50%;left:50%;right:auto;width:min(82vw,82dvh,560px);height:min(82vw,82dvh,560px);transform:translate(-50%,-50%);box-shadow:0 0 0 100vmax #07141dcc,0 12px 40px #0008}
-#game[data-screen="modern"] .play-screen .forest-tools{position:absolute;z-index:23;right:calc(max(14px,env(safe-area-inset-right)) + var(--hud-map) + 8px);top:max(14px,env(safe-area-inset-top));display:grid;grid-template-columns:var(--hud-tool);gap:6px}
-#game[data-screen="modern"] .play-screen .forest-tools .icon-button{display:grid;place-items:center;width:var(--hud-tool);height:var(--hud-tool);min-width:var(--hud-tool);min-height:var(--hud-tool);margin:0;padding:7px;border:1.5px solid #e6c16f92;border-radius:50%;background:#123248e8;color:#f8dea3;box-shadow:0 4px 10px #06131e3d}
-
-/* Dynamic joystick: visible as a faint resting guide, moves to thumb on Adventure touch. */
-#game[data-screen="modern"] .play-screen .joystick{position:absolute;z-index:24;left:max(22px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));width:clamp(112px,16vmin,138px);height:clamp(112px,16vmin,138px);border-radius:50%;border:2px solid #e8ddbd66;background:#18334836;display:flex;align-items:center;justify-content:center;opacity:.28;touch-action:none;user-select:none;transition:opacity .12s ease}
-#game[data-screen="modern"] .play-screen .joystick.active{opacity:.78}
-#game[data-screen="modern"] .play-screen .joystick span{width:46%;height:46%;border-radius:50%;background:#d4dcdaa8;border:2px solid #f3e6c294;pointer-events:none}
-
-/* Quest chip is always compact; details expand temporarily/on tap. */
-#game[data-screen="modern"] .play-screen .forest-mission{position:absolute;z-index:20;left:max(14px,env(safe-area-inset-left));top:calc(max(14px,env(safe-area-inset-top)) + 104px);width:min(270px,34vw);border:1px solid #e6c16f8a;border-radius:14px;background:#102a3be5;color:#f7edcf;box-shadow:0 5px 16px #06131e3d;font-size:10px;line-height:1.38;pointer-events:auto;overflow:hidden}
-#game[data-screen="modern"] .forest-mission-toggle{display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:0;background:transparent;color:#ffd87b;font:inherit;font-weight:900;text-align:left}
-#game[data-screen="modern"] .forest-mission-toggle span:last-child{font-size:13px;transition:transform .16s ease}
+/* LEFT MID — quest tracker, compact by default and expanded only temporarily/on tap. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-mission{
+  position:absolute;z-index:28;left:max(14px,env(safe-area-inset-left));
+  top:calc(max(14px,env(safe-area-inset-top)) + 116px);
+  width:min(292px,35vw);overflow:hidden;
+  border:2px solid var(--hud-gold);border-radius:18px;
+  background:linear-gradient(180deg,#123448ed,#0b2636ed);color:#f8efd7;
+  box-shadow:0 7px 20px #06131e48;font-size:11px;line-height:1.38;
+}
+#game[data-screen="modern"] .forest-mission-toggle{
+  display:flex;width:100%;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 12px;border:0;background:transparent;color:#ffd56f;font:inherit;font-weight:900;text-align:left;
+}
+#game[data-screen="modern"] .forest-mission-toggle span:last-child{font-size:15px;transition:transform .16s ease}
 #game[data-screen="modern"] .forest-mission.expanded .forest-mission-toggle span:last-child{transform:rotate(90deg)}
-#game[data-screen="modern"] .forest-mission-summary{padding:0 10px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
-#game[data-screen="modern"] .forest-mission-details{display:none;padding:0 10px 9px;border-top:1px solid #e6c16f38}
+#game[data-screen="modern"] .forest-mission-summary{padding:0 12px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}
+#game[data-screen="modern"] .forest-mission-details{display:none;padding:6px 12px 10px;border-top:1px solid #f3d98639}
 #game[data-screen="modern"] .forest-mission.expanded .forest-mission-details{display:block}
 #game[data-screen="modern"] .forest-mission-details>div{margin-top:5px}
 
-#game[data-screen="modern"] .play-screen .forest-world-dialogue{position:absolute;z-index:26;width:min(260px,30vw);padding:8px 10px;border:1.5px solid #d9bd7f;border-radius:15px;background:#fff5e7f4;color:#233744;box-shadow:0 8px 24px #0004;pointer-events:none;transform:translate(-50%,-100%)}
+/* RIGHT TOP — map and utility rail. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-panel{
+  position:absolute;z-index:31;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));
+  width:var(--hud-map);height:var(--hud-map);padding:6px;
+  border:2px solid var(--hud-gold);border-radius:26px;background:#0b2636ec;
+  box-shadow:0 7px 22px #06131e55;pointer-events:auto;cursor:pointer;
+}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-panel canvas{display:block;width:100%;height:100%;border-radius:20px;image-rendering:auto}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-north{
+  position:absolute;top:5px;left:50%;transform:translateX(-50%);padding:2px 7px;border-radius:999px;
+  background:#0a2435db;color:#ffe39a;font-size:10px;font-weight:900;pointer-events:none;
+}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-legend{display:none}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .minimap-panel.expanded{
+  position:fixed;z-index:80;top:50%;left:50%;right:auto;width:min(82vw,82dvh,620px);height:min(82vw,82dvh,620px);
+  transform:translate(-50%,-50%);box-shadow:0 0 0 100vmax #07141dd6,0 14px 44px #0008;
+}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-tools{
+  position:absolute;z-index:32;right:calc(max(14px,env(safe-area-inset-right)) + var(--hud-map) + 9px);
+  top:max(14px,env(safe-area-inset-top));display:grid;grid-template-columns:var(--hud-tool);gap:7px;
+}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-tools .icon-button{
+  display:grid;place-items:center;width:var(--hud-tool);height:var(--hud-tool);min-width:var(--hud-tool);min-height:var(--hud-tool);
+  margin:0;padding:7px;border:2px solid var(--hud-gold);border-radius:50%;background:#123248ef;color:#f8dea3;
+  box-shadow:0 4px 12px #06131e45;font-size:17px;
+}
+
+/* LEFT BOTTOM — dynamic joystick. Resting guide is subtle; active joystick follows the thumb. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .joystick{
+  position:absolute;z-index:29;left:max(24px,env(safe-area-inset-left));bottom:max(24px,env(safe-area-inset-bottom));
+  width:clamp(118px,17vmin,148px);height:clamp(118px,17vmin,148px);display:flex;align-items:center;justify-content:center;
+  border:2px solid #eee4c66b;border-radius:50%;background:#1833482b;opacity:.30;touch-action:none;user-select:none;
+  transition:opacity .12s ease,background .12s ease;
+}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .joystick.active{opacity:.78;background:#18334852}
+#game[data-screen="modern"] .play-screen.adventure-final-hud .joystick span{width:46%;height:46%;border-radius:50%;background:#d9dfd9bd;border:2px solid #f4e6c8a6;pointer-events:none}
+
+/* NPC dialogue is world-anchored, never a permanent left panel. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-world-dialogue{
+  position:absolute;z-index:35;width:min(250px,29vw);padding:8px 11px;
+  border:1.5px solid #d9bd7f;border-radius:15px;background:#fff6e9f5;color:#253744;
+  box-shadow:0 8px 24px #0004;pointer-events:none;transform:translate(-50%,-100%);
+}
 #game[data-screen="modern"] .forest-world-dialogue[hidden]{display:none}
-#game[data-screen="modern"] .forest-world-dialogue::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff5e7f4;border-bottom:0}
-#game[data-screen="modern"] .forest-world-dialogue b{display:block;margin-bottom:3px;color:#784f35;font-size:11px}
+#game[data-screen="modern"] .forest-world-dialogue::after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff6e9f5;border-bottom:0}
+#game[data-screen="modern"] .forest-world-dialogue b{display:block;margin-bottom:3px;color:#794f35;font-size:11px}
 #game[data-screen="modern"] .forest-world-dialogue p{margin:0;font-size:10px;line-height:1.35}
 
-#game[data-screen="modern"] .play-screen .forest-enemy-meter,#game[data-screen="modern"] .play-screen .boss-meter{position:absolute;z-index:21;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);width:min(280px,32vw);padding:7px 10px;border:1px solid #e6c16f99;border-radius:13px;background:#102a3be8;color:#fff0ca;box-shadow:0 5px 16px #06131e42;pointer-events:none}
-#game[data-screen="modern"] .forest-enemy-meter[hidden],#game[data-screen="modern"] .boss-meter[hidden]{display:none}
+/* Combat information. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-enemy-meter,
+#game[data-screen="modern"] .play-screen.adventure-final-hud .boss-meter{
+  position:absolute;z-index:29;left:50%;top:calc(max(14px,env(safe-area-inset-top)) + 48px);transform:translateX(-50%);
+  width:min(300px,34vw);padding:7px 11px;border:1.5px solid #e6c16f99;border-radius:14px;
+  background:#102a3be9;color:#fff0ca;box-shadow:0 5px 16px #06131e42;pointer-events:none;
+}
+#game[data-screen="modern"] .forest-enemy-meter[hidden],
+#game[data-screen="modern"] .boss-meter[hidden]{display:none}
 #game[data-screen="modern"] .forest-enemy-meter>div:first-child{display:flex;justify-content:space-between;gap:12px;font-size:10px}
-#game[data-screen="modern"] .forest-enemy-track,#game[data-screen="modern"] .boss-meter progress{width:100%;height:8px;margin-top:5px;border:0;border-radius:99px;overflow:hidden;background:#251012}
+#game[data-screen="modern"] .forest-enemy-track,
+#game[data-screen="modern"] .boss-meter progress{width:100%;height:8px;margin-top:5px;border:0;border-radius:999px;overflow:hidden;background:#251012}
 #game[data-screen="modern"] .forest-enemy-track i{display:block;height:100%;background:linear-gradient(90deg,#d83e4b,#f26b61)}
-#game[data-screen="modern"] .play-screen .forest-oxygen{position:absolute;z-index:21;left:calc(max(14px,env(safe-area-inset-left)) + 205px);top:calc(max(14px,env(safe-area-inset-top)) + 50px);width:34px;height:34px;color:#83dfe8}
+
+/* Underwater oxygen. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-oxygen{
+  position:absolute;z-index:29;left:calc(max(14px,env(safe-area-inset-left)) + 235px);top:calc(max(14px,env(safe-area-inset-top)) + 74px);
+  width:34px;height:34px;color:#83dfe8;
+}
 #game[data-screen="modern"] .forest-oxygen[hidden]{display:none}
 #game[data-screen="modern"] .forest-oxygen svg{width:100%;height:100%;overflow:visible}
 #game[data-screen="modern"] .forest-oxygen circle{fill:#143547a0;stroke-width:3}
@@ -80,15 +190,32 @@
 #game[data-screen="modern"] .forest-oxygen path{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round}
 #game[data-screen="modern"] .forest-oxygen.low{color:#ff8c7a}
 
-@media(max-width:760px),(max-height:560px){
- #game[data-screen="modern"] .play-screen{--hud-map:98px;--hud-tool:34px}
- #game[data-screen="modern"] .play-screen .forest-health{width:218px;max-width:57vw;padding:7px 8px}
- #game[data-screen="modern"] .play-screen .forest-progress{top:8px;right:calc(max(10px,env(safe-area-inset-right)) + var(--hud-map) + var(--hud-tool) + 18px);gap:4px}
- #game[data-screen="modern"] .forest-progress-chip{padding:3px 6px;min-height:26px;font-size:9px}
- #game[data-screen="modern"] .play-screen .forest-tools{right:calc(max(10px,env(safe-area-inset-right)) + var(--hud-map) + 6px);top:max(10px,env(safe-area-inset-top));gap:5px}
- #game[data-screen="modern"] .play-screen .minimap-panel{right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top))}
- #game[data-screen="modern"] .play-screen .forest-mission{top:104px;width:215px;max-width:53vw;font-size:9px}
- #game[data-screen="modern"] .play-screen .forest-world-dialogue{width:205px;max-width:56vw}
- #game[data-screen="modern"] .play-screen .joystick{width:106px;height:106px;left:14px;bottom:14px}
- #game[data-screen="modern"] .play-screen .forest-enemy-meter,#game[data-screen="modern"] .play-screen .boss-meter{width:min(220px,32vw)}
+@media(max-width:820px),(max-height:600px){
+  #game[data-screen="modern"] .play-screen.adventure-final-hud{--hud-map:102px;--hud-tool:34px}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-health{width:240px;min-height:82px;padding:7px 9px 7px 70px}
+  #game[data-screen="modern"] .forest-avatar-badge{width:52px;height:52px;left:8px;top:8px;font-size:24px}
+  #game[data-screen="modern"] .forest-avatar-badge .forest-level{bottom:-14px;min-width:48px;font-size:9px;line-height:16px}
+  #game[data-screen="modern"] .forest-health-row,#game[data-screen="modern"] .forest-xp-row{grid-template-columns:17px 1fr 48px;gap:5px;font-size:9px}
+  #game[data-screen="modern"] .forest-health-track{height:9px}
+  #game[data-screen="modern"] .forest-progress{gap:4px}
+  #game[data-screen="modern"] .forest-progress-chip{min-height:29px;padding:3px 8px;font-size:9px;border-width:1.5px}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-mission{top:104px;width:225px;max-width:49vw;font-size:9px}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-tools{gap:5px}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .joystick{width:108px;height:108px;left:14px;bottom:14px}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-world-dialogue{width:205px;max-width:54vw}
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-enemy-meter,
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .boss-meter{width:min(220px,34vw)}
 }
+
+@media(max-width:600px){
+  #game[data-screen="modern"] .play-screen.adventure-final-hud .forest-progress{top:calc(max(10px,env(safe-area-inset-top)) + 86px);left:auto;right:calc(max(10px,env(safe-area-inset-right)) + var(--hud-map) + 8px);transform:none;flex-direction:column;align-items:flex-end}
+  #game[data-screen="modern"] .forest-progress-chip{min-width:66px;justify-content:center}
+}
+
+/* Short reward feedback — never a persistent inventory strip. */
+#game[data-screen="modern"] .play-screen.adventure-final-hud .forest-pickup-feedback{
+  position:absolute;z-index:38;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);
+  padding:8px 16px;border:1.5px solid var(--hud-gold);border-radius:999px;
+  background:#102a3be9;color:#fff1cf;box-shadow:0 6px 18px #06131e52;font-size:11px;font-weight:900;pointer-events:none;
+}
+#game[data-screen="modern"] .forest-pickup-feedback[hidden]{display:none}
