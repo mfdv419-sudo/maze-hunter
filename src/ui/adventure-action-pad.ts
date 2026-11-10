@@ -19,7 +19,7 @@ export function mountAdventureActionPad(root:HTMLElement,game:ModernGame,en:bool
  const make=(name:string,icon:string,run:()=>void)=>{const b=document.createElement('button');b.type='button';b.className='action-button';b.title=name;b.setAttribute('aria-label',name);b.innerHTML=forestIcon(icon);b.addEventListener('click',run,{signal:abort.signal});actions.append(b);return b;};
  let selected:AbilityKind='cake',lastState:AdventureState|undefined;
  const available=(s:AdventureState,k:AbilityKind)=>k==='cake'?s.ammo>0:s.supplies[k]>0;
- const select=(kind:AbilityKind)=>{if(game.selectWeapon(kind)){selected=kind;ability.dataset.ability=kind;ability.innerHTML=forestIcon(kind);ability.title=text('Kemampuan aktif: ','Active ability: ')+kind;ability.setAttribute('aria-label',ability.title);return true;}return false;};
+ const select=(kind:AbilityKind)=>{if(game.selectWeapon(kind)){selected=kind;ability.dataset.ability=kind;ability.innerHTML=forestIcon('ability');ability.title=text('Kemampuan aktif: ','Active ability: ')+kind;ability.setAttribute('aria-label',ability.title);return true;}return false;};
  const ability=make(text('Ganti kemampuan','Cycle ability'),'ability',()=>{const s=lastState||game.adventure;if(!s)return;const from=Math.max(0,abilities.indexOf(selected));for(let step=1;step<=abilities.length;step++){const k=abilities[(from+step)%abilities.length];if(available(s,k)&&select(k))break;}});ability.classList.add('forest-ability');ability.dataset.ability=selected;
  const merge=make(text('Gabung kue dan cabai','Merge cake and chili'),'merge',()=>{if(game.useAction('craft-grenade'))game.selectWeapon('grenade');});merge.classList.add('forest-merge');
  hit?.addEventListener('pointerdown',e=>{const s=game.adventure;if(!s?.swimming)return;e.preventDefault();e.stopImmediatePropagation();game.useAction('dive');},{capture:true,signal:abort.signal});
@@ -28,7 +28,7 @@ export function mountAdventureActionPad(root:HTMLElement,game:ModernGame,en:bool
   update(s:AdventureState){
    lastState=s;
    if(game.equippedWeapon!=='grenade'&&abilities.includes(game.equippedWeapon as AbilityKind))selected=game.equippedWeapon as AbilityKind;
-   ability.dataset.ability=selected;ability.innerHTML=forestIcon(selected);ability.disabled=!abilities.some(k=>available(s,k));
+   ability.dataset.ability=selected;ability.innerHTML=forestIcon('ability');ability.disabled=!abilities.some(k=>available(s,k));
    if(hit){const site=s.nearbyForestSite,icon=site?.npc?.role==='merchant'?'shop':site?.npc?'talk':site?'ability':s.carried?'throw':s.swimming?'dive':'throw';if(hit.dataset.icon!==icon){hit.dataset.icon=icon;hit.innerHTML=forestIcon(icon);}hit.setAttribute('aria-label',site?.npc?.role==='merchant'?text('Buka toko','Open shop'):site?.npc?text('Bicara','Talk'):s.swimming?text('Selam','Dive'):text('Aksi / lempar','Action / throw'));}
    jump?.setAttribute('aria-label',s.swimming?text('Ke permukaan','Surface'):text('Lompat','Jump'));
    merge.disabled=s.ammo<1||s.supplies.chili<1;

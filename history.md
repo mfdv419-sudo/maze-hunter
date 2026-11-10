@@ -1,12 +1,12 @@
-# Maze Hunter — JOB 1E Approved UI18
+# JOB 1F UI19 — Full In-Game UI Correction
 
-Scope: gameplay UI only. No Home or map/world layout changes.
+Replaces the partial UI18 pass. Scope: in-game Adventure UI only.
 
-- Move transient gameplay guidance from center toast to a lightweight text note below Main Quest.
-- Stop Forest HUD from overriding action-pad icons/disabled states; action-pad controller is sole owner.
-- Re-space the three small action buttons around Jump using the approved arc proportions.
-- Make minimap utility rail exactly match minimap height and vertically center all four utility buttons.
-- Reduce font weight and visual density across HUD labels/chips/quest text.
-- Keep responsive sizing and dynamic joystick behavior from UI17.
-- Adventure generic toast is suppressed while final Adventure HUD is mounted; pickup/audio feedback remains.
-- No !important in owned UI CSS.
+- Rebuilt approved HUD layout hierarchy.
+- Minimap and four utility buttons use one aligned right-side grid.
+- Quest/context text typography reduced and spacing opened up.
+- One four-button action-pad owner; generic Ability icon prevents duplicate Cake visuals.
+- Rebuilt Settings, Adventure Bag, Adventure Guide and NPC modal presentation.
+- Removed forbidden layout overrides / !important from owned UI styles.
+- Fixed invalid hyphenated message keys in forest-hud.ts.
+- MAZE11 audit no longer duplicates UI ownership checks.

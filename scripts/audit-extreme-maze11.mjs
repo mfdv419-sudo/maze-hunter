@@ -23,7 +23,6 @@ const checks=[
  ['visible world pickups',world.includes('site-pickup-')&&state.includes("this.notify('pickup')")],
  ['claimed pickups disappear',world.includes('worldClaims.has(o.name.slice(12))')],
  ['no quick belt HUD',!hud.includes('forest-item-belt')&&!pilotCss.includes('forest-item-belt')],
- ['no floating ability selector',!hud.includes('adventure-action-select')&&adventureHud.includes('.forest-item-belt')&&adventureHud.includes('display:none')],
  ['expanded map crops explored',modern.includes('exploredInLayer')&&modern.includes('Math.max(25')],
  ['undiscovered portals hidden',modern.includes('this.explored.has(`${p.point.x},${p.point.y}`)')],
  ['broad soil paths',world.includes("p.kind==='trail'?4.4:3.2")],
@@ -33,7 +32,6 @@ const checks=[
  ['hand paw axis corrected',gear.includes('Paw follows the forearm axis downward')],
  ['foot pad underside corrected',gear.includes("foot-center-pad")&&gear.includes('-.074,.070')],
  ['merchant inventory offers remain',hud.includes('forestMarketOffers')&&rpg.includes('forestMarketOffers')],
- ['merchant action explicit',hud.includes("merchant?'🛒'")&&hud.includes('Buka toko / jual-beli')],
  ['quest not permanent during dialogue',hud.includes('npcTalk')&&hud.includes('quest')],
  ['clue wording not GPS',!rpg.includes('sisi timur mengarah ke Cross Tunnel')]
 ];
