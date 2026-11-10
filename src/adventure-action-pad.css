@@ -1,42 +1,47 @@
-/* JOB 1C UI16 — APPROVED action pad.
-   Sole owner: one large Jump + three small buttons on one clean quarter arc. */
+/* JOB 1D UI17 — responsive action pad.
+   Sole owner: one large Jump + three small controls on one stable arc. */
 #game[data-screen="modern"] .play-screen.adventure-pad{
-  --pad-small:clamp(50px,6.6vmin,62px);
-  --pad-jump:clamp(92px,12vmin,112px);
-  --pad-gap:clamp(10px,1.5vmin,16px);
-  --pad-right:max(18px,env(safe-area-inset-right));
-  --pad-bottom:max(18px,env(safe-area-inset-bottom));
+  --pad-small:clamp(42px,6.1vmin,60px);
+  --pad-jump:clamp(74px,10.6vmin,108px);
+  --pad-radius:clamp(82px,12.3vmin,122px);
+  --pad-r08:clamp(7px,1vmin,10px);
+  --pad-r54:clamp(44px,6.6vmin,66px);
+  --pad-r66:clamp(54px,8.1vmin,81px);
+  --pad-r72:clamp(59px,8.9vmin,88px);
+  --pad-r98:clamp(80px,12vmin,120px);
+  --pad-r116:clamp(95px,14.2vmin,142px);
+  --pad-edge:clamp(10px,1.7vmin,20px);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls{
-  position:absolute;z-index:40;right:var(--pad-right);bottom:var(--pad-bottom);
-  width:calc(var(--pad-jump) + var(--pad-small)*2.65);
-  height:calc(var(--pad-jump) + var(--pad-small)*2.65);
+  position:absolute;z-index:40;right:max(var(--pad-edge),env(safe-area-inset-right));bottom:max(var(--pad-edge),env(safe-area-inset-bottom));
+  width:calc(var(--pad-jump) + var(--pad-radius) + var(--pad-small));
+  height:calc(var(--pad-jump) + var(--pad-radius) + var(--pad-small));
   margin:0;padding:0;pointer-events:none;transform:none;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button{
   position:absolute;display:grid;place-items:center;width:var(--pad-small);height:var(--pad-small);min-width:0;min-height:0;
-  margin:0;padding:10px;border:2px solid #e8c56d;border-radius:50%;
+  margin:0;padding:clamp(7px,1.05vmin,10px);border:2px solid #e8c56d;border-radius:50%;
   background:radial-gradient(circle at 34% 24%,#2e789c,#173f5b 70%,#0d293d);
   color:#fff1c9;box-shadow:0 6px 16px #071a2580;pointer-events:auto;touch-action:manipulation;
   transition:transform .12s ease,filter .12s ease,opacity .12s ease;
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:active{transform:scale(.94)}
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button svg{width:100%;height:100%;pointer-events:none}
-/* Approved arc: Action lower-left, Ability mid-left, Merge upper-right, Jump anchor bottom-right. */
+/* Arc anchored around Jump. Positions scale continuously with viewport via vmin/clamp. */
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#hit-action{
-  right:calc(var(--pad-jump) + var(--pad-small)*1.12);bottom:calc(var(--pad-small)*.38);
+  right:calc(var(--pad-jump) + var(--pad-r72));bottom:var(--pad-r08);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-ability{
-  right:calc(var(--pad-jump) + var(--pad-small)*1.42);bottom:calc(var(--pad-small)*1.42);
+  right:calc(var(--pad-jump) + var(--pad-r98));bottom:var(--pad-r66);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.forest-merge{
-  right:calc(var(--pad-jump) + var(--pad-small)*.46);bottom:calc(var(--pad-small)*2.42);
+  right:calc(var(--pad-jump) + var(--pad-r54));bottom:var(--pad-r116);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>#jump-action{
-  right:0;bottom:0;width:var(--pad-jump);height:var(--pad-jump);padding:15px;border-width:2.5px;
+  right:0;bottom:0;width:var(--pad-jump);height:var(--pad-jump);padding:clamp(11px,1.55vmin,15px);border-width:2.5px;
   background:radial-gradient(circle at 34% 24%,#4aa9df,#286795 66%,#143a5b);
 }
 #game[data-screen="modern"] .play-screen.adventure-pad .action-controls>.action-button:disabled{opacity:.4;filter:grayscale(.25)}
-@media(max-width:820px),(max-height:600px){
-  #game[data-screen="modern"] .play-screen.adventure-pad{--pad-small:46px;--pad-jump:82px;--pad-right:max(10px,env(safe-area-inset-right));--pad-bottom:max(10px,env(safe-area-inset-bottom))}
+@media (max-aspect-ratio:1.55){
+  #game[data-screen="modern"] .play-screen.adventure-pad{--pad-small:clamp(40px,5.8vmin,54px);--pad-jump:clamp(70px,9.8vmin,94px);--pad-radius:clamp(76px,11vmin,104px);--pad-r08:clamp(6px,.9vmin,8px);--pad-r54:clamp(41px,5.9vmin,56px);--pad-r66:clamp(50px,7.3vmin,69px);--pad-r72:clamp(55px,7.9vmin,75px);--pad-r98:clamp(74px,10.8vmin,102px);--pad-r116:clamp(88px,12.8vmin,121px)}
 }

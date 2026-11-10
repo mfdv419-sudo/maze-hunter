@@ -167,6 +167,8 @@ export class ModernGame {
   private previousGuardHits:number[]=[];
   private stepDistance=0;
   private camera: T.PerspectiveCamera;
+  private responsiveCameraDistance=6.25;
+  private responsiveCameraFov=58;
   private hero: Character;
   private keys = new Set<string>();
   private last = 0;
@@ -472,12 +474,17 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
   resetCamera(){this.contactCamera?.resetView();this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
   cycleCameraView(){return this.resetCamera();}
   private resize() {
-    const w = this.host.clientWidth,
-      h = this.host.clientHeight;
+    const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight),short=Math.min(w,h),aspect=w/h;
     this.orientationBlocked=!!this.options.enforceLandscape&&h>w;if(this.orientationBlocked)this.clearInput();
-    this.renderer.setSize(w, h);
-    this.camera.aspect=w/h;
-    this.camera.fov=60;
+    this.renderer.setSize(w,h);
+    this.camera.aspect=aspect;
+    // Responsive framing is viewport-driven, not device-class driven. Narrow/resized windows
+    // pull the camera closer while preserving a full-body third-person composition.
+    const compact=T.MathUtils.clamp((short-360)/540,0,1);
+    const aspectPenalty=T.MathUtils.clamp((1.55-aspect)/.65,0,1);
+    this.responsiveCameraDistance=T.MathUtils.lerp(5.35,6.65,compact)-aspectPenalty*.22;
+    this.responsiveCameraFov=T.MathUtils.lerp(55.5,59.5,compact)+aspectPenalty*1.2;
+    this.camera.fov=this.responsiveCameraFov;
     this.camera.updateProjectionMatrix();
   }
   beginMovement(){}
@@ -806,7 +813,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
 
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
-    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const distance=this.previewMode?12:(underwater?6.6:7.2);
+    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const distance=this.previewMode?12:(underwater?Math.max(5.2,this.responsiveCameraDistance-.35):this.responsiveCameraDistance);
     // Only underwater: place the orbit itself below the waterline and permit vertical looking.
     // Land camera yaw, comfort mode and collision rules are preserved untouched.
     const orbit=underwater?{horizontal:distance*Math.cos(Math.max(-.32,Math.min(.12,this.cameraPitch))),height:Math.max(-1.35,Math.min(.1,distance*Math.sin(this.cameraPitch)*.4))}:cameraOrbit(this.cameraPitch,distance),height=orbit.height;
