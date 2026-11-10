@@ -14,7 +14,7 @@ export function mountAdventureActionPad(root:HTMLElement,game:ModernGame,en:bool
  const text=(id:string,english:string)=>en?english:id;
  const hit=actions.querySelector<HTMLButtonElement>('#hit-action');
  const jump=actions.querySelector<HTMLButtonElement>('#jump-action');
- if(hit){hit.classList.add('forest-action');hit.innerHTML=forestIcon('cake');}
+ if(hit){hit.classList.add('forest-action');hit.innerHTML=forestIcon('throw');}
  if(jump){jump.classList.add('forest-jump');jump.innerHTML=forestIcon('jump');}
  const make=(name:string,icon:string,run:()=>void)=>{const b=document.createElement('button');b.type='button';b.className='action-button';b.title=name;b.setAttribute('aria-label',name);b.innerHTML=forestIcon(icon);b.addEventListener('click',run,{signal:abort.signal});actions.append(b);return b;};
  let selected:AbilityKind='cake',lastState:AdventureState|undefined;
@@ -29,7 +29,7 @@ export function mountAdventureActionPad(root:HTMLElement,game:ModernGame,en:bool
    lastState=s;
    if(game.equippedWeapon!=='grenade'&&abilities.includes(game.equippedWeapon as AbilityKind))selected=game.equippedWeapon as AbilityKind;
    ability.dataset.ability=selected;ability.innerHTML=forestIcon(selected);ability.disabled=!abilities.some(k=>available(s,k));
-   if(hit){const icon=s.swimming?'dive':selected;if(hit.dataset.icon!==icon){hit.dataset.icon=icon;hit.innerHTML=forestIcon(icon);}hit.setAttribute('aria-label',s.swimming?text('Selam','Dive'):text('Aksi / lempar','Action / throw'));}
+   if(hit){const site=s.nearbyForestSite,icon=site?.npc?.role==='merchant'?'shop':site?.npc?'talk':site?'ability':s.carried?'throw':s.swimming?'dive':'throw';if(hit.dataset.icon!==icon){hit.dataset.icon=icon;hit.innerHTML=forestIcon(icon);}hit.setAttribute('aria-label',site?.npc?.role==='merchant'?text('Buka toko','Open shop'):site?.npc?text('Bicara','Talk'):s.swimming?text('Selam','Dive'):text('Aksi / lempar','Action / throw'));}
    jump?.setAttribute('aria-label',s.swimming?text('Ke permukaan','Surface'):text('Lompat','Jump'));
    merge.disabled=s.ammo<1||s.supplies.chili<1;
   },
