@@ -1,0 +1,37 @@
+import {test,expect} from '@playwright/test';
+test('Adventure starts with gated objectives and a masked minimap; pause and resize retain progress',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await page.locator('#lab').click();await page.locator('#modern-mode').click();
+ await expect(page.locator('.adventure-select')).toContainText('ADVENTURE');
+ await page.locator('#area-classic').click();await page.locator('#explore-area').click();await expect(page.locator('.minimap-panel')).toBeVisible();
+ await expect(page.locator('#adventure-objectives')).toContainText('0/3');await expect(page.locator('#adventure-objectives')).toContainText('0/9');
+ const initial=Number(await page.locator('.minimap-panel').getAttribute('data-explored'));
+ await page.keyboard.down('s');await page.waitForTimeout(1100);await page.keyboard.up('s');
+ await page.keyboard.down('d');await page.waitForTimeout(1100);await page.keyboard.up('d');
+ expect(Number(await page.locator('.minimap-panel').getAttribute('data-explored'))).toBeGreaterThanOrEqual(initial);
+ await page.locator('#pause-game').click();const time=await page.locator('#hud-stats').textContent();
+ await page.waitForTimeout(1000);await expect(page.locator('#hud-stats')).toHaveText(time!);
+ await page.locator('#resume').click();await page.setViewportSize({width:390,height:844});
+ await expect(page.locator('.minimap-panel')).toBeVisible();await expect(page.locator('#adventure-objectives')).toContainText('0/3');
+ await page.screenshot({path:'test-results/screenshots/presentation-adventure-phone.png'});
+ expect(errors).toEqual([]);
+});
+test('settings persist fur and floating joystick; center stays fixed through one touch and action buttons work concurrently',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:1024,height:768},hasTouch:true});const page=await context.newPage();
+ await page.goto('/');await page.locator('#settings').click();await page.locator('#fur-choice').selectOption('brown');await page.locator('#stick-choice').selectOption('floating');await page.locator('#save-settings').click();
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('mh-game-preferences')!).fur)).toBe('brown');
+ await page.locator('#lab').click();await page.locator('#modern-mode').click();await page.locator('#area-classic').click();await page.locator('#explore-area').click();
+ await expect(page.locator('.minimap-panel')).toBeVisible();await expect(page.locator('#maze-transition')).toHaveCount(0);const cdp=await context.newCDPSession(page);
+ const start={x:185,y:555,id:1};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
+ const bounds=(await page.locator('#joystick').boundingBox())!;expect(bounds.x+bounds.width/2).toBeCloseTo(start.x,0);expect(bounds.y+bounds.height/2).toBeCloseTo(start.y,0);
+ const jump=(await page.locator('#jump-action').boundingBox())!;
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:225,y:555,id:1}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:225,y:555,id:1},{x:jump.x+jump.width/2,y:jump.y+jump.height/2,id:2}]});
+ await expect(page.locator('#jump-action')).toHaveAttribute('aria-pressed','true');
+ const held=(await page.locator('#joystick').boundingBox())!;expect(held.x).toBe(bounds.x);expect(held.y).toBe(bounds.y);
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await expect(page.locator('#stick')).toHaveAttribute('style','');
+ await page.locator('#hit-action').tap();await expect(page.locator('#game-stage')).toHaveAttribute('data-last-action','hit');
+ await page.screenshot({path:'test-results/screenshots/presentation-adventure-tablet.png'});
+ await context.close();
+});

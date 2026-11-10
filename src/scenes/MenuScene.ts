@@ -21,7 +21,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(w*.065,h*.17,'MAZE',{fontFamily:'Georgia, serif',fontStyle:'bold',fontSize:`${Math.min(100,Math.max(48,w*.105))}px`,color:C.paper,stroke:'#101712',strokeThickness:5}).setShadow(4,5,'#000000',8);
     this.add.text(w*.07,h*.17+Math.min(88,w*.085),'HUNTER',{fontFamily:'Georgia, serif',fontStyle:'bold',fontSize:`${Math.min(100,Math.max(48,w*.105))}px`,color:'#a9c979',stroke:'#101712',strokeThickness:5}).setShadow(4,5,'#000000',8);
     this.add.rectangle(w*.075,h*.17+Math.min(100,w*.1),3,36*s,C.gold).setOrigin(0,.5);
-    this.add.text(w*.095,h*.17+Math.min(100,w*.1),'THE MAZE IS ALIVE. IT KNOWS YOUR NAME.',{fontFamily:'monospace',fontSize:`${Math.max(10,12*s)}px`,color:C.gold,letterSpacing:1});
+    this.add.text(w*.095,h*.17+Math.min(100,w*.1),'THE MAZE IS ALIVE. IT KNOWS YOUR NAME.',{fontFamily:'monospace',fontSize:`${Math.max(10,12*s)}px`,color:'#d9b66b',letterSpacing:1});
     const p = loadProgress(); const startLabel = p.unlocked > 1 ? t('continue',this.lang) : t('play',this.lang);
     this.menuButton(w*.075,h*.62,Math.min(290,w*.38),48*s,`▶   ${startLabel}`,true,()=>this.scene.start('LevelSelect'));
     this.menuButton(w*.075,h*.62+60*s,Math.min(290,w*.38),42*s,`◈   ${t('solo',this.lang)}`,false,()=>this.scene.start('LevelSelect'));

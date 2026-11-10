@@ -1,0 +1,17 @@
+{
+  "apply_on": "maze-hunter-delta.zip already applied to maze-1",
+  "prior_package_sha256": "c2527b65f7d1b7677079f0f592b5e6393b1ad76110df32a1e0c2f85db0e44f7d",
+  "changed_files": {
+    "netlify.toml": "bdb55a4cc7487c2dcdff32c86c275cf019d06994803e6264a3ab8728dbe99682",
+    ".nvmrc": "68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53",
+    ".github/workflows/ci.yml": "31ecca28f76c60180bf4f6ebfe59d4f02cf1e7c78778ded39dad3f9b252672f9",
+    "package.json": "ebe4ad62689a93aa3030a4b7bd9528e6fc739eec9bb605436399e294533e3459",
+    "package-lock.json": "df126f7dba6a632bca84e81524b0a01947d63f74cceeeb31b5e0d0c589483bcd",
+    "src/services/cloud.ts": "86e29d9d4297e359eb0d408d347a9997c5f25f07d9a34b2aa9581125d50269e6",
+    "scripts/check-public-env.mjs": "8bb3957337c053cdc673d75317a1cf5c750bccdc47d88e406e8b7516794fa4f8",
+    "README.md": "023774061935480573fe46dd947916f3986b2bf2577dbb0504dc0a81aabe6191",
+    "QA_REPORT.md": "9e39e9ee3fc18b97c3c6ef8c1c6d137149622d2312a3ffd80f9bf78764a0fb36",
+    "docs/NETLIFY_BUILD_FIX.md": "9d0f86fffc1d1bcd65aef07cc33360ba89c4cc93324a5f4975727e4f14510aa2"
+  },
+  "deletions": []
+}

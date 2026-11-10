@@ -1,0 +1,61 @@
+/* JOB 1F UI19 — owner of Adventure Settings / Bag / Guide / NPC modal presentation only.
+   Never positions HUD, minimap, joystick or action-pad. */
+.forest-dialog{position:absolute;inset:0;z-index:70;display:grid;place-items:center;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));background:#071821b8;backdrop-filter:blur(8px)}
+.forest-dialog .forest-panel{position:relative;display:flex;flex-direction:column;width:min(720px,calc(100vw - 28px));max-height:min(82dvh,680px);box-sizing:border-box;overflow:hidden;padding:clamp(18px,2.8vmin,28px);border:2px solid #e5c36d;border-radius:clamp(20px,3vmin,28px);background:linear-gradient(180deg,#173a4f,#0d2939);color:#fff1d0;box-shadow:0 24px 70px #0009;text-align:left}
+.forest-dialog .forest-panel h2{margin:0 48px clamp(14px,2vmin,20px) 0;font-size:clamp(22px,3vmin,30px);font-weight:600;line-height:1.15;color:#ffe09a}
+.forest-dialog .forest-close{position:absolute;top:clamp(12px,1.8vmin,18px);right:clamp(12px,1.8vmin,18px);display:grid;place-items:center;width:clamp(34px,4.7vmin,42px);height:clamp(34px,4.7vmin,42px);min-width:0;min-height:0;margin:0;padding:8px;border:1.5px solid #e5c36d;border-radius:50%;background:#25495d;color:#fff2ce;box-shadow:none}
+.forest-close svg{width:100%;height:100%}
+.forest-dialog .forest-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.forest-dialog .forest-tabs button{width:100%;min-height:40px;margin:0;padding:8px 12px;border:1px solid #7b9aaa;border-radius:12px;background:#214256;color:#f8eac9;box-shadow:none;font-size:12px;font-weight:550}
+.forest-dialog .forest-tabs button[aria-pressed="true"]{border-color:#e5c36d;background:#e0c27d;color:#102b3a}
+.forest-guide-content{overflow:auto;padding-right:4px}
+.forest-guide-content p{font-size:13px;line-height:1.5;margin:7px 0;font-weight:450}
+.forest-collection-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.forest-collection-grid p{margin:0;padding:9px 11px;border:1px solid #ffffff13;border-radius:12px;background:#24495c;display:flex;justify-content:space-between;gap:8px}
+.forest-collection-grid b{color:#f0cf83;font-weight:600}
+.forest-sigil-line{display:inline-block;width:33.33%;vertical-align:top;font-size:11px}
+
+/* Settings */
+.forest-setting-rows{display:grid;gap:10px;overflow:auto;padding-right:2px}
+.forest-setting-row{display:grid;grid-template-columns:minmax(120px,1fr) auto minmax(150px,1.5fr);align-items:center;gap:14px;margin:0;padding:10px 12px;border:1px solid #ffffff13;border-radius:14px;background:#204255;font-size:13px;font-weight:500}
+.forest-setting-row input[type="checkbox"]{width:20px;height:20px;margin:0;accent-color:#e5c36d}
+.forest-setting-row input[type="range"]{width:100%;height:28px;margin:0;padding:0;accent-color:#e5c36d}
+.forest-sensitivity{grid-template-columns:minmax(160px,1fr) minmax(180px,1.5fr)}
+.forest-control-hint{margin:14px 0 0;padding:11px 13px;border-radius:12px;background:#0a2230;color:#bed0d4;font-size:11px;line-height:1.5;font-weight:400}
+
+/* Bag / market */
+.forest-bag-summary{margin:0 0 12px;padding:9px 12px;border-radius:12px;background:#0a2230;color:#eed18d;font-size:12px;font-weight:550}
+.forest-bag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;overflow:auto;padding-right:2px}
+.forest-bag-item{display:grid;grid-template-columns:1fr auto;gap:5px 8px;align-items:center;min-height:86px;padding:10px;border:1px solid #87a9a755;border-radius:14px;background:#24495b}
+.forest-bag-item b{font-size:13px;font-weight:600}.forest-bag-item small{font-size:10px;color:#d7e0de;font-weight:400}
+.forest-bag-item button{grid-column:1/-1;min-height:32px;margin:2px 0 0;padding:6px 10px;border-radius:9px;font-size:11px}
+.forest-bag-empty{place-items:center;align-content:center;opacity:.42;background:#122d3e;border-style:dashed}.forest-bag-empty span{font-size:24px;line-height:1}.forest-bag-empty small{grid-column:auto}
+.forest-bag .forest-relic-bag,.forest-market{margin-top:14px;padding:12px;border:1px solid #d8bd7744;border-radius:14px;background:#102b3b}
+.forest-market h3,.forest-relic-bag h3{margin:0 0 8px;color:#f1d087;font-size:14px;font-weight:600}
+.forest-market-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff14;font-size:12px}
+.forest-market-row button{width:auto;min-width:72px;min-height:32px;margin:0;padding:5px 10px}
+.forest-market-hint{display:block;margin-top:10px;color:#d6c692;font-size:11px;font-weight:400}
+.forest-bag-button{font-size:17px}
+
+/* Guide / loadout */
+.forest-equipment-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.forest-dialog .forest-equipment-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;min-height:72px;margin:0;padding:7px;border:1px solid #738f9b;border-radius:12px;background:#244a5d;color:#fff0ce;box-shadow:none;font-size:11px;font-weight:500}
+.forest-equipment-grid svg{width:34px;height:34px}.forest-dialog .forest-reset{width:auto;min-height:34px;margin:12px 0 0;padding:6px 12px;border-radius:10px;font-size:12px}
+
+/* NPC modal */
+.forest-npc-dialog{max-width:560px}.forest-npc-role{display:block;margin-bottom:8px;color:#e6c77d;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em}.forest-npc-speech{padding:12px 14px;border:1px solid #8ebba055;border-radius:12px;background:#18384b;font-size:15px;line-height:1.5;font-weight:450}
+
+@media(max-width:760px){
+  .forest-dialog .forest-panel{width:min(92vw,620px);max-height:86dvh;padding:16px}
+  .forest-dialog .forest-panel h2{font-size:21px;margin-bottom:12px}
+  .forest-bag-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .forest-setting-row{grid-template-columns:96px auto minmax(100px,1fr);gap:9px;padding:8px 9px}
+  .forest-sensitivity{grid-template-columns:120px 1fr}
+}
+@media(max-width:520px){
+  .forest-bag-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .forest-collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .forest-sigil-line{display:block;width:100%}
+  .forest-equipment-grid{grid-template-columns:repeat(2,1fr)}
+  .forest-setting-row{grid-template-columns:1fr auto;gap:7px}.forest-setting-row input[type="range"]{grid-column:1/-1}.forest-sensitivity{grid-template-columns:1fr}.forest-sensitivity input{grid-column:1}
+}
