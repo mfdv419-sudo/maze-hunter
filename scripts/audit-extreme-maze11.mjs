@@ -6,10 +6,11 @@ const state=read('src/game/adventure-state.ts');
 const world=read('src/game/forest-master-world.ts');
 const modern=read('src/game/modern.ts');
 const hud=read('src/ui/forest-hud.ts');
-const css=read('src/adventure-action-pad.css');
 const pilotCss=read('src/forest-pilot.css');
 const adventureHud=read('src/adventure-hud.css');
 const gear=read('src/game/gear-model.ts');
+// UI geometry is audited by scripts/audit-job1-gameplay-ui15.mjs.
+// This MAZE11 audit intentionally owns world/gameplay checks only.
 const checks=[
  ['build id',ext.includes("FG-EXTREME-MAZE-11-20261106")],
  ['braided entry maze',ext.includes('braidedConnector')&&ext.includes("ext-entry-waterfall")&&ext.includes("ext-entry-green")],
@@ -23,8 +24,6 @@ const checks=[
  ['claimed pickups disappear',world.includes('worldClaims.has(o.name.slice(12))')],
  ['no quick belt HUD',!hud.includes('forest-item-belt')&&!pilotCss.includes('forest-item-belt')],
  ['no floating ability selector',!hud.includes('adventure-action-select')&&adventureHud.includes('.forest-item-belt')&&adventureHud.includes('display:none')],
- ['authoritative four-button action pad',css.includes('sole owner of Adventure action-pad geometry')&&css.includes('#jump-action')&&css.includes('#hit-action')&&css.includes('.forest-ability')&&css.includes('.forest-merge')&&!css.includes('!important')],
- ['action pad responsive without override layers',(css.match(/>\.forest-merge\{/g)||[]).length===1&&(css.match(/>\.forest-ability\{/g)||[]).length===1&&(css.match(/>#hit-action\{/g)||[]).length===1&&(css.match(/>#jump-action\{/g)||[]).length===1&&css.includes('--merge-y:116px')],
  ['expanded map crops explored',modern.includes('exploredInLayer')&&modern.includes('Math.max(25')],
  ['undiscovered portals hidden',modern.includes('this.explored.has(`${p.point.x},${p.point.y}`)')],
  ['broad soil paths',world.includes("p.kind==='trail'?4.4:3.2")],
