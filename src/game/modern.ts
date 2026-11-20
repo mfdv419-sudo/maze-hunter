@@ -339,9 +339,17 @@ export class ModernGame {
     this.cameraYaw=this.maze.grid[startY+1]?.[startX]===0?0:Math.PI/2;
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
     if(this.adventure?.expedition&&!this.adventure.sample){const path=this.adventure.layout.solution,target=path[Math.min(10,path.length-1)];if(target)this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.atan2(target.x+.5-this.position.x,target.y+.5-this.position.y);}
-    this.daylight=new T.HemisphereLight(this.adventure?.area==='gorge'?0xfff2df:0xf9ffe4,this.adventure?.area==='gorge'?0x8c705d:0x6c8b80,2.4);this.scene.add(this.daylight);
-    const light = new T.DirectionalLight(0xffe7bd, 2.2);
-    light.position.set(-4, 10, 7);
+    const expandedForest=!!this.adventure?.layout.ring;
+    const layeredGorge=this.adventure?.area==='gorge';
+    this.daylight=new T.HemisphereLight(
+      layeredGorge?0xfff2df:0xf9ffe4,
+      expandedForest?0x536d63:layeredGorge?0x8c705d:0x6c8b80,
+      expandedForest?1.58:2.4,
+    );
+    this.scene.add(this.daylight);
+    const light=new T.DirectionalLight(expandedForest?0xffdf9e:0xffe7bd,expandedForest?2.65:2.2);
+    if(expandedForest)light.position.set(-13,11,7);
+    else light.position.set(-4,10,7);
     this.scene.add(light);
     const n = this.maze.grid.length;
     const floorMat = new T.MeshLambertMaterial({ color: 0xffffff,map:groundTexture('path') });
@@ -360,7 +368,7 @@ export class ModernGame {
     this.world.add(this.floor, this.walls);
     if(this.adventure?.expedition){this.rockWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0x83958b,map:groundTexture('stone')}),n*n);this.lodgeWalls=new T.InstancedMesh(new T.BoxGeometry(1.01,1.95,1.01),new T.MeshLambertMaterial({color:0xa17d53,map:groundTexture('path')}),n*n);this.rockWalls.frustumCulled=this.lodgeWalls.frustumCulled=false;this.world.add(this.rockWalls,this.lodgeWalls);}
 
-    const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,this.adventure?.expedition?-8:-.095,n/2);this.world.add(earth);
+    const earth=new T.Mesh(new T.PlaneGeometry(n+10,n+10),new T.MeshLambertMaterial({color:0x426b49,map:groundTexture('leaf')}));earth.rotation.x=-Math.PI/2;earth.position.set(n/2,this.adventure?.expedition?-8:-.095,n/2);earth.name='adventure-world-base';this.world.add(earth);
     this.leaves=new T.InstancedMesh(hedgeCrownGeometry(),new T.MeshLambertMaterial({color:0xffffff,map:hedgeTexture()}),n*n);this.leaves.frustumCulled=false;this.world.add(this.leaves);
     for(let y=0;y<n;y++)for(let x=0;x<n;x++)if((!this.adventure?.expedition||this.adventure.area==='forest'||this.adventure.sample)&&this.maze.grid[y][x]===1&&((x*7+y*11)%13===0||(x===0&&y%5===0)))this.treePoints.push({x,y});
     this.treeTrunks=new T.InstancedMesh(new T.CylinderGeometry(.045,.07,1.7,5),new T.MeshLambertMaterial({color:0x8f7351}),this.treePoints.length);this.treeCrowns=new T.InstancedMesh(new T.IcosahedronGeometry(.43,1),new T.MeshLambertMaterial({color:0x609347,flatShading:true}),this.treePoints.length);this.world.add(this.treeTrunks,this.treeCrowns);
@@ -622,13 +630,14 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
           key = `${x},${y}`,
           seen = this.explored.has(key),
           lit = this.current.has(key);
+        const palette = zones[this.adventure?.layout.zoneCells[y]?.[x] ?? 0] ?? zones[0];
         this.matrix.position.set(x + 0.5,this.terrain(x+.5,y+.5)-(this.adventure?.sample?.51:.04), y + 0.5);
         this.matrix.scale.set(1, 1, 1);
         this.matrix.updateMatrix();
         this.floor.setMatrixAt(i, this.matrix.matrix);
         this.floor.setColorAt(
           i,
-          c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x6db2b2:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].ground) : seen ? 0xa6b698 : 0x557b59),
+          c.set(lit ? (this.adventure?.layout.rivers.some(p=>p.x===x&&p.y===y)?0x6db2b2:palette.ground) : seen ? 0xa6b698 : 0x557b59),
         );
         if(this.maze.grid[y][x]!==1||this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y))continue;
         const cabin=this.adventure?.layout.forest?.cabin,lodge=!!this.adventure?.sample&&x>=9&&x<=17&&y>=21&&y<=29||!!this.adventure?.expedition&&!this.adventure.sample&&['forest','coast'].includes(this.adventure.area)&&!!cabin&&Math.abs(x-cabin.x)<=2&&Math.abs(y-cabin.y)<=2,rock=!!this.adventure?.sample&&x>=55&&x<=71&&y>=54&&y<=71;
@@ -637,8 +646,8 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
         this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+this.wallHeight/2,y+.5);
         this.matrix.scale.setScalar(this.maze.grid[y][x]===1&&!this.adventure?.layout.grass.some(p=>p.x===x&&p.y===y)?1:0);
         this.matrix.updateMatrix();this.walls.setMatrixAt(wi,this.matrix.matrix);
-        this.walls.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
-        if(this.leaves){this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+this.wallHeight-.03,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:zones[this.adventure?.layout.zoneCells[y]?.[x]??0].hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
+        this.walls.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:palette.hedge).multiplyScalar(.88+.12*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));
+        if(this.leaves){this.matrix.position.set(x+.5,this.terrain(x+.5,y+.5)+this.wallHeight-.03,y+.5);this.matrix.scale.set(1,1,1);this.matrix.updateMatrix();this.leaves.setMatrixAt(wi,this.matrix.matrix);this.leaves.setColorAt(wi,c.set(this.adventure?.expedition&&!this.adventure.sample?areaThemes[this.adventure.area].wall:palette.hedge).multiplyScalar(.94+.06*Math.max(0,1-Math.hypot(x+.5-this.position.x,y+.5-this.position.y)/12)));}
 
 
       }
@@ -812,7 +821,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
       for(const[id,origin]of Object.entries(a.fallenRocks)){let model=this.fallenModels.get(id);if(!model){model=obstacleArt('rock',Number(id.split('-')[1])||0);this.fallenModels.set(id,model);this.world.add(model);}restoreProp(model);const move=a.propMoves[id],pose=restingRockPose(origin,a.elapsed),p=move||pose;if(move?.holder){const peer=this.peers.get(move.holder),own=a.carried===id,x=own?this.position.x:peer?.target.x||p.x,y=own?this.position.y:peer?.target.z||p.y;holdProp(model,{x,y},this.terrain(x,y),own?this.angle:peer?.angle||0,'rock');model.visible=own||!!peer;}else{model.position.set(p.x,rockSurface((x,y)=>this.rockGround(x,y),p)+.4+(move?.elevation??pose.elevation),p.y);model.visible=this.worldVisible(p);}model.rotation.set(2.175*1.2,0,2.175*.6);if(!move?.holder){const pose=this.propAction(id);releaseProp(model,pose.action,pose.age,(x,y)=>this.terrain(x,y));}}
       for(const[id,model]of this.fallenModels)if(!a.fallenRocks[id])model.visible=false;
       this.fieldModels.forEach(({model,warning},i)=>{const h=a.obstacles[i],period=h.period*(a.difficulty==='easy'?1.5:1),cycle=Math.floor((a.elapsed+h.phase)/period),plan=h.kind==='rock'?fieldRockPlan(h,cycle,a.difficulty==='easy',a.grid,a.fallenRocks,a.propMoves,a.layout.ledges,a.rockProtectedPoints):undefined,p=fieldPose(h,a.elapsed,a.difficulty==='easy',a.grid);if(plan){const start=cycle*period+1.6-h.phase,u=Math.max(0,Math.min(1,(a.elapsed-start)/Math.max(.01,plan.landedAt-start)));p.point={x:h.point.x+(plan.point.x-h.point.x)*u,y:h.point.y+(plan.point.y-h.point.y)*u};p.height=Math.max(.4+plan.elevation,12-(a.elapsed-start)*16/3);}const phase=cycle+':'+(p.warning?'warn':p.active&&p.height<.85?'impact':'fall');if(this.fieldCycles.get(i)!==phase){this.fieldCycles.set(i,phase);if(Math.hypot(this.position.x-h.point.x,this.position.y-h.point.y)<12){if(p.warning)sfx('warning');else if(p.active&&p.height<.85)sfx('impact');else if(p.active)sfx('fall');}}const moved=a.propMoves['field-'+h.id];const settled=h.kind==='rock'&&(!!a.fallenRocks[`fallen-${h.id}-${cycle}`]||Object.keys(a.fallenRocks).length>=ROCK_LIMIT);model.visible=moved?true:!settled&&p.active;warning.visible=!moved&&!settled&&p.warning;model.position.set(p.point.x,h.kind==='trash'?-.2-(h.id%2?.8:0): (h.kind==='rock'?rockSurface((x,y)=>this.rockGround(x,y),p.point):this.terrain(p.point.x,p.point.y))+p.height,p.point.y);if(moved?.holder){const peer=this.peers.get(moved.holder),own=a.carried==='field-'+h.id,x=own?this.position.x:peer?.target.x||moved.x,y=own?this.position.y:peer?.target.z||moved.y;model.position.set(x,this.terrain(x,y)+1.28,y);}else if(moved)model.position.set(moved.x,this.terrain(moved.x,moved.y)+.35,moved.y);const spin=h.kind==='rock'?Math.max(0,Math.min(2.175,((a.elapsed+h.phase)%(h.period*(a.difficulty==='easy'?1.5:1)))-1.6)):this.time;model.rotation.set(moved?0:spin*1.2,h.kind==='rock'?0:h.id,moved?0:spin*.6);warning.position.set(h.point.x,this.terrain(h.point.x,h.point.y)+.08,h.point.y);});
-      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=(2.4*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);if(a.expedition){fog.near=22;fog.far=42;if(!a.sample)fog.color.set(areaThemes[a.area].sky);}
+      const dusk=a.stage==='boss'?(a.bossPhase===3?.7:.9):1;this.daylight.intensity+=((a.layout.ring?1.58:2.4)*dusk-this.daylight.intensity)*Math.min(1,dt*2);const fog=this.scene.fog as T.Fog;fog.color.lerp(this.particleColor.set(a.stage==='boss'?0x8faaa8:a.stage==='escape'?0xd3c2a1:0xb4d6c3),Math.min(1,dt*2));this.renderer.setClearColor(fog.color);if(a.expedition){fog.near=22;fog.far=42;if(!a.sample)fog.color.set(areaThemes[a.area].sky);}
       setAudioScene(a.stage==='escape'?'escape':a.stage==='boss'?'boss':a.zone>=4?'deep':'modern');
       this.heroIcing.visible=a.hits>0&&a.elapsed-a.lastHit<7;this.heroIcing.children.forEach((m,i)=>m.visible=i<(a.hits>=2?9:4));
       for(const event of a.effectEvents)if(event.id>this.effectCursor){this.splats.push({point:event.point,at:this.time,color:event.source==='cake'?cakeColors[event.cake||'normal']:event.source==='river'?0x9de7e2:a.expedition?0xc08dd1:0xffe6dc});sfx(event.source==='river'?'water':'splat');this.effectCursor=event.id;}this.previousHits=a.hits;

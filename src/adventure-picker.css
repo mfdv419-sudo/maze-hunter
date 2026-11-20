@@ -1,296 +1,279 @@
-/* Adventure expedition selection and its Expanded World sheet. */
+/* Adventure menu: a single panorama with the arena and difficulty controls below. */
 #game[data-screen="setup"] {
-  height:100dvh;
-  display:grid;
-  grid-template-rows:auto minmax(0,1fr);
-  overflow:hidden;
-  background:radial-gradient(ellipse at 14% 0%,#1f3e41 0%,#122435 36%,#101a2c 78%);
+  --expedition-paper: #fff1d3;
+  --expedition-gold: #f4d68b;
+  --expedition-quiet: #bacdc1;
+  --expedition-ink: #111d1e;
+  --expedition-edge: #445751;
+  --expedition-gutter: clamp(15px, 4vw, 72px);
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--expedition-ink);
+  color: var(--expedition-paper);
 }
-#game[data-screen="setup"]:has(>.lab-banner) {grid-template-rows:auto auto minmax(0,1fr)}
-#game[data-screen="setup"] .brand-mark svg {width:1em;height:1em;display:block}
-#game[data-screen="setup"] #sound-toggle svg {width:20px;height:20px;display:block}
+#game[data-screen="setup"]:has(> .lab-banner) { grid-template-rows: auto minmax(0, 1fr); }
+#game[data-screen="setup"] > :is(header, .adventure-select) { grid-area: 1 / 1; }
+#game[data-screen="setup"]:has(> .lab-banner) > :is(header, .adventure-select) { grid-row: 2; }
+#game[data-screen="setup"] > header {
+  align-self: start;
+  height: auto;
+  min-height: 59px;
+  padding: 7px var(--expedition-gutter);
+  background: linear-gradient(180deg, #071411c4, transparent);
+  border: 0;
+  pointer-events: none;
+}
+#game[data-screen="setup"] > header a,
+#game[data-screen="setup"] > header button { pointer-events: auto; }
+#game[data-screen="setup"] > header #brand { font-size: clamp(15px, 2vw, 27px); text-shadow: 0 2px 8px #0b1915; }
+#game[data-screen="setup"] > header .brand-mark { margin-right: 5px; font-size: 1.04em; }
+#game[data-screen="setup"] > header .header-right { gap: clamp(3px, .6vw, 9px); }
+#game[data-screen="setup"] > header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  color: var(--expedition-paper);
+  background: #14221fe8;
+  border: 1px solid #ede6ce44;
+  box-shadow: none;
+  font-size: clamp(11px, 1vw, 14px);
+  white-space: nowrap;
+}
+#game[data-screen="setup"] > header svg { width: 1.1em; height: 1.1em; display: block; }
 
-.adventure-select,.forest-world-menu {
-  --expedition-cream:#f5e8ca;
-  --expedition-gold:#f0cd83;
-  --expedition-muted:#b5c6c9;
-  --expedition-gap:clamp(8px,1.1vw,16px);
-  color:var(--expedition-cream);
-}
-.adventure-select {
-  width:min(100%,1760px);
-  margin-inline:auto;
-  display:grid;
-  grid-template-columns:minmax(0,4fr) minmax(0,6fr);
-  gap:clamp(16px,2.9vw,52px);
-  padding:clamp(12px,2.3vw,42px);
-  min-height:0;
-  overflow:auto;
-  overscroll-behavior:contain;
-}
+.adventure-select { min-width: 0; overflow: auto; overscroll-behavior: contain; scroll-padding-top: 62px; }
 .adventure-poster {
-  position:relative;
-  isolation:isolate;
-  display:grid;
-  align-content:end;
-  min-height:clamp(260px,58dvh,720px);
-  overflow:hidden;
-  border:1px solid #c0d3b32b;
-  border-radius:clamp(18px,2vw,34px);
-  background:#294b48;
-  box-shadow:0 18px 55px #07172465;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-content: end;
+  min-height: clamp(260px, 57dvh, 720px);
+  overflow: hidden;
+  background: #20392f;
 }
-#adventure-preview {
-  position:absolute;
-  z-index:-2;
-  inset:0;
-  background-size:cover;
-  background-position:50% 47%;
+#adventure-preview, .adventure-poster::after {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
+#adventure-preview { z-index: -2; object-fit: cover; object-position: 56% 47%; }
+.adventure-poster[data-area]:not([data-area="forest"]) #adventure-preview { object-position: 62% 47%; }
 .adventure-poster::after {
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  background:linear-gradient(0deg,#0b1727 3%,#0c1c2dea 17%,#10202f38 58%,#1c57641a);
+  content: "";
+  z-index: -1;
+  background: linear-gradient(180deg, #09151262, transparent 33%, transparent 45%, #111d1e),
+    linear-gradient(90deg, #0c1a18df, #0c1a187f 32%, transparent 76%);
 }
-.poster-copy {padding:clamp(16px,3vw,52px)}
-#game .adventure-select .poster-copy h2 {
-  margin:.38em 0 .16em;
-  color:var(--expedition-cream);
-  font-size:clamp(31px,4.65vw,76px);
-  font-weight:620;
-  line-height:.96;
-  letter-spacing:-.025em;
+.poster-copy { padding: 73px var(--expedition-gutter) clamp(15px, 3vw, 36px); }
+.expedition-kicker {
+  color: var(--expedition-gold);
+  text-transform: uppercase;
+  font-size: clamp(10px, 1vw, 15px);
+  font-weight: 700;
+  letter-spacing: .19em;
 }
-.poster-copy p {color:#e4e8d7;font-size:clamp(13px,1.15vw,18px);margin:.68em 0 0;max-width:28ch;line-height:1.4}
-.poster-chip {
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  padding:.3em .75em;
-  border-radius:999px;
-  color:#e9e1bd;
-  background:#102a37d9;
-  border:1px solid #b6ceac4a;
-  font-size:clamp(10px,.96vw,14px);
+#game .adventure-select #expedition-title {
+  margin: 4px 0 12px;
+  max-width: 15ch;
+  color: var(--expedition-paper);
+  font-size: clamp(38px, 7.1vw, 116px);
+  font-weight: 700;
+  line-height: .95;
+  letter-spacing: -.045em;
+  text-shadow: 0 3px 0 #112720, 0 8px 30px #081411c4;
 }
-.poster-chip svg {width:1.2em;height:1.2em;color:var(--expedition-gold)}
+.picker-objectives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 15px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #e5ebd7;
+  font-size: clamp(10px, 1.15vw, 17px);
+}
+.picker-objectives li { display: inline-flex; align-items: center; gap: 5px; }
+.picker-objectives svg { width: 1.25em; height: 1.25em; color: #8ddcc3; }
+.expedition-guide {
+  position: absolute;
+  right: var(--expedition-gutter);
+  bottom: clamp(14px, 2.7vw, 33px);
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #dbebcd55;
+  border-radius: 50%;
+  background: #14221fe8;
+  color: var(--expedition-paper);
+}
+.expedition-guide svg { width: 25px; height: 25px; }
 
 .expedition-picker {
-  display:grid;
-  align-content:center;
-  gap:clamp(14px,2.1vw,36px);
-  min-width:0;
+  display: grid;
+  gap: clamp(11px, 2dvh, 23px);
+  min-width: 0;
+  width: min(100%, 1840px);
+  margin-inline: auto;
+  padding: 0 var(--expedition-gutter) max(18px, env(safe-area-inset-bottom));
 }
-.picker-heading,.difficulty-heading {display:flex;align-items:center;justify-content:space-between;gap:10px}
-.expedition-kicker {
-  color:var(--expedition-gold);
-  text-transform:uppercase;
-  font-size:clamp(10px,.9vw,14px);
-  font-weight:600;
-  letter-spacing:.18em;
+#game .adventure-select .expedition-picker h2 {
+  margin: 0 0 6px;
+  color: #e3e9da;
+  font-size: clamp(12px, 1.18vw, 17px);
+  font-weight: 620;
 }
-#game .adventure-select .picker-heading h1 {
-  margin:.17em 0 0;
-  color:var(--expedition-cream);
-  font-size:clamp(25px,3.3vw,56px);
-  font-weight:620;
-  letter-spacing:-.023em;
-  line-height:1.06;
-}
-.expedition-guide {
-  flex:none;
-  width:clamp(38px,3.6vw,54px);
-  aspect-ratio:1;
-  display:grid;
-  place-items:center;
-  padding:0;
-  border:1px solid #c9c7a452;
-  border-radius:50%;
-  background:#243a42;
-  color:var(--expedition-cream);
-}
-.expedition-guide svg {width:55%;height:55%}
-
-.area-options {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--expedition-gap)}
+.area-options { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: clamp(4px, .65vw, 10px); }
 .area-option {
-  position:relative;
-  isolation:isolate;
-  display:flex;
-  align-items:flex-end;
-  min-width:0;
-  height:clamp(70px,16dvh,168px);
-  padding:clamp(7px,1vw,14px);
-  overflow:hidden;
-  appearance:none;
-  border:1px solid #c5d2b733;
-  border-radius:clamp(10px,1.3vw,20px);
-  background:#234352;
-  color:#fff1d4;
-  text-align:left;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  min-height: clamp(60px, 10dvh, 124px);
+  padding: clamp(5px, .7vw, 11px);
+  border: 1px solid #82988887;
+  border-radius: 7px;
+  background: #21352e;
+  color: #fff1d4;
+  text-align: left;
 }
-.area-option::before,.area-option::after {content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
-.area-option::before {background:var(--area-art) center / cover;transition:transform .18s ease-out}
-.area-option::after {background:linear-gradient(0deg,#0c1829ee,#0c182955 44%,transparent 76%)}
-.area-option b {font-size:clamp(11px,1.15vw,17px);font-weight:570;line-height:1.09;text-shadow:0 2px 4px #08111b}
-.area-option:hover::before {transform:scale(1.055)}
-.area-option[aria-pressed="true"] {
-  border-color:var(--expedition-gold);
-  box-shadow:0 0 0 1px var(--expedition-gold),0 4px 24px #ebba5626;
+.area-option img, .area-option::before {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
 }
+.area-option img { object-fit: cover; object-position: center 46%; z-index: -2; filter: saturate(.83) brightness(.87); }
+.area-option::before { content: ""; z-index: -1; background: linear-gradient(180deg, transparent 21%, #080d0af2 100%); }
+.area-option b { font-size: clamp(11px, 1.13vw, 17px); font-weight: 620; line-height: 1.1; text-shadow: 0 2px 4px #08111b; }
+.area-option[aria-pressed="true"] { border-color: var(--expedition-gold); box-shadow: 0 0 0 1px var(--expedition-gold); }
+.area-option[aria-pressed="true"] img { filter: none; }
 .area-mark {
-  display:none;
-  position:absolute;
-  top:7px;
-  right:7px;
-  width:22px;
-  height:22px;
-  place-items:center;
-  color:#182b33;
-  background:var(--expedition-gold);
-  border-radius:50%;
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: clamp(15px, 1.7vw, 23px);
+  aspect-ratio: 1;
+  place-items: center;
+  background: var(--expedition-gold);
+  color: #241f14;
+  border-radius: 50%;
 }
-.area-mark svg {width:16px;height:16px}
-.area-option[aria-pressed="true"] .area-mark {display:grid}
+.area-mark svg { width: 85%; height: 85%; }
+.area-option[aria-pressed="true"] .area-mark { display: grid; }
 
-.difficulty-block {display:grid;gap:clamp(5px,.8vw,11px)}
-#game .adventure-select .difficulty-heading h2 {margin:0;color:var(--expedition-cream);font-size:clamp(13px,1.25vw,19px);font-weight:570}
-.difficulty-heading span {display:flex;align-items:center;gap:5px;font-size:clamp(10px,1.02vw,14px);color:var(--expedition-muted)}
-.difficulty-heading svg {width:1.12em;height:1.12em}
-.expedition-difficulty {
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  padding:4px;
-  gap:3px;
-  border:1px solid #a8beb133;
-  border-radius:999px;
-  background:#0d1c2e;
+.difficulty-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.poster-chip { color: var(--expedition-quiet); font-size: clamp(10px, 1vw, 15px); }
+.expedition-difficulty { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(4px, .62vw, 9px); }
+.expedition-difficulty:has(#forest-world-open) { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(148px, 1.5fr); }
+.expedition-difficulty button, .forest-world-modes button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(3px, .55vw, 8px);
+  min-width: 0;
+  min-height: clamp(41px, 5.5dvh, 58px);
+  padding: 4px;
+  text-transform: capitalize;
+  font-size: clamp(11px, 1.2vw, 17px);
+  font-weight: 570;
+  line-height: 1.1;
+  color: #eee9da;
+  background: #192929;
+  border: 1px solid var(--expedition-edge);
+  border-radius: 7px;
 }
-.expedition-difficulty button {
-  min-width:0;
-  min-height:clamp(34px,4.8dvh,50px);
-  border-radius:999px;
-  padding:4px;
-  text-transform:capitalize;
-  font-size:clamp(11px,1.2vw,18px);
-  color:#d0dedb;
-  background:transparent;
+.expedition-difficulty svg, .forest-world-modes svg { width: 1.25em; height: 1.25em; color: #a6bfb1; flex: none; }
+.expedition-difficulty button[aria-pressed="true"], .forest-world-modes button[aria-pressed="true"] {
+  color: var(--expedition-gold);
+  background: #343625;
+  border-color: #a78c53;
 }
-.expedition-difficulty button[aria-pressed="true"] {color:#ffdf9b;background:#345047;box-shadow:inset 0 0 0 1px #dabb6c60}
+.adventure-select button[aria-pressed="true"] svg { color: inherit; }
+#forest-world-open { margin-left: 5px; color: #f0dfb0; border-color: #697558; background: #25332e; }
+#forest-world-open[aria-expanded="true"] { border-color: var(--expedition-gold); background: #353c2a; }
+#forest-world-open[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.forest-world-options {
+  margin-top: 7px;
+  padding: 8px 10px;
+  border-left: 2px solid #b6a173;
+  border-radius: 0 7px 7px 0;
+  background: #1d2b28;
+}
+.forest-world-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.forest-world-modes button { min-width: 81px; min-height: 40px; }
+.forest-world-progress { margin-left: auto; color: var(--expedition-quiet); font-size: 12px; }
+#expanded-status, .forest-earned-gear { margin: 6px 0 0; color: var(--expedition-quiet); font-size: clamp(12px, 1.15vw, 15px); line-height: 1.3; }
+.forest-earned-gear ul { margin: 5px 0; padding-left: 1.2rem; }
+.expedition-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-.expedition-actions {display:flex;align-items:center;gap:clamp(8px,1.35vw,22px);min-width:0}
-.expedition-secondary-actions {display:flex;flex:1;justify-content:space-between;gap:clamp(2px,.65vw,10px);min-width:0}
+.expedition-actions { display: flex; flex-wrap: wrap; align-items: center; gap: clamp(5px, 1.3vw, 21px); min-width: 0; }
 .expedition-action {
-  min-height:clamp(40px,6.5dvh,62px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:clamp(4px,.6vw,9px);
-  border-radius:999px;
-  background:#1b3541;
-  border:1px solid #a3b9a43d;
-  color:var(--expedition-cream);
-  padding:7px clamp(6px,.8vw,15px);
-  flex:1 1 auto;
-  white-space:normal;
-  line-height:1.08;
-  font-size:clamp(10px,1.1vw,17px);
-  font-weight:540;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, .7vw, 9px);
+  min-height: clamp(43px, 6dvh, 64px);
+  padding: 4px clamp(4px, .8vw, 15px);
+  font-size: clamp(11px, 1.22vw, 17px);
+  font-weight: 600;
+  line-height: 1.1;
+  color: #dbe8dc;
+  background: transparent;
+  border-radius: 8px;
 }
-.expedition-action svg {width:1.22em;height:1.22em;flex:none;color:#d6cc9e}
+.expedition-action svg { width: 1.35em; height: 1.35em; flex: none; }
 #explore-area {
-  flex:0 0 auto;
-  background:linear-gradient(160deg,#ffe0a1,#e2ae64);
-  color:#162730;
-  border-color:#fff0bf;
-  box-shadow:0 3px 0 #9f733a,0 6px 22px #0006;
-  min-width:min(30%,178px);
-  padding-inline:clamp(10px,1.8vw,25px);
-  font-weight:650;
+  min-width: clamp(105px, 19vw, 245px);
+  padding-inline: clamp(10px, 2vw, 34px);
+  text-transform: uppercase;
+  letter-spacing: .045em;
+  color: #281f12;
+  background: linear-gradient(174deg, #ffe5a2, #eabd61);
+  border: 1px solid #fbda8c;
+  box-shadow: inset 0 1px 0 #fff5cb, 0 3px 0 #876332, 0 6px 12px #091211;
 }
-#explore-area svg {color:inherit}
-#forest-world-open {color:#ffe1a3;background:#253b40}
-.adventure-select button:focus-visible,.forest-world-menu button:focus-visible {outline:2px solid #fff4ca;outline-offset:2px}
-.adventure-select button[aria-pressed="true"]:focus:not(:focus-visible) {outline:none}
+#practice-area { margin-left: auto; color: var(--expedition-quiet); }
+.adventure-select button:focus-visible { outline: 2px solid #fff4ca; outline-offset: 2px; }
 
-.forest-world-menu {
-  width:min(calc(100% - 28px),600px);
-  max-height:calc(100dvh - 28px);
-  overflow:auto;
-  padding:clamp(16px,3vw,36px);
-  border-radius:25px;
-  border:1px solid #b0bc9d55;
-  background:linear-gradient(145deg,#24434a,#132037 75%);
-  box-shadow:0 20px 65px #050d17b0;
+@media (max-width: 700px) {
+  .area-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
-.forest-world-menu h2 {color:var(--expedition-cream);margin:0 0 14px;font-weight:600;font-size:clamp(22px,3vw,34px)}
-.forest-world-menu p {margin:8px 0;color:#d5ded5;font-size:14px}
-.forest-world-menu progress {display:block;width:100%;height:8px;accent-color:#edca85}
-.forest-world-modes {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
-.forest-world-modes button,.forest-world-close {
-  display:flex;
-  align-items:center;
-  gap:10px;
-  color:var(--expedition-cream);
-  border:1px solid #c9d0a743;
-  background:#203a46;
-  border-radius:16px;
-  padding:12px;
-  text-align:left;
+@media (max-width: 520px) {
+  #game[data-screen="setup"] > header button { gap: 3px; padding-inline: 5px; }
+  .adventure-poster { min-height: clamp(250px, 41dvh, 365px); }
+  #adventure-preview { object-position: 66% 47%; }
+  .poster-copy { padding-right: calc(var(--expedition-gutter) + 42px); }
+  .expedition-difficulty:has(#forest-world-open) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #forest-world-open { grid-column: 1 / -1; margin-left: 0; justify-content: flex-start; padding-inline: 9px; }
+  #forest-world-open svg:last-child { margin-left: auto; }
 }
-.forest-world-modes button svg,.forest-world-close svg {width:1.3em;height:1.3em;flex:none;color:var(--expedition-gold)}
-.forest-world-modes button>span {display:grid;gap:5px}
-.forest-world-modes small {line-height:1.25;color:#cddad3}
-.forest-world-modes button:disabled {opacity:.67}
-.forest-world-close {min-height:42px;border-radius:999px;padding-inline:15px}
-.forest-earned-gear {padding-left:1.25rem;font-size:14px;line-height:1.45}
-
-@media (max-height:470px) and (orientation:landscape) {
-  .adventure-select {grid-template-columns:minmax(0,30%) minmax(0,1fr);padding:9px 13px;gap:14px}
-  .adventure-poster {min-height:0}
-  .poster-copy {padding:12px}
-  #game .adventure-select .poster-copy h2 {font-size:clamp(22px,4.4vw,33px)}
-  .poster-copy p {font-size:11px}
-  .poster-chip {font-size:9px;gap:4px}
-  .expedition-picker {gap:8px}
-  .expedition-guide {width:34px}
-  #game .adventure-select .picker-heading h1 {font-size:22px}
-  .area-option {height:clamp(52px,15dvh,66px);padding:6px}
-  .area-mark {width:16px;height:16px;top:4px;right:4px}
-  .area-mark svg {width:13px;height:13px}
-  .difficulty-block {gap:4px}
-  .expedition-difficulty {padding:3px}
-  .expedition-difficulty button {min-height:29px}
-  .expedition-action {min-height:38px}
+@media (max-height: 470px) and (orientation: landscape) {
+  #game[data-screen="setup"] > header { min-height: 40px; padding-block: 4px; }
+  #game[data-screen="setup"] > header button { min-height: 30px; padding: 3px 7px; }
+  .adventure-select { scroll-padding-top: 42px; }
+  .adventure-poster { min-height: clamp(108px, 44dvh, 206px); }
+  .poster-copy { padding-top: 44px; padding-bottom: 10px; }
+  #game .adventure-select #expedition-title { font-size: clamp(28px, 5.3vw, 53px); margin-bottom: 5px; }
+  .expedition-guide { width: 36px; height: 36px; bottom: 8px; }
+  .expedition-picker { gap: 6px; padding-bottom: 8px; }
+  .area-options { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .area-option { min-height: 46px; padding: 4px; }
+  .expedition-difficulty button, .expedition-action { min-height: 36px; }
 }
-@media (max-height:370px) and (orientation:landscape) {
-  .adventure-select {padding-block:5px}
-  .expedition-picker,.area-options {row-gap:5px}
-  .picker-heading>div {line-height:1}
-  .expedition-guide {width:32px}
-  #game .adventure-select .picker-heading h1 {font-size:20px;margin-top:2px}
-  .area-option {height:clamp(40px,13.25dvh,49px)}
-  .difficulty-block {gap:2px}
-  .difficulty-heading {line-height:1.2}
-  .expedition-difficulty button {min-height:27px}
-  .expedition-action {min-height:36px}
+@media (max-width: 360px) {
+  .expedition-difficulty button:not(#forest-world-open) svg { display: none; }
+  .expedition-capacity { font-size: 9px; }
 }
-@media (max-width:690px) {
-  .expedition-action {gap:4px}
-  .expedition-secondary-actions .expedition-action svg {width:1.1em;height:1.1em}
-}
-@media (orientation:portrait) {
-  .adventure-select {grid-template-columns:minmax(0,1fr);padding:12px;gap:16px}
-  .adventure-poster {min-height:clamp(144px,23dvh,252px)}
-  .area-options {grid-template-columns:repeat(2,minmax(0,1fr))}
-  .area-option {height:clamp(68px,12dvh,145px)}
-  .expedition-action {font-size:clamp(10px,2.8vw,16px)}
-}
-@media (max-width:370px) {
-  .expedition-actions {display:grid;gap:9px}
-  #explore-area {width:100%}
-}
-@media (prefers-reduced-motion:reduce) {
-  .adventure-select button,.area-option::before {transition:none}
-}
+@media (prefers-reduced-motion: reduce) { .adventure-select button { transition: none; } }

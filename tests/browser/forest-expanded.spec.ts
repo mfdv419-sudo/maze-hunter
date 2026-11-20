@@ -9,15 +9,28 @@ test('the Forest picker exposes two expanded modes and keeps a new profile locke
  await page.locator('#area-forest').click();
  await expect(page.locator('#maze-transition')).toHaveCount(0);
  const entry = page.locator('#forest-world-open');
- await expect(entry).toBeInViewport();
+ await expect(page.locator('.expedition-difficulty').locator('#forest-world-open')).toBeInViewport();
  await entry.click();
- const dialog = page.getByRole('dialog', {name:'Forest Grove · Expanded World'});
- await expect(dialog).toBeVisible();
- await expect(dialog).toContainText('0/6');
- await expect(dialog.locator('#forest-world-hard')).toBeDisabled();
- await expect(dialog.locator('#forest-world-extreme')).toBeDisabled();
+ const options=page.getByRole('region',{name:'Forest Grove · Expanded World'});
+ const panorama=page.locator('#adventure-preview');
+ await expect(entry).toHaveAttribute('aria-expanded','true');
+ await expect(options).toBeVisible();
+ await expect(options).toContainText('0/6');
+ await expect(page.locator('#explore-area')).toBeDisabled();
+ await expect(page.locator('#online-menu')).toBeDisabled();
+ await expect(panorama).toHaveAttribute('src','/adventure/forest-expanded-hard.webp');
+ await expect.poll(()=>panorama.evaluate((e:HTMLImageElement)=>e.naturalWidth)).toBeGreaterThan(1000);
+ await options.locator('#forest-world-extreme').click();
+ await expect(options.locator('#forest-world-extreme')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#expanded-status')).toContainText('Expanded Hard');
+ await expect(panorama).toHaveAttribute('src','/adventure/forest-expanded-extreme.webp');
+ await expect.poll(()=>panorama.evaluate((e:HTMLImageElement)=>e.naturalWidth)).toBeGreaterThan(1000);
+ await expect(page.locator('#explore-area')).toBeDisabled();
  await page.keyboard.press('Escape');
- await expect(dialog).toHaveCount(0);
+ await expect(entry).toHaveAttribute('aria-expanded','false');
+ await expect(options).toBeHidden();
+ await expect(panorama).toHaveAttribute('src','/adventure/forest-panorama.webp');
+ await expect(page.locator('#explore-area')).toBeEnabled();
  await page.locator('#area-gorge').click();
  await expect(entry).toHaveCount(0);
  await page.locator('#area-forest').click();
@@ -31,6 +44,8 @@ test('the Forest picker exposes two expanded modes and keeps a new profile locke
 for (const difficulty of ['hard','extreme'] as const) {
  test(`renders the ${difficulty} expanded world in the actual 3D engine`, async ({page}) => {
   test.setTimeout(90000);
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
   await page.setViewportSize({width:844,height:390});
   await page.goto('/');
   const world = await page.evaluate(async difficulty => {
@@ -61,5 +76,6 @@ for (const difficulty of ['hard','extreme'] as const) {
   await expect(page.locator('#expanded-world-scene canvas')).toBeVisible();
   await page.screenshot({path:`test-results/screenshots/forest-expanded-${difficulty}.png`});
   await page.evaluate(()=>(window as any).expandedWorldGame.dispose());
+  expect(errors).toEqual([]);
  });
 }

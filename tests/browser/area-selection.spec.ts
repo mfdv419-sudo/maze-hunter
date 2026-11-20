@@ -10,7 +10,9 @@ test('Adventure picker keeps its eight worlds, difficulty, guide and illustrated
  await page.locator('#modern-mode').click();
  await expect(page.locator('#maze-transition')).toHaveCount(0);
  await expect(page.locator('.area-option')).toHaveCount(8);
- await expect.poll(()=>page.locator('#adventure-preview').evaluate(e=>(e as HTMLElement).style.backgroundImage),{timeout:15000}).toContain('data:image/png');
+ const panorama=page.locator('#adventure-preview');
+ await expect(panorama).toHaveAttribute('src','/adventure/forest-panorama.webp');
+ await expect.poll(()=>panorama.evaluate(e=>(e as HTMLImageElement).naturalWidth)).toBeGreaterThan(1000);
  await expect(page.locator('#area-forest')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('#area-forest .area-mark svg')).toBeVisible();
  await page.screenshot({path:qa+'area-selection-adventure-picker.png'});
@@ -19,9 +21,10 @@ test('Adventure picker keeps its eight worlds, difficulty, guide and illustrated
  await page.locator('#setup-guide-close').click();
  for(const id of ['explore-area','online-menu','practice-area','forest-world-open']) {
   await expect(page.locator('#'+id)).toBeVisible();
-  await expect(page.locator('#'+id+' svg')).toHaveCount(1);
+  await expect(page.locator('#'+id+' svg').first()).toBeVisible();
  }
  await page.locator('#area-desert').click();
+ await expect(panorama).toHaveAttribute('src','/adventure/desert.webp');
  await page.locator('#difficulty-hard').click();
  await expect(page.locator('#difficulty-hard')).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('.poster-chip')).toContainText('105');
@@ -50,7 +53,7 @@ test('all additional biomes render real 3D scenes and the sea has animated aquat
  test.setTimeout(75000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');for(const area of ['forest','desert','gorge','mountain','coast','sea']){await page.evaluate(async(area:string)=>{const{ModernGame}=await import('/src/game/modern.ts' as string);const host=document.createElement('div');host.id='biome-qa';host.style.cssText='position:fixed;inset:0;z-index:50';document.body.append(host);const g=new ModernGame(host,{area,difficulty:'medium',seed:15025,adventureMap:0,entrance:0,outfit:'explorer',onTick:()=>{},onFinish:()=>{}});g.setPaused(true);(window as any).biomeQA=g;},area);await expect(page.locator('#biome-qa')).toHaveAttribute('data-area',area);await page.waitForTimeout(200);await page.screenshot({path:qa+`area-selection-world-${area}.png`});if(area==='sea')expect(await page.evaluate(()=>(window as any).biomeQA.guardModels[0].name)).toBe('reef-guardian');await page.evaluate(()=>{(window as any).biomeQA.dispose();document.querySelector('#biome-qa')?.remove();});}expect(errors).toEqual([]);
 });
 test('menu pages have distinct illustrated scene backgrounds and the Retro remains usable in both orientations',async({page})=>{
- await page.goto('/');await page.locator('#lab').click();await page.locator('#collection-open').click();const collection=await page.locator('#game').getAttribute('style');await page.locator('#collection-close').click();await page.locator('#scores').click();const scores=await page.locator('#game').getAttribute('style');expect(collection).not.toBe(scores);await page.locator('#scores-close').click();await page.locator('#retro-mode').click();await page.locator('#level-1').click();await expect(page.locator('#maze-transition')).toHaveCount(0);await page.setViewportSize({width:390,height:844});await expect(page.locator('.adventure-rotation')).toHaveCount(0);await expect(page.locator('#game-stage canvas')).toBeVisible();await page.screenshot({path:qa+'area-selection-retro-portrait.png'});await page.setViewportSize({width:844,height:390});await expect(page.locator('#game-stage canvas')).toBeVisible();
+ await page.goto('/');await page.locator('#lab').click();await page.locator('#collection-open').click();const collection=await page.locator('#game').getAttribute('style');await page.locator('#collection-close').click();await page.locator('#scores').click();const scores=await page.locator('#game').getAttribute('style');expect(collection).not.toBe(scores);await page.locator('#scores-close').click();await page.locator('#retro-mode').click();await page.locator('#level-1').click();await page.locator('.quiz-setup').getByRole('button',{name:/^(MULAI|PLAY)$/}).click();await expect(page.locator('#maze-transition')).toHaveCount(0);await page.setViewportSize({width:390,height:844});await expect(page.locator('.adventure-rotation')).toHaveCount(0);await expect(page.locator('#game-stage canvas')).toBeVisible();await page.screenshot({path:qa+'area-selection-retro-portrait.png'});await page.setViewportSize({width:844,height:390});await expect(page.locator('#game-stage canvas')).toBeVisible();
 });
 
 test('accepted Retro level 21 keeps the earlier branch geometry and visible full-map presentation',async({page})=>{

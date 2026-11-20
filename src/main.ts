@@ -1,4 +1,4 @@
-import {expeditionDifficulties,expeditionPicker} from './ui/adventure-picker';
+import {expandedDifficulties,expeditionDifficulties,expeditionPicker} from './ui/adventure-picker';
 import {forestIcon} from './ui/forest-icons';
 import {mountForestHud} from './ui/forest-hud';
 import {mountAdventureActionPad} from './ui/adventure-action-pad';
@@ -599,64 +599,54 @@ function result(
 }
 let currentDifficulty:Difficulty='medium';
 let selectedArea:AdventureArea='forest';
-const backdropCache=new Map<string,string>();
-async function adventurePreview(area:AdventureArea){
- const target=el('adventure-preview');if(!target)return;const token=generation,key=area+':'+JSON.stringify(profile?appearanceOf(profile):{});if(matchMedia('(pointer: coarse), (max-width: 960px)').matches)return;if(backdropCache.has(key)){target.style.backgroundImage=`url("${backdropCache.get(key)}")`;return;}
- try{const{ModernGame}=await import('./game/modern');if(token!==generation)return;const host=document.createElement('div');host.style.cssText='position:fixed;width:720px;height:840px;left:-2000px;top:0;pointer-events:none';document.body.append(host);let capture:InstanceType<typeof ModernGame>|undefined;try{capture=new ModernGame(host,{difficulty:'medium',seed:15025,adventureMap:0,area,entrance:0,outfit:profile?.outfit||'classic',appearance:profile?appearanceOf(profile):undefined,onTick:()=>{},onFinish:()=>{}});const data=capture.captureBackdrop();backdropCache.set(key,data);if(backdropCache.size>12)backdropCache.delete(backdropCache.keys().next().value!);if(token===generation&&target.isConnected)target.style.backgroundImage=`url("${data}")`;}finally{capture?.dispose();host.remove();}}
- catch(e){console.warn('Scene preview unavailable',e);}
-}
+let expandedDifficulty:ForestWorldDifficulty|undefined;
 function adventureHelp(){const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal adventure-help" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER · ADVENTURE</div><h2>${tr('Siap menjelajah?','Ready to explore?')}</h2><ol><li>${tr('Pilih area dan tingkat kesulitan, lalu main Solo atau Online. Labirin Asli mempertahankan rute Solo yang sudah ada.','Choose an area and difficulty, then play Solo or Online. Original Maze retains the existing Solo routes.')}</li><li>${tr('Joystick kiri untuk berjalan; geser sisi kanan untuk kamera. A untuk lompat dua kali atau panjat, B untuk lempar kue, tebas dan cari bekal. Di air dalam gunakan Selam / Permukaan (V); kelapa dengan cincin emas bisa dipanjat.','Left joystick moves; drag the right side for camera. A double jumps or climbs; B throws cakes, cuts and gathers supplies. In deep water use Dive / Surface (V); beach palms with gold rings can be climbed.')}</li><li>${tr('Buka jurnal untuk petunjuk. Setiap wilayah segel dijaga 3 penjaga besar dan 2 kecil. Setelah semua segel lengkap, cuplikan Raja bangkit berlangsung 6 detik dengan perlindungan pemain; bisa dilewati. Mouse: klik arena sekali, gerakkan untuk melihat; klik kiri menyerang, Esc melepas. Minimap menyimpan area yang ditemukan.','Each seal region has 3 large and 2 small keepers. All seals trigger a six-second protected King awakening scene; the camera sequence can be skipped. Mouse: click once to capture, move to look, left click to attack, Esc to release. The minimap remembers discoveries.')}</li><li>${tr('Online: Easy/Medium 4, Hard 8, Extreme 10 pemain. Co-op: 3 × jumlah anggota awal, siapa pun boleh mengumpulkan; penjaga dan Raja dilawan bersama tanpa saling melukai. Race: 3 segel dan Raja pribadi; yang pertama lolos menang.','Online: Easy/Medium 4, Hard 8, Extreme 10 players. Co-op: 3 × starting members, anyone can collect; shared guardians and King, no friendly fire. Race: 3 personal seals and a personal King; first escape wins.')}</li></ol>${button(tr('Panduan benda','Item guide'),'setup-guide-items','secondary')}${button(tr('Mengerti','Got it'),'setup-guide-close')}</section>`;document.body.append(overlay);click('setup-guide-close',()=>overlay.remove());click('setup-guide-items',()=>{overlay.remove();fieldGuide();});}
 function availableForestEquipment(player:Profile) {
  const wallet=ensureWallet(player);
  return forestEquipment(forestRank(player),[...wallet.legacy,...wallet.purchases]);
 }
-function showForestWorld() {
- if(!profile)return;
- const rank=forestRank(profile), next=forestStages[rank], language=lang==='en'?1:0;
- const gear=availableForestEquipment(profile);
- const overlay=document.createElement('div');
- overlay.className='modal-backdrop';
- const modes=['hard','extreme'] as const;
- overlay.innerHTML=`<section class="forest-world-menu" role="dialog" aria-modal="true" aria-labelledby="forest-world-title">
-  <h2 id="forest-world-title">Forest Grove · Expanded World</h2>
-  <p>${tr('Progres ekspedisi Forest Grove','Forest Grove expedition progress')} · ${rank}/${forestStages.length}</p>
-  <progress max="${forestStages.length}" value="${rank}" aria-label="${tr('Progres ekspedisi','Expedition progress')}"></progress>
-  ${next?`<p>${tr('Tahap berikutnya','Next stage')} · <strong>${forestStageLabel[next]}</strong></p>`:''}
-  ${gear.length?`<ul class="forest-earned-gear">${gear.map(item=>`<li><b>${item.name}</b> · ${item.benefit[language]}</li>`).join('')}</ul>`:''}
-  <div class="forest-world-modes">${modes.map(mode=>{
-   const ready=canEnterForestWorld(rank,mode), label=mode.toUpperCase();
-   const detail=mode==='hard'
-    ? (ready?tr('Hutan, air terjun, gua dan Gerbang Dalam.','Forest, waterfalls, caves and the Inner Gate.'):tr('Selesaikan ekspedisi Easy sampai Extreme.','Clear the Easy through Extreme expeditions.'))
-    : (ready?tr('Tambahan jalur kanopi dan pulau terapung.','Additional canopy trails and floating islands.'):tr('Selesaikan Expanded World Hard.','Clear Expanded World Hard.'));
-   return `<button type="button" id="forest-world-${mode}" ${ready?'':'disabled'}>${forestIcon(ready ? 'compass' : 'lock')}<span><b>${label}</b><small>${detail}</small></span></button>`;
-  }).join('')}</div>
-  <button type="button" class="forest-world-close" id="close-forest-world">${forestIcon('back')}${tr('Kembali','Back')}</button>
- </section>`;
- document.body.append(overlay);
- const controller=new AbortController(), signal=controller.signal;
- const close=()=>{controller.abort();overlay.remove();el('forest-world-open')?.focus();};
- overlay.addEventListener('click',e=>{if(e.target===overlay)close();},{signal});
- window.addEventListener('keydown',e=>{if(e.key==='Escape')close();},{signal});
- click('close-forest-world',close);
- el('close-forest-world').focus();
- for(const mode of modes) {
-  if(!canEnterForestWorld(rank,mode))continue;
-  click('forest-world-'+mode,()=>{close();void playModern(mode,undefined,false,false,'forest',false,mode).catch(showError);});
- }
-}
-function setup(){
+function setup(focusId?:string){
  if(!profile)return home();
- begin('setup',expeditionPicker(selectedArea,currentDifficulty,lang));
+ const currentPicker=root.querySelector<HTMLElement>('.adventure-select');
+ const scrollTop=focusId?currentPicker?.scrollTop:undefined;
+ if(selectedArea!=='forest')expandedDifficulty=undefined;
+ const rank=forestRank(profile);
+ const markup=expeditionPicker(selectedArea,currentDifficulty,lang,expandedDifficulty,rank,expandedDifficulty?availableForestEquipment(profile):[]);
+ if(focusId&&currentPicker)currentPicker.outerHTML=markup;
+ else begin('setup',markup);
+ const picker=root.querySelector<HTMLElement>('.adventure-select')!;
+ if(scrollTop!==undefined)picker.scrollTop=scrollTop;
+ if(focusId)el(focusId)?.focus({preventScroll:true});
  click('setup-guide',adventureHelp);
- for(const area of adventureAreas)click('area-'+area,()=>{selectedArea=area;setup();el('area-'+area)?.focus();});
+ for(const area of adventureAreas)click('area-'+area,()=>{
+  if(area!==selectedArea)expandedDifficulty=undefined;
+  selectedArea=area;
+  setup('area-'+area);
+ });
  for(const difficulty of expeditionDifficulties)click('difficulty-'+difficulty,()=>{
   currentDifficulty=difficulty;
-  setup();
-  el('difficulty-'+difficulty)?.focus();
+  expandedDifficulty=undefined;
+  setup('difficulty-'+difficulty);
  });
- if(selectedArea==='forest')click('forest-world-open',showForestWorld);
+ click('forest-world-open',()=>{
+  expandedDifficulty=expandedDifficulty?undefined:'hard';
+  setup('forest-world-open');
+ });
+ for(const mode of expandedDifficulties)click('forest-world-'+mode,()=>{
+  expandedDifficulty=mode;
+  setup('forest-world-'+mode);
+ });
+ picker.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!expandedDifficulty)return;
+  event.preventDefault();
+  expandedDifficulty=undefined;
+  setup('forest-world-open');
+ });
  click('practice-area',()=>playModern('easy',undefined,false,false,'forest',true));
- click('explore-area',()=>playModern(currentDifficulty,undefined,false,false,selectedArea));void adventurePreview(selectedArea);
+ click('explore-area',()=>{
+  if(expandedDifficulty)return playModern(expandedDifficulty,undefined,false,false,'forest',false,expandedDifficulty);
+  return playModern(currentDifficulty,undefined,false,false,selectedArea);
+ });
  click('online-menu',()=>{
   if(lab||!multiplayerConfigured()){toast(tr('Main online memerlukan login Google dan koneksi server.','Online play needs Google login and a configured server.'));return;}
   const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=onlineDialog(selectedArea,currentDifficulty,lang);document.body.append(overlay);
@@ -803,9 +793,14 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         () => playModern(difficulty,undefined,true),
         () => {
           const next=won&&stage&&profile?forestStages[forestRank(profile)]:undefined;
-          if(next==='easy'||next==='medium'||next==='hard'||next==='extreme')currentDifficulty=next;
+          if(next==='easy'||next==='medium'||next==='hard'||next==='extreme'){
+            currentDifficulty=next;
+            expandedDifficulty=undefined;
+          }else if(next==='world-hard'||next==='world-extreme'){
+            selectedArea='forest';
+            expandedDifficulty=next==='world-hard'?'hard':'extreme';
+          }
           setup();
-          if(next==='world-hard'||next==='world-extreme')showForestWorld();
         },
       );
       if(forestResult){

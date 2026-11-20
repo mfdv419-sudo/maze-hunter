@@ -3,7 +3,6 @@ import type {AdventureLayout} from './adventure-layout';
 import type {AdventureState} from './adventure-state';
 import {FLOATING_DECK_HEIGHT,pilotGround,PILOT_WATER_LEVEL as WATER,PILOT_UNDERGROUND_WATER_LEVEL as UG_WATER} from './forest-pilot';
 import {FOREST_ARENAS,FOREST_LAYERS,layerOfPoint} from './forest-world-design';
-import {biomeSky} from './biome-scenery';
 import {groundTexture,forestTree} from './world-art';
 import {forestNpcOffset,type ForestWorldSite} from './forest-rpg';
 
@@ -11,13 +10,63 @@ const mat=(c:number)=>new T.MeshLambertMaterial({color:c,flatShading:true});
 const add=(parent:T.Object3D,g:T.BufferGeometry,m:T.Material,x:number,y:number,z:number)=>{const q=new T.Mesh(g,m);q.position.set(x,y,z);parent.add(q);return q;};
 export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,state?:()=>AdventureState|undefined){
  const root=new T.Group(),dynamic=new T.Group();root.name='forest-grove-extreme-master';root.userData.cameraOccluder=true;world.add(root,dynamic);
- const caveBackground=new T.Color(0x34352b),skyBackground=new T.Color(0xc8e9ed);
- const skyTex=biomeSky('forest'),sky=new T.Mesh(new T.SphereGeometry(440,24,12),new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,depthWrite:false,fog:false}));scene.add(sky);scene.background=new T.Color(0xc8e9ed);scene.fog=new T.Fog(0xc8e9ed,28,92);
+ const caveBackground=new T.Color(0x34352b),skyBackground=new T.Color(0xc2d8bc);
+ const surfaceFog = 0xc2d8bc;
+ const base=world.getObjectByName('adventure-world-base');
+ const skyCanvas=document.createElement('canvas');
+ skyCanvas.width=1024;skyCanvas.height=512;
+ const skyPaint=skyCanvas.getContext('2d')!;
+ const skyGradient=skyPaint.createLinearGradient(0,0,0,512);
+ skyGradient.addColorStop(0,'#467994');skyGradient.addColorStop(.38,'#9dc1c3');
+ skyGradient.addColorStop(.53,'#ecdcb1');skyGradient.addColorStop(.69,'#c2d7c4');skyGradient.addColorStop(1,'#b7cdbe');
+ skyPaint.fillStyle=skyGradient;skyPaint.fillRect(0,0,1024,512);
+ for(let i=0;i<30;i++){
+  const x=i*113%1024,y=171+i*29%76;
+  const width=21+i%5*12,height=2+i%3*2;
+  skyPaint.fillStyle=i%3?'#fff0d345':'#eff0dd60';
+  for(const offset of [-1024,0,1024]){
+   skyPaint.beginPath();skyPaint.ellipse(x+offset,y,width,height,0,0,Math.PI*2);skyPaint.fill();
+  }
+ }
+ const skyTex=new T.CanvasTexture(skyCanvas);
+ skyTex.colorSpace=T.SRGBColorSpace;
+ const sky=new T.Mesh(new T.SphereGeometry(138,32,16),
+  new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,depthWrite:false,fog:false}));
+ sky.renderOrder=-1;
+ const horizon=new T.Group();
+ const ridgeGeometry=new T.IcosahedronGeometry(1,0);
+ const ridgeMaterials=[0xc2c6a3,0xa4b594,0x8da98c].map(color=>new T.MeshBasicMaterial({color,fog:false}));
+ for(const [layer,material] of ridgeMaterials.entries()){
+  for(let i=0;i<13;i++){
+   const angle=i*2*Math.PI/13+layer*.26;
+   const ridge=add(horizon,ridgeGeometry,material,Math.sin(angle)*(122-layer*10),-22+layer*2,Math.cos(angle)*(122-layer*10));
+   ridge.rotation.y=angle;
+   ridge.scale.set(28+(i%3)*9,31+(i%4)*4-layer*6,14);
+  }
+ }
+ scene.add(sky,horizon);scene.background=skyBackground;scene.fog=new T.Fog(surfaceFog,38,124);
  const grid=l.maze.grid;
  const ring=l.ring!;
  const leafTex=groundTexture('leaf'),pathTex=groundTexture('path'),stoneTex=groundTexture('stone');
  leafTex.repeat.set(32,32);pathTex.repeat.set(24,24);stoneTex.repeat.set(12,12);
- const grass=new T.MeshLambertMaterial({color:0x78ad4f,map:leafTex}),soil=new T.MeshLambertMaterial({color:0xa56b3f,map:pathTex}),forestSoil=new T.MeshLambertMaterial({color:0x9a7048,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x2aaed1,transparent:true,opacity:.78,depthWrite:false,shininess:125,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0xa06f45,map:pathTex,flatShading:true});
+ const grass=new T.MeshLambertMaterial({color:0x78ad4f,map:leafTex}),soil=new T.MeshLambertMaterial({color:0xa56b3f,map:pathTex}),forestSoil=new T.MeshLambertMaterial({color:0x9a7048,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x35b8c3,emissive:0x103c3b,transparent:true,opacity:.85,depthWrite:false,shininess:115,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0xa06f45,map:stoneTex,flatShading:true,vertexColors:true});
+ const cascadeCanvas=document.createElement('canvas');
+ cascadeCanvas.width=64;cascadeCanvas.height=128;
+ const flow=cascadeCanvas.getContext('2d')!;
+ flow.fillStyle='#65c7c4';flow.fillRect(0,0,64,128);
+ for(let i=0;i<43;i++){
+  const x=(i*23)%64,y=(i*41)%128,width=1+i%3,height=17+i%37;
+  flow.fillStyle=i%4===0?'#e5fbdfc7':i%3===0?'#268eaa88':'#acdcd795';
+  flow.fillRect(x,y,width,height);
+  if(y+height>128)flow.fillRect(x,y-128,width,height);
+ }
+ const cascadeTexture=new T.CanvasTexture(cascadeCanvas);
+ cascadeTexture.colorSpace=T.SRGBColorSpace;
+ cascadeTexture.wrapS=cascadeTexture.wrapT=T.RepeatWrapping;
+ cascadeTexture.repeat.set(1.7,1);
+ const fallingWater=new T.MeshPhongMaterial({
+  color:0xaddbd7,map:cascadeTexture,emissive:0x183d3a,transparent:true,opacity:.91,depthWrite:false,shininess:74,side:T.DoubleSide,
+ });
  // Terrain visual and physics now share pilotGround(). No square walkable-tile floor exists in Extreme.
  const heightField=(ox:number,oz:number,size:number,segments:number,material:T.Material,name:string)=>{
   const geo=new T.PlaneGeometry(size,size,segments,segments);geo.rotateX(-Math.PI/2);geo.translate(ox+size/2,0,oz+size/2);
@@ -33,7 +82,16 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  }
  // Natural collision boundary: continuous tall cliff faces matching blocked navigation cells.
  // Every blocked edge adjacent to a playable cell receives visible rock; no invisible wall gaps.
- const cliffGeo=new T.BoxGeometry(1,1,1),cliffCapGeo=new T.BoxGeometry(1.04,.16,1.04),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],cliffTreeSeeds:{x:number;y:number;z:number;seed:number}[]=[],dummy=new T.Object3D();
+ const cliffGeo=new T.BoxGeometry(1,1,1,1,5,1);
+ const cliffPositions=cliffGeo.attributes.position;
+ const cliffColors=new Float32Array(cliffPositions.count*3);
+ const mineralBands=[0x959190,0xc3ad96,0xaa967b,0xe4c3a1,0xbeaa85,0xe5cda6];
+ for(let i=0;i<cliffPositions.count;i++){
+  const band=Math.round((cliffPositions.getY(i)+.5)*5);
+  new T.Color(mineralBands[band]).toArray(cliffColors,i*3);
+ }
+ cliffGeo.setAttribute('color',new T.BufferAttribute(cliffColors,3));
+ const cliffCapGeo=new T.BoxGeometry(1.04,.16,1.04),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],cliffTreeSeeds:{x:number;y:number;z:number;seed:number}[]=[],dummy=new T.Object3D();
  for(let z=2;z<179;z++)for(let x=2;x<179;x++){
   if(grid[z]?.[x]!==1)continue;const edge=grid[z-1]?.[x]===0||grid[z+1]?.[x]===0||grid[z]?.[x-1]===0||grid[z]?.[x+1]===0;if(!edge)continue;
   const base=pilotGround(x+.5,z+.5),h=3.6+((x*17+z*23)%5)*.34;
@@ -43,10 +101,11 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const cliffs=new T.InstancedMesh(cliffGeo,earthCliff,cliffMatrices.length);cliffMatrices.forEach((m,i)=>cliffs.setMatrixAt(i,m));cliffs.name='authoritative-earth-cliff-boundary';root.add(cliffs);
   const caps=new T.InstancedMesh(cliffCapGeo,moss,capMatrices.length);capMatrices.forEach((m,i)=>caps.setMatrixAt(i,m));caps.name='grass-cliff-caps';root.add(caps);
  for(const t of cliffTreeSeeds.slice(0,90)){const tree=forestTree(t.seed);tree.position.set(t.x,t.y,t.z);tree.scale.setScalar(1.9+(t.seed%5)*.12);tree.name='cliff-top-canopy-tree';root.add(tree);}
- // Water mesh is sampled from the explicit water volume. It follows the carved terrain instead of a generic circle/rectangle.
- const waterVerts:number[]=[],waterIdx:number[]=[];let wi=0;const waterLevel=(x:number,z:number)=>{const d=Math.hypot(x-33,z-110);return d<21?-.58:null;};
- for(let z=88;z<132;z++)for(let x=11;x<56;x++){const level=waterLevel(x+.5,z+.5);if(level===null||pilotGround(x+.5,z+.5)>=level-.04)continue;waterVerts.push(x,level,z,x+1,level,z,x+1,level,z+1,x,level,z+1);waterIdx.push(wi,wi+1,wi+2,wi,wi+2,wi+3);wi+=4;}
- if(waterVerts.length){const wg=new T.BufferGeometry();wg.setAttribute('position',new T.Float32BufferAttribute(waterVerts,3));wg.setIndex(waterIdx);wg.computeVertexNormals();const w=new T.Mesh(wg,waterMat);w.name='waterfall-valley-deep-water-volume';root.add(w);}
+ // Swimming and the continuous shoreline share the Waterfall Valley basin radius.
+ const wf=ring.zones.find(z=>z.id==='waterfall')!.point;
+ const lake=add(root,new T.CircleGeometry(20,96),waterMat,wf.x,WATER,wf.y);
+ lake.rotation.x=-Math.PI/2;
+ lake.name='waterfall-valley-deep-water-volume';
  // Forest floor is soil-first, like a natural trail system. Grass is layered as soft shoulders/arena patches,
  // so the whole map never reads as one flat green carpet.
  for(const z of ring.zones.filter(z=>z.layer==='surface')){const y=pilotGround(z.point.x+.5,z.point.y+.5)+.008;for(let i=0;i<5;i++){const a=i*1.257+(z.point.x%5)*.2,r=Math.max(3.8,z.radius*(.32+.08*(i%3))),patch=add(root,new T.CircleGeometry(r,24),grass,z.point.x+.5+Math.sin(a)*r*.55,y+.002,z.point.y+.5+Math.cos(a)*r*.55);patch.rotation.x=-Math.PI/2;patch.scale.set(1.35,.72,1);patch.name='natural-grass-floor-patch';}}
@@ -57,10 +116,53 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  // Broad dirt clearings at arena hearts keep the world from reading as one endless green carpet.
  for(const z of ring.zones.filter(z=>z.layer==='surface')){const y=pilotGround(z.point.x+.5,z.point.y+.5)+.012,disc=add(root,new T.CircleGeometry(Math.max(5,z.radius*.30),28),soil,z.point.x+.5,y,z.point.y+.5);disc.rotation.x=-Math.PI/2;disc.name='arena-soil-clearing';}
  // Waterfall Valley: thick multi-stage water, rock lips, splash basin and submerged ruins.
- const wf=ring.zones.find(z=>z.id==='waterfall')!.point;
- const stream=add(root,new T.BoxGeometry(7,.10,17),waterMat,wf.x+1,pilotGround(wf.x+1,wf.y-14)+.18,wf.y-14);stream.name='waterfall-upstream-stream';
- for(const [dx,dz,w,h] of [[-2,-7,6.2,3.3],[2,-3,4.8,2.5],[5,1,3.8,1.8]] as const){const y0=pilotGround(wf.x+dx,wf.y+dz);const lip=add(root,new T.BoxGeometry(w+.7,.45,1.3),rock,wf.x+dx,y0+h*.92,wf.y+dz-.35);lip.name='waterfall-rock-lip';const fall=add(root,new T.BoxGeometry(w,.12,h),waterMat,wf.x+dx,y0+h*.48,wf.y+dz);fall.name='waterfall-cascade-thick';fall.rotation.x=Math.PI/2;fall.rotation.z=.05*dx;const foam=add(root,new T.SphereGeometry(w*.42,12,6),new T.MeshBasicMaterial({color:0xe7fbff,transparent:true,opacity:.32,depthWrite:false}),wf.x+dx,y0+.12,wf.y+dz+.5);foam.scale.y=.18;foam.name='waterfall-foam';}
- const downstream=add(root,new T.BoxGeometry(5,.09,18),waterMat,wf.x+6,-.51,wf.y+15);downstream.name='waterfall-downstream-river';downstream.rotation.y=-.12;
+ const fallX=wf.x-3,fallZ=wf.y-18;
+ const solidFootprint=(x:number,z:number,rx:number,rz:number)=>{
+  for(let row=Math.floor(z-rz);row<=Math.floor(z+rz);row++)
+   for(let col=Math.floor(x-rx);col<=Math.floor(x+rx);col++)
+    if(grid[row]?.[col]!==1)return false;
+  return true;
+ };
+ const stream=add(root,new T.BoxGeometry(6.2,.08,2.6),waterMat,fallX,WATER+4.47,fallZ-1.3);
+ stream.name='waterfall-upstream-stream';
+ const foamGeo=new T.SphereGeometry(1,12,6);
+ const foamMaterial=new T.MeshBasicMaterial({color:0xe6f9de,transparent:true,opacity:.5,depthWrite:false});
+ for(const [dx,dz,width,bottom,height] of [[0,0,6.2,2.45,2.06],[.7,1.7,5.3,.97,1.54],[1.2,3.1,5.9,.02,1.03]] as const){
+  const x=fallX+dx,z=fallZ+dz,y=WATER+bottom;
+  if(solidFootprint(x,z-.35,(width+.7)/2,.65)){
+   const lip=add(root,new T.BoxGeometry(width+.7,.45,1.3),rock,x,y+height*.92,z-.35);
+   lip.name='waterfall-rock-lip';
+  }
+  const fall=add(root,new T.PlaneGeometry(width,height),fallingWater,x,y+height*.48,z);
+  fall.name='waterfall-cascade-thick';
+  fall.rotation.y=-.05*dx;
+  const pool=add(root,new T.BoxGeometry(width,.08,1.8),waterMat,x,y+.015,z+.82);
+  pool.name='waterfall-terrace';
+  for(let i=0;i<7;i++){
+   const foam=add(root,foamGeo,foamMaterial,x+(i-3)*width/7,y+.09+(i%2)*.048,z+.27+(i%3)*.23);
+   foam.scale.set(width*(.10+(i%3)*.025),.105+(i%3)*.037,.37+(i%2)*.10);
+   foam.name='waterfall-foam';
+  }
+ }
+ const backingGeo=new T.IcosahedronGeometry(1,0);
+ for(let i=0;i<10;i++){
+  const x=fallX+(i%5-2)*1.23,z=fallZ-2.6+Math.floor(i/5)*1.34;
+  if(!solidFootprint(x,z,1.2,1.2))continue;
+  const courses=i<5?2.58:1.42;
+  const backing=add(root,backingGeo,rock,x,WATER+courses*.42,z);
+  backing.rotation.y=i*.71;
+  backing.scale.set(.98+i%2*.2,courses,.94);
+  backing.name='waterfall-rock-backing';
+ }
+ const rippleMaterial=new T.MeshBasicMaterial({color:0xfff8dd,transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide});
+ for(let i=0;i<13;i++){
+  const angle=i*2.399,radius=1.4+i*.69;
+  const ripple=add(root,new T.RingGeometry(.82,1,19,1,.08,1.55),rippleMaterial,
+   fallX+Math.sin(angle)*radius,WATER+.045,fallZ+4+i*.45);
+  ripple.rotation.x=-Math.PI/2;
+  ripple.scale.set(1.18+i%3*.26,.46,1);
+  ripple.name='waterfall-surface-ripple';
+ }
  // Submerged ancient ruins visible below the deep lake.
  for(const [dx,dz,rot] of [[-7,4,.15],[1,7,-.22],[7,4,.08]] as const){const slab=add(root,new T.BoxGeometry(4.2,.45,2.3),ruin,wf.x+dx,-1.35,wf.y+dz);slab.rotation.y=rot;slab.name='submerged-ruin-slab';for(const sx of[-1,1])add(root,new T.CylinderGeometry(.28,.36,2.4,8),ruin,wf.x+dx+sx*1.4,-.1,wf.y+dz);}
  const relief=add(root,new T.BoxGeometry(5.5,4.2,.45),ruin,wf.x-11,1.6,wf.y-2);relief.name='lake-temple-relief';for(let i=0;i<3;i++){const rune=add(root,new T.CircleGeometry(.42,12),gold,wf.x-11+i*1.35-1.35,1.8,wf.y-1.74);rune.rotation.y=Math.PI/2;}
@@ -72,7 +174,35 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const gateY=ry+2.2;for(const side of[-1,1])add(root,new T.BoxGeometry(1,4.4,1.1),ruin,ruins.x+side*2.2,gateY,ruins.y-8);add(root,new T.BoxGeometry(5.5,1.05,1.2),ruin,ruins.x,ry+4.25,ruins.y-8).name='ruins-candi-gate';
  const reliefWall=add(root,new T.BoxGeometry(7,4,.55),ruin,ruins.x-8,ry+2,ruins.y-1);reliefWall.name='ruins-relief-wall';for(let i=0;i<5;i++){const r=add(root,new T.CircleGeometry(.34+(i%2)*.08,10),gold,ruins.x-8+i*.05,ry+1.2+(i%3)*.7,ruins.y-2.28+i*.72);r.rotation.y=Math.PI/2;}
  // Chasm: deep visual void plus two traversable bridges.
- const chasm=ring.zones.find(z=>z.id==='chasm')?.point;if(chasm){for(const z of[chasm.y-5,chasm.y+5]){const b=add(root,new T.BoxGeometry(11,.25,1.8),wood,chasm.x,pilotGround(chasm.x,z)+.55,z);b.name='solid-chasm-bridge';}}
+ const chasm=ring.zones.find(z=>z.id==='chasm')?.point;
+ if(chasm){
+  const planks=new T.InstancedMesh(new T.BoxGeometry(.48,.055,1.79),wood,44);
+  const rails=new T.InstancedMesh(new T.BoxGeometry(.16,.12,1),wood,4);
+  const posts=new T.InstancedMesh(new T.BoxGeometry(.14,.91,.14),wood,28);
+  const timber=[new T.Color(0xffe0bb),new T.Color(0xe9bc91),new T.Color(0xd1ad85)];
+  for(const [bridge,z] of [chasm.y-5,chasm.y+5].entries()){
+   const y=pilotGround(chasm.x,z)+.55;
+   add(root,new T.BoxGeometry(11,.25,1.8),wood,chasm.x,y,z).name='solid-chasm-bridge';
+   for(let i=0;i<22;i++){
+    dummy.position.set(chasm.x-5.25+i*.5,y+.135,z);
+    dummy.rotation.set(0,0,0);dummy.scale.set(1,1,1);dummy.updateMatrix();
+    planks.setMatrixAt(bridge*22+i,dummy.matrix);
+    planks.setColorAt(bridge*22+i,timber[i%timber.length]);
+   }
+   for(const [side,dz] of [-.84,.84].entries()){
+    dummy.position.set(chasm.x,y+.95,z+dz);
+    dummy.rotation.y=Math.PI/2;dummy.scale.set(1,1,11);dummy.updateMatrix();
+    rails.setMatrixAt(bridge*2+side,dummy.matrix);
+    for(let i=0;i<7;i++){
+     dummy.position.set(chasm.x-5.35+i*1.78,y+.56,z+dz);
+     dummy.rotation.y=0;dummy.scale.set(1,1,1);dummy.updateMatrix();
+     posts.setMatrixAt(bridge*14+side*7+i,dummy.matrix);
+    }
+   }
+  }
+  planks.name='chasm-bridge-planks';rails.name='chasm-bridge-rails';posts.name='chasm-bridge-posts';
+  root.add(planks,rails,posts);
+ }
  // Giant Tree: persistent boss landmark, roughly twenty character-heights tall and readable from distant arenas.
  const giant=ring.zones.find(z=>z.id==='giant')?.point;if(giant){const gy=pilotGround(giant.x,giant.y);const trunk=add(root,new T.CylinderGeometry(4.2,6.3,28,14),wood,giant.x,gy+14,giant.y);trunk.name='giant-tree-boss-landmark';for(let i=0;i<7;i++){const a=i*Math.PI*2/7;const rootArm=add(root,new T.CylinderGeometry(.6,1.35,9,8),wood,giant.x+Math.sin(a)*4,gy+1.3,giant.y+Math.cos(a)*4);rootArm.rotation.z=Math.PI/2-.18;rootArm.rotation.y=a;rootArm.name='giant-tree-root';}for(let level=0;level<4;level++){const y=gy+9+level*5.2;for(let i=0;i<5;i++){const a=i*Math.PI*2/5+level*.45;const canopy=add(root,new T.IcosahedronGeometry(4.8-level*.35,1),moss,giant.x+Math.sin(a)*(4.5+level*.5),y,giant.y+Math.cos(a)*(4.5+level*.5));canopy.scale.set(1.4,.62,1.15);canopy.name='giant-tree-canopy';}}const core=add(root,new T.OctahedronGeometry(1.05,1),new T.MeshPhongMaterial({color:0x55e7ff,emissive:0x126b75,emissiveIntensity:1.25}),giant.x,gy+12,giant.y+3.8);core.name='giant-tree-mfeer-core';for(const ledge of l.ledges.filter(q=>q.kind==='tree'&&(q.width||0)>8)){
   const x=ledge.point.x+.5,z=ledge.point.y+.5,top=pilotGround(x,z)+ledge.height;
@@ -148,7 +278,11 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
   const isIsland=({x,z}:{x:number;z:number})=>skyZones.some(zone=>Math.hypot(x+.5-zone.point.x,z+.5-zone.point.y)<zone.radius*.92);
   const island=skyCells.filter(isIsland),bridge=skyCells.filter(tile=>!isIsland(tile));
   instance('floating-island-solid-base',island,new T.BoxGeometry(1.01,1,1.01),rock,
-   (x,z)=>{const h=2.4+((x*7+z*17)%6)*.5;return [FLOATING_DECK_HEIGHT-h/2-.11,h,0];});
+   (x,z)=>{
+    const depth=1-Math.min(...skyZones.map(zone=>Math.hypot(x+.5-zone.point.x,z+.5-zone.point.y)/zone.radius));
+    const h=2.1+depth*9+((x*7+z*17)%6)*.26;
+    return [FLOATING_DECK_HEIGHT-h/2-.11,h,0];
+   });
   const skyGrass=new T.MeshLambertMaterial({color:0x9fbd60,map:leafTex});
   const trailKeys=new Set<string>();
   for(const passage of ring.passages.filter(p=>p.kind==='sky')){
@@ -262,6 +396,34 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
    else if(grid[iz]?.[ix]===0&&i%3===0){const b=add(root,new T.IcosahedronGeometry(.26+(i%3)*.07,0),leaf,x,y+.17,zz);b.scale.set(1.3,.42,1.05);b.name='soft-forest-undergrowth';}
   }
  }
+ // High canopy fills the solid ridges with varied silhouettes while keeping trails clear.
+ const ridgeTrees:{x:number;z:number;seed:number}[]=[];
+ for(let z=3;z<178;z+=2)for(let x=3;x<178;x+=2){
+  const seed=(x*47+z*53+x*z*17)%127;
+  const shoreDistance=Math.hypot(x-wf.x,z-wf.y);
+  if(shoreDistance<20||seed>=(shoreDistance<34?52:17))continue;
+  if(![-2,-1,0,1,2].every(d=>grid[z+d]?.[x]===1&&grid[z]?.[x+d]===1))continue;
+  ridgeTrees.push({x:x+.5,z:z+.5,seed});
+ }
+ const canopy=new T.InstancedMesh(new T.IcosahedronGeometry(1,1),mat(0xffffff),ridgeTrees.length*3);
+ const trunks=new T.InstancedMesh(new T.CylinderGeometry(.095,.22,1,7),wood,ridgeTrees.length);
+ const canopyColors=[0x416844,0x587944,0x759447,0x336650,0x486e3b].map(color=>new T.Color(color));
+ for(const [i,{x,z,seed}] of ridgeTrees.entries()){
+  const h=3.3+(seed%8)*.43;
+  const y=pilotGround(x,z);
+  dummy.rotation.set(0,seed,0);
+  dummy.position.set(x,y+h*.36,z);dummy.scale.set(1,h*.72,1);dummy.updateMatrix();
+  trunks.setMatrixAt(i,dummy.matrix);
+  for(let layer=0;layer<3;layer++){
+   const radius=1.05-layer*.23+(seed%4)*.12;
+   dummy.position.set(x+Math.sin(seed+layer)*.25,y+h*(.65+layer*.12),z+Math.cos(seed+layer)*.25);
+   dummy.scale.set(radius,radius*.93,radius);dummy.updateMatrix();
+   canopy.setMatrixAt(i*3+layer,dummy.matrix);
+   canopy.setColorAt(i*3+layer,canopyColors[(seed+layer)%canopyColors.length]);
+  }
+ }
+ canopy.name='forest-high-canopy';trunks.name='forest-ridge-trunks';
+ root.add(trunks,canopy);
  // Portal silhouette communicates the destination layer before travel.
  const portalColor={surface:0x86bf8a,underground:0x68d4c8,floating:0xb6a2ff};
  const portalPost=new T.CylinderGeometry(.15,.25,1.7,7);
@@ -289,8 +451,11 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const boss=ring.center,altar=add(root,new T.CylinderGeometry(7,7,.45,24),mat(0x51415f),boss.x+.5,pilotGround(boss.x,boss.y)+.2,boss.y+.5);altar.name='boss-core-platform';for(const side of[-1,1]){const eye=add(root,new T.SphereGeometry(.22,10,6),new T.MeshBasicMaterial({color:0xff5c5c}),boss.x+.5+side*.55,pilotGround(boss.x,boss.y)+3.1,boss.y+.8);eye.name='boss-core-eye';}
  const collectibles:T.Object3D[]=[];
  root.traverse(o=>{if(o.name.startsWith('relic-piece-')||o.name.startsWith('site-pickup-'))collectibles.push(o);});
- return{update(_t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){sky.position.copy(camera.position);const under=!!player&&(player.depth||0)>.15;const cave=!!player&&layerOfPoint(player)==='underground';if(scene.fog instanceof T.Fog){scene.fog.color.set(under?0x347b8a:cave?0x34352b:0xc8e9ed);scene.fog.near=under?2:cave?12:28;scene.fog.far=under?22:cave?35:92;}scene.background=cave?caveBackground:skyBackground;sky.visible=!under&&!cave;const s=state?.();for(const o of collectibles){
+ return{update(time:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){sky.position.copy(camera.position);horizon.position.set(camera.position.x,0,camera.position.z);cascadeTexture.offset.y=(time*.43)%1;const under=!!player&&(player.depth||0)>.15;const cave=!!player&&layerOfPoint(player)==='underground';if(scene.fog instanceof T.Fog){scene.fog.color.set(under?0x347b8a:cave?0x34352b:surfaceFog);scene.fog.near=under?2:cave?12:38;scene.fog.far=under?22:cave?35:124;}scene.background=cave?caveBackground:skyBackground;sky.visible=horizon.visible=!under&&!cave;
+ if(base)base.visible=!player||layerOfPoint(player)!=='floating';
+ const s=state?.();for(const o of collectibles){
   if(o.name.startsWith('relic-piece-'))o.visible=!s?.relics.has(o.name.slice(12));
   else o.visible=!s?.worldClaims.has(o.name.slice(12));
- }},dispose(){skyTex.dispose();scene.remove(sky);const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());world.remove(root,dynamic);}};
+ }},dispose(){skyTex.dispose();sky.geometry.dispose();sky.material.dispose();
+ cascadeTexture.dispose();ridgeGeometry.dispose();ridgeMaterials.forEach(material=>material.dispose());scene.remove(sky,horizon);const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());leafTex.dispose();pathTex.dispose();stoneTex.dispose();world.remove(root,dynamic);}};
 }
