@@ -95,9 +95,17 @@ function fallingSheet(rows: FallRow[]) {
  return geometry;
 }
 
-export function forestWaterfallValley(parent: T.Group, grid: Grid, basin: Point) {
+export function forestCascade(rows:FallRow[],time:{value:number}) {
+ const waterfall=new T.Mesh(fallingSheet(rows),waterMaterial(time,rows[0][3],true));
+ waterfall.name='waterfall-sheet';
+ waterfall.renderOrder=2;
+ waterfall.raycast=()=>{};
+ return waterfall;
+}
+
+export function forestWaterfallValley(parent: T.Group, grid: Grid, basin: Point, extreme=true) {
  const root = new T.Group();
- root.name = 'extreme-waterfall-valley';
+ root.name = extreme ? 'extreme-waterfall-valley' : 'hard-waterfall-valley';
  parent.add(root);
 
  const time = {value: 0};
@@ -186,10 +194,7 @@ export function forestWaterfallValley(parent: T.Group, grid: Grid, basin: Point)
    [34.65, 1.03, 93.0, 1.28], [35.4, 0.2, 94.1, 1.4], [36.0, WATER + 0.08, 95.1, 1.9]],
  ];
  streams.forEach(rows => {
-  const fall = mesh(root, fallingSheet(rows), waterMaterial(time, rows[0][3], true), 0, 0, 0);
-  fall.name = 'waterfall-sheet';
-  fall.renderOrder = 2;
-  fall.raycast = () => {};
+  root.add(forestCascade(rows,time));
  });
 
  const sprayGeometry = new T.IcosahedronGeometry(1, 1);

@@ -27,11 +27,109 @@ export class RadiusOrbitCamera {
  private target:T.Vector3|undefined;private length:number|undefined;
  reset(){this.target=undefined;this.length=undefined;}
  resetView(){}
- step(target:T.Vector3,offset:T.Vector3,resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3){
+ step(target:T.Vector3,offset:T.Vector3,resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3,_dt?:number){
   const radius=offset.length(),direction=offset.clone().normalize();this.length??=radius;
   if(this.target&&this.length<radius-.001)this.length=Math.min(radius,Math.max(.08,this.length-target.clone().sub(this.target).dot(direction)));
   if(this.length>=radius-.001)this.length=radius;
   const desired=target.clone().addScaledVector(direction,this.length),safe=resolve(target,desired);this.length=Math.min(this.length,safe.distanceTo(target));this.target=target.clone();return target.clone().addScaledVector(direction,this.length);
+ }
+}
+export const FOREST_CAMERA_RADIUS = 7.2;
+const SIDE_STEP = Math.PI / 12;
+const CAMERA_CLEARANCE = 0.035;
+const angleBetween = (a:number,b:number) => Math.atan2(Math.sin(a-b), Math.cos(a-b));
+
+/** Land camera for Forest Grove. Obstructions change the orbit before they change the framing. */
+export class SlidingOrbitCamera {
+ private eye?: T.Vector3;
+ private target?: T.Vector3;
+ private side = 0;
+
+ reset() {
+  this.eye = this.target = undefined;
+  this.side = 0;
+ }
+
+ resetView() {
+  this.side = 0;
+ }
+
+ step(target:T.Vector3, offset:T.Vector3, resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3, dt=1/60) {
+  if (this.target && this.target.distanceToSquared(target) > 20) this.reset();
+  this.target = target.clone();
+  const radius = offset.length();
+  const yaw = Math.atan2(offset.x, offset.z);
+  const pitch = Math.atan2(offset.y, Math.hypot(offset.x, offset.z));
+  const old = this.eye;
+  const stepTime = T.MathUtils.clamp(dt, 0, .05);
+  const place = (angle:number, elevation:number, distance=radius) => {
+   const horizontal = distance * Math.cos(elevation);
+   return new T.Vector3(
+    target.x + Math.sin(angle) * horizontal,
+    target.y + Math.sin(elevation) * distance,
+    target.z + Math.cos(angle) * horizontal,
+   );
+  };
+  const clear = (from:T.Vector3,to:T.Vector3) =>
+   resolve(from,to).distanceToSquared(to) < CAMERA_CLEARANCE ** 2;
+
+  let initial = target.clone();
+  const tryOrbit = (turn:number,lift:number) => {
+   const angle = yaw + turn;
+   const elevation = Math.min(Math.PI / 2 - .03, pitch + lift);
+   const destination = place(angle,elevation);
+   const safe = resolve(target,destination);
+   if (!old && safe.distanceToSquared(target) > initial.distanceToSquared(target)) initial = safe;
+   if (safe.distanceToSquared(destination) >= CAMERA_CLEARANCE ** 2) return;
+
+   if (!old) return destination;
+   const previous = old.clone().sub(target);
+   const priorYaw = Math.atan2(previous.x,previous.z);
+   const priorPitch = Math.atan2(previous.y,Math.hypot(previous.x,previous.z));
+   // Limit orbit speed during manual turns and during obstacle avoidance.
+   const turnLimit = stepTime * 2.6;
+   const tiltLimit = stepTime * 1.3;
+   const nextYaw = priorYaw + T.MathUtils.clamp(angleBetween(angle,priorYaw),-turnLimit,turnLimit);
+   const nextPitch = priorPitch + T.MathUtils.clamp(elevation-priorPitch,-tiltLimit,tiltLimit);
+   const beforeRadius = previous.length();
+   const nextRadius = beforeRadius + T.MathUtils.clamp(radius-beforeRadius,-stepTime*8,stepTime*8);
+   const next = place(nextYaw,nextPitch,nextRadius);
+   if (clear(old,next)) return next;
+
+   // Following the chord of a turn can hit a projecting corner. Advance only on a clear orbit.
+   const midpoint = place(priorYaw + angleBetween(nextYaw,priorYaw) * .5,
+    T.MathUtils.lerp(priorPitch,nextPitch,.5),T.MathUtils.lerp(beforeRadius,nextRadius,.5));
+   if (midpoint.distanceToSquared(old) > .000001 && clear(old,midpoint)) return midpoint;
+  };
+
+  let result = tryOrbit(0,0);
+  // Retain the previous side on ties to avoid alternating between two equivalent views.
+  const oldYaw = old ? Math.atan2(old.x-target.x,old.z-target.z) : yaw;
+  const preferredSide = this.side || Math.sign(angleBetween(yaw,oldYaw)) || 1;
+  let side = 0;
+  if (!result) {
+   for (const lift of [0,.15]) {
+    for (let i=lift ? 0 : 1;i<=6 && !result;i++) {
+     for (const sign of (i ? [preferredSide,-preferredSide] : [preferredSide])) {
+      result = tryOrbit(i * SIDE_STEP * sign,lift);
+      if (result) { side = sign; break; }
+     }
+    }
+    if (result) break;
+   }
+  }
+  if (result) {
+   const actual = result.clone().sub(target);
+   const aligned = Math.abs(angleBetween(Math.atan2(actual.x,actual.z),yaw)) < .025 &&
+    Math.abs(Math.atan2(actual.y,Math.hypot(actual.x,actual.z))-pitch) < .025;
+   this.side = aligned ? 0 : side || this.side;
+   this.eye = result;
+  } else {
+   // In a closed corner the world-space camera stays put. Movement by the player can
+   // change their distance until an unobstructed view at the requested radius opens up.
+   this.eye = old ?? initial;
+  }
+  return this.eye.clone();
  }
 }
 /** Steering while moving follows a continuous orbit; no idle recenter or scenery-driven rotation. */

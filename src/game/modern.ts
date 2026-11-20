@@ -6,7 +6,7 @@ import {forestRules} from './forest-rules';
 import {forestPilotProp} from './forest-pilot-props';
 import {jumpPower} from './traversal-features';
 import {traversalWorld} from './traversal-world';
-import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,RadiusOrbitCamera,steerOrbit} from './comfort-camera';
+import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,RadiusOrbitCamera,SlidingOrbitCamera,FOREST_CAMERA_RADIUS,steerOrbit} from './comfort-camera';
 import {holdProp,restoreProp,releaseProp} from './prop-presentation';
 import {actionKind,releaseTime,actionDuration,handOrigin,projectileOrigin,type AvatarAction} from './avatar-actions';
 import {explorerPole} from './avatar-presentation';
@@ -138,7 +138,7 @@ export class ModernGame {
   private occlusion=new CameraOcclusion();
   private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
-  private contactCamera=new RadiusOrbitCamera();private cameraYaw=0;
+  private contactCamera:RadiusOrbitCamera|SlidingOrbitCamera;private cameraYaw=0;
   private desiredCameraYaw=0;
   private cameraPitch=CAMERA_PITCH;
   private desiredPitch=CAMERA_PITCH;
@@ -313,6 +313,8 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
+    const forestCamera=options.area==='forest'&&options.adventureMap!==undefined&&!options.forestSample&&!options.training;
+    this.contactCamera=forestCamera?new SlidingOrbitCamera():new RadiusOrbitCamera();
     if(options.adventureMap!==undefined){
       const forest = options.area==='forest'&&!options.forestSample&&!options.training&&!options.online;
       const world = forest && (options.forestWorld ??
@@ -342,15 +344,16 @@ export class ModernGame {
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
     if(this.adventure?.expedition&&!this.adventure.sample){const path=this.adventure.layout.solution,target=path[Math.min(10,path.length-1)];if(target)this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.atan2(target.x+.5-this.position.x,target.y+.5-this.position.y);}
     const expandedForest=!!this.adventure?.layout.ring;
+    const groveLight=forestCamera&&!expandedForest;
     const layeredGorge=this.adventure?.area==='gorge';
     this.daylight=new T.HemisphereLight(
       layeredGorge?0xfff2df:0xf9ffe4,
-      expandedForest?0x536d63:layeredGorge?0x8c705d:0x6c8b80,
-      expandedForest?1.58:2.4,
+      expandedForest||groveLight?0x536d63:layeredGorge?0x8c705d:0x6c8b80,
+      expandedForest?1.58:groveLight?1.85:2.4,
     );
     this.scene.add(this.daylight);
-    const light=new T.DirectionalLight(expandedForest?0xffdf9e:0xffe7bd,expandedForest?2.65:2.2);
-    if(expandedForest)light.position.set(-13,11,7);
+    const light=new T.DirectionalLight(expandedForest||groveLight?0xffdf9e:0xffe7bd,expandedForest?2.65:groveLight?2.4:2.2);
+    if(expandedForest||groveLight)light.position.set(-13,11,7);
     else light.position.set(-4,10,7);
     this.scene.add(light);
     const n = this.maze.grid.length;
@@ -884,14 +887,15 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
 
     let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?(ringWaterLine??-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
-    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const distance=this.previewMode?12:(underwater?Math.max(5.2,this.responsiveCameraDistance-.35):this.responsiveCameraDistance);
+    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const forestLandCamera=this.contactCamera instanceof SlidingOrbitCamera&&!underwater;
+    const distance=this.previewMode?12:underwater?Math.max(5.2,this.responsiveCameraDistance-.35):forestLandCamera?FOREST_CAMERA_RADIUS:this.responsiveCameraDistance;
     // Only underwater: place the orbit itself below the waterline and permit vertical looking.
     // Land camera yaw, comfort mode and collision rules are preserved untouched.
     const orbit=underwater?{horizontal:distance*Math.cos(Math.max(-.32,Math.min(.12,this.cameraPitch))),height:Math.max(-1.35,Math.min(.1,distance*Math.sin(this.cameraPitch)*.4))}:cameraOrbit(this.cameraPitch,distance),height=orbit.height;
     const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*orbit.horizontal,height,-Math.cos(this.cameraYaw)*orbit.horizontal));
     if(!this.previewMode&&!this.adventure?.awakening){
       if(!this.acc)this.contactCamera.reset();
-      desired.copy(this.contactCamera.step(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b)));
+      desired.copy(this.contactCamera.step(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b),dt));
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}

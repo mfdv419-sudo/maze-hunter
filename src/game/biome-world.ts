@@ -11,21 +11,34 @@ import {areaThemes,type AdventureArea} from './areas';
 import type {AdventureLayout} from './adventure-layout';
 import {biomeElevation} from './biome-layout';
 import {forestTree,groundTexture} from './world-art';
+import {FOREST_HORIZON,forestGroveSky,forestGrovePlanting,forestGroveSpring,shadeForestFloor} from './forest-grove-art';
 import {batchStatic} from './static-model';
 export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea,state?:()=>AdventureState|undefined){
  if(layout.pilot&&layout.ring)return forestMasterWorld(scene,world,layout,state);
  if(layout.pilot)return forestPilotWorld(scene,world,layout,state);
  if(area==='gorge')return gorgeWorld(scene,world,layout);
+ const forest=area==='forest';
  const additions=expeditionAdditions(world,layout,area,layout.maze.grid.length<70);const walls=biomeWalls(world,layout,area),effects=expeditionEffects(world,layout,area);
  const theme=areaThemes[area],n=layout.maze.grid.length,props=new T.Group(),stone=new T.MeshLambertMaterial({color:theme.wall,map:groundTexture('stone')}),wood=new T.MeshLambertMaterial({color:0x987652}),leaf=new T.MeshLambertMaterial({color:area==='coast'?0x70ab70:0x507d62});
  props.userData.cameraOccluder=true;
- const skyTexture=biomeSky(area),sky=new T.Mesh(new T.SphereGeometry(120,24,12),new T.MeshBasicMaterial({map:skyTexture,side:T.BackSide,depthWrite:false,fog:false}));scene.add(sky);const scenery=biomeScenery(scene,world,layout,area);
- const terrain=new T.PlaneGeometry(n,n,n,n);terrain.rotateX(-Math.PI/2);const pos=terrain.attributes.position,uv=terrain.attributes.uv;for(let i=0;i<pos.count;i++){const x=pos.getX(i)+n/2,z=pos.getZ(i)+n/2;pos.setXYZ(i,x,biomeElevation(area,x,z,layout)-.035,z);uv.setXY(i,x,z);}terrain.computeVertexNormals();world.add(new T.Mesh(terrain,new T.MeshLambertMaterial({color:theme.floor,map:groundTexture(area==='forest'?'path':'stone')})));
+ const groveSky=forest?forestGroveSky(scene):undefined;
+ const skyTexture=forest?undefined:biomeSky(area);
+ const sky=skyTexture?new T.Mesh(new T.SphereGeometry(120,24,12),new T.MeshBasicMaterial({map:skyTexture,side:T.BackSide,depthWrite:false,fog:false})):undefined;
+ if(sky)scene.add(sky);
+ const scenery=forest?undefined:biomeScenery(scene,world,layout,area);
+ const ground=(x:number,z:number)=>biomeElevation(area,x,z,layout);
+ const cap=(x:number,z:number)=>biomeWallTop(area,x,z,layout);
+ if(forest)forestGrovePlanting(world,layout,ground,cap);
+ const spring=forest?forestGroveSpring(world,layout,ground,cap):undefined;
+ const terrain=new T.PlaneGeometry(n,n,n,n);terrain.rotateX(-Math.PI/2);const pos=terrain.attributes.position,uv=terrain.attributes.uv;for(let i=0;i<pos.count;i++){const x=pos.getX(i)+n/2,z=pos.getZ(i)+n/2;pos.setXYZ(i,x,biomeElevation(area,x,z,layout)-.035,z);uv.setXY(i,x,z);}terrain.computeVertexNormals();
+ if(forest)shadeForestFloor(terrain,layout);
+ const floor=new T.Mesh(terrain,new T.MeshLambertMaterial({color:forest?0xffffff:theme.floor,vertexColors:forest,map:groundTexture('stone')}));
+ if(forest)floor.name='forest-grove-trail-floor';
+ world.add(floor);
  const add=(geo:T.BufferGeometry,mat:T.Material,x:number,y:number,z:number,parent:T.Group=props)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);parent.add(m);return m;};
  const reefs:T.Mesh[]=[];
- for(let i=0;i<65;i++){const x=3+(i*37%(n-6)),z=3+(i*61%(n-6));if(layout.maze.grid[z]?.[x]!==1)continue;const base=biomeWallTop(area,x+.5,z+.5,layout);
-  if(area==='forest'){const tree=forestTree(i);tree.position.set(x+.5,base,z+.5);tree.scale.set(2.5,3.3,2.5);props.add(tree);}
-  else if(area==='desert'){add(new T.CapsuleGeometry(.14,1.35,3,7),leaf,x+.5,base+1.1,z+.5);for(const side of[-1,1]){const arm=add(new T.CylinderGeometry(.095,.1,.55,6),leaf,x+.5+side*.22,base+1.05,z+.5);arm.rotation.z=side*.8;}add(new T.DodecahedronGeometry(.45),stone,x+.8,base+.2,z+.7);}
+ for(let i=0;!forest&&i<65;i++){const x=3+(i*37%(n-6)),z=3+(i*61%(n-6));if(layout.maze.grid[z]?.[x]!==1)continue;const base=biomeWallTop(area,x+.5,z+.5,layout);
+  if(area==='desert'){add(new T.CapsuleGeometry(.14,1.35,3,7),leaf,x+.5,base+1.1,z+.5);for(const side of[-1,1]){const arm=add(new T.CylinderGeometry(.095,.1,.55,6),leaf,x+.5+side*.22,base+1.05,z+.5);arm.rotation.z=side*.8;}add(new T.DodecahedronGeometry(.45),stone,x+.8,base+.2,z+.7);}
   else if(area==='coast'){add(new T.CylinderGeometry(.06,.13,3,7),wood,x+.5,base+1.5,z+.5);for(let j=0;j<6;j++){const a=j*Math.PI/3,frond=add(new T.ConeGeometry(.3,1.65,4),leaf,x+.5+Math.sin(a)*.6,base+3,z+.5+Math.cos(a)*.6);frond.rotation.set(Math.cos(a)*1.2,0,Math.sin(a)*1.2);}}
   else if(area==='sea'){const coral=new T.MeshLambertMaterial({color:[0xde9daf,0xe2c384,0x8ed3cf][i%3]});for(let j=0;j<3;j++){const m=add(new T.CapsuleGeometry(.1,.6+j*.2,3,6),coral,x+.3+j*.16,base+.7,z+.5);m.rotation.z=(j-1)*.45;}}
   else {const rock=add(new T.DodecahedronGeometry(.8,0),stone,x+.5,base+1.1,z+.5);rock.scale.set(1.1,1.8,1);if(area==='mountain')add(new T.ConeGeometry(.8,.45,5),new T.MeshLambertMaterial({color:0xe9f4e9}),x+.5,base+2.3,z+.5);}
@@ -42,7 +55,29 @@ export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,ar
  for(const p of layout.forest!.pillars){add(new T.CylinderGeometry(.18,.27,1.5,7),stone,p.x+.5,biomeElevation(area,p.x,p.y,layout)+.75,p.y+.5);add(new T.OctahedronGeometry(.13),new T.MeshBasicMaterial({color:0xffdc91}),p.x+.5,biomeElevation(area,p.x,p.y,layout)+1.65,p.y+.5);}
  const arena=add(new T.CircleGeometry(7.6,40),new T.MeshLambertMaterial({color:theme.floor,map:groundTexture('stone')}),layout.fortress.x+.5,biomeElevation(area,layout.fortress.x+.5,layout.fortress.y+.5,layout)+.03,layout.fortress.y+.5);arena.rotation.x=-Math.PI/2;if(area==='sea')arena.visible=false;
  const roofs:T.Group[]=[];
- if(area==='forest'||area==='coast'){
+ if(forest){
+  const c=layout.forest!.cabin,roof=new T.Group(),cx=c.x+.5,cz=c.y+.5,base=ground(cx,cz);
+  roof.name='forest-grove-keeper-lodge-roof';
+  const oak=new T.MeshLambertMaterial({color:0x97613d}),edge=new T.MeshLambertMaterial({color:0xb2804b});
+  const shingles=[0x3e614a,0x456d50,0x527754].map(color=>new T.MeshLambertMaterial({color,flatShading:true}));
+  const panes=new T.MeshBasicMaterial({color:0xf1bc69});
+  for(const side of [-1,1]){
+   const postX=cx+side*1.12;
+   const front=ground(postX,cz+2.46);
+   add(new T.BoxGeometry(.28,2.68,.26),oak,postX,front+1.34,cz+2.58);
+   add(new T.BoxGeometry(.56,.52,.04),oak,cx+side*1.78,front+1.56,cz+2.535);
+   add(new T.BoxGeometry(.37,.34,.045),panes,cx+side*1.78,front+1.56,cz+2.56);
+   for(let column=0;column<6;column++)for(let row=0;row<5;row++){
+    const run=.235+row*.494;
+    const tile=add(new T.BoxGeometry(.555,.14,.96),shingles[(column+row*2)%3],
+     cx+side*run,base+4.24-run*.47,cz-2.35+column*.94,roof);
+    tile.rotation.z=-side*.44;
+   }
+  }
+  add(new T.BoxGeometry(2.65,.24,.28),edge,cx,base+2.68,cz+2.57);
+  add(new T.CylinderGeometry(.14,.14,6.05,6),oak,cx,base+4.26,cz,roof).rotation.x=Math.PI/2;
+  world.add(roof);roofs.push(roof);
+ }else if(area==='coast'){
   const c=layout.forest!.cabin,roof=new T.Group(),base=biomeElevation(area,c.x,c.y,layout);for(const side of[-1,1])add(new T.BoxGeometry(.2,1.8,4.2),wood,c.x+.5+side*2.1,base+.9,c.y+.5);add(new T.BoxGeometry(4.2,1.8,.2),wood,c.x+.5,base+.9,c.y-1.6);for(const side of[-1,1]){const q=add(new T.BoxGeometry(2.6,.16,5),leaf,c.x+.5+side*1.1,base+2.2,c.y+.5,roof);q.rotation.z=-side*.4;}world.add(roof);roofs.push(roof);
  }
  // Distinct landmarks give the three seal quests recognizable silhouettes.
@@ -62,5 +97,5 @@ export function biomeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout,ar
  if(area==='sea'){for(const q of layout.areas.slice(1,5).map(a=>a.point)){for(let j=0;j<5;j++){const x=q.x+2+Math.sin(j)*.3,z=q.y+2+Math.cos(j)*.3,h=biomeElevation(area,x,z,layout);if(layout.maze.grid[Math.floor(z)]?.[Math.floor(x)]!==0)continue;const coral=new T.MeshLambertMaterial({color:[0xda8f9e,0xe4c691,0x84c9c3][j%3]});for(let k=0;k<3;k++){const sprig=add(new T.CapsuleGeometry(.045,.35+k*.16,3,6),coral,x+(k-1)*.1,h+.3,z);sprig.rotation.z=(k-1)*.3;}}}}
  const foam=new T.MeshBasicMaterial({color:0xd7f2e1,transparent:true,opacity:.4});const ripples:T.Mesh[]=[];if(water)for(let i=0;i<9;i++){const c=area==='sea'?layout.areas[i%6].point:layout.forest!.cave,m=add(new T.TorusGeometry(.35+i%3*.12,.012,4,20),foam.clone(),c.x+.5+(i%3-1),.0,c.y+.5+Math.floor(i/3)-1);m.rotation.x=-Math.PI/2;ripples.push(m);}
  ripples.forEach(m=>{props.remove(m);world.add(m);});batchStatic(props);world.add(props);
- return {update(t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){effects.update(t);sky.position.copy(camera.position);scenery.update(camera);walls.update(camera);if(scene.fog instanceof T.Fog&&area!=='sea'&&area!=='coast'){scene.fog.near=area==='mountain'?40:area==='desert'?34:24;scene.fog.far=area==='mountain'?100:area==='desert'?82:62;}bubbles.forEach((b,i)=>{b.visible=!!player&&(player.depth||0)>.2;if(player)b.position.set(player.x+Math.sin(t*1.4+i)*.18,-.4-(player.depth||0)+(t*.55+i*.17)%1.5,player.y+Math.cos(t+i)*.15);});if(area==='sea'||area==='coast'){const underwater=camera.position.y<-.06;if(scene.fog instanceof T.Fog){scene.fog.color.set(underwater?0x297a8c:theme.sky);scene.fog.near=underwater?2:22;scene.fog.far=underwater?18:42;}sky.visible=!underwater;scene.background=underwater?new T.Color(0x297a8c):null;}ripples.forEach((r,i)=>{const p=(t*.3+i*.13)%1;r.scale.setScalar(.6+p);(r.material as T.MeshBasicMaterial).opacity=.4*(1-p);});roofs.forEach(r=>{const c=area==='forest'||area==='coast'?layout.forest!.cabin:layout.forest!.cave;r.visible=!player||Math.hypot(player.x-c.x,player.y-c.y)>5;});},dispose(){additions.dispose();scenery.dispose();skyTexture.dispose();}};
+ return {update(t:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){effects.update(t);sky?.position.copy(camera.position);groveSky?.update(camera);spring?.update(t);scenery?.update(camera);walls.update(camera);if(scene.fog instanceof T.Fog&&area!=='sea'&&area!=='coast'){scene.fog.near=forest?32:area==='mountain'?40:area==='desert'?34:24;scene.fog.far=forest?101:area==='mountain'?100:area==='desert'?82:62;if(forest)scene.fog.color.setHex(FOREST_HORIZON);}bubbles.forEach((b,i)=>{b.visible=!!player&&(player.depth||0)>.2;if(player)b.position.set(player.x+Math.sin(t*1.4+i)*.18,-.4-(player.depth||0)+(t*.55+i*.17)%1.5,player.y+Math.cos(t+i)*.15);});if(area==='sea'||area==='coast'){const underwater=camera.position.y<-.06;if(scene.fog instanceof T.Fog){scene.fog.color.set(underwater?0x297a8c:theme.sky);scene.fog.near=underwater?2:22;scene.fog.far=underwater?18:42;}if(sky)sky.visible=!underwater;scene.background=underwater?new T.Color(0x297a8c):null;}ripples.forEach((r,i)=>{const p=(t*.3+i*.13)%1;r.scale.setScalar(.6+p);(r.material as T.MeshBasicMaterial).opacity=.4*(1-p);});roofs.forEach(r=>{const c=area==='forest'||area==='coast'?layout.forest!.cabin:layout.forest!.cave;r.visible=!player||Math.hypot(player.x-c.x,player.y-c.y)>5;});},dispose(){additions.dispose();scenery?.dispose();groveSky?.dispose();skyTexture?.dispose();}};
 }
