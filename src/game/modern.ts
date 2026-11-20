@@ -479,7 +479,35 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.renderer.setAnimationLoop((t) => this.frame(t));
   }
   projectForestPoint(x:number,z:number,height=1.75){const v=new T.Vector3(x*U,this.terrain(x,z)+height,z*U).project(this.camera),r=this.host.getBoundingClientRect();return{x:(v.x*.5+.5)*r.width,y:(-.5*v.y+.5)*r.height,visible:v.z>-1&&v.z<1&&v.x>-1.2&&v.x<1.2&&v.y>-1.2&&v.y<1.2};}
-  captureBackdrop(){this.previewMode=true;this.paused=true;if(this.adventure){const p=this.adventure.layout.areas[this.adventure.area==='gorge'?1:2].point;this.position={x:p.x+.5,y:p.y+2.5};this.adventure.position={...this.position};}this.cameraYaw=this.desiredCameraYaw=this.adventure?.area==='gorge'?Math.PI+.5:Math.PI+.2;this.cameraPitch=this.desiredPitch=this.adventure?.area==='gorge'?.8:.85;this.acc=0;this.updateVision();this.frame(performance.now());this.renderer.render(this.scene,this.camera);return this.renderer.domElement.toDataURL('image/png');}
+  captureBackdrop() {
+    this.previewMode = true;
+    this.paused = true;
+    const adventure = this.adventure;
+    if (adventure) {
+      const point = adventure.layout.areas[adventure.area === 'gorge' ? 1 : 2].point;
+      this.position = {x:point.x+.5,y:point.y+.5};
+      adventure.position = {...this.position};
+    }
+    this.acc = 0;
+    this.updateVision();
+    this.frame(performance.now());
+
+    // A separate, elevated composition leaves the gameplay orbit untouched.
+    const {x,y} = this.position;
+    const viewX = x-10, viewY = y+18;
+    const ground = this.terrain(x,y);
+    const height = Math.max(ground+22,this.terrain(viewX,viewY)+10);
+    const preview = new T.PerspectiveCamera(53,this.camera.aspect,.1,180);
+    preview.position.set(viewX*U,height,viewY*U);
+    preview.lookAt(x*U,ground+1,y*U);
+    this.biomeScene?.update(this.time,preview,this.position);
+    if(this.scene.fog instanceof T.Fog) {
+      this.scene.fog.near=28;
+      this.scene.fog.far=72;
+    }
+    this.renderer.render(this.scene,preview);
+    return this.renderer.domElement.toDataURL('image/png');
+  }
   skipAwakening(){this.skippedAwakening=this.adventure?.bossAwakeAt??-1;this.acc=0;}
   setTouchSensitivity(value:number){this.mousePreferences.touchSensitivity=T.MathUtils.clamp(value,.3,2);}
   resetCamera(){this.contactCamera?.resetView();this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}

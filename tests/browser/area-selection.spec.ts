@@ -1,7 +1,44 @@
 import {test,expect} from '@playwright/test';
 const qa='test-results/screenshots/';
-test('Adventure picker shows an actual game preview, seven area choices, guidance and consistent buttons',async({page})=>{
- test.setTimeout(65000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#lab').click();await page.locator('#modern-mode').click();await expect(page.locator('#maze-transition')).toHaveCount(0);await expect(page.locator('.area-option')).toHaveCount(8);await expect.poll(()=>page.locator('#adventure-preview').evaluate(e=>(e as HTMLElement).style.backgroundImage),{timeout:15000}).toContain('data:image/png');await page.screenshot({path:qa+'area-selection-adventure-picker.png'});await page.locator('#setup-guide').click();await expect(page.locator('.adventure-help')).toContainText('Joystick');await page.locator('#setup-guide-close').click();for(const id of ['explore-area','online-menu']){await expect(page.locator('#'+id)).toBeVisible();const style=await page.locator('#'+id).evaluate(e=>({family:getComputedStyle(e).fontFamily,radius:getComputedStyle(e).borderRadius}));expect(style.radius).toBe('12px');}await page.locator('#area-desert').click();await page.locator('#difficulty-hard').click();await expect(page.locator('.poster-chip')).toContainText('105');await page.screenshot({path:qa+'area-selection-desert-picker.png'});await page.setViewportSize({width:844,height:390});for(const id of ['explore-area','online-menu','setup-guide'])await expect(page.locator('#'+id)).toBeInViewport();await page.screenshot({path:qa+'area-selection-picker-phone.png'});expect(errors).toEqual([]);
+test('Adventure picker keeps its eight worlds, difficulty, guide and illustrated actions usable across viewports',async({page})=>{
+ test.setTimeout(65000);
+ const errors:string[]=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto('/');
+ await page.locator('#lab').click();
+ await page.locator('#modern-mode').click();
+ await expect(page.locator('#maze-transition')).toHaveCount(0);
+ await expect(page.locator('.area-option')).toHaveCount(8);
+ await expect.poll(()=>page.locator('#adventure-preview').evaluate(e=>(e as HTMLElement).style.backgroundImage),{timeout:15000}).toContain('data:image/png');
+ await expect(page.locator('#area-forest')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#area-forest .area-mark svg')).toBeVisible();
+ await page.screenshot({path:qa+'area-selection-adventure-picker.png'});
+ await page.locator('#setup-guide').click();
+ await expect(page.locator('.adventure-help')).toContainText('Joystick');
+ await page.locator('#setup-guide-close').click();
+ for(const id of ['explore-area','online-menu','practice-area','forest-world-open']) {
+  await expect(page.locator('#'+id)).toBeVisible();
+  await expect(page.locator('#'+id+' svg')).toHaveCount(1);
+ }
+ await page.locator('#area-desert').click();
+ await page.locator('#difficulty-hard').click();
+ await expect(page.locator('#difficulty-hard')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('.poster-chip')).toContainText('105');
+ await expect(page.locator('.difficulty-heading')).toContainText('8');
+ await expect(page.locator('#forest-world-open')).toHaveCount(0);
+ await page.screenshot({path:qa+'area-selection-desert-picker.png'});
+ for(const viewport of [{width:844,height:390},{width:640,height:320}]) {
+  await page.setViewportSize(viewport);
+  for(const id of ['explore-area','online-menu','setup-guide'])await expect(page.locator('#'+id)).toBeInViewport();
+ }
+ await page.screenshot({path:qa+'area-selection-picker-phone.png'});
+ await page.setViewportSize({width:390,height:844});
+ await page.locator('#explore-area').scrollIntoViewIfNeeded();
+ await expect(page.locator('#explore-area')).toBeInViewport();
+ const hasHorizontalOverflow=await page.locator('.adventure-select').evaluate(e=>e.scrollWidth>e.clientWidth);
+ expect(hasHorizontalOverflow).toBe(false);
+ expect(errors).toEqual([]);
 });
 test('Original Solo and Forest remain selectable and each area launches at the chosen difficulty',async({page})=>{
  test.setTimeout(65000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#lab').click();await page.locator('#modern-mode').click();await page.locator('#area-classic').click();await page.locator('#explore-area').click();await expect(page.locator('#game-stage')).toHaveAttribute('data-area','classic');await page.locator('#exit-game').click();await page.locator('#quit').click();await page.locator('#modern-mode').click();await page.locator('#area-forest').click();await page.locator('#explore-area').click();await expect(page.locator('#game-stage')).toHaveAttribute('data-area','forest');await page.locator('#exit-game').click();await page.locator('#quit').click();await page.locator('#modern-mode').click();await page.locator('#area-desert').click();await page.locator('#difficulty-hard').click();await page.locator('#explore-area').click();await expect(page.locator('#game-stage')).toHaveAttribute('data-area','desert');await expect(page.locator('.playbar small')).toHaveText('HARD');await page.locator('#quest-log').click();await expect(page.locator('.expedition-task')).toHaveCount(3);await expect(page.locator('.expedition-journal')).toContainText('Oasis');await page.locator('#journal-close').click();await page.screenshot({path:qa+'area-selection-desert-play.png'});expect(errors).toEqual([]);

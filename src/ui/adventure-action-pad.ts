@@ -210,16 +210,23 @@ export function mountAdventureActionPad(root: HTMLElement, game: ModernGame, en:
 
    if (hit) {
     const site = state.nearbyForestSite;
-    const icon = site?.npc?.role === 'merchant' ? 'shop' : site?.npc ? 'talk' : site ? 'ability' :
+    const icon = site?.npc?.role === 'merchant' ? 'shop' : site?.npc ? 'talk' : site ? 'interact' :
      state.swimming && !state.carried ? 'dive' : 'throw';
     if (hit.dataset.icon !== icon) {
      hit.dataset.icon = icon;
      hit.innerHTML = forestIcon(icon);
     }
     hit.setAttribute('aria-label', site?.npc?.role === 'merchant' ? text('Buka toko', 'Open shop') :
-     site?.npc ? text('Bicara', 'Talk') : state.swimming ? text('Selam', 'Dive') : text('Aksi / lempar', 'Action / throw'));
+     site?.npc ? text('Bicara', 'Talk') : site ? text('Interaksi', 'Interact') : state.swimming && !state.carried ? text('Selam', 'Dive') : text('Lempar', 'Throw'));
    }
-   jump?.setAttribute('aria-label', state.swimming ? text('Ke permukaan', 'Surface') : text('Lompat', 'Jump'));
+   if (jump) {
+    const icon = state.swimming ? 'surface' : 'jump';
+    if (jump.dataset.icon !== icon) {
+     jump.dataset.icon = icon;
+     jump.innerHTML = forestIcon(icon);
+    }
+    jump.setAttribute('aria-label', state.swimming ? text('Ke permukaan', 'Surface') : text('Lompat', 'Jump'));
+   }
   },
   dispose() {
    abort.abort();
