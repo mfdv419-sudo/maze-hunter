@@ -4,6 +4,7 @@ import type {AdventureState} from './adventure-state';
 import {FLOATING_DECK_HEIGHT,pilotGround,PILOT_WATER_LEVEL as WATER,PILOT_UNDERGROUND_WATER_LEVEL as UG_WATER} from './forest-pilot';
 import {FOREST_ARENAS,FOREST_LAYERS,layerOfPoint} from './forest-world-design';
 import {groundTexture,forestTree} from './world-art';
+import {forestWaterfallValley} from './forest-waterfall-valley';
 import {forestNpcOffset,type ForestWorldSite} from './forest-rpg';
 
 const mat=(c:number)=>new T.MeshLambertMaterial({color:c,flatShading:true});
@@ -47,26 +48,12 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  scene.add(sky,horizon);scene.background=skyBackground;scene.fog=new T.Fog(surfaceFog,38,124);
  const grid=l.maze.grid;
  const ring=l.ring!;
+ const wf=ring.zones.find(z=>z.id==='waterfall')!.point;
+ const valley=ring.difficulty==='extreme'?forestWaterfallValley(root,grid,wf):undefined;
  const leafTex=groundTexture('leaf'),pathTex=groundTexture('path'),stoneTex=groundTexture('stone');
  leafTex.repeat.set(32,32);pathTex.repeat.set(24,24);stoneTex.repeat.set(12,12);
  const grass=new T.MeshLambertMaterial({color:0x78ad4f,map:leafTex}),soil=new T.MeshLambertMaterial({color:0xa56b3f,map:pathTex}),forestSoil=new T.MeshLambertMaterial({color:0x9a7048,map:pathTex}),rock=new T.MeshLambertMaterial({color:0x6d7166,map:stoneTex,flatShading:true}),moss=new T.MeshLambertMaterial({color:0x6da447,map:leafTex}),wood=mat(0x765038),ruin=new T.MeshLambertMaterial({color:0x8f8a78,map:stoneTex,flatShading:true}),purple=mat(0x8b69c9),gold=mat(0xe7c469),waterMat=new T.MeshPhongMaterial({color:0x35b8c3,emissive:0x103c3b,transparent:true,opacity:.85,depthWrite:false,shininess:115,side:T.DoubleSide}),earthCliff=new T.MeshLambertMaterial({color:0xa06f45,map:stoneTex,flatShading:true,vertexColors:true});
- const cascadeCanvas=document.createElement('canvas');
- cascadeCanvas.width=64;cascadeCanvas.height=128;
- const flow=cascadeCanvas.getContext('2d')!;
- flow.fillStyle='#65c7c4';flow.fillRect(0,0,64,128);
- for(let i=0;i<43;i++){
-  const x=(i*23)%64,y=(i*41)%128,width=1+i%3,height=17+i%37;
-  flow.fillStyle=i%4===0?'#e5fbdfc7':i%3===0?'#268eaa88':'#acdcd795';
-  flow.fillRect(x,y,width,height);
-  if(y+height>128)flow.fillRect(x,y-128,width,height);
- }
- const cascadeTexture=new T.CanvasTexture(cascadeCanvas);
- cascadeTexture.colorSpace=T.SRGBColorSpace;
- cascadeTexture.wrapS=cascadeTexture.wrapT=T.RepeatWrapping;
- cascadeTexture.repeat.set(1.7,1);
- const fallingWater=new T.MeshPhongMaterial({
-  color:0xaddbd7,map:cascadeTexture,emissive:0x183d3a,transparent:true,opacity:.91,depthWrite:false,shininess:74,side:T.DoubleSide,
- });
+ let cascadeTexture:T.CanvasTexture|undefined;
  // Terrain visual and physics now share pilotGround(). No square walkable-tile floor exists in Extreme.
  const heightField=(ox:number,oz:number,size:number,segments:number,material:T.Material,name:string)=>{
   const geo=new T.PlaneGeometry(size,size,segments,segments);geo.rotateX(-Math.PI/2);geo.translate(ox+size/2,0,oz+size/2);
@@ -95,17 +82,15 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  for(let z=2;z<179;z++)for(let x=2;x<179;x++){
   if(grid[z]?.[x]!==1)continue;const edge=grid[z-1]?.[x]===0||grid[z+1]?.[x]===0||grid[z]?.[x-1]===0||grid[z]?.[x+1]===0;if(!edge)continue;
   const base=pilotGround(x+.5,z+.5),h=3.6+((x*17+z*23)%5)*.34;
+  if((x*7+z*11)%19===0)cliffTreeSeeds.push({x:x+.5,y:base+h+.04,z:z+.5,seed:x*997+z});
+  if(valley?.addCliff(x+.5,z+.5,base,h))continue;
   dummy.position.set(x+.5,base+h/2,z+.5);dummy.scale.set(1.02,h,1.02);dummy.rotation.y=0;dummy.updateMatrix();cliffMatrices.push(dummy.matrix.clone());
-  dummy.position.set(x+.5,base+h+.02,z+.5);dummy.scale.set(1,1,1);dummy.updateMatrix();capMatrices.push(dummy.matrix.clone());if((x*7+z*11)%19===0)cliffTreeSeeds.push({x:x+.5,y:base+h+.04,z:z+.5,seed:x*997+z});
+  dummy.position.set(x+.5,base+h+.02,z+.5);dummy.scale.set(1,1,1);dummy.updateMatrix();capMatrices.push(dummy.matrix.clone());
  }
+ valley?.finishCliffs();
  const cliffs=new T.InstancedMesh(cliffGeo,earthCliff,cliffMatrices.length);cliffMatrices.forEach((m,i)=>cliffs.setMatrixAt(i,m));cliffs.name='authoritative-earth-cliff-boundary';root.add(cliffs);
   const caps=new T.InstancedMesh(cliffCapGeo,moss,capMatrices.length);capMatrices.forEach((m,i)=>caps.setMatrixAt(i,m));caps.name='grass-cliff-caps';root.add(caps);
  for(const t of cliffTreeSeeds.slice(0,90)){const tree=forestTree(t.seed);tree.position.set(t.x,t.y,t.z);tree.scale.setScalar(1.9+(t.seed%5)*.12);tree.name='cliff-top-canopy-tree';root.add(tree);}
- // Swimming and the continuous shoreline share the Waterfall Valley basin radius.
- const wf=ring.zones.find(z=>z.id==='waterfall')!.point;
- const lake=add(root,new T.CircleGeometry(20,96),waterMat,wf.x,WATER,wf.y);
- lake.rotation.x=-Math.PI/2;
- lake.name='waterfall-valley-deep-water-volume';
  // Forest floor is soil-first, like a natural trail system. Grass is layered as soft shoulders/arena patches,
  // so the whole map never reads as one flat green carpet.
  for(const z of ring.zones.filter(z=>z.layer==='surface')){const y=pilotGround(z.point.x+.5,z.point.y+.5)+.008;for(let i=0;i<5;i++){const a=i*1.257+(z.point.x%5)*.2,r=Math.max(3.8,z.radius*(.32+.08*(i%3))),patch=add(root,new T.CircleGeometry(r,24),grass,z.point.x+.5+Math.sin(a)*r*.55,y+.002,z.point.y+.5+Math.cos(a)*r*.55);patch.rotation.x=-Math.PI/2;patch.scale.set(1.35,.72,1);patch.name='natural-grass-floor-patch';}}
@@ -115,53 +100,76 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
 
  // Broad dirt clearings at arena hearts keep the world from reading as one endless green carpet.
  for(const z of ring.zones.filter(z=>z.layer==='surface')){const y=pilotGround(z.point.x+.5,z.point.y+.5)+.012,disc=add(root,new T.CircleGeometry(Math.max(5,z.radius*.30),28),soil,z.point.x+.5,y,z.point.y+.5);disc.rotation.x=-Math.PI/2;disc.name='arena-soil-clearing';}
- // Waterfall Valley: thick multi-stage water, rock lips, splash basin and submerged ruins.
- const fallX=wf.x-3,fallZ=wf.y-18;
- const solidFootprint=(x:number,z:number,rx:number,rz:number)=>{
-  for(let row=Math.floor(z-rz);row<=Math.floor(z+rz);row++)
-   for(let col=Math.floor(x-rx);col<=Math.floor(x+rx);col++)
-    if(grid[row]?.[col]!==1)return false;
-  return true;
- };
- const stream=add(root,new T.BoxGeometry(6.2,.08,2.6),waterMat,fallX,WATER+4.47,fallZ-1.3);
- stream.name='waterfall-upstream-stream';
- const foamGeo=new T.SphereGeometry(1,12,6);
- const foamMaterial=new T.MeshBasicMaterial({color:0xe6f9de,transparent:true,opacity:.5,depthWrite:false});
- for(const [dx,dz,width,bottom,height] of [[0,0,6.2,2.45,2.06],[.7,1.7,5.3,.97,1.54],[1.2,3.1,5.9,.02,1.03]] as const){
-  const x=fallX+dx,z=fallZ+dz,y=WATER+bottom;
-  if(solidFootprint(x,z-.35,(width+.7)/2,.65)){
-   const lip=add(root,new T.BoxGeometry(width+.7,.45,1.3),rock,x,y+height*.92,z-.35);
-   lip.name='waterfall-rock-lip';
+ if(!valley){
+  const cascadeCanvas=document.createElement('canvas');
+  cascadeCanvas.width=64;cascadeCanvas.height=128;
+  const flow=cascadeCanvas.getContext('2d')!;
+  flow.fillStyle='#65c7c4';flow.fillRect(0,0,64,128);
+  for(let i=0;i<43;i++){
+   const x=(i*23)%64,y=(i*41)%128,width=1+i%3,height=17+i%37;
+   flow.fillStyle=i%4===0?'#e5fbdfc7':i%3===0?'#268eaa88':'#acdcd795';
+   flow.fillRect(x,y,width,height);
+   if(y+height>128)flow.fillRect(x,y-128,width,height);
   }
-  const fall=add(root,new T.PlaneGeometry(width,height),fallingWater,x,y+height*.48,z);
-  fall.name='waterfall-cascade-thick';
-  fall.rotation.y=-.05*dx;
-  const pool=add(root,new T.BoxGeometry(width,.08,1.8),waterMat,x,y+.015,z+.82);
-  pool.name='waterfall-terrace';
-  for(let i=0;i<7;i++){
-   const foam=add(root,foamGeo,foamMaterial,x+(i-3)*width/7,y+.09+(i%2)*.048,z+.27+(i%3)*.23);
-   foam.scale.set(width*(.10+(i%3)*.025),.105+(i%3)*.037,.37+(i%2)*.10);
-   foam.name='waterfall-foam';
+  cascadeTexture=new T.CanvasTexture(cascadeCanvas);
+  cascadeTexture.colorSpace=T.SRGBColorSpace;
+  cascadeTexture.wrapS=cascadeTexture.wrapT=T.RepeatWrapping;
+  cascadeTexture.repeat.set(1.7,1);
+  const fallingWater=new T.MeshPhongMaterial({
+   color:0xaddbd7,map:cascadeTexture,emissive:0x183d3a,transparent:true,opacity:.91,depthWrite:false,shininess:74,side:T.DoubleSide,
+  });
+  // Swimming and the continuous shoreline share the Waterfall Valley basin radius.
+  const lake=add(root,new T.CircleGeometry(20,96),waterMat,wf.x,WATER,wf.y);
+  lake.rotation.x=-Math.PI/2;
+  lake.name='waterfall-valley-deep-water-volume';
+  // Waterfall Valley: thick multi-stage water, rock lips, splash basin and submerged ruins.
+  const fallX=wf.x-3,fallZ=wf.y-18;
+  const solidFootprint=(x:number,z:number,rx:number,rz:number)=>{
+   for(let row=Math.floor(z-rz);row<=Math.floor(z+rz);row++)
+    for(let col=Math.floor(x-rx);col<=Math.floor(x+rx);col++)
+     if(grid[row]?.[col]!==1)return false;
+   return true;
+  };
+  const stream=add(root,new T.BoxGeometry(6.2,.08,2.6),waterMat,fallX,WATER+4.47,fallZ-1.3);
+  stream.name='waterfall-upstream-stream';
+  const foamGeo=new T.SphereGeometry(1,12,6);
+  const foamMaterial=new T.MeshBasicMaterial({color:0xe6f9de,transparent:true,opacity:.5,depthWrite:false});
+  for(const [dx,dz,width,bottom,height] of [[0,0,6.2,2.45,2.06],[.7,1.7,5.3,.97,1.54],[1.2,3.1,5.9,.02,1.03]] as const){
+   const x=fallX+dx,z=fallZ+dz,y=WATER+bottom;
+   if(solidFootprint(x,z-.35,(width+.7)/2,.65)){
+    const lip=add(root,new T.BoxGeometry(width+.7,.45,1.3),rock,x,y+height*.92,z-.35);
+    lip.name='waterfall-rock-lip';
+   }
+   const fall=add(root,new T.PlaneGeometry(width,height),fallingWater,x,y+height*.48,z);
+   fall.name='waterfall-cascade-thick';
+   fall.rotation.y=-.05*dx;
+   const pool=add(root,new T.BoxGeometry(width,.08,1.8),waterMat,x,y+.015,z+.82);
+   pool.name='waterfall-terrace';
+   for(let i=0;i<7;i++){
+    const foam=add(root,foamGeo,foamMaterial,x+(i-3)*width/7,y+.09+(i%2)*.048,z+.27+(i%3)*.23);
+    foam.scale.set(width*(.10+(i%3)*.025),.105+(i%3)*.037,.37+(i%2)*.10);
+    foam.name='waterfall-foam';
+   }
   }
- }
- const backingGeo=new T.IcosahedronGeometry(1,0);
- for(let i=0;i<10;i++){
-  const x=fallX+(i%5-2)*1.23,z=fallZ-2.6+Math.floor(i/5)*1.34;
-  if(!solidFootprint(x,z,1.2,1.2))continue;
-  const courses=i<5?2.58:1.42;
-  const backing=add(root,backingGeo,rock,x,WATER+courses*.42,z);
-  backing.rotation.y=i*.71;
-  backing.scale.set(.98+i%2*.2,courses,.94);
-  backing.name='waterfall-rock-backing';
- }
- const rippleMaterial=new T.MeshBasicMaterial({color:0xfff8dd,transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide});
- for(let i=0;i<13;i++){
-  const angle=i*2.399,radius=1.4+i*.69;
-  const ripple=add(root,new T.RingGeometry(.82,1,19,1,.08,1.55),rippleMaterial,
-   fallX+Math.sin(angle)*radius,WATER+.045,fallZ+4+i*.45);
-  ripple.rotation.x=-Math.PI/2;
-  ripple.scale.set(1.18+i%3*.26,.46,1);
-  ripple.name='waterfall-surface-ripple';
+  const backingGeo=new T.IcosahedronGeometry(1,0);
+  for(let i=0;i<10;i++){
+   const x=fallX+(i%5-2)*1.23,z=fallZ-2.6+Math.floor(i/5)*1.34;
+   if(!solidFootprint(x,z,1.2,1.2))continue;
+   const courses=i<5?2.58:1.42;
+   const backing=add(root,backingGeo,rock,x,WATER+courses*.42,z);
+   backing.rotation.y=i*.71;
+   backing.scale.set(.98+i%2*.2,courses,.94);
+   backing.name='waterfall-rock-backing';
+  }
+  const rippleMaterial=new T.MeshBasicMaterial({color:0xfff8dd,transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide});
+  for(let i=0;i<13;i++){
+   const angle=i*2.399,radius=1.4+i*.69;
+   const ripple=add(root,new T.RingGeometry(.82,1,19,1,.08,1.55),rippleMaterial,
+    fallX+Math.sin(angle)*radius,WATER+.045,fallZ+4+i*.45);
+   ripple.rotation.x=-Math.PI/2;
+   ripple.scale.set(1.18+i%3*.26,.46,1);
+   ripple.name='waterfall-surface-ripple';
+  }
  }
  // Submerged ancient ruins visible below the deep lake.
  for(const [dx,dz,rot] of [[-7,4,.15],[1,7,-.22],[7,4,.08]] as const){const slab=add(root,new T.BoxGeometry(4.2,.45,2.3),ruin,wf.x+dx,-1.35,wf.y+dz);slab.rotation.y=rot;slab.name='submerged-ruin-slab';for(const sx of[-1,1])add(root,new T.CylinderGeometry(.28,.36,2.4,8),ruin,wf.x+dx+sx*1.4,-.1,wf.y+dz);}
@@ -451,11 +459,11 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
  const boss=ring.center,altar=add(root,new T.CylinderGeometry(7,7,.45,24),mat(0x51415f),boss.x+.5,pilotGround(boss.x,boss.y)+.2,boss.y+.5);altar.name='boss-core-platform';for(const side of[-1,1]){const eye=add(root,new T.SphereGeometry(.22,10,6),new T.MeshBasicMaterial({color:0xff5c5c}),boss.x+.5+side*.55,pilotGround(boss.x,boss.y)+3.1,boss.y+.8);eye.name='boss-core-eye';}
  const collectibles:T.Object3D[]=[];
  root.traverse(o=>{if(o.name.startsWith('relic-piece-')||o.name.startsWith('site-pickup-'))collectibles.push(o);});
- return{update(time:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){sky.position.copy(camera.position);horizon.position.set(camera.position.x,0,camera.position.z);cascadeTexture.offset.y=(time*.43)%1;const under=!!player&&(player.depth||0)>.15;const cave=!!player&&layerOfPoint(player)==='underground';if(scene.fog instanceof T.Fog){scene.fog.color.set(under?0x347b8a:cave?0x34352b:surfaceFog);scene.fog.near=under?2:cave?12:38;scene.fog.far=under?22:cave?35:124;}scene.background=cave?caveBackground:skyBackground;sky.visible=horizon.visible=!under&&!cave;
+ return{update(time:number,camera:T.Camera,player?:{x:number;y:number;depth?:number}){sky.position.copy(camera.position);horizon.position.set(camera.position.x,0,camera.position.z);if(cascadeTexture)cascadeTexture.offset.y=(time*.43)%1;valley?.update(time);const under=!!player&&(player.depth||0)>.15;const cave=!!player&&layerOfPoint(player)==='underground';if(scene.fog instanceof T.Fog){scene.fog.color.set(under?0x347b8a:cave?0x34352b:surfaceFog);scene.fog.near=under?2:cave?12:38;scene.fog.far=under?22:cave?35:124;}scene.background=cave?caveBackground:skyBackground;sky.visible=horizon.visible=!under&&!cave;
  if(base)base.visible=!player||layerOfPoint(player)!=='floating';
  const s=state?.();for(const o of collectibles){
   if(o.name.startsWith('relic-piece-'))o.visible=!s?.relics.has(o.name.slice(12));
   else o.visible=!s?.worldClaims.has(o.name.slice(12));
  }},dispose(){skyTex.dispose();sky.geometry.dispose();sky.material.dispose();
- cascadeTexture.dispose();ridgeGeometry.dispose();ridgeMaterials.forEach(material=>material.dispose());scene.remove(sky,horizon);const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());leafTex.dispose();pathTex.dispose();stoneTex.dispose();world.remove(root,dynamic);}};
+ cascadeTexture?.dispose();ridgeGeometry.dispose();ridgeMaterials.forEach(material=>material.dispose());scene.remove(sky,horizon);const gs=new Set<T.BufferGeometry>(),ms=new Set<T.Material>();root.traverse(o=>{if(o instanceof T.Mesh){gs.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])ms.add(m);}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());leafTex.dispose();pathTex.dispose();stoneTex.dispose();world.remove(root,dynamic);}};
 }
