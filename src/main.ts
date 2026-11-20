@@ -24,9 +24,11 @@ import {adventureAreas,areaThemes,areaName,areaSize,type AdventureArea} from './
 import {expeditionQuests} from './game/expedition-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
-import {appearanceOf,permittedAppearance,owns,redeem,starBalance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
+import {appearanceOf,permittedAppearance,owns,redeem,ensureWallet,starBalance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
 import {primaryObjective,areaInformation,nearbyInformation} from './game/navigation';
-import {recordExpedition} from './services/local';
+import {forestRank,recordExpedition,recordForestWin} from './services/local';
+import {canEnterForestWorld,forestEarnedEquipment,forestEquipment,forestStage,forestStageLabel,forestStages,
+ type ForestWorldDifficulty} from './game/forest-progression';
 import {zones} from './game/adventure-zones';
 import {recordRun,readRuns} from "./services/records";
 import {adventureRules,nextMap} from "./game/adventure-layout";
@@ -172,7 +174,7 @@ function showError(error: unknown) {
 function header() {
   return `<header><a href="#" id="brand" aria-label="Maze Hunter home"><span class="brand-mark">▥</span> MAZE<span>HUNTER</span></a><div class="header-right">${profile ? `<button class="profile-pill" id="profiles"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg>${esc(profile.name)}</button>` : ""}<button class="quiet" id="sound-toggle" aria-label="${tr("Suara", "Sound")}">${isMuted() ? "♪ ×" : "♪"}</button><button class="language" id="language" aria-label="Change language">${lang === "id" ? "ID / EN" : "EN / ID"}</button>${uid && !lab ? `<button class="quiet" id="logout">${tr("Keluar akun", "Sign out")}</button>` : ""}</div></header>`;
 }
-function rememberAdventure(){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample||state.training)return;recordExpedition(profile,state.area==='classic'?`${state.difficulty}-${state.mapIndex}`:`${state.area}-${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});void save();}
+function rememberAdventure(persist=true){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample||state.training||currentAdventure?.forestWorld&&!activeRoom)return;recordExpedition(profile,state.area==='classic'?`${state.difficulty}-${state.mapIndex}`:`${state.area}-${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});if(persist)void save();}
 function begin(name: string, html: string) {
   mazeTransition(root,root.dataset.screen||'',name);rememberAdventure();
   generation++;chatPanel?.destroy();chatPanel=undefined;
@@ -597,11 +599,49 @@ async function adventurePreview(area:AdventureArea){
  catch(e){console.warn('Scene preview unavailable',e);}
 }
 function adventureHelp(){const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal adventure-help" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER · ADVENTURE</div><h2>${tr('Siap menjelajah?','Ready to explore?')}</h2><ol><li>${tr('Pilih area dan tingkat kesulitan, lalu main Solo atau Online. Labirin Asli mempertahankan rute Solo yang sudah ada.','Choose an area and difficulty, then play Solo or Online. Original Maze retains the existing Solo routes.')}</li><li>${tr('Joystick kiri untuk berjalan; geser sisi kanan untuk kamera. A untuk lompat dua kali atau panjat, B untuk lempar kue, tebas dan cari bekal. Di air dalam gunakan Selam / Permukaan (V); kelapa dengan cincin emas bisa dipanjat.','Left joystick moves; drag the right side for camera. A double jumps or climbs; B throws cakes, cuts and gathers supplies. In deep water use Dive / Surface (V); beach palms with gold rings can be climbed.')}</li><li>${tr('Buka jurnal untuk petunjuk. Setiap wilayah segel dijaga 3 penjaga besar dan 2 kecil. Setelah semua segel lengkap, cuplikan Raja bangkit berlangsung 6 detik dengan perlindungan pemain; bisa dilewati. Mouse: klik arena sekali, gerakkan untuk melihat; klik kiri menyerang, Esc melepas. Minimap menyimpan area yang ditemukan.','Each seal region has 3 large and 2 small keepers. All seals trigger a six-second protected King awakening scene; the camera sequence can be skipped. Mouse: click once to capture, move to look, left click to attack, Esc to release. The minimap remembers discoveries.')}</li><li>${tr('Online: Easy/Medium 4, Hard 8, Extreme 10 pemain. Co-op: 3 × jumlah anggota awal, siapa pun boleh mengumpulkan; penjaga dan Raja dilawan bersama tanpa saling melukai. Race: 3 segel dan Raja pribadi; yang pertama lolos menang.','Online: Easy/Medium 4, Hard 8, Extreme 10 players. Co-op: 3 × starting members, anyone can collect; shared guardians and King, no friendly fire. Race: 3 personal seals and a personal King; first escape wins.')}</li></ol>${button(tr('Panduan benda','Item guide'),'setup-guide-items','secondary')}${button(tr('Mengerti','Got it'),'setup-guide-close')}</section>`;document.body.append(overlay);click('setup-guide-close',()=>overlay.remove());click('setup-guide-items',()=>{overlay.remove();fieldGuide();});}
+function availableForestEquipment(player:Profile) {
+ const wallet=ensureWallet(player);
+ return forestEquipment(forestRank(player),[...wallet.legacy,...wallet.purchases]);
+}
+function showForestWorld() {
+ if(!profile)return;
+ const rank=forestRank(profile), next=forestStages[rank], language=lang==='en'?1:0;
+ const gear=availableForestEquipment(profile);
+ const overlay=document.createElement('div');
+ overlay.className='modal-backdrop';
+ const modes=['hard','extreme'] as const;
+ overlay.innerHTML=`<section class="modal forest-world-menu" role="dialog" aria-modal="true" aria-labelledby="forest-world-title">
+  <h2 id="forest-world-title">Forest Grove · Expanded World</h2>
+  <p>${tr('Progres ekspedisi Forest Grove','Forest Grove expedition progress')} · ${rank}/${forestStages.length}</p>
+  ${next?`<p>${tr('Tahap berikutnya','Next stage')} · <strong>${forestStageLabel[next]}</strong></p>`:''}
+  ${gear.length?`<ul class="forest-earned-gear">${gear.map(item=>`<li><b>${item.name}</b> · ${item.benefit[language]}</li>`).join('')}</ul>`:''}
+  <div class="forest-world-modes">${modes.map(mode=>{
+   const ready=canEnterForestWorld(rank,mode), label=mode.toUpperCase();
+   const detail=mode==='hard'
+    ? (ready?tr('Hutan, air terjun, gua dan Gerbang Dalam.','Forest, waterfalls, caves and the Inner Gate.'):tr('Selesaikan ekspedisi Easy sampai Extreme.','Clear the Easy through Extreme expeditions.'))
+    : (ready?tr('Tambahan jalur kanopi dan pulau terapung.','Additional canopy trails and floating islands.'):tr('Selesaikan Expanded World Hard.','Clear Expanded World Hard.'));
+   return `<button type="button" id="forest-world-${mode}" class="secondary" ${ready?'':'disabled'}><b>${label}</b><small>${detail}</small></button>`;
+  }).join('')}</div>
+  ${button(tr('KEMBALI','BACK'),'close-forest-world','quiet')}
+ </section>`;
+ document.body.append(overlay);
+ const controller=new AbortController(), signal=controller.signal;
+ const close=()=>{controller.abort();overlay.remove();el('forest-world-open')?.focus();};
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close();},{signal});
+ window.addEventListener('keydown',e=>{if(e.key==='Escape')close();},{signal});
+ click('close-forest-world',close);
+ el('close-forest-world').focus();
+ for(const mode of modes) {
+  if(!canEnterForestWorld(rank,mode))continue;
+  click('forest-world-'+mode,()=>{close();void playModern(mode,undefined,false,false,'forest',false,mode).catch(showError);});
+ }
+}
 function setup(){
  if(!profile)return home();const theme=areaThemes[selectedArea];
- begin('setup',`<main class="page adventure-select"><section class="adventure-poster"><div id="adventure-preview"></div><div class="poster-copy"><span class="eyebrow">MAZE HUNTER</span><h1>ADVENTURE</h1><p>${theme.hint[lang==='id'?0:1]}</p><span class="poster-chip">${areaName(selectedArea,lang)} · ${areaSize(selectedArea,currentDifficulty)} × ${areaSize(selectedArea,currentDifficulty)}</span></div></section><section class="expedition-picker"><div class="picker-heading"><div><span class="eyebrow">${tr('PILIH PETUALANGANMU','CHOOSE YOUR EXPEDITION')}</span><h2>${tr('Dunia di balik labirin','Worlds beyond the maze')}</h2></div>${button('?','setup-guide','round-tool')}</div><div class="area-options" role="group" aria-label="${tr('Pilihan area','Area selection')}">${adventureAreas.map((area,i)=>`<button id="area-${area}" class="area-option ${selectedArea===area?'selected':''}" aria-pressed="${selectedArea===area}" style="--area-color:#${areaThemes[area].wall.toString(16)};background-image:linear-gradient(#153b4244,#153b42cc),url('${screenArt(area,i)}')"><b>${areaName(area,lang)}</b></button>`).join('')}</div><div class="difficulty">${(['easy','medium','hard','extreme']as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?'selected':''}"><b>${d.toUpperCase()}</b><small>${areaSize(selectedArea,d)} × ${areaSize(selectedArea,d)} · ${{easy:4,medium:4,hard:8,extreme:10}[d]} ${tr('pemain maks.','players max.')}</small></button>`).join('')}</div><div class="picker-objectives"><span><i class="seal-example"></i>${tr('Cari segel','Find seals')}</span><span>♛ ${tr('Hadapi Raja','Face the King')}</span><span>▥ ${tr('Temukan gerbang','Find the gate')}</span></div><div class="setup-actions">${button(tr('MAIN SOLO','PLAY SOLO'),'explore-area')}${button('ONLINE','online-menu','secondary')}${button(tr('LATIHAN KONTROL','PRACTICE CONTROLS'),'practice-area','quiet')}</div></section></main>`);
+ begin('setup',`<main class="page adventure-select"><section class="adventure-poster"><div id="adventure-preview"></div><div class="poster-copy"><span class="eyebrow">MAZE HUNTER</span><h1>ADVENTURE</h1><p>${theme.hint[lang==='id'?0:1]}</p><span class="poster-chip">${areaName(selectedArea,lang)} · ${areaSize(selectedArea,currentDifficulty)} × ${areaSize(selectedArea,currentDifficulty)}</span></div></section><section class="expedition-picker"><div class="picker-heading"><div><span class="eyebrow">${tr('PILIH PETUALANGANMU','CHOOSE YOUR EXPEDITION')}</span><h2>${tr('Dunia di balik labirin','Worlds beyond the maze')}</h2></div>${button('?','setup-guide','round-tool')}</div><div class="area-options" role="group" aria-label="${tr('Pilihan area','Area selection')}">${adventureAreas.map((area,i)=>`<button id="area-${area}" class="area-option ${selectedArea===area?'selected':''}" aria-pressed="${selectedArea===area}" style="--area-color:#${areaThemes[area].wall.toString(16)};background-image:linear-gradient(#153b4244,#153b42cc),url('${screenArt(area,i)}')"><b>${areaName(area,lang)}</b></button>`).join('')}</div><div class="difficulty">${(['easy','medium','hard','extreme']as Difficulty[]).map(d=>`<button id="difficulty-${d}" class="${d===currentDifficulty?'selected':''}"><b>${d.toUpperCase()}</b><small>${areaSize(selectedArea,d)} × ${areaSize(selectedArea,d)} · ${{easy:4,medium:4,hard:8,extreme:10}[d]} ${tr('pemain maks.','players max.')}</small></button>`).join('')}</div><div class="picker-objectives"><span><i class="seal-example"></i>${tr('Cari segel','Find seals')}</span><span>♛ ${tr('Hadapi Raja','Face the King')}</span><span>▥ ${tr('Temukan gerbang','Find the gate')}</span></div><div class="setup-actions" ${selectedArea==='forest'?'data-forest-options':''}>${button(tr('MAIN SOLO','PLAY SOLO'),'explore-area')}${button('ONLINE','online-menu','secondary')}${button(tr('LATIHAN KONTROL','PRACTICE CONTROLS'),'practice-area','quiet')}${selectedArea==='forest'?button('EXPANDED WORLD','forest-world-open','secondary'):''}</div></section></main>`);
  click('setup-guide',adventureHelp);for(const area of adventureAreas)click('area-'+area,()=>{selectedArea=area;setup();});for(const d of['easy','medium','hard','extreme']as Difficulty[])click('difficulty-'+d,()=>{currentDifficulty=d;setup();});
  if(selectedArea==='forest'&&currentDifficulty==='medium'){const chip=root.querySelector('.poster-chip');if(chip)chip.textContent='Forest Grove · SOLO Map 01 · 73 × 73';}
+ if(selectedArea==='forest')click('forest-world-open',showForestWorld);
  click('practice-area',()=>playModern('easy',undefined,false,false,'forest',true));
  click('explore-area',()=>playModern(currentDifficulty,undefined,false,false,selectedArea));void adventurePreview(selectedArea);
  click('online-menu',()=>{
@@ -614,17 +654,22 @@ function setup(){
   click('random-room',()=>run(async()=>{await save(true);const r=await roomAction('random',{profileId:profile!.id,difficulty:currentDifficulty,mode:mode(),area:selectedArea});await enterRoom(r.room,r.playerKey);}));click('private-room',()=>run(()=>createRoom(mode())));click('join-room',()=>run(async()=>{const code=codeInput.value.trim();if(!/^[A-Z2-9]{6}$/.test(code))throw Error(tr('Masukkan kode room 6 karakter.','Enter the six-character room code.'));await joinRoom(code);}));click('close-online',()=>overlay.remove());
  });
 }
-let currentAdventure:{difficulty:Difficulty;map:number;seed:number;sample?:boolean;training?:boolean;area?:AdventureArea}|undefined;
+let currentAdventure:{difficulty:Difficulty;map:number;seed:number;sample?:boolean;training?:boolean;area?:AdventureArea;forestWorld?:ForestWorldDifficulty}|undefined;
 let chatPanel:ChatPanel|undefined;let voiceUI:ReturnType<typeof voicePanel>|undefined;let voiceRoom='';
 function mountChat(room:Room){const b=el<HTMLButtonElement>('room-chat-open');if(!b)return;chatPanel?.destroy();if(voiceRoom!==room.id||!voiceUI){voiceUI?.destroy();voiceRoom=room.id;voiceUI=voicePanel(root,playerKey,()=>Object.fromEntries(Object.entries(activeRoom?.players||{}).map(([k,p])=>[k,p.name])),voiceTransport(room.id,playerKey),()=>getVoiceConfig(room.id,profile!.id),lang);}chatPanel=roomChatPanel(root,b,room,playerKey,lang,async(text,messageId)=>{const r=await roomAction('chat',{profileId:profile!.id,code:room.id,text,messageId});if(activeRoom?.id===room.id)applyRoom(r.room);return r.room;});}
 let onlineMotion:OnlineMotion|undefined;
 let modernTimer: ReturnType<typeof setInterval> | null = null;
-async function playModern(difficulty: Difficulty, room?: Room, reuse=false,forestSample=false,areaChoice:AdventureArea='classic',practice=false) {
+async function playModern(difficulty: Difficulty, room?: Room, reuse=false,forestSample=false,areaChoice:AdventureArea='classic',practice=false,worldChoice?:ForestWorldDifficulty) {
   if (!profile) return;
   const activeArea=room?.area||(reuse?currentAdventure?.area:areaChoice)||'classic';
   const training=!room&&(practice||reuse&&!!currentAdventure?.training);
   const sample=!room&&(forestSample||(reuse&&!!currentAdventure?.sample));
-  currentDifficulty = difficulty;
+  const forestWorld=!room&&!sample&&!training&&activeArea==='forest'
+   ? (reuse?currentAdventure?.forestWorld:worldChoice) : undefined;
+  const soloForest=!room&&!sample&&!training&&activeArea==='forest';
+  const stage=soloForest?forestStage(difficulty,!!forestWorld):undefined;
+  if(forestWorld&&!canEnterForestWorld(forestRank(profile),forestWorld))return setup();
+  if(!forestWorld)currentDifficulty = difficulty;
   if (!navigator.onLine && !lab) {
     toast(
       tr(
@@ -638,7 +683,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     "modern",
     hud(
       room ? `${room.mode.toUpperCase()} · ${room.id}` : training?tr("TAMAN LATIHAN · SOLO","PRACTICE GARDEN · SOLO"):sample?tr("HUTAN RIMBUN · SOLO","FOREST GROVE · SOLO"):areaName(activeArea,lang)+" · SOLO",
-      difficulty.toUpperCase(),
+      forestWorld?forestStageLabel[forestStage(difficulty,true)]:difficulty.toUpperCase(),
       true,
     ),
   );
@@ -654,7 +699,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const { ModernGame } = await import("./game/modern");
   if (token !== generation) return;
   const me = room?.players[playerKey];
-  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea||currentAdventure.training!==training))currentAdventure={difficulty,map:sample||training||activeArea==='forest'&&difficulty==='medium'?0:nextMap(difficulty),seed:sample||training?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,training,area:activeArea};
+  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea||currentAdventure.training!==training||currentAdventure.forestWorld!==forestWorld))currentAdventure={difficulty,map:sample||training||forestWorld||activeArea==='forest'&&difficulty==='medium'?0:nextMap(difficulty),seed:sample||training?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,training,area:activeArea,forestWorld};
   const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
   const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
   let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;const abilityQueue=new ActionQueue(2);
@@ -665,7 +710,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   let adventurePad:ReturnType<typeof mountAdventureActionPad>|undefined;
   let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
   const modern = new ModernGame(el("game-stage"), {
-    training,questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,
+    training,questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,forestWorld:!!forestWorld,forestGear:soloForest?availableForestEquipment(profile).map(item=>item.id):undefined,
     seed: room?.seed ?? currentAdventure!.seed,
     adventureMap:room?room.adventure?.map:currentAdventure!.map,
     color:furColors[readPreferences().fur],
@@ -724,10 +769,17 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     },
     onFinish: (won) => {
       if(token!==generation)return;
-      rememberAdventure();tone(won ? 720 : 120, 0.18, "sine", 0.025);
+      let forestResult='';
+      rememberAdventure(!won);tone(won ? 720 : 120, 0.18, "sine", 0.025);
       if (won && profile&&!sample&&!training) {
         profile.modernWins++;
-        if(modern.adventure)recordRun(uid,{profileId:profile.id,name:profile.name,area:modern.adventure.area,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
+        if(stage){
+          const advanced=recordForestWin(profile,stage), rank=forestRank(profile), next=forestStages[rank];
+          const gear=advanced?forestEarnedEquipment[rank-1]:undefined;
+          if(gear)forestResult=`${tr('Perlengkapan didapat','Equipment earned')} · ${gear.name}. ${gear.benefit[lang==='en'?1:0]}`;
+          else if(next)forestResult=`${tr('Tahap berikutnya','Next stage')} · ${forestStageLabel[next]}`;
+        }
+        if(modern.adventure&&!forestWorld)recordRun(uid,{profileId:profile.id,name:profile.name,area:modern.adventure.area,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
         void save();
       }
       result(
@@ -736,8 +788,18 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
         0,
         modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):modern.adventure?.reason==='escape'?tr('Waktu pelarian habis','Escape time expired'):tr("Waktu habis", "Time is up"),
         () => playModern(difficulty,undefined,true),
-        () => setup(),
+        () => {
+          const next=won&&stage&&profile?forestStages[forestRank(profile)]:undefined;
+          if(next==='easy'||next==='medium'||next==='hard'||next==='extreme')currentDifficulty=next;
+          setup();
+          if(next==='world-hard'||next==='world-extreme')showForestWorld();
+        },
       );
+      if(forestResult){
+        const note=document.createElement('p');
+        note.textContent=forestResult;
+        el('result-next')?.before(note);
+      }
     },
   });
   game = modern;

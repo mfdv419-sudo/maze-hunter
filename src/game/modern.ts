@@ -1,3 +1,4 @@
+import type {ForestEquipment} from './forest-progression';
 import {forestSigil} from './forest-sigil';
 import {pilotGround,pilotWaterDepth,pilotWaterLevelAt} from './forest-pilot';
 import {ForestClimber} from './forest-traversal';
@@ -80,6 +81,8 @@ export interface ModernOptions {
   questTeam?:import('./quest-seals').QuestTeam;
   training?:boolean;
   forestSample?:boolean;
+  forestWorld?:boolean;
+  forestGear?:readonly ForestEquipment[];
   difficulty: Difficulty;
   seed: number;
   entrance: number;
@@ -308,8 +311,16 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    if(options.adventureMap!==undefined){const extremeForest=options.area==='forest'&&options.difficulty==='extreme'&&options.adventureMap===0&&!options.forestSample&&!options.training;this.adventure=new AdventureState(options.difficulty,options.adventureMap,options.seed,!!options.forestSample,options.questTeam,options.area||'classic',!!options.training,!options.online&&extremeForest,extremeForest);}
+    if(options.adventureMap!==undefined){
+      const forest = options.area==='forest'&&!options.forestSample&&!options.training&&!options.online;
+      const world = forest && (options.forestWorld ??
+        (options.difficulty==='extreme'&&options.adventureMap===0));
+      this.adventure = new AdventureState(options.difficulty, options.adventureMap, options.seed,
+        !!options.forestSample, options.questTeam, options.area||'classic', !!options.training,
+        world, world, forest ? options.forestGear : undefined);
+    }
     if(this.adventure?.pilot&&options.divingEquipment){this.adventure.oxygenCapacity=forestRules.diveTankOxygen;this.adventure.oxygen=forestRules.diveTankOxygen;}
+    if(this.adventure?.layout.ring)host.dataset.forestWorld=options.difficulty;
     this.maze = this.adventure ? {...this.adventure.layout.maze,grid:this.adventure.grid} : modernMaze(options.difficulty, options.seed);
     this.position = this.adventure ? {...this.adventure.position} : center(this.maze.entrances[options.entrance % 4]);
     this.renderer = new T.WebGLRenderer({
@@ -727,7 +738,10 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.drawnAngle=turnTowards(this.drawnAngle,this.angle,dt,8);
     this.hero.root.rotation.y = this.drawnAngle;
     const climbingPose=this.adventure?.climber.state.phase==='hanging'||this.adventure?.climber.state.phase==='climbing';
-    const elevation=(this.adventure?.swimming?(this.adventure.pilot?-1.08:-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed));
+    const ringWaterLine=this.adventure?.layout.ring
+      ? pilotWaterLevelAt(this.position.x,this.position.y)
+      : null;
+    const elevation=(this.adventure?.swimming?(ringWaterLine!==null?ringWaterLine-.5:this.adventure.pilot?-1.08:-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+(this.adventure?.climber.elevation||0)+(climbingPose?0:this.jumpAt(this.elapsed));
     const drawnElevation=climbingPose?this.hero.root.position.y+(elevation-this.hero.root.position.y)*(1-Math.exp(-dt*20)):elevation;
     this.hero.root.position.set(this.position.x,drawnElevation,this.position.y);
     if(this.pet){const side=-Math.cos(this.angle)*.7,back=-Math.sin(this.angle)*.9,targetX=this.position.x+side+back,targetZ=this.position.y+Math.sin(this.angle)*.7-Math.cos(this.angle)*.9,waterDepth=this.adventure?.pilot?pilotWaterDepth(targetX,targetZ):0,waterLevel=this.adventure?.pilot?pilotWaterLevelAt(targetX,targetZ):null,ground=this.terrain(targetX,targetZ),petY=(waterDepth>.18&&waterLevel!==null?waterLevel+1.15:ground+1.05)+Math.sin(this.time*3)*.08;this.pet.position.x+=(targetX-this.pet.position.x)*(1-Math.exp(-dt*5));this.pet.position.z+=(targetZ-this.pet.position.z)*(1-Math.exp(-dt*5));this.pet.position.y+=(petY-this.pet.position.y)*(1-Math.exp(-dt*6));this.pet.rotation.y=this.angle+Math.sin(this.time*2)*.12;this.pet.userData.habitat=waterDepth>.18?'hover-over-water':'ground';}if(this.relicWeapons){const form=this.adventure?.relicWeaponForm;for(const [kind,weapon] of Object.entries(this.relicWeapons) as [RelicWeaponForm,T.Group][])weapon.visible=form===kind;}
@@ -788,7 +802,9 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
       const alive=new Set(a.hazards.map(h=>h.id));for(const [id,g]of this.hazardModels)if(!alive.has(id)){this.world.remove(g);g.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();(o.material as T.Material).dispose();}});this.hazardModels.delete(id);}
       for(const h of a.hazards){let g=this.hazardModels.get(h.id);if(!g){if(Math.hypot(h.point.x-this.position.x,h.point.y-this.position.y)<18)sfx('warning');g=new T.Group();const mat=new T.MeshBasicMaterial({color:h.kind==='lightning'?0xa1d7f5:h.kind==='roots'?0x91d599:0xffa77a,transparent:true,opacity:.65,side:T.DoubleSide});const m=new T.Mesh(new T.RingGeometry(h.radius*.83,h.radius,28),mat);m.rotation.x=-Math.PI/2;g.add(m);const fill=new T.Mesh(new T.CircleGeometry(h.radius,28),mat.clone());(fill.material as T.MeshBasicMaterial).opacity=.12;fill.rotation.x=-Math.PI/2;fill.position.y=-.005;g.add(fill);if(h.kind==='charge'||h.kind==='vine'){const length=Math.hypot(h.point.x-h.from.x,h.point.y-h.from.y),line=new T.Mesh(new T.BoxGeometry(h.radius*2,.015,length),mat.clone());line.position.set((h.from.x-h.point.x)/2,.01,(h.from.y-h.point.y)/2);line.rotation.y=Math.atan2(h.point.x-h.from.x,h.point.y-h.from.y);g.add(line);}const impact=h.kind==='rockfall'?new T.Mesh(rockGeometry(h.id),new T.MeshLambertMaterial({color:0xb7825e,vertexColors:true,flatShading:true})):h.kind==='roots'?rootImpact(h.radius):h.kind==='lightning'?new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(0,5,0),new T.Vector3(.22,3,0),new T.Vector3(-.14,2.6,0),new T.Vector3(.12,1.1,0),new T.Vector3(0,0,0)]),8,.045,5,false),new T.MeshBasicMaterial({color:0xe5f5ff})):new T.Mesh(new T.ConeGeometry(.12,1,5),new T.MeshLambertMaterial({color:0x89674d}));impact.name='impact';g.add(impact);this.world.add(g);this.hazardModels.set(h.id,g);}if(h.resolved&&!this.heardHazards.has(h.id)){this.heardHazards.add(h.id);if(Math.hypot(h.point.x-this.position.x,h.point.y-this.position.y)<18)sfx('impact');}const landing=h.kind==='rockfall'?safeRockPoint(h.point,a.grid):h.point;g.position.set(landing.x,rockSurface((x,y)=>this.rockGround(x,y),landing),landing.y);g.visible=this.current.has(`${Math.floor(h.point.x)},${Math.floor(h.point.y)}`)||(a.stage==='boss'&&Math.hypot(h.point.x-this.position.x,h.point.y-this.position.y)<16);const impact=g.getObjectByName('impact')!;impact.visible=h.kind==='rockfall'?!h.resolved&&h.at-a.elapsed<.75:h.resolved;impact.position.y=h.kind==='rockfall'?Math.max(.42+rockSupport(landing,a.fallenRocks,a.propMoves,`fallen-900-${h.id}`,a.layout.ledges),(h.at-a.elapsed)*7):h.kind==='lightning'||h.kind==='roots'?0:h.resolved?.3:3;if(h.kind==='rockfall')impact.rotation.set(this.time*2,h.id,this.time*.5);g.children[0].scale.setScalar(1+Math.sin(this.time*10)*.04);}
       this.items.forEach(item=>{if(a.swimming||a.area==='sea'||a.area==='coast'||a.pilot)item.group.position.y=item.kind==='chest'?this.terrain(item.point.x+.5,item.point.y+.5):Math.max(0,this.terrain(item.point.x+.5,item.point.y+.5))+(item.kind==='star'&&a.expedition?(a.layout.ledges.find(l=>l.point.x===item.point.x&&l.point.y===item.point.y)?.height||0):0);if(a.pilot&&item.kind==='diamond'&&item.index===2)item.group.position.y=this.terrain(item.point.x+.5,item.point.y+.5)+1.55; // Third Diamond is visibly submerged.
-       if(a.pilot&&item.kind==='seal')item.group.position.y=item.index===0?this.terrain(item.point.x+.5,item.point.y+.5)+1.35:this.terrain(item.point.x+.5,item.point.y+.5);if(item.kind!=='chest')item.group.rotation.y=this.time*.7;if(item.kind==='seal'){const crystal=item.group.getObjectByName('seal-crystal') as T.Mesh;crystal.position.y=1.05+Math.sin(this.time*2+item.index)*.12;const mat=crystal.material as T.MeshLambertMaterial;mat.color.set(a.sealUnlocked(item.index)?0x63e8d1:0x819eab);}});
+       if(a.layout.ring&&item.kind==='diamond'&&item.index===2){const level=pilotWaterLevelAt(item.point.x+.5,item.point.y+.5);if(level!==null)item.group.position.y=level-1.7;}
+       if(a.layout.ring&&item.kind==='seal'&&item.index===2){const level=pilotWaterLevelAt(item.point.x+.5,item.point.y+.5);if(level!==null)item.group.position.y=level-1.5;}
+       else if(a.pilot&&item.kind==='seal')item.group.position.y=item.index===0?this.terrain(item.point.x+.5,item.point.y+.5)+1.35:this.terrain(item.point.x+.5,item.point.y+.5);if(item.kind!=='chest')item.group.rotation.y=this.time*.7;if(item.kind==='seal'){const crystal=item.group.getObjectByName('seal-crystal') as T.Mesh;crystal.position.y=1.05+Math.sin(this.time*2+item.index)*.12;const mat=crystal.material as T.MeshLambertMaterial;mat.color.set(a.sealUnlocked(item.index)?0x63e8d1:0x819eab);}});
       this.riverModels.forEach(({mesh})=>mesh.children.forEach((r,i)=>{if(r.name==='water-ripple'){r.position.x=(i-3)*.15+Math.sin(this.time*1.3+i)*.07;}}));
       if(this.options.online){this.feedbackShots=this.feedbackShots.filter(shot=>{if((shot.delay||0)>0){shot.delay=Math.max(0,shot.delay!-dt);if(shot.launchAngle!==undefined)shot.position=projectileOrigin(this.position,shot.launchAngle,shot.mouth);return true;}shot.ttl-=dt;if(shot.ttl<=0)return false;const next={x:shot.position.x+shot.velocity.x*dt,y:shot.position.y+shot.velocity.y*dt};if(!a.shotClear(shot.position,next))return false;const hit=this.guardModels.find((m,i)=>!a.guards[i]?.dead&&sweptHit(shot.position,next,{x:m.position.x,y:m.position.z},shot.style==='flame'?.4:.27));if(hit){this.splats.push({point:{x:hit.position.x,y:hit.position.z},at:this.time,color:shot.style==='flame'?0xffa04c:0xf4d8a8});return false;}shot.position=next;return true;});}
       const renderShots=[...a.projectiles.filter(p=>!this.options.online||p.owner!=='player'||!!p.shooter&&p.shooter!==this.options.selfKey),...this.feedbackShots].filter(p=>!(p.delay&&p.delay>0));
@@ -811,7 +827,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.desiredPitch=clampPitch(this.desiredPitch);
     this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,18);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*18));
 
-    let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?-.68-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
+    let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?(ringWaterLine??-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
     const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const distance=this.previewMode?12:(underwater?Math.max(5.2,this.responsiveCameraDistance-.35):this.responsiveCameraDistance);
     // Only underwater: place the orbit itself below the waterline and permit vertical looking.

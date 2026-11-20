@@ -66,6 +66,7 @@
   border:2px solid var(--ui-gold);border-radius:999px;background:#102c3eee;color:var(--ui-cream);box-shadow:0 5px 14px #06131e40;
   font-size:clamp(10px,1.35vmin,13px);font-weight:600;white-space:nowrap;
 }
+#game[data-screen="modern"] .forest-progress-chip[hidden]{display:none}
 #game[data-screen="modern"] .forest-progress-chip i{font-style:normal;font-size:clamp(12px,1.7vmin,16px);color:#f1c75e}
 #game[data-screen="modern"] .forest-progress-chip[data-progress="mfeer"] i{color:#55d5ff}
 #game[data-screen="modern"] .forest-progress-chip[data-progress="sigil"] i{color:#ce73ff}

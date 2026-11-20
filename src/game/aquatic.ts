@@ -19,7 +19,7 @@ export function aquaticGround(area:AdventureArea,x:number,y:number,layout:Advent
  return Math.sin(x*.07)*.12-Math.max(0,1-d/5.2)*3.6;
 }
 export function aquaticSwimming(area:AdventureArea,p:Point,layout:AdventureLayout){
- if(layout.pilot)return !pilotVoid(p.x,p.y)&&pilotWaterDepth(p.x,p.y)>.72;
+ if(layout.pilot)return !pilotVoid(p.x,p.y,layout.ring?layout.maze.grid:undefined)&&pilotWaterDepth(p.x,p.y)>.72;
  return aquaticArea(area)&&aquaticGround(area,p.x,p.y,layout)<-1.05;
 }
 export function aquaticChestDepth(area:AdventureArea,index:number,p:Point,layout:AdventureLayout){return layout.pilot?Math.max(0,pilotWaterDepth(p.x+.5,p.y+.5)-.5):aquaticArea(area)?Math.max(0,-aquaticGround(area,p.x+.5,p.y+.5,layout)-.6):0;}

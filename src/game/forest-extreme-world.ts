@@ -1,5 +1,5 @@
 import type {Grid,Point} from './maze';
-import {route} from './maze';
+import {distances, route} from './maze';
 import type {ForestRing,RingPassage,RingPortal,RingZone} from './forest-ring';
 import {FOREST_ARENAS,FOREST_LAYERS,FOREST_MASTER_SIZE,arenaPoint,type ForestArenaId} from './forest-world-design';
 import {applyForestSiteCollision,forestExtremeWorldSites,forestNpcWorldPoint,type ForestWorldSite} from './forest-rpg';
@@ -77,15 +77,50 @@ export function forestExtremeRing(mapIndex=0,variation=1):ForestRing{
  const gatePos=(id:ForestArenaId,slot:'A'|'B'|'RETURN')=>{const a=FOREST_ARENAS[id],p=arenaPoint(id),ang=slot==='A'?-2.25:slot==='B'?.62:2.78,dist=(a.radius+3)*.78;return point(p.x+Math.sin(ang)*dist,p.y+Math.cos(ang)*dist);};
  const spawn=(id:ForestArenaId)=>point(arenaPoint(id).x,arenaPoint(id).y+Math.min(7,FOREST_ARENAS[id].radius*.36));
  const portals:RingPortal[]=[];
- for(const id of ids.filter(id=>!['entrance','inner','boss'].includes(id))){const pool=pools[id];if(!pool)continue;for(const slot of ['A','B'] as const){const destination=forced[id]?.[slot]??pick(pool[slot],`ext:${mapIndex}:${variation}:${id}:${slot}`),p=gatePos(id,slot);carve(p,2);portals.push({id:`ext-${id}-${slot}`,arena:id,slot,kind:slot==='A'?'hidden':'mystic',point:p,destination,destinationPoint:spawn(destination),requiresBossReady:destination==='inner'});}const back=gatePos(id,'RETURN');carve(back,2);portals.push({id:`ext-${id}-return`,arena:id,slot:'RETURN',kind:'return',point:back,destination:'entrance',destinationPoint:{x:e.x,y:e.y-4}});}
+ // Portal aprons must reach the arena's connected component, including when
+ // a ring obstacle separates the portal from the closest decorative trail.
+ const openPortal = (id:ForestArenaId, target:Point) => {
+  const reachable = distances(grid, arenaPoint(id));
+  let nearest = arenaPoint(id), best = Infinity;
+  for (const key of reachable.keys()) {
+   const [x,y] = key.split(',').map(Number);
+   const distance = Math.hypot(x-target.x,y-target.y);
+   if (distance < best) {
+    best = distance;
+    nearest = {x,y};
+   }
+  }
+  draw([nearest,target],2);
+ };
+ for (const id of ids) {
+  const pool = pools[id];
+  if (!pool) continue;
+  for (const slot of ['A','B'] as const) {
+   const destination = forced[id]?.[slot] ?? pick(pool[slot], `ext:${mapIndex}:${variation}:${id}:${slot}`);
+   const point = gatePos(id,slot);
+   openPortal(id,point);
+   portals.push({id:`ext-${id}-${slot}`,arena:id,slot,kind:slot==='A'?'hidden':'mystic',point,destination,
+    destinationPoint:spawn(destination),requiresBossReady:destination==='inner'});
+  }
+  const point = gatePos(id,'RETURN');
+  openPortal(id,point);
+  portals.push({id:`ext-${id}-return`,arena:id,slot:'RETURN',kind:'return',point,destination:'entrance',destinationPoint:{x:e.x,y:e.y-4}});
+ }
+ for (const portal of portals) openPortal(portal.destination,portal.destinationPoint);
  const exit={x:e.x+8,y:e.y};carve(exit,2);draw([e,exit],1);
- const rewardPieces=ids.flatMap(id=>{const a=FOREST_ARENAS[id];if(!a.reward)return[];const p=arenaPoint(id);return[{id:a.reward,arena:id,point:{x:p.x+Math.min(8,a.radius-3),y:p.y-2}}];});
+ const rewardPieces=ids.flatMap(id=>{
+  const a=FOREST_ARENAS[id];
+  if(!a.reward)return [];
+  const p=arenaPoint(id),point={x:p.x+Math.min(8,a.radius-3),y:p.y-2};
+  openPortal(id,point);
+  return [{id:a.reward,arena:id,point}];
+ });
  const protectedPoints=[e,exit,...zones.map(z=>z.point),...portals.flatMap(p=>[p.point,p.destinationPoint]),...rewardPieces.map(r=>r.point)];
  const routeRewards=['forest-berry','crystal-shard','ancient-coin','dragon-treat'] as const;
  const pockets:ForestWorldSite[]=deadEnds.slice(0,14).map((p,i)=>({id:`ext-route-pocket-${i}`,arena:zones.filter(z=>!['entrance','inner','boss'].includes(z.id)).sort((a,b)=>Math.hypot(a.point.x-p.x,a.point.y-p.y)-Math.hypot(b.point.x-p.x,b.point.y-p.y))[0]?.id||'waterfall',kind:i%4===0?'activity':'gather',point:{...p},label:i%4===0?['Tantangan Jalur','Trail Challenge']:['Cache Tersembunyi','Hidden Cache'],reward:routeRewards[i%routeRewards.length],xp:12+i}));
  const rawContent=[...forestExtremeWorldSites(ids),...pockets];
  // Solid structures sit beside the maze, not on its centerline. Runtime collision handles their actual footprint.
- const routePoints=passages.flatMap(p=>p.path);
+ const routePoints=trails.flat();
  for(const s of rawContent){if(!s.solid)continue;const original={...s.point},center=arenaPoint(s.arena),clearance=Math.max(s.solid.w,s.solid.d)*.48+1.25;let best:Point|undefined,bestScore=1e9;for(let radius=0;radius<=14;radius++)for(let deg=0;deg<360;deg+=20){const a=deg*Math.PI/180,c={x:Math.round(original.x+Math.sin(a)*radius),y:Math.round(original.y+Math.cos(a)*radius)};if(grid[c.y]?.[c.x]!==0)continue;if(Math.hypot(c.x-center.x,c.y-center.y)>FOREST_ARENAS[s.arena].radius*.82)continue;const dRoute=routePoints.reduce((m,p)=>Math.min(m,Math.hypot(c.x-p.x,c.y-p.y)),1e9);if(dRoute<clearance)continue;const score=Math.hypot(c.x-original.x,c.y-original.y);if(score<bestScore){bestScore=score;best=c;}}if(best)s.point=best;}
  // NPCs must stand on dry, reachable terrain. Relocate authored site anchors before collision is committed.
  for(const s of rawContent){if(!s.npc)continue;const original={...s.point},center=arenaPoint(s.arena);let best:Point|undefined,bestScore=1e9;for(let radius=0;radius<=16;radius++)for(let deg=0;deg<360;deg+=15){const a=deg*Math.PI/180,candidate={x:Math.round(original.x+Math.sin(a)*radius),y:Math.round(original.y+Math.cos(a)*radius)};s.point=candidate;const q=forestNpcWorldPoint(s),gx=Math.round(q.x),gy=Math.round(q.y);if(grid[gy]?.[gx]!==0||pilotWaterDepth(q.x,q.y)>.12||!route(grid,center,{x:gx,y:gy}).length)continue;const score=Math.hypot(candidate.x-original.x,candidate.y-original.y)+Math.hypot(candidate.x-center.x,candidate.y-center.y)*.02;if(score<bestScore){bestScore=score;best=candidate;}}if(!best)throw Error(`No dry reachable NPC site for ${s.id}`);s.point=best;}

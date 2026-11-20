@@ -1,5 +1,5 @@
 import type {AdventureLayout} from './adventure-layout';
-import {route,type Point,type Difficulty} from './maze';
+import {distances,route,type Grid,type Point,type Difficulty} from './maze';
 import {forestRing,FOREST_RING_BUILD} from './forest-ring';
 import {FOREST_ARENAS,FOREST_LAYERS,arenaPoint,layerOfPoint} from './forest-world-design';
 import {waterfallHubHeight,WATERFALL_HUB_BRIDGES,WATERFALL_HUB_RAMPS,WATERFALL_HUB_TERRACES} from './forest-hub';
@@ -12,9 +12,11 @@ export const FOREST_SLICE_BUILD='FG-HUB-REBUILD01-20261104';
 /** Swimming needs enough clearance below the hips and feet, not just wet terrain. */
 export const PILOT_SWIM_BOTTOM=-1.85;
 /** Falls are data-driven in the master world. Surface/chasm gaps use solid navigation/colliders; only empty sky between floating islands is lethal. */
-export function pilotVoid(x:number,z:number){
+export const FLOATING_DECK_HEIGHT=13.4;
+export function pilotVoid(x:number,z:number,grid?:Grid){
  const layer=layerOfPoint({x,y:z});
  if(layer!=='floating')return false;
+ if(grid)return grid[Math.floor(z)]?.[Math.floor(x)]!==0;
  const islands=(['sky-1','sky-2','sky-3'] as const).map(id=>({p:arenaPoint(id),r:FOREST_ARENAS[id].radius+2}));
  return !islands.some(({p,r})=>Math.hypot(x-p.x,z-p.y)<=r);
 }
@@ -46,12 +48,7 @@ export function pilotGround(x:number,y:number){
   const l=FOREST_LAYERS.underground, lx=x-l.origin.x,ly=y-l.origin.y;
   return -4.4+.18*Math.sin(lx*.18)*Math.cos(ly*.15)-.7*hill(27,28,22,22,1)-.45*hill(88,88,24,24,1);
  }
- if(layer==='floating'){
-  const l=FOREST_LAYERS.floating,lx=x-l.origin.x,ly=y-l.origin.y;
-  const islands=[FOREST_ARENAS['sky-1'],FOREST_ARENAS['sky-2'],FOREST_ARENAS['sky-3']];
-  const d=Math.min(...islands.map(a=>Math.hypot(lx-a.local.x,ly-a.local.y)));
-  return d<18?12.5+1.15*Math.cos(Math.min(Math.PI,d/18*Math.PI)):-14;
- }
+ if(layer==='floating') return FLOATING_DECK_HEIGHT;
  const wf=arenaPoint('waterfall'),green=arenaPoint('green'),giant=arenaPoint('giant'),ruins=arenaPoint('ruins'),chasm=arenaPoint('chasm'),boss=arenaPoint('boss');
  const waterD=Math.hypot(x-wf.x,y-wf.y);
  const waterBasin=waterD<20?-(1.25+(20-waterD)/20*3.6):0;
@@ -159,8 +156,29 @@ export function forestPilotLayout(difficulty?:Difficulty,mapIndex=0,variation=1)
 function forestRingPilotLayout(difficulty:Difficulty,mapIndex=0,variation=1):AdventureLayout{
  const ring=forestRing(difficulty,mapIndex,variation),grid=ring.grid.map(row=>[...row]),nearest=(id:string)=>ring.zones.find(z=>z.id===id)?.point||ring.entry;
  const waterfall=nearest('waterfall'),green=nearest('green'),ruins=nearest('ruins'),chasm=nearest('chasm'),giant=nearest('giant');
- const objective=[{x:waterfall.x-4,y:waterfall.y+3},{x:green.x+5,y:green.y-3},{x:ruins.x+4,y:ruins.y+2}];
- const seals=[{x:green.x-5,y:green.y+2},{x:ruins.x-4,y:ruins.y-2},{x:waterfall.x+4,y:waterfall.y-4}];
+ // Choose actual floor cells in each arena for every mandatory pickup and rune.
+ const used = new Set(ring.portals.flatMap(p=>[p.point,p.destinationPoint]).map(p=>`${p.x},${p.y}`));
+ for(const piece of ring.rewardPieces)used.add(`${piece.point.x},${piece.point.y}`);
+ const pickSite = (heart:Point, dx:number, dy:number, submerged=false) => {
+  const reachable=distances(grid,heart),target={x:heart.x+dx,y:heart.y+dy};
+  let nearest:Point|undefined,best=Infinity;
+  for(const key of reachable.keys()){
+   if(used.has(key))continue;
+   const [x,y]=key.split(',').map(Number);
+   if(Math.hypot(x-heart.x,y-heart.y)>12)continue;
+   const depth=pilotWaterDepth(x+.5,y+.5);
+   if(submerged ? depth<2.4 : depth>.12)continue;
+   if(ring.content.some(site=>site.solid && Math.abs(x-site.point.x)<site.solid.w*.41+1 && Math.abs(y-site.point.y)<site.solid.d*.41+1))continue;
+   const distance=Math.hypot(x-target.x,y-target.y);
+   if(distance<best){best=distance;nearest={x,y};}
+  }
+  if(!nearest)throw Error(`No reachable Forest objective near ${target.x},${target.y}`);
+  used.add(`${nearest.x},${nearest.y}`);
+  return nearest;
+ };
+ const objective=[pickSite(green,5,-3),pickSite(ruins,4,2),pickSite(waterfall,-4,3,true)];
+ const seals=[pickSite(green,-5,2),pickSite(ruins,-4,-2),pickSite(waterfall,4,-4,true)];
+ const switches=[pickSite(ruins,-2,0),pickSite(ruins,2,0)];
  const stars=ring.deadEnds.slice(0,9),chests=ring.deadEnds.slice(3,6);
  const areas=ring.zones.map((z,i)=>({point:z.point,zone:i})),zoneCells=grid.map((row,y)=>row.map((_,x)=>areas.reduce((best,a,i)=>Math.hypot(a.point.x-x,a.point.y-y)<Math.hypot(areas[best].point.x-x,areas[best].point.y-y)?i:best,0)));
  const patrols=ring.zones.filter(z=>!['boss','entrance','inner'].includes(z.id)).flatMap(z=>{const p=z.point;let base=z.id==='waterfall'?[[{x:p.x-7,y:p.y+19},{x:p.x+7,y:p.y+19}],[{x:p.x-6,y:p.y-19},{x:p.x+6,y:p.y-19}]]:[[{x:p.x-3,y:p.y},{x:p.x+3,y:p.y}],[{x:p.x,y:p.y-3},{x:p.x,y:p.y+3}]];if(z.id==='ug-xp')base.push([{x:p.x-6,y:p.y-4},{x:p.x+5,y:p.y-4}],[{x:p.x-5,y:p.y+5},{x:p.x+6,y:p.y+4}],[{x:p.x-7,y:p.y},{x:p.x,y:p.y+7}],[{x:p.x,y:p.y-7},{x:p.x+7,y:p.y}]);return base.filter(path=>path.every(q=>grid[q.y]?.[q.x]===0&&pilotWaterDepth(q.x+.5,q.y+.5)<.18));});
@@ -189,7 +207,10 @@ function forestRingPilotLayout(difficulty:Difficulty,mapIndex=0,variation=1):Adv
   // Giant Tree canopy platforms match the rendered disks and can be stood on/climbed to.
   for(let i=0;i<3;i++){const a=i*2.094;ledges.push({id:lid++,point:{x:giant.x+Math.sin(a)*4.5-.5,y:giant.y+Math.cos(a)*4.5-.5},height:4+i*2.7,width:8.8,depth:8.8,kind:'tree'});}
  }
+ // The Wind Sigil rests on a two-step ledge with the same rendered and physical surface.
+ rock(seals[0],0,1,.32,1.5,1);
+ rock(seals[0],0,0,.64,1.5,1);
  const forest={trunks:[] as Point[],pillars:[] as Point[],boulders:[] as Point[],arenaRadius:12,cave:nearest('ug-flooded'),cabin:ruins,highland:green};
- return{ring,index:0,maze:{grid,start:ring.entry,finish:ring.exit,entrances:[ring.entry],seed:20261105+mapIndex*17+variation},pilot:{gates:ring.gates.boss,bridge:ring.gates.bridge,shortcut:ring.gates.shortcut,exit:ring.gates.escape,switches:[{x:ruins.x-2,y:ruins.y},{x:ruins.x+2,y:ruins.y}],pool:waterfall},diamonds:objective,seals,stars,chests,areas,zoneCells,ledges,forest,fortress:ring.center,bosses:[ring.center],patrols,escapeRoutes:[ring.paths.escape],escapeConnector:ring.gates.escape,fastRiver:ring.exit,starts:[ring.entry],solution:ring.paths.toBoss,rivers:[],grass:[],vegetation:[]};
+ return{ring,index:0,maze:{grid,start:ring.entry,finish:ring.exit,entrances:[ring.entry],seed:20261105+mapIndex*17+variation},pilot:{gates:ring.gates.boss,bridge:ring.gates.bridge,shortcut:ring.gates.shortcut,exit:ring.gates.escape,switches,pool:waterfall},diamonds:objective,seals,stars,chests,areas,zoneCells,ledges,forest,fortress:ring.center,bosses:[ring.center],patrols,escapeRoutes:[ring.paths.escape],escapeConnector:ring.gates.escape,fastRiver:ring.exit,starts:[ring.entry],solution:ring.paths.toBoss,rivers:[],grass:[],vegetation:[]};
 }
 export {FOREST_RING_BUILD};

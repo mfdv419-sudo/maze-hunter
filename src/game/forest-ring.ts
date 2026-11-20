@@ -63,7 +63,7 @@ export function forestRing(difficulty:Difficulty,mapIndex=0,variation=1):ForestR
 
  const backbone:Partial<Record<ForestArenaId,Partial<Record<'A'|'B',ForestArenaId>>>>={
   waterfall:{B:'chasm'},green:{B:'ruins'},chasm:{B:'giant'},
-  ...(difficulty==='hard'?{ruins:{A:'ug-relic'},'ug-relic':{A:'ug-cross'},'ug-cross':{A:'ug-xp'},'ug-xp':{A:'ug-flooded'}}:{})
+  ...(difficulty==='hard'?{ruins:{A:'ug-relic',B:'inner'},'ug-relic':{A:'ug-cross'},'ug-cross':{A:'ug-xp'},'ug-xp':{A:'ug-flooded'}}:{})
  };
  const gatePos=(id:ForestArenaId,slot:'A'|'B'|'RETURN')=>{const a=FOREST_ARENAS[id],p=arenaPoint(id),ang=slot==='A'?-2.2:slot==='B'?.55:2.7,dist=a.radius*.72;return point(p.x+Math.sin(ang)*dist,p.y+Math.cos(ang)*dist);};
  const destinationSpawn=(id:ForestArenaId)=>{const p=arenaPoint(id),r=FOREST_ARENAS[id].radius;return point(p.x,p.y+Math.min(5,r*.3));};

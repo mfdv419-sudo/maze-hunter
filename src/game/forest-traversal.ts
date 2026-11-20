@@ -47,7 +47,7 @@ export class ForestClimber extends Climber {
   if(s.phase==='top'&&active&&inside(active,next)){s.elevation=Math.max(0,top(active)-pilotGround(next.x,next.y));return{position:next,reached};}
   if(s.phase==='top'){s.phase='falling';s.elapsed=0;}
   for(const l of ledges){if(overheadTree(l))continue;const h=top(l),tree=l.kind==='tree'||l.kind==='palm';if(feet+jump>=h-.03)continue;
-   const c={x:l.point.x+.5,y:l.point.y+.5},rX=(l.width||1)/2+.16,rY=(l.depth||1)/2+.16,near=inside(l,next,.3),toward=input.x*(c.x-previous.x)+input.y*(c.y-previous.y)>0;
+   const c={x:l.point.x+.5,y:l.point.y+.5},rX=(l.width||1)/2+.16,rY=(l.depth||1)/2+.16,near=inside(l,next,.3+this.reachBonus),toward=input.x*(c.x-previous.x)+input.y*(c.y-previous.y)>0;
    if(near&&toward&&s.cooldown===0&&jump>.12&&(tree?feet>=(l.id>=800000&&l.id<880000?pilotWallHeight(c.x,c.y):pilotGround(c.x,c.y))-.2:feet+jump>=h-1.3)){const side=Math.abs(previous.x-c.x)>Math.abs(previous.y-c.y);s.phase='hanging';s.ledge=l.id;s.elapsed=0;s.anchor={x:Math.max(c.x-(l.width||1)/2+.1,Math.min(c.x+(l.width||1)/2-.1,next.x)),y:Math.max(c.y-(l.depth||1)/2+.1,Math.min(c.y+(l.depth||1)/2-.1,next.y))};s.edge=side?{x:c.x+Math.sign(previous.x-c.x||1)*rX,y:next.y}:{x:next.x,y:c.y+Math.sign(previous.y-c.y||1)*rY};s.fromHeight=tree?feet+.18:Math.max(feet,h-1.1);s.elevation=Math.max(0,s.fromHeight-pilotGround(s.edge.x,s.edge.y));return{position:{...s.edge},reached};}
    if(inside(l,next,.14)){if(Math.abs(previous.x-c.x)>=(l.width||1)/2+.12)next={x:previous.x,y:next.y};else next={x:next.x,y:previous.y};}
   }

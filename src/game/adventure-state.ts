@@ -1,3 +1,4 @@
+import type {ForestEquipment} from './forest-progression';
 import {ForestClimber,cliffSurfaces,traversalGrid} from './forest-traversal';
 import {forestRules} from './forest-rules';
 import {forestPilotLayout,pilotVoid,pilotGround,pilotWaterDepth} from './forest-pilot';
@@ -68,11 +69,14 @@ export class AdventureState {
  invulnerableUntil=0;slowUntil=0;stunUntil=0;hits=0;lastHit=-100;lastThrow=-100;lastJump=-100;resetFogRevision=0;respawns=0;revision=0;message='';messageAt=-10;
  effectEvents:{id:number;source:'guard'|'boss'|'river'|'cake'|'environment'|'fall';point:Point;cake?:CakeKind}[]=[];effectId=0;
  phase:'playing'|'won'|'lost'='playing';reason:'time'|'lives'|'escape'|null=null;
- constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic',readonly training=false,pilot=false,ring=false) {
+ constructor(readonly difficulty:Difficulty,readonly mapIndex:number,readonly variation=1,readonly sample=false,team?:QuestTeam,readonly area:AdventureArea='classic',readonly training=false,pilot=false,ring=false,private readonly forestGear:readonly ForestEquipment[]=[]) {
   this.teamSize=team?.shared?Math.max(1,team.slots.length):1;
   this.layout=pilot?forestPilotLayout(ring?difficulty:undefined,mapIndex,variation):training?trainingLayout():sample?forestLayout():area==='classic'?adventureLayout(difficulty,mapIndex,variation):biomeLayout(area,difficulty,mapIndex,variation);const encounters=this.expedition&&!training&&!pilot?sealEncounters(this.layout):[];if(team)this.layout.seals=teamSealSites(this.layout,team,this.area);this.grid=this.layout.maze.grid.map(r=>[...r]);
   this.obstacles=this.expedition&&!training&&!pilot?fieldObstacles(this.layout,this.area):[];
-  if(pilot)this.climber=new ForestClimber();this.position=center(this.layout.maze.start);this.checkpoint={...this.position};
+  const reach=this.forestGear.includes('rope')?.25:0;
+  if(pilot)this.climber=new ForestClimber(reach);
+  else if(reach)this.climber=new Climber(reach);
+  if(this.layout.ring&&this.forestGear.includes('pack'))this.oxygen=this.oxygenCapacity=36;this.position=center(this.layout.maze.start);this.checkpoint={...this.position};
   this.guards=[...this.layout.patrols.map((p,i)=>({patrol:p,boss:false,elite:i>=adventureRules[difficulty].guards})),...this.layout.bosses.map(p=>({patrol:[p],boss:true,elite:false}))].map(({patrol,boss,elite})=>this.makeGuard(patrol,boss,elite));
   if(this.expedition&&!training&&!pilot){const keepers=encounters.map(e=>({...this.makeGuard(e.patrol,false,e.size==='large'),quest:e.quest,size:e.size,hp:this.difficulty==='easy'?2:e.size==='large'?5:2}));this.guards=[...keepers,...this.guards.slice(3)];if(this.area==='sea')this.guards.filter(g=>g.boss).forEach(g=>g.depth=.8);}
  }
@@ -112,6 +116,7 @@ export class AdventureState {
  sealUnlocked(index:number){if(this.pilot){
   if(index===0){const site=this.layout.seals[0],siteAltitude=pilotGround(site.x+.5,site.y+.5);const playerAltitude=pilotGround(this.position.x,this.position.y)+this.climber.elevation;
    // The real world-space elevation unlocks this rune after reaching the platform.
+   if(this.layout.ring)return playerAltitude>=siteAltitude+.55;
    return playerAltitude>=siteAltitude+.55||this.climbed.has(800)||this.climber.state.ledge===800;}
   if(index===1)return this.pilotSwitches.length>=2;
   return this.diving&&this.depth>.75;
@@ -122,7 +127,7 @@ export class AdventureState {
  get bossRefilling(){return this.phase==='playing'&&this.stage!=='escape'&&this.bossReady&&this.guards.some(g=>g.boss&&!g.dead)&&Math.hypot(this.position.x-(this.layout.fortress.x+.5),this.position.y-(this.layout.fortress.y+.5))<this.arenaRadius;}
  get gateOpen(){return this.sigilReady&&this.bossCleared;}
  get remaining(){return this.stage==='escape'?Math.max(0,this.escapeDuration-(this.elapsed-this.escapeAt)):Math.max(0,this.limit-this.elapsed);}
- get speedFactor(){return this.elapsed<this.stunUntil?0:(this.elapsed<this.slowUntil?.55:1)*(this.elapsed<this.buffUntil?1.3:1)*(1+this.adventureXPBoost)*(this.carried?.78:1)*(this.area==='gorge'&&gorgeRiver(this.position.x,this.position.y,this.layout).wet>.55?.72:1)*(this.sample&&inCave(this.position.x,this.position.y)&&forestElevation(this.position.x,this.position.y)<-.15?.68:1);}
+ get speedFactor(){return this.elapsed<this.stunUntil?0:(this.elapsed<this.slowUntil?.55:1)*(this.elapsed<this.buffUntil?1.3:1)*(1+this.adventureXPBoost)*(this.forestGear.includes('boots')&&!this.swimming?1.08:1)*(this.carried?.78:1)*(this.area==='gorge'&&gorgeRiver(this.position.x,this.position.y,this.layout).wet>.55?.72:1)*(this.sample&&inCave(this.position.x,this.position.y)&&forestElevation(this.position.x,this.position.y)<-.15?.68:1);}
  get interaction(){if(this.layout.vegetation.some((p,i)=>p.kind!=='normal'&&!this.harvested.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<.6))return'harvest';if(this.layout.grass.some(p=>!this.broken.has(`${p.x},${p.y}`)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<1.35))return'cut';if(this.layout.vegetation.some((p,i)=>p.kind!=='normal'&&!this.harvested.has(i)&&Math.hypot(p.x+.5-this.position.x,p.y+.5-this.position.y)<1.1))return'harvest';return'cake';}
  notify(message:string){this.message=message;this.messageAt=this.elapsed;}
  startEscape(){if(this.stage==='escape')return;this.stage='escape';for(const p of this.layout.escapeConnector){this.grid[p.y][p.x]=0;this.broken.add(`${p.x},${p.y}`);}this.escapeAt=this.elapsed;const safe=this.layout.escapeRoutes[0].length;this.escapeDuration=Math.max(45,Math.min(90,Math.ceil(safe/1.5+22)));this.nextEscapeHazard=this.elapsed+4;this.hazards=[];this.projectiles=[];this.notify('escape');this.revision++;}
@@ -169,7 +174,7 @@ export class AdventureState {
   else if(!g.boss){if(g.hits%3===2)g.stunUntil=Math.max(g.stunUntil,this.elapsed+1);else g.slowUntil=Math.max(g.slowUntil,this.elapsed+3);}
  }
 
- private updateRingPortals(){const ring=this.layout.ring;if(!ring||this.elapsed<this.gateCooldown)return;for(const gate of ring.portals){if(gate.requiresBossReady&&!this.bossReady)continue;const distance=Math.hypot(this.position.x-gate.point.x-.5,this.position.y-gate.point.y-.5);if(gate.kind==='hidden'&&this.petBond>=20&&distance<3.2&&this.elapsed-this.messageAt>3)this.notify('pet-gate');if(distance>.7)continue;this.position={x:gate.destinationPoint.x+.5,y:gate.destinationPoint.y+.5};this.checkpoint={...this.position};this.gateCooldown=this.elapsed+1.25;this.petBond=Math.min(100,this.petBond+.5);this.notify(gate.kind==='hidden'?'secret-gate':'portal');this.revision++;break;}}
+ private updateRingPortals(){const ring=this.layout.ring;if(!ring||this.elapsed<this.gateCooldown)return;for(const gate of ring.portals){if(gate.requiresBossReady&&!this.bossReady)continue;const distance=Math.hypot(this.position.x-gate.point.x-.5,this.position.y-gate.point.y-.5);if(gate.kind==='hidden'&&this.petBond>=20&&distance<3.2&&this.elapsed-this.messageAt>3)this.notify('pet-gate');if(distance>.7)continue;this.position={x:gate.destinationPoint.x+.5,y:gate.destinationPoint.y+.5};this.checkpoint={...this.position};this.climber.reset();this.depth=0;this.diving=false;this.gateCooldown=this.elapsed+1.25;this.petBond=Math.min(100,this.petBond+.5);this.notify(gate.kind==='hidden'?'secret-gate':'portal');this.revision++;break;}}
  private collectRingRewards(){const ring=this.layout.ring;if(!ring)return;for(const piece of ring.rewardPieces){if(this.relics.has(piece.id))continue;if(Math.hypot(this.position.x-piece.point.x-.5,this.position.y-piece.point.y-.5)<.65){this.relics.add(piece.id);this.petBond=Math.min(100,this.petBond+5);this.coins+=8;this.notify('relic');this.revision++;}}}
  private spawnSapling(p:Point){if(this.guards.filter(g=>!g.dead&&!g.boss).length>=48||this.guards.length>=64)return;const target={x:Math.floor(this.position.x),y:Math.floor(this.position.y)},path=route(this.grid,p,target);if(path.length){const g=this.makeGuard(path);g.sapling=true;this.guards.push(g);}}
  private warn(kind:Hazard['kind'],point:Point,radius:number,delay=1.5,from=point){this.hazards.push({id:++this.hazardId,kind,point:{...point},from:{...from},radius,at:this.elapsed+delay,end:this.elapsed+delay+.55,resolved:false});}
@@ -231,9 +236,10 @@ export class AdventureState {
    if(steepHubSidewall(next.x,next.y,travel,rise,jump)){next.x=previous.x;next.y=previous.y;}
   }
   if(this.pilot&&!this.layout.ring&&this.depth<.7&&Math.abs(next.x-61.5)<1.95&&Math.abs(next.y-37.5)<.65){next.x=previous.x;next.y=previous.y;}
-  const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,dt,this.physicalLedges);this.position=climbing.position;if(this.pilot&&pilotVoid(this.position.x,this.position.y)){
+  const climbTime=this.forestGear.includes('gloves')&&this.climber.state.phase==='climbing'?dt*1.2:dt;
+  const climbing=this.climber.step(previous,next,{x:dx,y:dy},jump,climbTime,this.physicalLedges);this.position=climbing.position;if(this.pilot&&pilotVoid(this.position.x,this.position.y,this.layout.ring?this.grid:undefined)){
    const safeBridge=this.physicalLedges.some(l=>l.id===828&&Math.abs(this.position.x-l.point.x-.5)<(l.width||1)/2-.07&&Math.abs(this.position.y-l.point.y-.5)<(l.depth||1)/2-.07&&this.climber.state.ledge===l.id&&this.climber.state.phase==='top');
-   if(!safeBridge&&pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3){this.damage('fall');return;}
+   if(!safeBridge&&(this.layout.ring||pilotGround(this.position.x,this.position.y)+this.climber.elevation+jump<-3)){this.damage('fall');return;}
   }
   if(this.expedition&&this.climber.elevation<.5&&!['hanging','climbing'].includes(this.climber.state.phase))for(const obstacle of [...this.layout.forest!.trunks.map(p=>({...p,r:.34})),...this.layout.forest!.pillars.map(p=>({...p,r:.38})),...this.layout.forest!.boulders.map(p=>({...p,r:1.35}))]){if(this.layout.ledges.some(l=>l.point.x===obstacle.x&&l.point.y===obstacle.y&&this.propMoves[String(l.id)]))continue;const x=this.position.x-obstacle.x-.5,y=this.position.y-obstacle.y-.5,d=Math.hypot(x,y);if(d<obstacle.r+(this.pilot?.16:0)){const k=(obstacle.r+(this.pilot?.16:0))/Math.max(.001,d);this.position={x:obstacle.x+.5+(d?x:.001)*k,y:obstacle.y+.5+y*k};}}
   if(this.layout.ring&&this.climber.elevation<1.1&&!['hanging','climbing'].includes(this.climber.state.phase))for(const site of this.layout.ring.content){if(!site.npc)continue;const p=forestNpcWorldPoint(site),x=this.position.x-p.x,y=this.position.y-p.y,d=Math.hypot(x,y),r=.62+(this.pilot?.16:0);if(d<r){const k=r/Math.max(.001,d);this.position={x:p.x+(d?x:.001)*k,y:p.y+(d?y:.001)*k};}}
@@ -243,7 +249,7 @@ export class AdventureState {
   if(!predictOnly&&!this.visitedZones.has(this.zone)){this.visitedZones.add(this.zone);this.coins+=3;this.revision++;}
   jump=Math.max(jump,this.climber.elevation);
   if(!predictOnly&&jump<.08&&this.layout.rivers.some(p=>Math.floor(this.position.x)===p.x&&Math.floor(this.position.y)===p.y))this.damage('river');
-  if(!this.swimming){this.depth=0;this.diving=false;}else{const max=Math.max(0,-aquaticGround(this.area,this.position.x,this.position.y,this.layout)-(this.pilot?1.8:.72)),target=this.diving?Math.min(2.6,max):this.pilot&&Math.abs(this.position.x-61.5)<1.95&&Math.abs(this.position.y-37.5)<.65?Math.min(.8,max):0;this.depth+=Math.max(-dt*1.8,Math.min(dt*1.8,target-this.depth));}
+  if(!this.swimming){this.depth=0;this.diving=false;}else{const ground=aquaticGround(this.area,this.position.x,this.position.y,this.layout);const max=this.layout.ring?Math.max(0,pilotWaterDepth(this.position.x,this.position.y)-.85):Math.max(0,-ground-(this.pilot?1.8:.72)),target=this.diving?Math.min(2.6,max):this.pilot&&Math.abs(this.position.x-61.5)<1.95&&Math.abs(this.position.y-37.5)<.65?Math.min(.8,max):0;this.depth+=Math.max(-dt*1.8,Math.min(dt*1.8,target-this.depth));}
   if(this.pilot&&!predictOnly){if(this.depth>.4){this.oxygen=Math.max(0,this.oxygen-Math.max(0,raw));if(this.oxygen===0){this.damage('river');this.notify('oxygen-empty');}}else this.oxygen=Math.min(this.oxygenCapacity,this.oxygen+dt*forestRules.oxygenRecovery);}
   if(predictOnly){this.projectiles=this.projectiles.filter(c=>{if((c.delay||0)>0){c.delay=Math.max(0,c.delay!-dt);return true;}c.ttl-=dt;const next={x:c.position.x+c.velocity.x*dt,y:c.position.y+c.velocity.y*dt};if(c.ttl<=0||!clearSegment(this.grid,c.position,next,.04))return false;c.position=next;return true;});return;}
   settleRocks(this.fallenRocks,this.obstacles,this.elapsed,this.difficulty==='easy',this.grid,this.propMoves,this.layout.ledges,this.rockProtectedPoints);
