@@ -9,6 +9,8 @@ function offlineRetro(): Plugin {
         "/manifest.webmanifest",
         "/icon.svg",
         "/fonts/fredoka-latin.woff",
+        "/fonts/young-serif-latin.woff2",
+        "/adventure/forest-panorama.webp",
         ...Object.keys(bundle).map((n) => "/" + n),
       ];
       const version = Object.keys(bundle).join("|");

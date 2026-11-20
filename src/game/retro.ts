@@ -5,6 +5,8 @@ import { RetroState } from "./retro-state";
 export interface RetroOptions {
   level: number;
   language?:'id'|'en';
+  onReady?: () => void;
+  onLoadError?: (error: unknown) => void;
   onTick: (state: RetroState) => void;
   onFinish: (state: RetroState) => void;
 }
@@ -36,6 +38,15 @@ export class RetroGame {
         super("RetroTrace");
       }
       create() {
+        try {
+          this.initializeBoard();
+          if (options.onReady) this.game.events.once(Phaser.Core.Events.POST_RENDER, options.onReady);
+        } catch (error) {
+          if (!options.onLoadError) throw error;
+          queueMicrotask(() => options.onLoadError?.(error));
+        }
+      }
+      private initializeBoard() {
         owner.scene = this;
         state.start();
         this.lastTick=performance.now();

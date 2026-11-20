@@ -1,4 +1,4 @@
-import {expandedDifficulties,expeditionDifficulties,expeditionPicker} from './ui/adventure-picker';
+import {adventureBackdrop,expandedDifficulties,expeditionDifficulties,expeditionPicker} from './ui/adventure-picker';
 import {forestIcon} from './ui/forest-icons';
 import {mountForestHud} from './ui/forest-hud';
 import {mountAdventureActionPad} from './ui/adventure-action-pad';
@@ -26,6 +26,7 @@ import {adventureAreas,areaThemes,areaName,areaSize,type AdventureArea} from './
 import {expeditionQuests} from './game/expedition-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
+import {dismissArenaLoading,startArenaLoading} from './ui/arena-loading';
 import {appearanceOf,permittedAppearance,owns,redeem,ensureWallet,starBalance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
 import {primaryObjective,areaInformation,nearbyInformation} from './game/navigation';
 import {forestRank,recordExpedition,recordForestWin} from './services/local';
@@ -180,7 +181,10 @@ function header() {
 }
 function rememberAdventure(persist=true){const state=(game as ModernGame|null)?.adventure;if(!state||!profile||state.sample||state.training||currentAdventure?.forestWorld&&!activeRoom)return;recordExpedition(profile,state.area==='classic'?`${state.difficulty}-${state.mapIndex}`:`${state.area}-${state.difficulty}-${state.mapIndex}`,{coins:state.coins,stars:state.stars.size,chests:state.chests.size,zones:[...state.visitedZones]});if(persist)void save();}
 function begin(name: string, html: string) {
-  mazeTransition(root,root.dataset.screen||'',name);rememberAdventure();
+  dismissArenaLoading();
+  if (name === 'modern' || name === 'retro') document.getElementById('maze-transition')?.remove();
+  else mazeTransition(root,root.dataset.screen||'',name);
+  rememberAdventure();
   generation++;chatPanel?.destroy();chatPanel=undefined;
   setAudioScene(name);
   cleanup();
@@ -504,17 +508,28 @@ function pauseOverlay(online = false) {
 }
 async function playRetro(level: number,selected?:BonusChoice) {
   if (!profile || level > unlocked(profile)) return;
+  const origin = generation;
   const playerProfile=profile,api=(body:Record<string,unknown>)=>retroQuizRequest(playerProfile.id,body);
   let bonus=selected||await chooseRetroBonus(level,lab?async()=>({available:false,subjects:[]}):api,lang==='en');if(!bonus)return;
   if(bonus.subject!=='OFF'){try{bonus=await startBonus(api,bonus,playerProfile.id,level);}catch(e){showError(e);return;}}
+  if (origin !== generation || profile?.id !== playerProfile.id) return;
   const choice=bonus;let finishHandled=false;
+  const title = `RETRO · ${tr("LEVEL", "LEVEL")} ${level}`;
+  const region = regions[Math.floor((level - 1) / 10)][lang === "id" ? 0 : 1];
   begin(
     "retro",
     hud(
-      `RETRO · ${tr("LEVEL", "LEVEL")} ${level}`,
-      regions[Math.floor((level - 1) / 10)][lang === "id" ? 0 : 1],
+      title,
+      region,
     ),
   );
+  const token = generation;
+  const loading = startArenaLoading(root, {title: region, mode: title, artwork: levelArt(level), english: lang === 'en'});
+  const loadError = (error: unknown) => {
+    if (token !== generation) return;
+    journey();
+    showError(error);
+  };
   const zoom = document.createElement("div");
   zoom.className = "zoom-controls";
   zoom.innerHTML =
@@ -535,7 +550,6 @@ async function playRetro(level: number,selected?:BonusChoice) {
   click("zoom-out", () => {
     (game as RetroGame)?.zoom(-0.5);
   });
-  const token = generation;
   el("play-hint").textContent = tr(
     "Bantu binturong mencari buah · jalan buntu: kembali ke Start, −1 nyawa",
     "Help the binturong find figs · dead end: back to Start, −1 life",
@@ -543,45 +557,54 @@ async function playRetro(level: number,selected?:BonusChoice) {
   click("item-guide",fieldGuide);
   click("pause-game", () => pauseOverlay());
   click("exit-game", () => pauseOverlay());
-  const { RetroGame } = await import("./game/retro");
-  if (token !== generation) return;
-  game = new RetroGame(el("game-stage"), {
-    level,language:lang,
-    onTick: (s) => {
-      el("hud-stats").innerHTML =
-        `<span class="lives">${"♥".repeat(s.lives)}${"♡".repeat(3 - s.lives)}</span><span>${s.boards.length>1?`${tr("PETA","MAP")} ${s.pageIndex+1}/${s.boards.length} · `:""}${Math.ceil(s.config.seconds - s.elapsed)}s</span>`;
-      const subtitle=el("play-hint");subtitle.textContent=s.finalPage?tr("Cari buah · jalan buntu: kembali ke Start level, −1 nyawa","Find figs · dead end: back to the level Start, −1 life"):tr("Cari gerbang ke peta berikutnya · jalan buntu: kembali ke peta 1, −1 nyawa","Find the gate to the next map · dead end: back to map 1, −1 life");
-    },
-    onFinish: async (s) => {
-      if(finishHandled||token!==generation)return;finishHandled=true;
-      const won = s.phase === "won";
-      tone(won ? 720 : 120, 0.18, "sine", 0.025);
-      if (won && profile) {
-        recordLevel(profile, level, {
-          seconds: s.elapsed,
-          stars: s.rating,
-          errors: s.errors,
-        });
-        void save();
-      }
-      if(won&&choice.subject!=='OFF'){await finishBonus(api,choice,playerProfile.id,{path:s.completionPath.map(p=>({x:Math.round(p.x*10000)/10000,y:Math.round(p.y*10000)/10000})),seconds:s.elapsed,errors:s.errors,remaining:Math.max(0,s.config.seconds-s.elapsed)},lang==='en',progress=>{playerProfile.knowledge=progress;if(profile?.id===playerProfile.id)profile.knowledge=progress;cache();});if(token!==generation)return;}
-      result(
-        won,
-        s.elapsed,
-        s.rating,
-        s.reason === "time"
-          ? tr("Waktu habis", "Time is up")
-          : tr("Nyawa habis", "No lives left"),
-        () => playRetro(level,{subject:choice.subject}),
-        won && level < 100
-          ? async () => {
-              await betweenLevels(level, adFree || lab);
-              await playRetro(level + 1);
-            }
-          : () => journey(),
-      );
-    },
-  });
+  try {
+    const { RetroGame } = await import("./game/retro");
+    if (token !== generation) return;
+    await loading.prepare(false);
+    if (token !== generation) return;
+    game = new RetroGame(el("game-stage"), {
+      level,language:lang,
+      onReady: () => loading.finish(),
+      onLoadError: loadError,
+      onTick: (s) => {
+        el("hud-stats").innerHTML =
+          `<span class="lives">${"♥".repeat(s.lives)}${"♡".repeat(3 - s.lives)}</span><span>${s.boards.length>1?`${tr("PETA","MAP")} ${s.pageIndex+1}/${s.boards.length} · `:""}${Math.ceil(s.config.seconds - s.elapsed)}s</span>`;
+        const subtitle=el("play-hint");subtitle.textContent=s.finalPage?tr("Cari buah · jalan buntu: kembali ke Start level, −1 nyawa","Find figs · dead end: back to the level Start, −1 life"):tr("Cari gerbang ke peta berikutnya · jalan buntu: kembali ke peta 1, −1 nyawa","Find the gate to the next map · dead end: back to map 1, −1 life");
+      },
+      onFinish: async (s) => {
+        if(finishHandled||token!==generation)return;finishHandled=true;
+        const won = s.phase === "won";
+        tone(won ? 720 : 120, 0.18, "sine", 0.025);
+        if (won && profile) {
+          recordLevel(profile, level, {
+            seconds: s.elapsed,
+            stars: s.rating,
+            errors: s.errors,
+          });
+          void save();
+        }
+        if(won&&choice.subject!=='OFF'){await finishBonus(api,choice,playerProfile.id,{path:s.completionPath.map(p=>({x:Math.round(p.x*10000)/10000,y:Math.round(p.y*10000)/10000})),seconds:s.elapsed,errors:s.errors,remaining:Math.max(0,s.config.seconds-s.elapsed)},lang==='en',progress=>{playerProfile.knowledge=progress;if(profile?.id===playerProfile.id)profile.knowledge=progress;cache();});if(token!==generation)return;}
+        result(
+          won,
+          s.elapsed,
+          s.rating,
+          s.reason === "time"
+            ? tr("Waktu habis", "Time is up")
+            : tr("Nyawa habis", "No lives left"),
+          () => playRetro(level,{subject:choice.subject}),
+          won && level < 100
+            ? async () => {
+                await betweenLevels(level, adFree || lab);
+                await playRetro(level + 1);
+              }
+            : () => journey(),
+        );
+      },
+    });
+    loading.rendering();
+  } catch (error) {
+    loadError(error);
+  }
 }
 function result(
   won: boolean,
@@ -692,6 +715,18 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   );
   if(room)el('game-stage').parentElement!.classList.add('adventure-online');
   const token = generation;
+  const loading = startArenaLoading(root, {
+    title: training ? tr('Taman Latihan', 'Practice Garden') : areaName(activeArea, lang),
+    mode: forestWorld ? forestStageLabel[forestStage(difficulty, true)] : `Adventure · ${difficulty}`,
+    artwork: adventureBackdrop(activeArea, forestWorld), english: lang === 'en',
+    waterfall: activeArea === 'forest' && !forestWorld,
+  });
+  const loadError = (error: unknown) => {
+    if (token !== generation) return;
+    if (room) lobby();
+    else setup();
+    showError(error);
+  };
   el("play-hint").textContent = tr(
     "Joystick: arah layar · Geser kanan: kamera · A lompat 2× / panjat · B interaksi · ↕ sudut kamera",
     "Joystick: screen direction · Right drag: camera · A double jump / climb · B interact · ↕ camera angle",
@@ -699,186 +734,195 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   click("item-guide",fieldGuide);
   click("pause-game", () => pauseOverlay(!!room));
   click("exit-game", () => (room ? confirmLeave() : pauseOverlay()));
-  const { ModernGame } = await import("./game/modern");
-  if (token !== generation) return;
-  const me = room?.players[playerKey];
-  if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea||currentAdventure.training!==training||currentAdventure.forestWorld!==forestWorld))currentAdventure={difficulty,map:sample||training||forestWorld||activeArea==='forest'&&difficulty==='medium'?0:nextMap(difficulty),seed:sample||training?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,training,area:activeArea,forestWorld};
-  const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
-  const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
-  let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;const abilityQueue=new ActionQueue(2);
-  const shownLoot=new Set<number>();
-  const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
-  journal.onclick=()=>{if(training){toast(tr('Latihan bebas: geser kanan untuk kamera, A untuk lompat/meraih/panjat. Batu bercincin emas mempertinggi lompatan.','Free practice: right drag looks, A jumps/grabs/climbs. The gold-ring stone boosts your jump.'));return;}const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
-  let forestHud:ReturnType<typeof mountForestHud>|undefined;
-  let adventurePad:ReturnType<typeof mountAdventureActionPad>|undefined;
-  let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
-  const modern = new ModernGame(el("game-stage"), {
-    training,questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,forestWorld:!!forestWorld,forestGear:soloForest?availableForestEquipment(profile).map(item=>item.id):undefined,
-    seed: room?.seed ?? currentAdventure!.seed,
-    adventureMap:room?room.adventure?.map:currentAdventure!.map,
-    color:furColors[readPreferences().fur],
-    appearance:appearanceOf(profile,readPreferences().fur),
-    divingEquipment:!!profile&&['body','back','face'].every(slot=>permittedAppearance(profile!)[slot as Slot]==='diver'),
-    entrance: me?.slot ?? Math.floor(Math.random() * 4),
-    outfit: profile.outfit,
-    online: !!room,selfKey:room?playerKey:undefined,
-    onActionChange: (kind, active) => {
-      const b = el(kind === "jump" ? "jump-action" : "hit-action");
-      b?.classList.toggle("active", active);
-      b?.setAttribute("aria-pressed", String(active));
-    },
-    onFeedback: (count) => {
-      if (count) toast(tr("Semak terbuka!", "Shrub cleared!"));
-    },
-    onAction: room
-      ? async (kind) => {
-          return sendAbility(kind);
-        }
-      : undefined,
-    onAdventure:(state)=>{
-      if(token!==generation||screen!=='modern')return;
-      adventurePad?.update(state);
-      forestHud?.update(state);
-      if(state.training){el('hud-stats').textContent='∞';objectives.textContent=tr('LATIHAN · Tanpa batas waktu atau hadiah','PRACTICE · No timer or rewards');el('play-hint').textContent=tr('Coba kamera, lompat, batu pelontar dan panjat · Keluar untuk memilih maze','Try the camera, jumps, spring stone and climbing · Exit to choose a maze');return;}
-      el<HTMLButtonElement>('hit-action').disabled=modern.pendingActions>=2||(!state.carried&&modern.equippedWeapon!=='cake'&&state.supplies[modern.equippedWeapon]<=0);
-      const bossName=areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1];
-      if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
-       const loot=state.lastLoot;shownLoot.add(loot.id);showLootFeed(root,loot,lang);
-      }
-      el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
-      const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
-      if(state.expedition){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1]} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='rockfall'?tr('RUNTUHAN BATU','FALLING ROCKS'):warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:state.bossVulnerable?tr('PELIN­DUNG PADAM · SERANG!','SHIELD DOWN · ATTACK!'):tr('PELIN­DUNG AKTIF · HINDARI','SHIELD ACTIVE · DODGE')}</small>`;}}
-      tracker.textContent=(room?.mode==='coop'?`${tr('TIM','TEAM')} ◆ ${state.seals.size}/${state.sealGoal} · ${tr('Kontribusimu','Your contribution')} ${room.adventure?.contributions?.[playerKey]?.length||0} · `:'')+primaryObjective(state,lang);const info=areaInformation(state,lang);area.innerHTML=`<strong>${esc(info.name)} · ${tr('Bahaya','Danger')}: ${esc(info.danger)}</strong><small>${esc(info.description)}</small>`;area.dataset.danger=String(info.level);area.title=info.description;interaction.textContent=nearbyInformation(state,lang);
-      if(lastZone!==state.zone){lastZone=state.zone;const discovery=document.createElement('div');discovery.className='zone-discovery';discovery.innerHTML=`<strong>${esc(info.name)}</strong><span>${esc(info.description)}</span><small>${tr('Bahaya','Danger')}: ${esc(info.danger)} · +3 ${tr('koin penemuan pertama','coins on first discovery')}</small>`;document.querySelector('.zone-discovery')?.remove();el('game-stage').parentElement!.append(discovery);setTimeout(()=>discovery.remove(),3200);}
-      objectives.classList.toggle('escape-active',state.stage==='escape');
-      el('play-hint').textContent=state.stage==='escape'?tr('LARI! Gerbang terbuka — pilih jalurmu.','RUN! The gate is open — choose your route.'):state.stage==='boss'?`${bossName} · ${tr('FASE','PHASE')} ${state.bossPhase}`:state.expedition?info.name:zones[state.zone][lang==='id'?'idName':'enName'];
-      dive.hidden=!state.swimming;dive.textContent=state.diving?tr('↑ PERMUKAAN','↑ SURFACE'):tr('↓ SELAM','↓ DIVE');dive.setAttribute('aria-pressed',String(state.diving));const jumpButton=el('jump-action');const jumpCaption=jumpButton.querySelector('small');if(jumpCaption)jumpCaption.textContent=state.climber.state.phase==='hanging'?tr('NAIK','CLIMB'):state.swimming?tr('NAIK','RISE'):tr('LOMPAT','JUMP');
-      const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.carried?tr('LEMPAR','THROW'):state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
-      objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/${state.sealGoal}   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${bossName} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):areaName(state.area,lang)+" "+String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
-      forestHud?.update(state);
-      if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'diamond':['Diamond ditemukan.','Diamond collected.'],'oxygen-empty':['Oksigen habis. Kembali ke checkpoint.','Out of oxygen. Back to checkpoint.'],'rune':['Rune aktif. Jelajahi reruntuhan.','Rune activated. Explore the ruins.'],'crafted':['Cake granat api siap dilempar.','Fire cake grenade crafted.'],'strength':['Kuat selama 25 detik! Angkat objek dari panel Ability.','Strong for 25 seconds! Lift objects from the Ability panel.'],'lifted':['Objek diangkat. Pilih Taruh atau Lempar.','Object lifted. Choose Place or Throw.'],'placed':['Objek dipindahkan.','Object moved.'],'course-win':['Lintasan ditaklukkan! +10 koin dan +2 cake.','Course completed! +10 coins and +2 cakes.'],'chili':['Semburan api!','Fire breath!'],'watermelon':['Tembakan biji semangka!','Watermelon seed burst!'],'trash-hit':['Sampah melukai! Kembali ke checkpoint.','Trash hit! Returned to checkpoint.'],'obstacle-hit':['Terkena rintangan! Kembali ke checkpoint.','Obstacle hit! Returned to checkpoint.'],'super-empty':['Kue super habis. Pilih kue asli atau cari peti.','No super cakes left. Choose classic or find a chest.'],'king-dormant':state.pilot?['Perlu 3 Diamond dan 2 Sigil, lalu masuki arena.','Collect 3 Diamonds and 2 Sigils, then enter the arena.']:['Raja masih tertidur. Lengkapi segel tim.','The King is dormant. Complete the seal goal.'],'king-awakening':['Raja bangkit! Bersiap menghindar.','The King awakens! Get ready to dodge.'],'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja penjaga bangkit. Perhatikan tanda serangannya!','The gate King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Lengkapi semua segel pada penghitung untuk membangunkan Raja.','Complete the seal counter to awaken the King.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:state.pilot?['Gerbang terbuka setelah 3 Diamond, 2 Sigil dan boss dikalahkan.','The exit opens after 3 Diamonds, 2 Sigils and defeating the boss.']:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(!forestHud&&state.message!=='chest'&&!(state.pilot&&['chili','watermelon','strength','crafted','lifted','placed','roots'].includes(state.message)))toast(text[lang==='id'?0:1]);if(['diamond','seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
-    },
-    onTick: (seconds, explored) => {
-      if(token!==generation||screen!=='modern')return;
-      if(modern.adventure)return;
-      const elapsed = room
-        ? Math.max(
-            0,
-            (serverNow() - (activeRoom?.startsAt || serverNow())) / 1000,
-          )
-        : seconds;
-      el("hud-stats").textContent =
-        `${Math.max(0, Math.ceil((room?modernSettings[difficulty].seconds:adventureRules[difficulty].seconds) - elapsed))}s · ${explored} ${tr("area", "tiles")}`;
-    },
-    onFinish: (won) => {
-      if(token!==generation)return;
-      let forestResult='';
-      rememberAdventure(!won);tone(won ? 720 : 120, 0.18, "sine", 0.025);
-      if (won && profile&&!sample&&!training) {
-        profile.modernWins++;
-        if(stage){
-          const advanced=recordForestWin(profile,stage), rank=forestRank(profile), next=forestStages[rank];
-          const gear=advanced?forestEarnedEquipment[rank-1]:undefined;
-          if(gear)forestResult=`${tr('Perlengkapan didapat','Equipment earned')} · ${gear.name}. ${gear.benefit[lang==='en'?1:0]}`;
-          else if(next)forestResult=`${tr('Tahap berikutnya','Next stage')} · ${forestStageLabel[next]}`;
-        }
-        if(modern.adventure&&!forestWorld)recordRun(uid,{profileId:profile.id,name:profile.name,area:modern.adventure.area,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
-        void save();
-      }
-      result(
-        won,
-        modern.elapsed,
-        0,
-        modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):modern.adventure?.reason==='escape'?tr('Waktu pelarian habis','Escape time expired'):tr("Waktu habis", "Time is up"),
-        () => playModern(difficulty,undefined,true),
-        () => {
-          const next=won&&stage&&profile?forestStages[forestRank(profile)]:undefined;
-          if(next==='easy'||next==='medium'||next==='hard'||next==='extreme'){
-            currentDifficulty=next;
-            expandedDifficulty=undefined;
-          }else if(next==='world-hard'||next==='world-extreme'){
-            selectedArea='forest';
-            expandedDifficulty=next==='world-hard'?'hard':'extreme';
+  try {
+    const { ModernGame } = await import("./game/modern");
+    if (token !== generation) return;
+    await loading.prepare(true);
+    if (token !== generation) return;
+    const me = room?.players[playerKey];
+    if(!room&&(!reuse||!currentAdventure||currentAdventure.difficulty!==difficulty||currentAdventure.sample!==sample||currentAdventure.area!==activeArea||currentAdventure.training!==training||currentAdventure.forestWorld!==forestWorld))currentAdventure={difficulty,map:sample||training||forestWorld||activeArea==='forest'&&difficulty==='medium'?0:nextMap(difficulty),seed:sample||training?12025:crypto.getRandomValues(new Uint32Array(1))[0],sample,training,area:activeArea,forestWorld};
+    const objectives=document.createElement('div');objectives.className='adventure-objectives';objectives.id='adventure-objectives';el('game-stage').after(objectives);const tracker=document.createElement('div');tracker.id='objective-tracker';tracker.className='objective-tracker';objectives.after(tracker);const area=document.createElement('div');area.id='area-info';area.className='area-info';tracker.after(area);const interaction=document.createElement('div');interaction.id='interaction-info';interaction.className='interaction-info';area.after(interaction);const hudStack=document.createElement('div');hudStack.className='adventure-hud-stack';el('game-stage').after(hudStack);hudStack.append(objectives,tracker,area);
+    const dive=document.createElement('button');dive.id='dive-action';dive.className='aquatic-action game-button secondary';dive.hidden=true;dive.textContent=tr('SELAM','DIVE');el('game-stage').after(dive);dive.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();modern.useAction('dive');});
+    let movementRequest:Promise<unknown>|undefined;let sendAbility:(kind:string)=>Promise<boolean>;const abilityQueue=new ActionQueue(2);
+    const shownLoot=new Set<number>();
+    const journal=document.createElement('button');journal.id='quest-log';journal.className='quest-log icon-button';journal.setAttribute('aria-label',tr('Jurnal petualangan','Adventure journal'));journal.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h5"/></svg>';el('game-stage').after(journal);
+    journal.onclick=()=>{if(training){toast(tr('Latihan bebas: geser kanan untuk kamera, A untuk lompat/meraih/panjat. Batu bercincin emas mempertinggi lompatan.','Free practice: right drag looks, A jumps/grabs/climbs. The gold-ring stone boosts your jump.'));return;}const s=modern.adventure!;const wasPaused=modern.paused;if(!room)modern.setPaused(true);const overlay=el('game-overlay');overlay.innerHTML=`<div class="modal-backdrop"><section class="modal expedition-journal" role="dialog" aria-modal="true"><div class="eyebrow">${tr('JURNAL PENJELAJAH','EXPLORER JOURNAL')}</div><h2>${tr('Jejak tiga segel','The seal trails')}</h2>${s.sealGoal>3?`<p>${tr('Target tim','Team goal')}: ◆ ${s.seals.size}/${s.sealGoal} · ${tr('Cari kristal tambahan di lorong yang ditemukan.','Find additional crystals along discovered corridors.')}</p>`:''}${s.expedition?expeditionQuests(s,lang).map((q,i)=>`<article class="expedition-task ${q.done?'complete':''}"><b>${q.done?'✓':'◆'} ${esc(q.title)}</b><p>${esc(q.clue)}</p><small>${q.done?tr('SELESAI','COMPLETE'):`${esc(q.direction)} · ${q.guardDone?tr('Penjaga dikalahkan — ambil segelnya','Guardian defeated — collect the seal'):tr('Penjaga masih melindungi segel','Guardian still protecting the seal')}`}</small></article>`).join(''):`<p>${tr('Jelajahi lorong dan cari kristal toska di area yang ditemukan.','Explore the corridors and look for turquoise crystals in discovered areas.')} ◆ ${s.seals.size}/${s.sealGoal}</p>`}<p>${tr('Setelah semua segel: cari arena Raja. Hindari serangannya lalu capai gerbang.','After collecting every seal, find the King arena. Dodge its attacks, then reach the gate.')}</p>${button(tr('LANJUTKAN','CONTINUE'),'journal-close')}</section></div>`;click('journal-close',()=>{overlay.innerHTML='';if(!room&&!wasPaused)modern.setPaused(false);});};
+    let forestHud:ReturnType<typeof mountForestHud>|undefined;
+    let adventurePad:ReturnType<typeof mountAdventureActionPad>|undefined;
+    let feedbackAt=-1,lastZone=-1;const bossMeter=document.createElement('div');bossMeter.id='boss-meter';bossMeter.className='boss-meter';bossMeter.hidden=true;el('game-stage').after(bossMeter);
+    const modern = new ModernGame(el("game-stage"), {
+      training,questTeam:room?.adventure?.questSlots?{slots:room.adventure.questSlots,slot:me!.slot,shared:room.mode==='coop'}:undefined,area:activeArea,enforceLandscape:true,forestSample:sample,difficulty,forestWorld:!!forestWorld,forestGear:soloForest?availableForestEquipment(profile).map(item=>item.id):undefined,
+      seed: room?.seed ?? currentAdventure!.seed,
+      adventureMap:room?room.adventure?.map:currentAdventure!.map,
+      color:furColors[readPreferences().fur],
+      appearance:appearanceOf(profile,readPreferences().fur),
+      divingEquipment:!!profile&&['body','back','face'].every(slot=>permittedAppearance(profile!)[slot as Slot]==='diver'),
+      entrance: me?.slot ?? Math.floor(Math.random() * 4),
+      outfit: profile.outfit,
+      online: !!room,selfKey:room?playerKey:undefined,
+      onReady: () => loading.finish(),
+      onLoadError: loadError,
+      onActionChange: (kind, active) => {
+        const b = el(kind === "jump" ? "jump-action" : "hit-action");
+        b?.classList.toggle("active", active);
+        b?.setAttribute("aria-pressed", String(active));
+      },
+      onFeedback: (count) => {
+        if (count) toast(tr("Semak terbuka!", "Shrub cleared!"));
+      },
+      onAction: room
+        ? async (kind) => {
+            return sendAbility(kind);
           }
-          setup();
-        },
-      );
-      if(forestResult){
-        const note=document.createElement('p');
-        note.textContent=forestResult;
-        el('result-next')?.before(note);
-      }
-    },
-  });
-  game = modern;
-  for (const [id, kind] of [
-    ["jump-action", "jump"],
-    ["hit-action", "hit"],
-  ] as const) {
-    const b = el(id);
-    b.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      modern.useAction(kind);if(kind==='hit'){modern.setHitHeld(true);b.setPointerCapture(e.pointerId);}
-    });
-    if(kind==='hit')for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>modern.setHitHeld(false));
-    b.addEventListener("click", (e) => {
-      if (e.detail === 0) modern.useAction(kind);
-    });
-  }
-  if(!modern.adventure){const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();}
-  if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');forestHud=mountForestHud(playScreen,modern,lang==='en');}
-  const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
-  cleanup=()=>{forestHud?.dispose();adventurePad?.dispose();unbind();};
-  if (room) {
-    const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.setAttribute('aria-label',tr('Chat online','Online chat'));chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
-    const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
-    const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=(kind)=>{const aim=modern.angle,cake=modern.equippedCake;return abilityQueue.add(async()=>{try{await movementRequest;if(token!==generation||activeRoom?.id!==room.id)return false;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,cake,movement:{...packet,angle:aim}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(isRoomCommandError(e)){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;}});};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
-    modern.paused = true;
-
-    let sample = 0;
-    modernTimer = setInterval(() => {
-      if (screen !== "modern" || !activeRoom) return;
-      const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
-      const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now()),latency=realtimeEnabled()?realtimeLatency():0;networkStatus.style.display=waiting||slow||latency>350?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Menunggu sinkronisasi server…','Waiting for server sync…'):latency>350?tr('Koneksi lambat · ','Slow connection · ')+Math.round(latency)+' ms':'';el('game-stage').dataset.networkRtt=String(Math.round(latency));
-      modern.paused = !started||waiting||!!(modern.adventure&&modern.adventure.phase!=='playing');
-      if(!room.adventure||!started)el("play-hint").textContent = started
-        ? tr("Jelajahi labirin", "Explore the maze")
-        : !navigator.onLine?tr("Koneksi terputus — menunggu tersambung.","Connection lost — reconnecting."):String(
-            Math.max(1, Math.ceil((activeRoom.startsAt - serverNow()) / 1000)),
-          );
-      if (started&&!room.adventure)
-        el("play-hint").textContent = tr(
-          "Joystick / WASD · room privat online",
-          "Joystick / WASD · private online room",
+        : undefined,
+      onAdventure:(state)=>{
+        if(token!==generation||screen!=='modern')return;
+        adventurePad?.update(state);
+        forestHud?.update(state);
+        if(state.training){el('hud-stats').textContent='∞';objectives.textContent=tr('LATIHAN · Tanpa batas waktu atau hadiah','PRACTICE · No timer or rewards');el('play-hint').textContent=tr('Coba kamera, lompat, batu pelontar dan panjat · Keluar untuk memilih maze','Try the camera, jumps, spring stone and climbing · Exit to choose a maze');return;}
+        el<HTMLButtonElement>('hit-action').disabled=modern.pendingActions>=2||(!state.carried&&modern.equippedWeapon!=='cake'&&state.supplies[modern.equippedWeapon]<=0);
+        const bossName=areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1];
+        if(state.lastLoot&&!shownLoot.has(state.lastLoot.id)){
+         const loot=state.lastLoot;shownLoot.add(loot.id);showLootFeed(root,loot,lang);
+        }
+        el('hud-stats').innerHTML=`<span class="lives">${'♥'.repeat(state.lives)}${'♡'.repeat(3-state.lives)}</span><span>${Math.ceil(state.remaining)}s</span>`;
+        const nearbyBoss=state.guards.find(g=>g.boss&&!g.dead&&Math.hypot(g.position.x-state.position.x,g.position.y-state.position.y)<6&&clearSegment(state.grid,state.position,g.position,.05));
+        if(state.expedition){const king=state.guards.find(g=>g.boss);bossMeter.hidden=!(king&&!king.dead&&state.stage==='boss');if(!bossMeter.hidden){const warning=state.hazards.find(h=>!h.resolved);bossMeter.innerHTML=`<strong>${areaThemes[state.sample?'forest':state.area].boss[lang==='id'?0:1]} · ${tr('FASE','PHASE')} ${state.bossPhase}</strong><progress max="${state.bossMaxHP}" value="${king!.hp}"></progress><small>${warning?`${warning.kind==='rockfall'?tr('RUNTUHAN BATU','FALLING ROCKS'):warning.kind==='lightning'?tr('PETIR','LIGHTNING'):warning.kind==='roots'?tr('AKAR','ROOTS'):tr('SERANGAN AREA','AREA ATTACK')} · ${Math.max(0,warning.at-state.elapsed).toFixed(1)}s`:state.bossVulnerable?tr('PELIN­DUNG PADAM · SERANG!','SHIELD DOWN · ATTACK!'):tr('PELIN­DUNG AKTIF · HINDARI','SHIELD ACTIVE · DODGE')}</small>`;}}
+        tracker.textContent=(room?.mode==='coop'?`${tr('TIM','TEAM')} ◆ ${state.seals.size}/${state.sealGoal} · ${tr('Kontribusimu','Your contribution')} ${room.adventure?.contributions?.[playerKey]?.length||0} · `:'')+primaryObjective(state,lang);const info=areaInformation(state,lang);area.innerHTML=`<strong>${esc(info.name)} · ${tr('Bahaya','Danger')}: ${esc(info.danger)}</strong><small>${esc(info.description)}</small>`;area.dataset.danger=String(info.level);area.title=info.description;interaction.textContent=nearbyInformation(state,lang);
+        if(lastZone!==state.zone){lastZone=state.zone;const discovery=document.createElement('div');discovery.className='zone-discovery';discovery.innerHTML=`<strong>${esc(info.name)}</strong><span>${esc(info.description)}</span><small>${tr('Bahaya','Danger')}: ${esc(info.danger)} · +3 ${tr('koin penemuan pertama','coins on first discovery')}</small>`;document.querySelector('.zone-discovery')?.remove();el('game-stage').parentElement!.append(discovery);setTimeout(()=>discovery.remove(),3200);}
+        objectives.classList.toggle('escape-active',state.stage==='escape');
+        el('play-hint').textContent=state.stage==='escape'?tr('LARI! Gerbang terbuka — pilih jalurmu.','RUN! The gate is open — choose your route.'):state.stage==='boss'?`${bossName} · ${tr('FASE','PHASE')} ${state.bossPhase}`:state.expedition?info.name:zones[state.zone][lang==='id'?'idName':'enName'];
+        dive.hidden=!state.swimming;dive.textContent=state.diving?tr('↑ PERMUKAAN','↑ SURFACE'):tr('↓ SELAM','↓ DIVE');dive.setAttribute('aria-pressed',String(state.diving));const jumpButton=el('jump-action');const jumpCaption=jumpButton.querySelector('small');if(jumpCaption)jumpCaption.textContent=state.climber.state.phase==='hanging'?tr('NAIK','CLIMB'):state.swimming?tr('NAIK','RISE'):tr('LOMPAT','JUMP');
+        const action=el('hit-action');action.dataset.interaction=state.interaction;const caption=action.querySelector('small');if(caption)caption.textContent=state.carried?tr('LEMPAR','THROW'):state.interaction==='cut'?tr('TEBAS','CUT'):state.interaction==='harvest'?tr('CARI','SEARCH'):tr('KUE','CAKE');
+        objectives.textContent=`${state.stage==='escape'?'⏳ '+Math.ceil(state.remaining)+'s · ':''}◆ ${state.seals.size}/${state.sealGoal}   ★ ${state.stars.size}/9   ${tr('KUE','CAKES')} ${state.ammo}/8   ♛ ${state.bossCleared?'✓':nearbyBoss?`${bossName} ${nearbyBoss.hp}♥`:tr('RAJA','KING')} · ${tr('PETA','MAP')} ${state.sample?tr("CONTOH HUTAN","FOREST SAMPLE"):areaName(state.area,lang)+" "+String(state.mapIndex+1)+"/10"} · ◉ ${state.coins} · ⚿ ${state.keys}${state.shield?' · ◇':''}`;
+        forestHud?.update(state);
+        if(state.messageAt!==feedbackAt&&state.message){feedbackAt=state.messageAt;const messages:Record<string,[string,string]>={'diamond':['Diamond ditemukan.','Diamond collected.'],'oxygen-empty':['Oksigen habis. Kembali ke checkpoint.','Out of oxygen. Back to checkpoint.'],'rune':['Rune aktif. Jelajahi reruntuhan.','Rune activated. Explore the ruins.'],'crafted':['Cake granat api siap dilempar.','Fire cake grenade crafted.'],'strength':['Kuat selama 25 detik! Angkat objek dari panel Ability.','Strong for 25 seconds! Lift objects from the Ability panel.'],'lifted':['Objek diangkat. Pilih Taruh atau Lempar.','Object lifted. Choose Place or Throw.'],'placed':['Objek dipindahkan.','Object moved.'],'course-win':['Lintasan ditaklukkan! +10 koin dan +2 cake.','Course completed! +10 coins and +2 cakes.'],'chili':['Semburan api!','Fire breath!'],'watermelon':['Tembakan biji semangka!','Watermelon seed burst!'],'trash-hit':['Sampah melukai! Kembali ke checkpoint.','Trash hit! Returned to checkpoint.'],'obstacle-hit':['Terkena rintangan! Kembali ke checkpoint.','Obstacle hit! Returned to checkpoint.'],'super-empty':['Kue super habis. Pilih kue asli atau cari peti.','No super cakes left. Choose classic or find a chest.'],'king-dormant':state.pilot?['Perlu 3 Diamond dan 2 Sigil, lalu masuki arena.','Collect 3 Diamonds and 2 Sigils, then enter the arena.']:['Raja masih tertidur. Lengkapi segel tim.','The King is dormant. Complete the seal goal.'],'king-awakening':['Raja bangkit! Bersiap menghindar.','The King awakens! Get ready to dodge.'],'king-armored':['Pelindung Raja aktif. Hindari serangan; balas saat cahaya pelindung padam.','King armor active. Dodge, then counter when its shield fades.'],climb:['Tepian ditaklukkan! +5 koin.','Ledge climbed! +5 coins.'],'key-needed':['Perlu satu kunci untuk membuka jalan rahasia ini.','A key is needed to open this hidden route.'],escape:['Gerbang terbuka! Lari sebelum waktu habis!','Gate open! Escape before time runs out!'],fortress:['Raja penjaga bangkit. Perhatikan tanda serangannya!','The gate King awakens. Watch the attack indicators!'],tall:['Kue dan koin ditemukan.','Found cakes and coins.'],rare:['Hadiah langka! Kunci, pelindung dan kecepatan sementara.','Rare reward! A key, a shield and a temporary speed boost.'],danger:['Hadiah ditemukan, tetapi penjaga kecil terbangun!','Reward found, but a sapling guardian awakens!'],roots:['Akar memperlambatmu.','Roots slow you down.'],shield:['Pelindung menyerap serangan.','Shield absorbed the hit.'],'king-seals':['Lengkapi semua segel pada penghitung untuk membangunkan Raja.','Complete the seal counter to awaken the King.'],grass:['Jalur baru terbuka! Penjaga mendengar tebasanmu.','Shortcut opened! Guardians heard the cut.'],ammo:state.bossRefilling?['Kue habis: hindari serangan. Bekal arena mengisi +1 kue tiap 2 detik.','No cakes: dodge attacks. Arena supplies refill +1 cake every 2 seconds.']:['Kue habis. Cari peti atau kembali ke checkpoint.','No cakes left. Find a chest or return to your checkpoint.'],slow:['Terkena serangan! Melambat sebentar.','Hit! Slowed briefly.'],stun:['Terjebak! Berhenti sesaat.','Caught! Briefly stunned.'],respawn:['Kembali ke checkpoint. Peta tetap terbuka.','Back to checkpoint. Discoveries are kept.'],'boss-reset':['Kembali ke Start. Minimap tertutup; segel tetap tersimpan.','Back to Start. Map resets; seals are kept.'],'boss-win':['Raja dikalahkan! Fase pelarian dimulai.','King defeated! The final escape begins.'],'guard-win':['Penjaga menyerah. Kue bertambah!','Guardian defeated. More cakes!'],seal:['Segel ditemukan! Checkpoint tersimpan.','Seal found! Checkpoint saved.'],star:['Bintang ditemukan!','Star found!'],chest:['Peti harta! Kue dan nyawa dipulihkan.','Treasure! Cakes and a heart restored.'],gate:state.pilot?['Gerbang terbuka setelah 3 Diamond, 2 Sigil dan boss dikalahkan.','The exit opens after 3 Diamonds, 2 Sigils and defeating the boss.']:['Gerbang perlu 3 segel dan satu Raja dikalahkan.','The gate needs 3 seals and one defeated King.']};const text=messages[state.message];if(text){if(!forestHud&&state.message!=='chest'&&!(state.pilot&&['chili','watermelon','strength','crafted','lifted','placed','roots'].includes(state.message)))toast(text[lang==='id'?0:1]);if(['diamond','seal','star','chest'].includes(state.message))sfx('pickup');if(state.message==='grass')sfx('cut');}}
+      },
+      onTick: (seconds, explored) => {
+        if(token!==generation||screen!=='modern')return;
+        if(modern.adventure)return;
+        const elapsed = room
+          ? Math.max(
+              0,
+              (serverNow() - (activeRoom?.startsAt || serverNow())) / 1000,
+            )
+          : seconds;
+        el("hud-stats").textContent =
+          `${Math.max(0, Math.ceil((room?modernSettings[difficulty].seconds:adventureRules[difficulty].seconds) - elapsed))}s · ${explored} ${tr("area", "tiles")}`;
+      },
+      onFinish: (won) => {
+        if(token!==generation)return;
+        let forestResult='';
+        rememberAdventure(!won);tone(won ? 720 : 120, 0.18, "sine", 0.025);
+        if (won && profile&&!sample&&!training) {
+          profile.modernWins++;
+          if(stage){
+            const advanced=recordForestWin(profile,stage), rank=forestRank(profile), next=forestStages[rank];
+            const gear=advanced?forestEarnedEquipment[rank-1]:undefined;
+            if(gear)forestResult=`${tr('Perlengkapan didapat','Equipment earned')} · ${gear.name}. ${gear.benefit[lang==='en'?1:0]}`;
+            else if(next)forestResult=`${tr('Tahap berikutnya','Next stage')} · ${forestStageLabel[next]}`;
+          }
+          if(modern.adventure&&!forestWorld)recordRun(uid,{profileId:profile.id,name:profile.name,area:modern.adventure.area,difficulty,map:modern.adventure.mapIndex,seconds:modern.elapsed,stars:modern.adventure.stars.size});
+          void save();
+        }
+        result(
+          won,
+          modern.elapsed,
+          0,
+          modern.adventure?.reason==='lives'?tr("Nyawa habis", "No lives left"):modern.adventure?.reason==='escape'?tr('Waktu pelarian habis','Escape time expired'):tr("Waktu habis", "Time is up"),
+          () => playModern(difficulty,undefined,true),
+          () => {
+            const next=won&&stage&&profile?forestStages[forestRank(profile)]:undefined;
+            if(next==='easy'||next==='medium'||next==='hard'||next==='extreme'){
+              currentDifficulty=next;
+              expandedDifficulty=undefined;
+            }else if(next==='world-hard'||next==='world-extreme'){
+              selectedArea='forest';
+              expandedDifficulty=next==='world-hard'?'hard':'extreme';
+            }
+            setup();
+          },
         );
-      if (!started || modern.ended) return;
-      sample++;
-      motion.sample(modern.position);
-      if (abilityQueue.pending || motion.inFlight || sample % (realtimeEnabled()?1:6)) return;
-      const packet=motion.packet(performance.now());if(!packet)return;
-      const request=roomAction("move", {
-        code: room.id,
-        profileId: profile!.id,
-        points:packet.points,
-        angle: modern.angle,
-        seq:packet.seq,legacy:!room.adventure,
+        if(forestResult){
+          const note=document.createElement('p');
+          note.textContent=forestResult;
+          el('result-next')?.before(note);
+        }
+      },
+    });
+    game = modern;
+    for (const [id, kind] of [
+      ["jump-action", "jump"],
+      ["hit-action", "hit"],
+    ] as const) {
+      const b = el(id);
+      b.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        modern.useAction(kind);if(kind==='hit'){modern.setHitHeld(true);b.setPointerCapture(e.pointerId);}
       });
-      const tracked=motion.track(request,
-        ({room:r})=>{if(token===generation&&activeRoom?.id===room.id)applyRoom(r);},
-        (e)=>{
-          if(token!==generation||activeRoom?.id!==room.id)return;
-          if(!isRoomCommandError(e))return;const snapshot=activeRoom.adventure?.states?.[playerKey];if(snapshot)modern.syncAdventure(snapshot,'snap');else modern.position={x:activeRoom.players[playerKey].x,y:activeRoom.players[playerKey].y};motion.reset(modern.position);
-          toast(tr('Posisi disinkronkan ulang: ','Position resynchronized: ')+(e instanceof Error?e.message:''));
+      if(kind==='hit')for(const event of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(event,()=>modern.setHitHeld(false));
+      b.addEventListener("click", (e) => {
+        if (e.detail === 0) modern.useAction(kind);
+      });
+    }
+    if(!modern.adventure){const cameraButton=document.createElement('button');cameraButton.id='camera-angle';cameraButton.className='icon-button';cameraButton.textContent='⟲';cameraButton.setAttribute('aria-label',tr('Reset kamera','Reset camera'));el('pause-game').before(cameraButton);cameraButton.onclick=()=>modern.resetCamera();}
+    if(modern.adventure){const playScreen=el('game-stage').parentElement!;playScreen.classList.add('adventure-pad');adventurePad=mountAdventureActionPad(playScreen,modern,lang==='en');forestHud=mountForestHud(playScreen,modern,lang==='en');}
+    const unbind=bindJoystick(el('game-stage').parentElement!,modern,readPreferences());
+    cleanup=()=>{forestHud?.dispose();adventurePad?.dispose();unbind();};
+    if (room) {
+      const chatButton=document.createElement('button');chatButton.id='room-chat-open';chatButton.className='icon-button game-chat-button';chatButton.setAttribute('aria-label',tr('Chat online','Online chat'));chatButton.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h16v12H9l-5 4V4zM8 8h8M8 12h5"/></svg>';el('game-stage').after(chatButton);mountChat(room);const chatInputAbort=new AbortController();root.addEventListener('room-chat-open',()=>modern.clearInput(),{signal:chatInputAbort.signal});
+      const initial=room.adventure?.states?.[playerKey];if(initial)modern.syncAdventure(initial,'snap');else modern.position={x:me!.x,y:me!.y};
+      const motion=onlineMotion=new OnlineMotion(modern.position,me!.seq||0,initial?.respawns||0);sendAbility=(kind)=>{const aim=modern.angle,cake=modern.equippedCake;return abilityQueue.add(async()=>{try{await movementRequest;if(token!==generation||activeRoom?.id!==room.id)return false;motion.sample(modern.position);const packet=motion.packet(performance.now());if(!packet)return false;const request=roomAction('ability',{code:room.id,profileId:profile!.id,kind,cake,movement:{...packet,angle:aim}});movementRequest=request;const {room:r,actionAccepted,actionError}=await request;if(token===generation&&activeRoom?.id===room.id)applyRoom(r);if(actionAccepted===false){if(actionError&&!/cooling|unavailable/i.test(actionError))toast(actionError);return false;}return true;}catch(e){motion.failed();if(isRoomCommandError(e)){const snapshot=activeRoom?.adventure?.states?.[playerKey];if(snapshot){modern.syncAdventure(snapshot,'snap');motion.reset(modern.position);}}showError(e);return false;}finally{motion.complete();movementRequest=undefined;}});};const networkStatus=document.createElement('small');networkStatus.className='network-status';networkStatus.setAttribute('role','status');networkStatus.style.display='none';el('exit-game').nextElementSibling!.append(networkStatus);
+      modern.paused = true;
+
+      let sample = 0;
+      modernTimer = setInterval(() => {
+        if (screen !== "modern" || !activeRoom) return;
+        const started = serverNow() >= activeRoom.startsAt && navigator.onLine;
+        const waiting=!navigator.onLine||motion.blocked(performance.now()),slow=motion.slow(performance.now()),latency=realtimeEnabled()?realtimeLatency():0;networkStatus.style.display=waiting||slow||latency>350?'block':'none';networkStatus.textContent=waiting?tr('Menghubungkan ulang…','Reconnecting…'):slow?tr('Menunggu sinkronisasi server…','Waiting for server sync…'):latency>350?tr('Koneksi lambat · ','Slow connection · ')+Math.round(latency)+' ms':'';el('game-stage').dataset.networkRtt=String(Math.round(latency));
+        modern.paused = !started||waiting||!!(modern.adventure&&modern.adventure.phase!=='playing');
+        if(!room.adventure||!started)el("play-hint").textContent = started
+          ? tr("Jelajahi labirin", "Explore the maze")
+          : !navigator.onLine?tr("Koneksi terputus — menunggu tersambung.","Connection lost — reconnecting."):String(
+              Math.max(1, Math.ceil((activeRoom.startsAt - serverNow()) / 1000)),
+            );
+        if (started&&!room.adventure)
+          el("play-hint").textContent = tr(
+            "Joystick / WASD · room privat online",
+            "Joystick / WASD · private online room",
+          );
+        if (!started || modern.ended) return;
+        sample++;
+        motion.sample(modern.position);
+        if (abilityQueue.pending || motion.inFlight || sample % (realtimeEnabled()?1:6)) return;
+        const packet=motion.packet(performance.now());if(!packet)return;
+        const request=roomAction("move", {
+          code: room.id,
+          profileId: profile!.id,
+          points:packet.points,
+          angle: modern.angle,
+          seq:packet.seq,legacy:!room.adventure,
         });
-      movementRequest=tracked;
-      void tracked.finally(()=>{if(movementRequest===tracked)movementRequest=undefined;}).catch(showError);
-    }, 50);
-    cleanup = () => {
-      abilityQueue.close();chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
-      if (modernTimer) clearInterval(modernTimer);
-      modernTimer = null;
-    };
-    applyRoom(activeRoom?.id===room.id?activeRoom:room);
+        const tracked=motion.track(request,
+          ({room:r})=>{if(token===generation&&activeRoom?.id===room.id)applyRoom(r);},
+          (e)=>{
+            if(token!==generation||activeRoom?.id!==room.id)return;
+            if(!isRoomCommandError(e))return;const snapshot=activeRoom.adventure?.states?.[playerKey];if(snapshot)modern.syncAdventure(snapshot,'snap');else modern.position={x:activeRoom.players[playerKey].x,y:activeRoom.players[playerKey].y};motion.reset(modern.position);
+            toast(tr('Posisi disinkronkan ulang: ','Position resynchronized: ')+(e instanceof Error?e.message:''));
+          });
+        movementRequest=tracked;
+        void tracked.finally(()=>{if(movementRequest===tracked)movementRequest=undefined;}).catch(showError);
+      }, 50);
+      cleanup = () => {
+        abilityQueue.close();chatInputAbort.abort();unbind();if(onlineMotion===motion)onlineMotion=undefined;
+        if (modernTimer) clearInterval(modernTimer);
+        modernTimer = null;
+      };
+      applyRoom(activeRoom?.id===room.id?activeRoom:room);
+    }
+    loading.rendering();
+  } catch (error) {
+    loadError(error);
   }
 }
 let wardrobeSlot:Slot='head';
@@ -1085,6 +1129,7 @@ window.addEventListener("keydown", (e) => {
 });
 window.addEventListener("beforeunload", () => {
   voiceUI?.destroy();
+  dismissArenaLoading();
   cleanup();
   game?.dispose();
 });

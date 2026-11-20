@@ -11,14 +11,24 @@
       name="description"
       content="Maze Hunter — petualangan labirin keluarga dengan binturong fantasi. Retro Journey dan Modern Hidden Maze."
     />
+    <link rel="stylesheet" href="/src/arena-loading.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Maze Hunter — Find your own adventure</title>
   </head>
   <body>
     <div id="game">
-      <p style="padding: 40px; font-family: system-ui">
-        Maze Hunter · Memuat petualangan / Loading adventure…
-      </p>
+      <main class="arena-loading" aria-labelledby="game-loading-title">
+        <img src="/adventure/forest-panorama.webp" alt="" />
+        <div class="arena-loading__shade" aria-hidden="true"></div>
+        <div class="arena-loading__layout">
+          <div aria-hidden="true"></div>
+          <div class="arena-loading__content">
+            <h1 id="game-loading-title">Maze Hunter</h1>
+            <div class="arena-loading__reading"><span role="status">Memuat game…</span></div>
+            <progress aria-label="Memuat game"></progress>
+          </div>
+        </div>
+      </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

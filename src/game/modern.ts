@@ -89,6 +89,8 @@ export interface ModernOptions {
   outfit: string;
   color?: number;
   appearance?:Appearance;divingEquipment?:boolean;
+  onReady?: () => void;
+  onLoadError?: (error: unknown) => void;
   onTick: (seconds: number, explored: number) => void;
   onFinish: (won: boolean) => void;
   online?: boolean;selfKey?:string;
@@ -484,7 +486,23 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.observer.observe(host);
     this.resize();
     this.updateVision();
-    this.renderer.setAnimationLoop((t) => this.frame(t));
+    let awaitingFrame = true;
+    this.renderer.setAnimationLoop(time => {
+      if (!awaitingFrame) {
+        this.frame(time);
+        return;
+      }
+      try {
+        this.frame(time);
+      } catch (error) {
+        if (!options.onLoadError) throw error;
+        this.renderer.setAnimationLoop(null);
+        options.onLoadError(error);
+        return;
+      }
+      awaitingFrame = false;
+      options.onReady?.();
+    });
   }
   projectForestPoint(x:number,z:number,height=1.75){const v=new T.Vector3(x*U,this.terrain(x,z)+height,z*U).project(this.camera),r=this.host.getBoundingClientRect();return{x:(v.x*.5+.5)*r.width,y:(-.5*v.y+.5)*r.height,visible:v.z>-1&&v.z<1&&v.x>-1.2&&v.x<1.2&&v.y>-1.2&&v.y<1.2};}
   captureBackdrop() {

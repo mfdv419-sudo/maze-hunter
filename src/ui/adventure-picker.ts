@@ -9,6 +9,11 @@ export const expandedDifficulties = ['hard', 'extreme'] as const;
 const difficultyIcons = {easy: 'sprout', medium: 'signpost', hard: 'mountain', extreme: 'flame'};
 const thumbnail = (area: AdventureArea) => `/adventure/${area}.webp`;
 
+export function adventureBackdrop(area: AdventureArea, expanded?: ForestWorldDifficulty) {
+  return expanded ? `/adventure/forest-expanded-${expanded}.webp`
+    : area === 'forest' ? '/adventure/forest-panorama.webp' : thumbnail(area);
+}
+
 export function expeditionPicker(
   area: AdventureArea, difficulty: Difficulty, lang: 'id' | 'en',
   expanded: ForestWorldDifficulty | undefined, rank: number, gear: ReturnType<typeof forestEquipment>,
@@ -16,8 +21,7 @@ export function expeditionPicker(
   const text = (id: string, en: string) => lang === 'id' ? id : en;
   const label = areaName(area, lang);
   const size = areaSize(area, difficulty);
-  const preview = expanded ? `/adventure/forest-expanded-${expanded}.webp`
-    : area === 'forest' ? '/adventure/forest-panorama.webp' : thumbnail(area);
+  const preview = adventureBackdrop(area, expanded);
   const ready = !expanded || canEnterForestWorld(rank, expanded);
   const next = forestStages[rank];
   const expandedHint = expanded === 'hard'
