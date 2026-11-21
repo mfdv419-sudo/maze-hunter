@@ -49,6 +49,8 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  button.addEventListener('pointerdown',pointerDown);button.addEventListener('pointermove',pointerMove);button.addEventListener('pointerup',pointerUp);button.addEventListener('pointercancel',()=>{down=undefined;});button.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();greet();}if(e.key==='ArrowRight')targetYaw+=.3;if(e.key==='ArrowLeft')targetYaw-=.3;});
  const bounds=new T.Box3(),v=new T.Vector3();
  function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.fov=w<h?37:34;camera.position.set(0,1.45,w<h?8.2:5.8);camera.lookAt(0,.90,0);camera.updateProjectionMatrix();camera.updateMatrixWorld();hero.root.updateWorldMatrix(true,true);bounds.setFromObject(hero.root);
+ if(bounds.isEmpty()){button.style.display='none';return;}
+ button.style.display='';
  let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity;for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){v.set(x,y,z).project(camera);const px=(v.x+1)*w/2,py=(1-v.y)*h/2;l=Math.min(l,px);r=Math.max(r,px);t=Math.min(t,py);b=Math.max(b,py);}Object.assign(button.style,{left:`${l}px`,top:`${t}px`,width:`${r-l}px`,height:`${b-t}px`});}
  const ro=new ResizeObserver(resize);ro.observe(host);resize();const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  let activeArea:AdventureArea=initialMode==='retro'?'classic':'forest';
@@ -69,7 +71,8 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  setMode(initialMode);setArea(activeArea);
  renderer.setAnimationLoop(ms=>{
   if(document.hidden)return;
-  const clock=ms/1000,age=clock-reaction,reacting=age>=0&&age<.95,t=reduced.matches?0:clock;
+  if(hero.root.userData.assetStatus==='ready' && button.dataset.avatarReady!=='1'){button.dataset.avatarReady='1';resize();}
+ const clock=ms/1000,age=clock-reaction,reacting=age>=0&&age<.95,t=reduced.matches?0:clock;
   const lean=reduced.matches?0:Math.sin(t*.68)*.10;
   button.dataset.reacting=String(reacting);yaw+=(targetYaw-yaw)*.15;
   hero.root.rotation.y=yaw+lean;host.dataset.yaw=String(yaw);
