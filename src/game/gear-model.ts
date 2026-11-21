@@ -7,7 +7,10 @@ const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:num
  * Paw-first silhouette: no explicit human-like finger geometry and no duplicate hand mass.
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
- const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='binturong-paw-3digit-integrated-v9';
+ const root=joint(parent,0,-.105,.018,'paw-hand');root.userData.gear=kind;root.userData.handModel='binturong-paw-palms-inward-v10';
+ // In neutral stance the palm pads face the trouser side seam rather than the viewer.
+ // Side is +1 for the left hand and -1 for the right hand.
+ root.rotation.y=side*Math.PI/2;
  const bare=kind==='bare';const colors:Record<string,number>={trail:0x607d60,climber:0xcf714c,desert:0xc4a377,diver:0x345967};
  const fur=satin(bare?furColor:colors[kind]??colors.trail),pad=satin(0x4f3d44),trim=satin(kind==='diver'?0x83d6cc:kind==='climber'?0xffd386:0xe6d5ad);
  // One compact animal paw: narrow wrist, broad soft palm, three stubby toe lobes integrated into the front edge.
@@ -63,7 +66,7 @@ export function expeditionWearables(body:T.Group,head:T.Group,arms:T.Group[],leg
   for(const side of [-1,1]){const frame=addMesh(head,new T.TorusGeometry(.105,.028,6,16),sand,side*.168,.025,.287);frame.name='glasses-frame';addMesh(head,new T.CircleGeometry(.084,16),lens,side*.168,.025,.289);box(head,.018,.025,.24,sand,side*.29,.035,.13,.005);}box(head,.14,.022,.025,ink,0,.035,.29,.006);
  }
  if(a.face==='diver'){
-  const mask=joint(head,0,.025,.278,'diving-mask');for(const side of [-1,1]){box(mask,.47,.029,.05,ink,0,side*.09,0,.014);box(mask,.032,.16,.05,ink,side*.22,0,0,.014);box(mask,.43,.012,.026,moon,0,side*.09,.033,.005);}const lens=new T.MeshPhongMaterial({color:0x93ddd8,transparent:true,opacity:.2,shininess:85,depthWrite:false});addMesh(mask,new T.PlaneGeometry(.37,.13),lens,0,0,.053);box(mask,.035,.18,.04,teal,0,0,.06,.01);for(const side of [-1,1])box(head,.024,.065,.28,ink,side*.30,.03,.10,.01);ell(head,ink,0,-.15,.47,.065,.055,.035);ell(head,gold,0,-.15,.503,.032,.03,.012);const tube=new T.CatmullRomCurve3([new T.Vector3(.05,-.15,.45),new T.Vector3(.29,-.22,.31),new T.Vector3(.35,-.15,.01),new T.Vector3(.23,-.32,-.24)]);addMesh(head,new T.TubeGeometry(tube,12,.018,6,false),ink);
+  const mask=joint(head,0,.025,.278,'diving-mask');for(const side of [-1,1]){box(mask,.47,.029,.05,ink,0,side*.09,0,.014);box(mask,.032,.16,.05,ink,side*.22,0,0,.014);box(mask,.43,.012,.026,moon,0,side*.09,.033,.005);}const lens=new T.MeshPhongMaterial({color:0x93ddd8,transparent:true,opacity:.2,shininess:85,depthWrite:false});addMesh(mask,new T.PlaneGeometry(.37,.13),lens,0,0,.053);box(mask,.035,.18,.04,teal,0,0,.06,.01);for(const side of [-1,1])box(head,.024,.065,.28,ink,side*.30,.03,.10,.01);ell(head,ink,0,-.15,.47,.065,.055,.035);ell(head,gold,0,-.15,.503,.032,.03,.012);const tube=new T.CatmullRomCurve3([new T.Vector3(.05,-.15,.45),new T.Vector3(.29,-.22,.31),new T.Vector3(.35,-.15,.01),new T.Vector3(.23,-.32,-.24)]);addMesh(head,new T.TubeGeometry(tube,12,.018,6,false),ink).name='snorkel-tube';
  }
  if(a.back==='climber'){
   const pack=joint(body,0,.6,-.265,'climbing-pack');box(pack,.33,.37,.19,orange,0,0,0,.055);box(pack,.35,.105,.21,gold,0,.14,-.015,.035);for(const side of [-1,1])box(body,.04,.32,.035,gold,side*.2,.67,.19,.01);for(let i=0;i<4;i++){const rope=addMesh(pack,new T.TorusGeometry(.12,.015,5,16),cream,0,-.02,-.15-i*.012);rope.scale.y=1.3;}const hook=addMesh(pack,new T.TorusGeometry(.047,.01,5,12),moon,.18,-.06,-.04);hook.rotation.y=.2;
@@ -105,4 +108,67 @@ export function expeditionWeaponModel(area:import('./expedition-equipment').Equi
   }
  }
  return g;
+}
+
+
+/** Visuals are attached to the SAME avatar rig used by Home, Wardrobe and gameplay.
+ * These are display details for equipped items, not extra inventory grants.
+ */
+export function equippedExpeditionDetails(
+ body:T.Group,head:T.Group,arms:T.Group[],legs:T.Group[],
+ items:ReadonlyArray<{area:string;rank:number;slot:string;style:string}>
+){
+ const accents:Record<string,number>={forest:0x79b16b,desert:0xefc976,gorge:0xb5a48a,mountain:0xc7e6f4,coast:0x67d8c3,sea:0x52d6da,volcano:0xf59a50};
+ for(const item of items){
+  const hue=accents[item.area]??0xbad6b5,cloth=satin(hue),dark=satin(0x263c43),brass=satin(0xe5c77f);
+  const root=joint(item.slot==='face'?head:body,0,0,0,`equipment-${item.area}-${item.rank}`);
+  root.userData.equipmentArea=item.area;root.userData.equipmentRank=item.rank;
+  if(item.slot==='feet'){
+   // Visible shoe accent follows each animated knee/foot, not the stationary torso.
+   root.visible=false;
+   legs.forEach((leg,i)=>{const tag=joint(leg,0,-.145,.17,`equipment-shoe-${item.area}-${i}`);box(tag,.11,.025,.025,cloth,0,0,0,.007);});
+  }else if(item.slot==='face'){
+   if(!['sea','coast','desert','mountain'].includes(item.area))for(const side of [-1,1]){
+    const rim=addMesh(root,new T.TorusGeometry(.103,.018,6,20),cloth,side*.168,.024,.293);
+    rim.name='equipment-goggles';
+   }
+  }else if(item.slot==='hands'){
+   root.visible=false;
+   arms.forEach((arm,i)=>{const band=joint(arm,0,-.2,0,`equipment-glove-${i}`);box(band,.135,.045,.12,cloth,0,-.02,0,.015);});
+  }else if(item.slot==='back'){
+   // Level 2/3 ropes, level 4 survival/air gear, and level 5 weapons each remain distinct.
+   if(item.rank===5||['climber','diver','pack'].includes(item.style)){root.visible=false;continue;}
+   const pack=joint(root,0,.58,-.31,'expedition-back-gear');
+   const isTank=item.area==='sea'&&item.rank===4;
+   if(isTank){
+    // The original diver back slot draws its own oxygen cylinders and straps.
+    root.visible=false;
+   }else{
+    box(pack,.34,.34,.16,dark,0,0,0,.06);
+    box(pack,.29,.13,.035,cloth,0,.075,-.1,.026);
+    box(pack,.13,.085,.04,brass,0,-.085,-.105,.014);
+    if(item.rank<=3){
+     for(let i=0;i<3;i++){
+      const rope=addMesh(pack,new T.TorusGeometry(.09,.014,5,18),brass,.0,-.02,-.12-i*.013);
+      rope.scale.y=1.35;rope.name='coiled-climbing-rope';
+     }
+    }
+   }
+   for(const side of [-1,1])box(body,.033,.28,.025,brass,side*.22,.66,.205,.009);
+  }else if(item.slot==='body'){
+   if(item.rank===6){
+    box(root,.49,.11,.405,cloth,0,.48,0,.025).name='premium-suit-belt';
+    box(root,.16,.095,.045,brass,0,.65,.22,.02).name='premium-chest-emblem';
+    for(const side of [-1,1]){
+     const shoulder=joint(arms[side===-1?0:1],0,.005,0,`premium-shoulder-${item.area}`);
+     const plate=ell(shoulder,cloth,0,-.03,0,.106,.07,.12);
+     plate.name='premium-shoulder-armor';
+    }
+   }else{
+    box(root,.40,.055,.39,cloth,0,.42,0,.02).name='expedition-suit-belt';
+    box(root,.11,.09,.035,brass,0,.6,.22,.015).name='expedition-suit-emblem';
+    if(item.area==='sea')for(const side of [-1,1])box(root,.033,.23,.034,cloth,side*.20,.61,.206,.01);
+   }
+  }
+ }
 }

@@ -1,7 +1,7 @@
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint} from './model-parts';
 export function forestGuardian(boss=false){
- const root=new T.Group();root.name=boss?'raja-rimbun':'seed-guardian';root.userData.modelVersion='forest-12';const rig=joint(root,0,0,0,'guardian-rig');rig.scale.setScalar(boss?1.9:1);
+ const root=new T.Group();root.name=boss?'raja-rimbun':'seed-guardian';root.userData.modelVersion='forest-13-motion';const rig=joint(root,0,0,0,'guardian-rig');rig.scale.setScalar(boss?1.9:1);
  const bark=satin(boss?0x815a3e:0xa58256),light=satin(0xbb9565),leaf=satin(boss?0x396c49:0x75a456),gold=satin(0xe8bd67),ink=satin(0x233c35),cream=new T.MeshBasicMaterial({color:0xf9eed2}),glow=new T.MeshBasicMaterial({color:0xa8e4be}),fruit=satin(0xb46bba);
  const torso=joint(rig,0,.58,0,'trunk');addMesh(torso,new T.CylinderGeometry(.25,.31,.58,12),bark);for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const seam=addMesh(torso,new T.CylinderGeometry(.012,.016,.43,4),light,Math.sin(a)*.265,-.025,Math.cos(a)*.265);seam.rotation.z=Math.sin(a)*.04;}
  const head=joint(rig,0,1.0,.015,'guardian-head');addMesh(head,roundBox(.54,.43,.46,.12),bark);const eyes:T.Group[]=[];
@@ -16,8 +16,14 @@ export function forestGuardian(boss=false){
  const armor=new T.Group();armor.name='king-armor';if(boss)for(let i=0;i<3;i++){const ring=addMesh(armor,new T.TorusGeometry(.46,.018,5,24),new T.MeshBasicMaterial({color:0x92e2ba,transparent:true,opacity:.6}),0,.72,0);ring.rotation.x=i*Math.PI/3;ring.rotation.z=i*.8;}rig.add(armor);
  const stars=new T.Group();rig.add(stars);for(let i=0;i<3;i++)addMesh(stars,new T.OctahedronGeometry(.035),gold,Math.sin(i*2.09)*.23,1.65,Math.cos(i*2.09)*.23);
  root.userData.animate=(time:number,speed:number,windup:number,stunned:boolean,reaction:number,phase:number)=>{
-  const stride=Math.sin(time*(boss?6:9))*Math.min(1,speed)*.48;rig.position.y=Math.sin(time*2)*.008+Math.abs(stride)*.025;torso.rotation.x=-Math.min(1,speed)*.07;head.rotation.z=Math.sin(time*1.4)*.025;head.rotation.y=Math.sin(time*.8)*.06;
-  legs.forEach((l,i)=>l.rotation.x=i?-stride:stride);arms.forEach((a,i)=>{a.rotation.x=i?stride:-stride;a.rotation.z=(i?1:-1)*.14;});elbows.forEach(e=>e.rotation.x=-.2);
+  const locomotion=Math.min(1,Math.max(0,speed));
+  const stride=Math.sin(time*(boss?4.1:7.2))*locomotion*(boss?.34:.48);
+  rig.position.y=Math.sin(time*(boss?1.15:1.8))*(boss?.016:.009)+Math.abs(stride)*.045;
+  torso.rotation.x=-locomotion*(boss?.10:.07);torso.rotation.z=Math.sin(time*(boss?.9:1.4))*(boss?.035:.025);
+  head.rotation.z=Math.sin(time*(boss?.7:1.4))*(boss?.032:.025);head.rotation.y=Math.sin(time*(boss?.6:.8))*(boss?.09:.06);
+  legs.forEach((l,i)=>{l.rotation.x=i?-stride:stride;l.rotation.z=(i?1:-1)*(.04+locomotion*.04);});
+  arms.forEach((a,i)=>{a.rotation.x=(i?stride:-stride)*.9+Math.sin(time*1.2+i)*.035*(1-locomotion);a.rotation.z=(i?1:-1)*(.14+Math.abs(stride)*.11);});
+  elbows.forEach((e,i)=>e.rotation.x=-.23-Math.max(0,(i?stride:-stride))*.22);
   if(windup>0){arms[1].rotation.x=-Math.sin(windup*Math.PI/2)*2.2;elbows[1].rotation.x=-.65;torso.rotation.y=-windup*.25;head.rotation.z=-windup*.08;}else torso.rotation.y=0;
   if(reaction>0&&reaction<.35){const p=Math.sin(reaction/.35*Math.PI);torso.rotation.x+=p*.22;head.rotation.x=-p*.15;}else head.rotation.x=0;
   const blink=time%5>4.83?.12:1;eyes.forEach(e=>e.scale.y=stunned?.45:blink*(boss?.85:1));stars.visible=stunned;stars.rotation.y=time*3;if(stunned)head.rotation.z=Math.sin(time*12)*.1;held.visible=windup>0;

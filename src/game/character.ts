@@ -3,7 +3,7 @@ import {throwPose,releaseTime,actionDuration,type AvatarActionKind} from './avat
 import {foodArt} from './food-art';
 import {walkingLeg} from './avatar-presentation';
 import {airPose,smooth01,armGrip} from './motion-quality';
-import {gloveModel,bootModel,expeditionWearables,expeditionWeaponModel} from './gear-model';
+import {gloveModel,bootModel,expeditionWearables,equippedExpeditionDetails,expeditionWeaponModel} from './gear-model';
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
@@ -14,7 +14,7 @@ export interface Character {root:T.Group;animate:(time:number,speed:number,celeb
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
  const loadout=appearance;
  if(appearance){appearance=expeditionAppearance(appearance);outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
- const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v6';const body=joint(root,0,0,0,'body');
+ const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v7-wardrobe';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
  const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:number,sz:number)=>{const q=addMesh(p,new T.SphereGeometry(1,12,8),m,x,y,z);q.scale.set(sx,sy,sz);return q;};
@@ -76,6 +76,13 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  }
  if(a.back==='wings')for(const side of [-1,1]){const wing=ell(body,moon,side*.34,.65,-.23,.3,.14,.045);wing.rotation.z=side*.4;for(let i=0;i<3;i++)ell(body,cream,side*(.23+i*.09),.65-i*.04,-.27,.11,.04,.022);}
  expeditionWearables(body,head,arms,legs,a);
+ // Only equipped expedition items appear on the avatar; owned-but-not-equipped items stay in the shop.
+ if(loadout){
+  const equipped=(['face','body','back','hands','feet'] as const)
+   .map(slot=>expeditionItem(loadout[slot]))
+   .filter((item):item is NonNullable<typeof item>=>!!item);
+  equippedExpeditionDetails(body,head,arms,legs,equipped);
+ }
  const weapon=expeditionItem(loadout?.back);
  if(weapon?.effect==='weapon'){
   const prop=expeditionWeaponModel(weapon.area);
@@ -115,16 +122,20 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  const sparks:T.Mesh[]=[];if(hasFX)for(let i=0;i<6;i++){const q=addMesh(costumeFX,new T.OctahedronGeometry(.018+i%2*.008),sparkMaterial);q.name='costume-spark';sparks.push(q);}
  const wings=body.children.filter(o=>o instanceof T.Mesh&&o.geometry instanceof T.SphereGeometry&&Math.abs(o.position.x)>.3&&o.position.z<-.2);
  const poseJoints=[body,head,...arms,...elbows,...legs,...knees],previousPose=poseJoints.map(()=>new T.Euler());let posed=false;
- const pack=body.getObjectByName('explorer-pack');let gait=0,landing=0,lastJump=0;
+ const pack=body.getObjectByName('explorer-pack')||body.getObjectByName('climbing-pack')||body.getObjectByName('expedition-back-gear');
+ let gait=0,landing=0,lastJump=0;
  const tangent=new T.Vector3(),normal=new T.Vector3(),binormal=new T.Vector3(),up=new T.Vector3(0,1,0);let motion=0,previous=0,lastYaw=0,lag=0;
  function animate(time:number,speed:number,celebrate=false,action?:CharacterAction){
   head.position.y=1;
   poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
-  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
+  const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*(4.4+2.8*walk)*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.075;
   const walkStep=Math.floor(gait/Math.PI);root.userData.footfall=walk>.08&&walkStep!==root.userData.walkStep;root.userData.walkStep=walkStep;
   body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.014*walk:Math.sin(time*2)*.012));body.rotation.set(-walk*.065,Math.sin(gait)*walk*.04,Math.sin(gait)*walk*.035+(1-Math.min(1,walk))*Math.sin(time*1.15)*.032);
   chest.scale.y=1+Math.sin(time*2)*.021;
-  for(let i=0;i<2;i++){const swing=i?stride:-stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
+  for(let i=0;i<2;i++){const swing=i?stride:-stride;
+   const gentle=1-Math.min(1,walk),side=i?1:-1;
+   arms[i].rotation.set(swing*.85+gentle*Math.sin(time*.92+i)*.035,side*Math.min(.065,walk*.055),side*(.095+Math.abs(swing)*.10));
+   elbows[i].rotation.x=-.16-Math.max(0,swing)*.28-gentle*Math.sin(time*1.7+i)*.045;const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   if(action?.cameraLook!==undefined&&walk<.04){const angle=Math.atan2(Math.sin(action.cameraLook),Math.cos(action.cameraLook));if(Math.abs(angle)<1.15)head.rotation.y=angle*.65;}
   const blink=1-.88*Math.max(0,Math.sin(Math.PI*Math.max(0,(time%4.6-4.37)/.23)));eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
@@ -141,7 +152,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
    const gripPhase=((action.climbProgress||0)*3)%1;body.position.y-=.08+(action.treeClimb?Math.sin(gripPhase*Math.PI)*.025:0);body.rotation.x=.16-(pulling?p*.3:0);head.rotation.x=-.2;
    arms.forEach((arm,i)=>{const reach=pulling?Math.sin(cycle+i*Math.PI):0;const grip=armGrip(.23+reach*.08-(pulling&&!action.treeClimb?p*.28:0),.23);arm.rotation.set(grip.shoulder,0,(i?1:-1)*.1);elbows[i].rotation.x=grip.elbow;legs[i].rotation.x=-.45-reach*.3;knees[i].rotation.x=.85+reach*.25;if(pulling&&!action.treeClimb&&i===0){const step=smooth01((p-.4)/.25)*(1-smooth01((p-.85)/.15));legs[i].rotation.x-=step*.65;knees[i].rotation.x+=step*.5;}});
   }else if(jump>.015&&!action?.swim){const pose=airPose(action?.jumpCount||1,action?.jumpAge||0,action?.jumpBase||0);pivot.rotation.x=pose.flip;legs.forEach(l=>l.rotation.x=-pose.tuck*.9);knees.forEach(k=>k.rotation.x=.45+pose.tuck*1.1);arms.forEach((arm,i)=>{arm.rotation.x=-.65-pose.tuck*.8;arm.rotation.z=(i?1:-1)*(.22+pose.tuck*.12);});}
-  if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.65);body.rotation.x+=landing*.14;}
+  if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.55);body.rotation.x+=landing*.09;arms.forEach((a,i)=>{a.rotation.x+=landing*.24;a.rotation.z+=(i?1:-1)*landing*.12;});}
 
   const kind=action?.actionKind,age=action?.actionAge??100,active=!!kind&&age>=0&&age<actionDuration(kind),ground=action?.climb!=='climbing'&&action?.climb!=='hanging';
   heldCake.visible=!action?.gearShot&&ground&&active&&(kind==='cake'||kind==='grenade')&&age<releaseTime(kind!);heldIcing.material instanceof T.MeshLambertMaterial&&heldIcing.material.color.setHex(action?.cakeColor??0xe67d83);
@@ -154,7 +165,13 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   if(action?.defeated){const fall=smooth01((action.hurtAge??1)/.6);pivot.rotation.z=-fall*1.05;pivot.position.y=.65+fall*.16;}
   if((action?.pickup??100)<.4&&ground&&!active){arms[0].rotation.z=-.35;head.rotation.x=-.06;}
   if(action?.swim){body.rotation.x=1.02;body.position.y=-.5;head.position.y=1.08;head.rotation.x=-.86;arms.forEach((a,i)=>{a.rotation.x=-.28+Math.sin(time*4.6+i*Math.PI)*.62;a.rotation.z=(i?1:-1)*.38;elbows[i].rotation.x=-.22+Math.sin(time*4.6+i*Math.PI)*.22;});legs.forEach((l,i)=>{l.rotation.x=Math.sin(time*6.4+i*Math.PI)*.38;knees[i].rotation.x=.22+Math.sin(time*6.4+i*Math.PI+.8)*.14;});}
-  const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
+  const turn=Math.atan2(Math.sin(root.rotation.y-lastYaw),Math.cos(root.rotation.y-lastYaw));lastYaw=root.rotation.y;
+  lag+=(-Math.max(-.18,Math.min(.18,turn*3))-lag)*(1-Math.exp(-dt*7));
+  // Weight shifts subtly into a turn without altering the authoritative player heading.
+  if(!action?.swim&&action?.climb!=='climbing'&&action?.climb!=='hanging'){
+   body.rotation.z+=lag*.22;
+   head.rotation.y-=lag*.27;
+  }
   const rootPoint=rest[0];
   centers.forEach((p,i)=>{const u=i/28,b=rest[i],angle=action?.swim?-.98:0,
    ry=b.y-rootPoint.y,rz=b.z-rootPoint.z,

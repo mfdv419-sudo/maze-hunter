@@ -22,7 +22,11 @@ export function animateLoadingWaterfall(artwork: HTMLImageElement): () => void {
   canvas.setAttribute('aria-hidden', 'true');
   artwork.after(canvas);
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
-  const falls = [
+  const falls = artwork.src.includes('forest-loading.webp') ? [
+    waterfall('M 452 170 L 480 170 486 195 480 226 456 246 440 237 442 198 Z',445,171,40,70,-3,3,[462,237]),
+    waterfall('M 666 247 L 692 242 698 264 695 310 675 345 658 329 658 274 Z',662,245,37,91,-4,9,[675,341]),
+    waterfall('M 286 70 L 300 70 302 96 301 152 292 168 283 157 Z',284,71,16,94,-2,17,[290,164]),
+  ] : [
     waterfall('M 657 172 L 710 168 707 185 701 208 688 216 684 231 670 237 646 226 647 213 650 194 652 184 Z',
       654, 171, 55, 62, -16, 3, [667, 228]),
     waterfall('M 620 242 L 665 239 664 258 661 284 659 302 651 314 650 330 637 335 609 333 599 324 599 304 601 279 608 252 Z',

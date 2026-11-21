@@ -117,3 +117,8 @@
 @media (prefers-reduced-motion: reduce) {
   .arena-loading progress:indeterminate { animation: none; background-position: center; }
 }
+
+/* Forest Grove loading artwork keeps the adventurer in frame on narrow screens. */
+@media (max-aspect-ratio: 3/4) {
+  .arena-loading:has(img[src*="forest-loading"]) img { object-position: 21% 48%; }
+}

@@ -728,8 +728,8 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const loading = startArenaLoading(root, {
     title: training ? tr('Taman Latihan', 'Practice Garden') : areaName(activeArea, lang),
     mode: forestWorld ? forestStageLabel[forestStage(difficulty, true)] : `Adventure · ${difficulty}`,
-    artwork: adventureBackdrop(activeArea, forestWorld), english: lang === 'en',
-    waterfall: activeArea === 'forest' && !forestWorld,
+    artwork: activeArea === 'forest' ? '/adventure/forest-loading.webp' : adventureBackdrop(activeArea, forestWorld), english: lang === 'en',
+    waterfall: activeArea === 'forest',
   });
   const loadError = (error: unknown) => {
     if (token !== generation) return;
