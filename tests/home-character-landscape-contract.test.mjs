@@ -8,7 +8,7 @@ test('home backgrounds live in profile sync and unlock only on gameplay progress
  assert.match(local,/recordExpeditionWin/);assert.match(local,/grantHomeBackdrop\(profile,area\)/);
  assert.match(back,/homeBackdropAreas/);assert.match(back,/canEnterAdventureArea/);
  assert.match(main,/equipHomeBackdrop/);assert.match(main,/void save\(\)/);
- assert.match(main,/home-backdrop-equip/);
+ assert.match(main,/equip-world-background/);assert.match(main,/equipHomeBackdrop/);
 });
 test('home level background is a 3D scene with solid faceted ledges and curved stream',()=>{
  const land=read('src/game/home-landscape.ts'),scene=read('src/game/menu-world.ts');
@@ -20,6 +20,7 @@ test('home level background is a 3D scene with solid faceted ledges and curved s
 });
 test('Home visual elements use one owned style without suppression directives',()=>{
  const css=read('src/home-ui.css');
- assert.match(css,/home-backdrop-equip/);
+ assert.match(css,/home-scene/);
+ assert.match(read('src/adventure-picker.css'),/expedition-backdrop/);
  assert.doesNotMatch(css,/!important|!ignore|@ts-ignore/);
 });

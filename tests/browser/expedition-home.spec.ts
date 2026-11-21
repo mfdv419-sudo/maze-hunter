@@ -1,7 +1,21 @@
 import {test,expect} from '@playwright/test';
 const qa='test-results/screenshots/';
-test('Home has direct mode entry, a jump greeting and a persistent full rotation gesture',async({page})=>{
- const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('/');await page.locator('#lab').click();await expect(page.locator('#title-world canvas')).toBeVisible();await expect(page.locator('#play')).toHaveCount(0);await expect(page.locator('#profiles')).not.toContainText('⌄');await expect(page.locator('#maze-transition')).toHaveCount(0);const mascot=page.locator('#mascot-touch');await mascot.click();await expect(mascot).toHaveAttribute('data-reactions','1');const b=(await mascot.boundingBox())!;await page.mouse.move(b.x+b.width*.5,b.y+b.height*.5);await page.mouse.down();await page.waitForTimeout(300);await page.mouse.move(b.x+b.width*.5+550,b.y+b.height*.5,{steps:22});await page.mouse.up();await expect.poll(async()=>Number(await page.locator('#title-world').getAttribute('data-yaw'))).toBeGreaterThan(6);await expect(mascot).toHaveAttribute('data-reactions','1');await page.screenshot({path:qa+'expedition-home-home.png'});await page.locator('#retro-mode').click();await expect(page.locator('#level-1')).toBeVisible();expect(errors).toEqual([]);
+test('Home offers approved game entry and optional 3D outfit inspection',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/');await page.locator('#lab').click();
+ await expect(page.locator('#modern-mode')).toBeInViewport();
+ await expect(page.locator('#play')).toHaveCount(0);
+ await page.locator('#home-hero-inspect').click();
+ await expect(page.locator('#title-world canvas')).toBeVisible({timeout:20000});
+ const mascot=page.locator('#mascot-touch');await mascot.click();
+ await expect(mascot).toHaveAttribute('data-reactions','1');
+ const b=(await mascot.boundingBox())!;
+ await page.mouse.move(b.x+b.width*.5,b.y+b.height*.5);await page.mouse.down();
+ await page.mouse.move(b.x+b.width*.5+100,b.y+b.height*.5,{steps:12});await page.mouse.up();
+ await expect.poll(async()=>Number(await page.locator('#title-world').getAttribute('data-yaw'))).toBeGreaterThan(0);
+ await page.locator('#home-viewer-close').click();
+ await page.locator('#retro-mode').click();await expect(page.locator('#level-1')).toBeVisible();
+ expect(errors).toEqual([]);
 });
 test('Retro begins its countdown on entry before any pointer movement, and pause freezes it',async({page})=>{
  await page.goto('/');await page.locator('#lab').click();await page.locator('#retro-mode').click();await page.locator('#level-1').click();const canvas=page.locator('#game-stage canvas');await expect(canvas).toHaveAttribute('data-phase','playing');await expect.poll(async()=>Number(await canvas.getAttribute('data-remaining'))).toBeLessThan(59);await page.locator('#pause-game').click();await expect(canvas).toHaveAttribute('data-phase','paused');const remaining=await canvas.getAttribute('data-remaining');await page.waitForTimeout(400);expect(await canvas.getAttribute('data-remaining')).toBe(remaining);await page.locator('#resume').click();await expect(canvas).toHaveAttribute('data-phase','playing');

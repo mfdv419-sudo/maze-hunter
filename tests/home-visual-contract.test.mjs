@@ -1,39 +1,42 @@
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync, statSync} from 'node:fs';
 import test from 'node:test';
-const home=readFileSync(new URL('../src/home-ui.css',import.meta.url),'utf8');
-const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const main=read('src/main.ts'),css=read('src/home-ui.css');
+const home=main.slice(main.indexOf('function home()'),main.indexOf('function settings()',main.indexOf('function home()')));
+const asset=(name)=>new URL('../public/adventure/home-approved/'+name,import.meta.url);
 
-test('Home has exactly the two approved game entries, no separate play CTA',()=>{
- const block=main.slice(main.indexOf('function home()'),main.indexOf('const version = document.createElement("small")',main.indexOf('function home()')));
- const events=main.slice(main.indexOf('function home()'),main.indexOf('click("lab"',main.indexOf('function home()')));
- assert.match(block,/id="retro-mode"/);
- assert.match(block,/id="modern-mode"/);
- assert.match(events,/click\('retro-mode',/);
- assert.match(events,/click\('modern-mode',/);
- assert.doesNotMatch(block,/id="(?:play-now|home-play|play-solo)"/);
+test('Home has exactly two game entry buttons, no duplicate Play CTA',()=>{
+ assert.match(home,/id="retro-mode"/);assert.match(home,/id="modern-mode"/);
+ assert.match(home,/click\('retro-mode',/);assert.match(home,/click\('modern-mode',/);
+ assert.doesNotMatch(home,/id="(?:play-now|home-play|play-solo)"/);
 });
 
-test('Both game entries have distinct illustrated scenes and readable icon/text',()=>{
- assert.match(main,/class="mode-tile-art"/);
- assert.match(main,/class="mode-glyph"/);
- assert.match(main,/class="mode-copy"/);
- assert.match(home,/mode-tile--retro \.mode-tile-art \{background-image:url\('\/adventure\/classic\.webp'\)/);
- assert.match(home,/mode-tile--adventure \.mode-tile-art \{background-image:url\('\/adventure\/forest-panorama\.webp'\)/);
+test('Home uses approved artwork as separate interactive layers',()=>{
+ for(const image of ['forest-backdrop.webp','hero.png','logo.png','classic.png','adventure.png','shop.png','collection.png'])
+   assert.ok(statSync(asset(image)).size>10000,`missing detailed approved artwork ${image}`);
+ assert.match(home,/class="home-art-button home-art-button--classic"/);
+ assert.match(home,/class="home-art-button home-art-button--adventure"/);
+ assert.match(home,/class="home-scene"/);
+ assert.match(home,/class="home-hero-action"/);
+ assert.doesNotMatch(css,/\.mode-tile-art\b/);
 });
 
-test('Hover, keyboard focus and motion accessibility are real, not inert',()=>{
- assert.match(home,/\.mode-tile:hover/);
- assert.match(home,/\.mode-tile:focus-visible/);
- assert.match(home,/\.home-shortcuts button:hover/);
- assert.match(home,/\.home-tool:hover/);
- assert.match(home,/@media\(prefers-reduced-motion:reduce\)/);
- assert.match(home,/@media\(max-width:650px\) and \(orientation:portrait\)/);
+test('High fidelity Home remains interactive and never forces a low-poly background',()=>{
+ assert.match(home,/click\('home-hero-inspect'/);
+ assert.match(home,/const \{menuWorld\}=await import\('\.\/game\/menu-world'\)/);
+ assert.match(home,/click\('home-viewer-close',closeViewer\)/);
+ assert.match(home,/click\('home-shop',\(\)=>wardrobe\(\)\)/);
+ assert.match(home,/click\('collection-open',\(\)=>collection\(\)\)/);
+ assert.match(home,/click\("fullscreen", requestGameFullscreen\)/);
+ assert.doesNotMatch(home,/world3d-ready|\.classList\.add\('world3d-ready'\)/);
 });
 
-test('No forbidden priority overrides; fullscreen and wardrobe actions retained',()=>{
- assert.doesNotMatch(home,/!important|@ts-ignore|@ts-nocheck/);
- assert.match(main,/homeTool\('fullscreen','expand'/);
- assert.match(main,/click\("fullscreen", requestGameFullscreen\)/);
- assert.match(main,/click\('home-shop',\(\)=>wardrobe\(\)\)/);
+test('Hover, focus, reduced-motion and mobile layout remain intentional',()=>{
+ assert.match(css,/\.home-art-button:hover/);
+ assert.match(css,/\.home-art-button:focus-visible/);
+ assert.match(css,/\.home-hero-action:hover/);
+ assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(css,/@media\(max-width:650px\) and \(orientation:portrait\)/);
+ assert.doesNotMatch(css,/!important|@ts-ignore|@ts-nocheck|!ignore/);
 });

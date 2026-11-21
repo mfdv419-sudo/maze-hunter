@@ -270,39 +270,48 @@ async function preview(id: string, outfit = "classic",view:'front'|'back'|'tail'
 function home() {
   const homeTool=(id:string,icon:string,label:string)=>`<button type="button" id="${id}" class="home-tool" aria-label="${esc(label)}">${forestIcon(icon)}</button>`;
   const activeArea=homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess());
-  // Home selects only the game mode. Arena selection and its locks live in Adventure.
+  const artBackdrop = activeArea==='forest'
+    ? '/adventure/home-approved/forest-backdrop.webp'
+    : screenArt(activeArea,1);
+  // Approved artwork is separated into independent visual assets.
+  // Every visible control remains a real button and routes through the existing handlers.
   begin(
     "home",
-    `<main class="title-screen">
-      <div id="title-world" class="title-world" style="--home-world-art:url('${screenArt(activeArea,1)}')" aria-label="${tr('Panorama arena yang dipilih','Preview of the selected world')}"></div>
-      <div class="title-vignette"></div>
-      <section class="home-brand">
-       <div class="home-kicker">${tr('PETUALANGAN KECIL, DUNIA LUAS','LITTLE PAWS. BIG ADVENTURES.')}</div>
-       <h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span></h1>
-       <p class="home-tagline">${tr('Setiap belokan, petualangan baru.','A new adventure around every corner.')}</p>
-       ${profile?`<div class="title-progress">★ ${retroTotalStars(profile)} <span>${tr('LEVEL','LEVEL')} ${unlocked(profile)}</span></div>`:''}
+    `<main class="title-screen home-art-screen">
+      <div class="home-scene" aria-hidden="true">
+        <img id="home-scene-image" src="${artBackdrop}" alt="" decoding="async" fetchpriority="high" />
+        <div class="home-water-sheen"></div><div class="home-floating-pollen"></div>
+      </div>
+      <section class="home-brand" aria-label="Maze Hunter">
+        <img class="home-brand-art" src="/adventure/home-approved/logo.png" alt="Maze Hunter" width="442" height="162" />
+        <div class="home-brand-tagline">EXPLORE <span>•</span> SOLVE <span>•</span> ADVENTURE</div>
       </section>
-      <nav class="home-right" aria-label="${tr('Pilihan permainan','Game modes')}">
-       <div class="home-section-label">${tr('PILIH PETUALANGAN','CHOOSE YOUR ADVENTURE')}</div>
-       <div class="mode-selector" role="group" aria-label="${tr('Pilih petualangan','Choose your adventure')}">
-        <button type="button" id="retro-mode" class="mode-tile mode-tile--retro" aria-pressed="${homeMode==='retro'}" aria-label="${tr('Buka Labirin Klasik','Open Classic Maze')}">
-         <span class="mode-tile-art" aria-hidden="true"></span>
-         <span class="mode-glyph" aria-hidden="true">${forestIcon('maze')}</span>
-         <span class="mode-copy"><b>${tr('LABIRIN KLASIK','CLASSIC MAZE')}</b><small>${tr('Temukan rute dan gerbang','Find the route and gate')}</small></span>
-         <span class="mode-selected" aria-hidden="true">${forestIcon('check')}</span>
+      <div class="home-hero-stage" aria-label="${tr('Karakter binturong petualang','Binturong adventurer character')}">
+        <button type="button" class="home-hero-action" id="home-hero-inspect" aria-label="${tr('Buka tampilan karakter 3D untuk diputar dan menyapa','Open the interactive 3D character to rotate and greet')}">
+          <img src="/adventure/home-approved/hero.png" alt="" width="614" height="708" draggable="false" />
         </button>
-        <button type="button" id="modern-mode" class="mode-tile mode-tile--adventure" aria-pressed="${homeMode==='modern'}" aria-label="${tr('Buka Adventure','Open Adventure')}">
-         <span class="mode-tile-art" aria-hidden="true"></span>
-         <span class="mode-glyph" aria-hidden="true">${forestIcon('mountain')}</span>
-         <span class="mode-copy"><b>ADVENTURE</b><small>${tr('Jelajahi dunia 3D','Explore the 3D worlds')}</small></span>
-         <span class="mode-selected" aria-hidden="true">${forestIcon('check')}</span>
+      </div>
+      <div class="home-3d-viewer" id="home-viewer" hidden>
+        <div class="title-world" id="title-world" aria-label="${tr('Preview karakter 3D interaktif','Interactive 3D character preview')}"></div>
+        <button type="button" id="home-viewer-close" class="home-viewer-close" aria-label="${tr('Tutup preview 3D','Close 3D preview')}">×</button>
+        <p>${tr('Geser untuk memutar · ketuk untuk menyapa','Drag to rotate · tap to greet')}</p>
+      </div>
+      <nav class="home-right" aria-label="${tr('Pilih permainan','Choose game mode')}">
+        <button type="button" id="retro-mode" class="home-art-button home-art-button--classic" aria-pressed="${homeMode==='retro'}" aria-label="${tr('Masuk ke Classic Maze','Enter Classic Maze')}">
+          <img src="/adventure/home-approved/classic.png" alt="" width="846" height="218" draggable="false" />
+          <span class="home-art-button-shine" aria-hidden="true"></span>
         </button>
-       </div>
-       <div class="home-shortcuts">
-         ${profile?`<button id="collection-open" type="button"><span class="shortcut-icon" aria-hidden="true">${forestIcon('trophy')}</span><span>${tr('Koleksi & Misi','Collection & Quests')}</span></button><button id="home-shop" type="button"><span class="shortcut-icon" aria-hidden="true">${forestIcon('bag')}</span><span>${tr('Shop & Kostum','Shop & Outfit')}</span></button>`:''}
-       </div>
+        <button type="button" id="modern-mode" class="home-art-button home-art-button--adventure" aria-pressed="${homeMode==='modern'}" aria-label="${tr('Masuk ke Adventure','Enter Adventure')}">
+          <img src="/adventure/home-approved/adventure.png" alt="" width="865" height="227" draggable="false" />
+          <span class="home-art-button-shine" aria-hidden="true"></span>
+        </button>
+        ${profile?`<div class="home-shortcuts">
+          <button type="button" id="collection-open" class="home-art-button home-art-button--small" aria-label="${tr('Koleksi dan Misi','Collection and Quests')}"><img src="/adventure/home-approved/collection.png" alt="" width="403" height="141" draggable="false" /></button>
+          <button type="button" id="home-shop" class="home-art-button home-art-button--small" aria-label="${tr('Toko dan kostum','Shop and Outfit')}"><img src="/adventure/home-approved/shop.png" alt="" width="421" height="139" draggable="false" /></button>
+        </div>`:''}
       </nav>
-      <div class="mascot-hint">${tr('Ketuk karakter untuk menyapa · geser untuk memutar','Tap the character to greet · drag to rotate')}</div>
+      ${profile?`<div class="home-live-progress" aria-label="${tr('Progres pemain','Player progress')}"><span class="home-progress-symbol">★</span><span>${retroTotalStars(profile)}</span><span class="home-level-label">LEVEL ${unlocked(profile)}</span></div>`:''}
+      <div class="home-mascot-hint">${tr('Ketuk Binturong untuk melihat kostum 3D','Tap Binturong to inspect your 3D outfit')}</div>
       <div class="title-tools" id="home-utilities">
         ${homeTool('settings','settings',tr('Pengaturan','Settings'))}
         ${profile?homeTool('scores','trophy',tr('Peringkat','Scores')):''}
@@ -313,38 +322,40 @@ function home() {
       ${import.meta.env.DEV&&!profile?button('Uji kontrol','lab','dev-lab'):''}
     </main>`,
   );
-  // Own Home utility placement in the real header; never hide it beneath the header overlay.
   const utilityRail=el('home-utilities');
   root.querySelector(':scope > header')?.prepend(utilityRail);
   el("how").setAttribute("aria-label", tr("Cara bermain", "How to play"));
   el("fullscreen").setAttribute("aria-label", tr("Layar penuh", "Fullscreen"));
-  if (el("wardrobe"))
-    el("wardrobe").setAttribute(
-      "aria-label",
-      tr("Karakter dan kostum", "Character and outfits"),
-    );
+  el("wardrobe")?.setAttribute("aria-label", tr("Karakter dan kostum", "Character and outfits"));
   const token = generation;
-  let setPreview: ((mode: "retro" | "modern", area:AdventureArea) => void) | undefined;
-  void import("./game/menu-world")
-    .then(({ menuWorld }) => {
-      if (token !== generation) return;
-      const world = menuWorld(el("title-world"),profile?.outfit,lang,homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
-      cleanup = world.dispose;
-      setPreview=(mode,area)=>{world.setMode(mode);world.setArea(area);};
-      world.setArea(homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess()));
-    })
-    .catch(error=>{
-      if(token!==generation)return;
-      console.warn('Home 3D preview unavailable; keeping selected arena artwork',error);
-    });
+  // Do not replace the approved Home art with a low-poly canvas.
+  // The existing 3D character remains available as an explicitly opened, interactive viewer.
+  let disposeViewer: (()=>void) | undefined;
+  let viewerOpening = false;
+  const viewer=el<HTMLElement>('home-viewer');
+  const openViewer=async()=>{
+    if(viewerOpening || !viewer.hidden)return;
+    viewer.hidden=false;
+    viewerOpening=true;
+    const currentToken=token;
+    try{
+      const {menuWorld}=await import('./game/menu-world');
+      if(currentToken!==generation || viewer.hidden)return;
+      const world=menuWorld(el('title-world'),profile?.outfit,lang,homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
+      world.setArea(activeArea);
+      disposeViewer=world.dispose;
+    }catch(error){
+      viewer.hidden=true;
+      console.warn('3D character inspection unavailable',error);
+    }finally{viewerOpening=false;}
+  };
+  const closeViewer=()=>{viewer.hidden=true;disposeViewer?.();disposeViewer=undefined;el('title-world').replaceChildren();};
+  cleanup=()=>{disposeViewer?.();disposeViewer=undefined;};
+  click('home-hero-inspect',()=>void openViewer());
+  click('home-viewer-close',closeViewer);
   const updateHomeSelection=()=>{
     el('retro-mode').setAttribute('aria-pressed',String(homeMode==='retro'));
     el('modern-mode').setAttribute('aria-pressed',String(homeMode==='modern'));
-    const area=homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess());
-    el<HTMLElement>('title-world').style.setProperty('--home-world-art',`url("${screenArt(area,1)}")`);
-    // Home never previews/selects individual arenas. The owned profile backdrop
-    // remains visible until the user equips another from Adventure selection.
-    setPreview?.(homeMode,area);
   };
   const enterMode = async (play:HTMLButtonElement) => {
     rememberLoginIntent(homeMode);try{await restoreAuth();}catch(e){showError(e);return;}
@@ -381,10 +392,6 @@ function home() {
             ),
           );
   };
-  const version = document.createElement("small");
-  version.className = "build-label";
-  version.textContent = buildLabel;
-  el("title-world").parentElement!.append(version);
   el("scores")?.setAttribute("aria-label",tr("Peringkat keluarga", "Family records"));
   click("scores",()=>scores());
   click("settings", () => settings());
