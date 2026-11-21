@@ -213,3 +213,18 @@ approved concept art.
 - **Perbaikan:** callback import `modern` menjadi async, `avatarPortraits()` ditunggu dengan `await`, kemudian `generation` diverifikasi ulang sebelum DOM kartu Wardrobe diisi. Tidak ada suppress TypeScript, `!important`, atau penggantian fungsi.
 - **Lingkup delta:** `src/main.ts` dan satu `history.md`; tidak mengubah GLB/modular character, kamera, CSS, harga Shop, Retro, progression, atau fungsi server.
 - **Validasi:** perubahan source dibandingkan dengan versi pemanggil sebelum async dan dipastikan hanya tiga edit dalam blok Wardrobe; source TypeScript diparse. Audit UI dan Maze dari log Netlify sudah lolos sebelum tahap `tsc`. Build Vite penuh perlu diverifikasi saat deploy karena dependensi lokal tidak lengkap.
+
+## 2026-11-21 — Home: approved illustrated game-mode buttons and hover
+
+**Baseline:** source `maze-1` assembled from the previously delivered deltas through `Restore Modular Character & Wardrobe` and `Wardrobe async build fix`. The approved reference is the bright Maze Hunter Home illustration with illustrated Classic Maze / Adventure panels, small utility medallions, and lightweight secondary actions. **Home has no Play CTA**; clicking Classic or Adventure opens that mode's own screen.
+
+**Changes (single owner, no override CSS):**
+- `src/main.ts`: the two Home entry buttons now include distinct scene artwork layers, consistent SVG mode icons, title/subtitle, accessible names and selected-state check icons. Collection/Quests and Shop/Outfit use proper SVG icons; duplicate Collection click registration removed. Kept existing `enterMode` behaviour, Fullscreen, audio, profile, wardrobe, mode-dependent Home panorama, and existing character interaction.
+- `src/home-ui.css`: replaced the entire previous Home stylesheet with a cohesive bright navy/teal system: light rim rather than heavy gold, asymmetric game-shaped mode tiles, different illustrated scenes, selection glow, moving hover states, keyboard focus indicators, responsive portrait/landscape layouts and reduced-motion support. Uses existing `/adventure/classic.webp` at small card scale and `/adventure/forest-panorama.webp` at proper quality. Home background remains the existing responsive 3D scene; no enlarged 440px full-screen image is introduced.
+- `tests/home-visual-contract.test.mjs`: four regression checks for two-mode navigation without duplicate Play button, distinct illustrated cards, hover/focus/reduced-motion, and retained Fullscreen/Shop wiring.
+
+**Scope control:** no changes to Retro, camera, gameplay controls, character geometry/rig/animations, Shop catalogue/progression, Firebase or Netlify configuration. No `!important`, ignore directives, or parallel CSS owner added.
+
+**Validation:** UI audit 14/14; Maze audit 22/22; Home checks 4/4; TypeScript parser 0 syntax errors; CSS parser 0 syntax errors. **Full Vite build and browser/WebGL screenshots not verified** because dependency installation did not complete in this environment. Visual match with illustrated reference remains a Deploy Preview review item; original Home 3D Binturong appearance remains unchanged in this delta.
+
+**Installation:** extract the ZIP into the root of branch `maze-1` after the `Wardrobe async build fix` delta, overwriting only matching paths. `history.md` remains the sole chronological revision document.

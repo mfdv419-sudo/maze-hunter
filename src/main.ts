@@ -285,11 +285,21 @@ function home() {
       <nav class="home-right" aria-label="${tr('Pilihan permainan','Game modes')}">
        <div class="home-section-label">${tr('PILIH PETUALANGAN','CHOOSE YOUR ADVENTURE')}</div>
        <div class="mode-selector" role="group" aria-label="${tr('Pilih petualangan','Choose your adventure')}">
-        <button type="button" id="retro-mode" class="mode-tile" aria-pressed="${homeMode==='retro'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>${tr('LABIRIN KLASIK','CLASSIC MAZE')}</b><small>${tr('Telusuri rute dan gerbang','Find the route and gate')}</small></span><i aria-hidden="true">◆</i></button>
-        <button type="button" id="modern-mode" class="mode-tile" aria-pressed="${homeMode==='modern'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr('Jelajahi dunia 3D','Explore the 3D worlds')}</small></span><i aria-hidden="true">◆</i></button>
+        <button type="button" id="retro-mode" class="mode-tile mode-tile--retro" aria-pressed="${homeMode==='retro'}" aria-label="${tr('Buka Labirin Klasik','Open Classic Maze')}">
+         <span class="mode-tile-art" aria-hidden="true"></span>
+         <span class="mode-glyph" aria-hidden="true">${forestIcon('maze')}</span>
+         <span class="mode-copy"><b>${tr('LABIRIN KLASIK','CLASSIC MAZE')}</b><small>${tr('Temukan rute dan gerbang','Find the route and gate')}</small></span>
+         <span class="mode-selected" aria-hidden="true">${forestIcon('check')}</span>
+        </button>
+        <button type="button" id="modern-mode" class="mode-tile mode-tile--adventure" aria-pressed="${homeMode==='modern'}" aria-label="${tr('Buka Adventure','Open Adventure')}">
+         <span class="mode-tile-art" aria-hidden="true"></span>
+         <span class="mode-glyph" aria-hidden="true">${forestIcon('mountain')}</span>
+         <span class="mode-copy"><b>ADVENTURE</b><small>${tr('Jelajahi dunia 3D','Explore the 3D worlds')}</small></span>
+         <span class="mode-selected" aria-hidden="true">${forestIcon('check')}</span>
+        </button>
        </div>
        <div class="home-shortcuts">
-         ${profile?`<button id="collection-open" type="button">${tr('◈ Koleksi & Misi','◈ Collection & Quests')}</button><button id="home-shop" type="button">${tr('✦ Shop & Kostum','✦ Shop & Outfit')}</button>`:''}
+         ${profile?`<button id="collection-open" type="button"><span class="shortcut-icon" aria-hidden="true">${forestIcon('trophy')}</span><span>${tr('Koleksi & Misi','Collection & Quests')}</span></button><button id="home-shop" type="button"><span class="shortcut-icon" aria-hidden="true">${forestIcon('bag')}</span><span>${tr('Shop & Kostum','Shop & Outfit')}</span></button>`:''}
        </div>
       </nav>
       <div class="mascot-hint">${tr('Ketuk karakter untuk menyapa · geser untuk memutar','Tap the character to greet · drag to rotate')}</div>
@@ -387,8 +397,9 @@ function home() {
   // Two primary game choices are the real entry actions. No duplicate Play Now.
   click('retro-mode',()=>{chooseMode('retro');void enterMode(el<HTMLButtonElement>('retro-mode'));});
   click('modern-mode',()=>{chooseMode('modern');void enterMode(el<HTMLButtonElement>('modern-mode'));});
-  click('home-shop',()=>wardrobe());click('collection-open',()=>collection());
-  click("wardrobe", () => wardrobe());click("collection-open",()=>collection());
+  click('home-shop',()=>wardrobe());
+  click('collection-open',()=>collection());
+  click('wardrobe',()=>wardrobe());
   click("fullscreen", requestGameFullscreen);
   click("lab", () => {
     lab = true;
