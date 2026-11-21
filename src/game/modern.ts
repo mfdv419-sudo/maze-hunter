@@ -23,7 +23,6 @@ import {weaponShots,sweptHit,type EquippedWeapon} from './weapon-shots';
 import {ROCK_LIMIT,safeRockPoint,fieldRockPlan} from './fallen-rocks';
 import {cascadeSites} from './expedition-landmarks';
 import {AWAKEN_SECONDS,awakeningProgress,awakeningShot} from './awakening';
-import {CameraOcclusion} from './camera-occlusion';
 import {cakeColors} from './cake-powers';
 import {climbProp,obstacleArt} from './obstacle-art';
 import {fieldPose} from './field-obstacles';
@@ -140,7 +139,6 @@ export class ModernGame {
   private renderer: T.WebGLRenderer;
   private scene = new T.Scene();
   private world=new T.Group();
-  private occlusion=new CameraOcclusion();
   private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
   private contactCamera:RadiusOrbitCamera|AdventureCamera;private cameraYaw=0;
@@ -508,7 +506,7 @@ export class ModernGame {
     for(const event of ['pointerup','pointercancel','lostpointercapture'])host.addEventListener(event,e=>{if((e as PointerEvent).pointerId===this.lookPointer)this.lookPointer=null;},{signal:this.abort.signal});
     if(this.adventure?.pilot)for(const mesh of [this.floor,this.walls,this.rockWalls,this.lodgeWalls,this.treeTrunks,this.treeCrowns])if(mesh)mesh.visible=false;
     for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.treeTrunks])if(root)this.cameraCollision.register(root);
-    for(const root of [this.walls,this.rockWalls,this.lodgeWalls,this.leaves,this.treeTrunks,this.treeCrowns,...this.ledgeModels,...this.landmarkModels.map(l=>l.group)])if(root)this.occlusion.register(root);this.world.traverse(o=>{if(o.userData.cameraOccluder)this.occlusion.register(o);});
+
 this.awakeningPanel=document.createElement('div');this.awakeningPanel.className='awakening-cinematic';this.awakeningPanel.hidden=true;const title=document.createElement('strong');title.textContent=document.documentElement.lang==='id'?'RAJA BANGKIT':'THE KING AWAKENS';const caption=document.createElement('span');caption.textContent=document.documentElement.lang==='id'?'Semua pemain dilindungi selama cuplikan':'All players protected during the sequence';const skip=document.createElement('button');skip.type='button';skip.textContent=document.documentElement.lang==='id'?'Lewati cuplikan':'Skip scene';skip.onclick=()=>this.skipAwakening();this.awakeningPanel.append(title,caption,skip);host.parentElement!.append(this.awakeningPanel);
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(host);
@@ -995,13 +993,13 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const displayCamera=cinematic&&this.cinematicCamera?this.cinematicCamera:this.camera;this.forestScene?.update(this.time,displayCamera,this.position);this.biomeScene?.update(this.time,displayCamera,{...this.position,depth:this.adventure?.depth});
     this.host.dataset.swimming=String(!!this.adventure?.swimming);this.host.dataset.depth=String(this.adventure?.depth||0);this.host.dataset.area=this.adventure?.area||'classic';this.host.dataset.orientationBlocked=String(this.orientationBlocked);this.host.dataset.jumpHeight=String(this.jumpAt(this.elapsed));this.host.dataset.elevation=String(this.hero.root.position.y);this.host.dataset.wading=String(!!this.adventure?.sample&&inCave(this.position.x,this.position.y));this.host.dataset.heading=String(this.angle);this.host.dataset.x=String(this.position.x);this.host.dataset.y=String(this.position.y);this.host.dataset.cameraYaw=String(this.cameraYaw);this.host.dataset.cameraDistance=String(this.camera.position.distanceTo(target));this.host.dataset.cameraPitch=String(this.cameraPitch*180/Math.PI);this.host.dataset.desiredPitch=String(this.desiredPitch*180/Math.PI);
     // Solid walls are handled by collision. Only tiny residual obstructions use a restrained fade.
-    this.traversalScene?.update(this.time);this.occlusion.update(displayCamera,target,dt);
+    this.traversalScene?.update(this.time);
 
     this.renderer.render(this.scene, cinematic&&this.cinematicCamera?this.cinematicCamera:this.camera);
   }
   dispose() {
     if(document.pointerLockElement===this.host)document.exitPointerLock();
-    this.awakeningPanel?.remove();this.occlusion.dispose();this.cameraCollision.dispose();this.forestScene?.dispose();this.biomeScene?.dispose();this.traversalScene?.dispose();
+    this.awakeningPanel?.remove();this.cameraCollision.dispose();this.forestScene?.dispose();this.biomeScene?.dispose();this.traversalScene?.dispose();
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.abort.abort();

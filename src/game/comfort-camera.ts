@@ -58,6 +58,7 @@ export class AdventureCamera {
  private target?:T.Vector3;
  private heading?:number;
  private turnWindow=0;
+ private turnDirection=0;
  private waitingForRoom=false;
 
  reset(){
@@ -65,6 +66,7 @@ export class AdventureCamera {
   this.heading=undefined;
   this.turnWindow=0;
   this.waitingForRoom=false;
+  this.turnDirection=0;
  }
 
  step(target:T.Vector3,offset:T.Vector3,space:CameraSpace,frame:CameraFrame):T.Vector3{
@@ -140,16 +142,31 @@ export class AdventureCamera {
   if(frame.heading!==undefined){
    if(this.heading===undefined)this.heading=frame.heading;
    else if(Math.abs(angleBetween(frame.heading,this.heading))>Math.PI/7){
+    const delta=angleBetween(frame.heading,this.heading);
+    this.turnDirection=Math.sign(delta);
     this.heading=frame.heading;
-    this.turnWindow=1.2;
+    this.turnWindow=1.7;
    }
   }
 
+  const turnToClearSight=(from:T.Vector3):T.Vector3|null=>{
+   // Turn follow is allowed ONLY after real player heading change, with a
+   // blocked camera-to-character sight line. A stationary wall contact is not
+   // a reason to spin the camera or force it behind the player.
+   if(!this.turnWindow||!this.turnDirection)return null;
+   if(space.resolve(target,from,.18).distanceToSquared(from)<=EPSILON**2)return null;
+   const sideways=new T.Vector3(Math.cos(yaw)*this.turnDirection,0,-Math.sin(yaw)*this.turnDirection);
+   const wish=from.clone().addScaledVector(sideways,dt*2.15);
+   const slide=move(wish);
+   return slide.distanceToSquared(from)>1e-6&&space.isClear(slide,CAMERA_MARGIN)?slide:null;
+  };
   if(this.waitingForRoom){
-   // The player can approach a camera held against a wall. Resume only once
-   // player movement has naturally restored enough separation.
+   // The player can approach a camera held against a wall; do not compress
+   // distance or recenter. If the player actually turns and becomes hidden,
+   // a tiny lateral tracking move may release the view without a snap.
    if(distance<radius-EPSILON||distance<=oldDistance+.00001){
-    this.turnWindow=0;
+    const slide=turnToClearSight(old);
+    if(slide){this.eye=slide;return slide.clone();}
     return old.clone();
    }
    this.waitingForRoom=false;
@@ -157,10 +174,19 @@ export class AdventureCamera {
    return this.eye.clone();
   }
 
-  if(motion.lengthSq()<.0000001)return old.clone();
+  if(motion.lengthSq()<.0000001){
+   const slide=turnToClearSight(old);
+   if(slide){this.eye=slide;return slide.clone();}
+   return old.clone();
+  }
   const translated=old.clone().add(motion);
   const follow=move(translated);
   if(follow.distanceToSquared(translated)>EPSILON**2){
+   // This is a real wall contact. Keep the eye still unless the player has
+   // deliberately turned AND the line of sight is being blocked. No random
+   // wall-triggered side search, zoom, oscillation, or teleport behind player.
+   const slide=turnToClearSight(follow);
+   if(slide){this.eye=slide;this.waitingForRoom=false;return slide.clone();}
    this.waitingForRoom=true;
    this.turnWindow=0;
    this.eye=follow;
@@ -168,7 +194,7 @@ export class AdventureCamera {
   }
 
   if(this.turnWindow>0&&frame.heading!==undefined&&
-    (frame.outOfFrame||space.resolve(target,follow,0).distanceToSquared(follow)>EPSILON**2)){
+    (frame.outOfFrame||space.resolve(target,follow,.18).distanceToSquared(follow)>EPSILON**2)){
    const turn=angleBetween(frame.heading+Math.PI,yaw);
    const adjusted=place(yaw+T.MathUtils.clamp(turn,-dt*.85,dt*.85),pitch,radius);
    // The turn is player-driven. If its next step touches a wall, use the

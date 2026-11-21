@@ -46,13 +46,13 @@
 }
 #game[data-screen="setup"] > header svg { width: 1.1em; height: 1.1em; display: block; }
 
-.adventure-select { min-width: 0; overflow: auto; overscroll-behavior: contain; scroll-padding-top: 62px; }
+.adventure-select { min-width:0; min-height:0; height:100%; overflow:hidden; display:grid; grid-template-rows:minmax(0,1fr) auto; overscroll-behavior:none; }
 .adventure-poster {
   position: relative;
   isolation: isolate;
   display: grid;
   align-content: end;
-  min-height: clamp(260px, 57dvh, 720px);
+  min-height: 0;
   overflow: hidden;
   background: #74b8ac;
 }
@@ -83,7 +83,7 @@
   margin: 4px 0 12px;
   max-width: 15ch;
   color: var(--expedition-paper);
-  font-size: clamp(38px, 7.1vw, 116px);
+  font-size: clamp(29px, 5.5vw, 88px);
   font-weight: 700;
   line-height: .95;
   letter-spacing: -.045em;
@@ -119,11 +119,11 @@
 
 .expedition-picker {
   display: grid;
-  gap: clamp(11px, 2dvh, 23px);
+  gap: clamp(5px, 1dvh, 12px);
   min-width: 0;
   width: min(100%, 1840px);
   margin-inline: auto;
-  padding: 0 var(--expedition-gutter) max(18px, env(safe-area-inset-bottom));
+  padding: 0 var(--expedition-gutter) max(10px, env(safe-area-inset-bottom));
 }
 #game .adventure-select .expedition-picker h2 {
   margin: 0 0 6px;
@@ -138,7 +138,7 @@
   display: flex;
   align-items: flex-end;
   min-width: 0;
-  min-height: clamp(60px, 10dvh, 124px);
+  min-height: clamp(42px, 7.2dvh, 83px);
   padding: clamp(5px, .7vw, 11px);
   border: 3px solid #d7b46b;
   border-radius: 7px;
@@ -183,7 +183,7 @@
   justify-content: center;
   gap: clamp(3px, .55vw, 8px);
   min-width: 0;
-  min-height: clamp(41px, 5.5dvh, 58px);
+  min-height: clamp(34px, 4.7dvh, 52px);
   padding: 4px;
   text-transform: capitalize;
   font-size: clamp(11px, 1.2vw, 17px);
@@ -225,7 +225,7 @@
   align-items: center;
   justify-content: center;
   gap: clamp(4px, .7vw, 9px);
-  min-height: clamp(43px, 6dvh, 64px);
+  min-height: clamp(38px, 5dvh, 59px);
   padding: 4px clamp(4px, .8vw, 15px);
   font-size: clamp(11px, 1.22vw, 17px);
   font-weight: 600;
@@ -255,7 +255,7 @@
 }
 @media (max-width: 520px) {
   #game[data-screen="setup"] > header button { gap: 3px; padding-inline: 5px; }
-  .adventure-poster { min-height: clamp(250px, 41dvh, 365px); }
+  .adventure-poster { min-height: 0; }
   #adventure-preview { object-position: 66% 47%; }
   .poster-copy { padding-right: calc(var(--expedition-gutter) + 42px); }
   .expedition-difficulty:has(#forest-world-open) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -265,8 +265,8 @@
 @media (max-height: 470px) and (orientation: landscape) {
   #game[data-screen="setup"] > header { min-height: 40px; padding-block: 4px; }
   #game[data-screen="setup"] > header button { min-height: 30px; padding: 3px 7px; }
-  .adventure-select { scroll-padding-top: 42px; }
-  .adventure-poster { min-height: clamp(108px, 44dvh, 206px); }
+  .adventure-select { grid-template-rows:minmax(0,1fr) auto; }
+  .adventure-poster { min-height:0; }
   .poster-copy { padding-top: 44px; padding-bottom: 10px; }
   #game .adventure-select #expedition-title { font-size: clamp(28px, 5.3vw, 53px); margin-bottom: 5px; }
   .expedition-guide { width: 36px; height: 36px; bottom: 8px; }
@@ -284,3 +284,15 @@
 /* Area progression status belongs to the expedition picker. */
 #game[data-screen="setup"] .area-option[data-unlocked="false"]{filter:saturate(.5) brightness(.82)}
 #game[data-screen="setup"] .expedition-area-locked{padding:9px 12px;color:#ffe1ac;background:#20354e;border:1px solid #d9ad697d}
+
+/* Owned backdrop reward UI lives here, not in the Home mode menu. */
+.expedition-backdrop { display:flex; justify-content:flex-end; min-height:0; }
+.expedition-backdrop button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:29px; padding:3px 13px; border:2px solid #f4d887; border-radius:14px 8px 14px 8px; color:#fff2d7; background:linear-gradient(#167e93,#07516b); font-size:clamp(10px,.91vw,13px); font-weight:720; }
+.expedition-backdrop button:disabled { opacity:.66; }
+.expedition-backdrop svg { width:16px; height:16px; }
+@media (max-height:480px) and (orientation:landscape) {
+  .adventure-poster .picker-objectives { display:none; }
+  .poster-copy { padding-bottom:7px; }
+  .expedition-picker { gap:3px; }
+  .expedition-backdrop button { min-height:24px; padding:2px 9px; }
+}

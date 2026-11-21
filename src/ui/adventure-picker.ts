@@ -3,6 +3,7 @@ import type {Difficulty} from '../game/maze';
 import {roomCapacity} from '../game/adventure-room';
 import {canEnterForestWorld, forestStageLabel, forestStages, type forestEquipment, type ForestWorldDifficulty} from '../game/forest-progression';
 import {forestIcon} from './forest-icons';
+import {screenArt} from '../game/screen-art';
 
 export const expeditionDifficulties = ['easy', 'medium', 'hard', 'extreme'] as const;
 export const expandedDifficulties = ['hard', 'extreme'] as const;
@@ -10,14 +11,17 @@ const difficultyIcons = {easy: 'sprout', medium: 'signpost', hard: 'mountain', e
 const thumbnail = (area: AdventureArea) => `/adventure/${area}.webp`;
 
 export function adventureBackdrop(area: AdventureArea, expanded?: ForestWorldDifficulty) {
+  // The 440px thumbnail assets are ONLY used for world tiles. Large banners
+  // use scale-independent artwork; Expanded Forest has a dedicated 1440px capture.
   return expanded&&area==='forest' ? `/adventure/forest-expanded-${expanded}.webp`
-    : area === 'forest' ? '/adventure/forest-panorama.webp' : thumbnail(area);
+    : area === 'forest' ? '/adventure/forest-panorama.webp' : screenArt(area, 0);
 }
 
 export function expeditionPicker(
   area: AdventureArea, difficulty: Difficulty, lang: 'id' | 'en',
   expanded: ForestWorldDifficulty | undefined, rank: number, gear: ReturnType<typeof forestEquipment>,
  reviewer=false,areaUnlocked=true,canEnterArea:(area:AdventureArea)=>boolean=()=>true,
+ backdropOwned=false,backdropEquipped=false,
 ) {
   const text = (id: string, en: string) => lang === 'id' ? id : en;
   const label = areaName(area, lang);
@@ -85,6 +89,7 @@ export function expeditionPicker(
           </details>` : ''}
         </section>` : ''}
       </div>
+      <div class="expedition-backdrop"><button type="button" id="equip-world-background" ${!backdropOwned||backdropEquipped?'disabled':''}>${forestIcon('map')}<span>${!backdropOwned?text('Latar belum terbuka','Background locked'):backdropEquipped?text('Latar sedang dipakai','Background equipped'):text('Gunakan sebagai latar Home','Set as Home background')}</span></button></div>
       ${!areaUnlocked ? `<p class="expedition-area-locked" role="status">${text('Arena terkunci · selesaikan empat tahap Solo di arena sebelumnya untuk membuka.', 'World locked · clear the four Solo stages in the previous world to unlock.')}</p>`:''}
       <div class="expedition-actions">
         ${action('explore-area', text('Main Solo', 'Play Solo'), 'play', !ready)}

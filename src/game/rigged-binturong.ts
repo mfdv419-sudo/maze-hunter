@@ -2,6 +2,7 @@ import * as T from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { Character, CharacterAction, CharacterAppearance } from './character';
+import {doubleJumpSomersault} from './double-jump-motion';
 
 /** Native skinned GLB. There is no second, legacy character mesh implementation. */
 const MASTER_URL='/models/binturong_master_rigged.glb';
@@ -63,6 +64,7 @@ export function createRiggedBinturong(outfit:string,fur:number,appearance?:Chara
   const root=new T.Group();root.name='binturong';root.userData.modelVersion='rigged-binturong-glb-v1';
   root.userData.assetStatus='loading';
   let disposed=false,rig:T.Object3D|undefined,mixer:T.AnimationMixer|undefined,playing:T.AnimationAction|undefined;
+  let animationPivot:T.Group|undefined,lastJumpCount=0;
   let active='',last=-1;
   const clips=new Map<string,T.AnimationAction>();
   const attach=(asset:RigAsset)=>{
@@ -70,7 +72,9 @@ export function createRiggedBinturong(outfit:string,fur:number,appearance?:Chara
     const model=cloneSkinned(asset.scene);
     model.name='Binturong Master Rig';model.scale.setScalar(.75);
     outfitOn(model,outfit,fur,appearance);
-    root.add(model);rig=model;
+    // Rotate around the character's center, not the feet, for the second jump.
+    animationPivot=new T.Group();animationPivot.position.y=.72;model.position.y=-.72;
+    animationPivot.add(model);root.add(animationPivot);rig=model;
     mixer=new T.AnimationMixer(model);
     for(const clip of asset.animations)clips.set(clip.name,mixer.clipAction(clip));
     root.userData.assetStatus='ready';
@@ -85,15 +89,29 @@ export function createRiggedBinturong(outfit:string,fur:number,appearance?:Chara
     root,
     animate(time,speed,celebrate=false,a){
       if(!mixer)return;
+      const secondJump=!!a&&a.jumpCount===2&&(a.jump??0)>.015;
       const nextName=state(speed,celebrate,a);
+      if(secondJump&&lastJumpCount!==2&&active==='Jump')playing?.reset().play();
+      lastJumpCount=a?.jumpCount??0;
       const next=clips.get(nextName)??clips.get('Idle');
       if(next&&nextName!==active){
         next.reset().setEffectiveWeight(1).setEffectiveTimeScale(1).play();
         if(playing)playing.crossFadeTo(next,.18,true);
         playing=next;active=nextName;
       }
+      // Climbing must follow physical ledge progress; a looping generic clip
+      // makes the character cycle its limbs while stationary or pulling up.
+      // A hanging character holds its grasp frame, while ascent samples the
+      // authored clip from bottom to top once, without altering collision.
+      if(next){
+        if(nextName==='Climb'){
+          next.paused=true;
+          next.time=(a?.climb === 'hanging' ? 0.22 : Math.max(0,Math.min(1,a?.climbProgress??0)))*next.getClip().duration;
+        }else next.paused=false;
+      }
       const dt=last<0?0:Math.max(0,Math.min(.05,time-last));last=time;
       mixer.update(dt);
+      if(animationPivot)animationPivot.rotation.x=doubleJumpSomersault(a?.jumpCount??0,a?.jumpAge??0,a?.jump??0);
       // Manual free look is prioritized without moving the root/camera.
       if(a?.cameraLook!==undefined && speed<.04 && rig){
         const head=rig.getObjectByName('Head') as T.Bone|undefined;
