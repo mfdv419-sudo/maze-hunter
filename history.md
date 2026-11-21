@@ -127,3 +127,82 @@ Replaces the partial UI18 pass. Scope: in-game Adventure UI only.
 - Source UI audit **14/14 PASS**, maze/world audit **22/22 PASS**; camera math smoke **7/7 PASS**; TypeScript **syntax parsing PASS**; changed CSS **syntax parsing PASS**; forward-flip math checks **PASS**; exported GLB has **15 bones, 8 named clips, 27 material batches**, format checks PASS.
 - **Not completed here:** full Vite TypeScript build (container dependencies incomplete), Playwright/WebGL gameplay on actual maze geometry and phones, all wardrobe items visually reviewed, premium 3D sculpt/artwork equivalence, cross-biome animation QA. Do not infer this build is approved from static tests. On Deploy Preview, specifically test 90-degree corridor, wall-hold-to-corner, manual orbit against rock/ground, long idle, two jumps, gloves/fins/body outfit/back weapon, mobile Home layout.
 - **Changed files only** are provided in one delta ZIP with this `history.md` as the only new revision history entry. No additional Markdown change files created.
+
+---
+
+## 2026-11-21 — Directed reset: UI materials, wardrobe visibility and camera guard
+
+**Scope: Adventure/Home/Shop + shared Binturong rig presentation. Retro source, its quiz,
+progression, online server, and gameplay controls are not edited.** This delta is an
+implementation revision, **not** a claim that the character sculpt/animation now matches
+approved concept art.
+
+### Locked visual and behavior contract
+
+- Family-adventure theme is bright and legible. Navy and teal are primary game materials;
+  gold is for the **primary action and actively selected** options, not every idle button.
+  Home uses two mode entries (Retro and Adventure), world selection remains inside Adventure.
+  Utility icons use restrained circular medallions. No stacked top-gold stripes or
+  decorative duplicate outlines on Home mode buttons.
+- Camera **at a wall** stays physically stopped; the hero may approach. A real player turn
+  with lost line of sight can cause a smooth lateral response. Manual free view can come
+  closer to the hero and is stopped only by physical geometry. No automatic oscillation,
+  distance pop, or forced recenter on release. The default trailing radius is ~7.2.
+  At a valid **front view while idle**, the avatar may turn its gaze upward toward the camera
+  without rotating the gameplay/collision root.
+- Body and wearable equipment have different owners: the native skinned GLB is the base;
+  wearing gloves, boots, vest, backpack, headgear and arena weapons adds visible attachments
+  to existing rig joints. Shop categories are **item types**, not worlds. A reward's original
+  arena/level is metadata, not a separate Shop category.
+
+### Changes applied directly to owners
+
+- `src/home-ui.css`: removed duplicate inner rim from mode planks and the stacked gold/cyan
+  selection cap; neutral medallion/border materials for idle UI, active teal/gold only for
+  the chosen mode. Home composition and gameplay HUD dimensions unchanged.
+- `src/adventure-picker.css`: muted default borders and bevels for world, difficulty and
+  support actions. Gold stays on selected elements and actual primary Play.
+- `src/presentation.css`: reduced excessive bevel on wardrobe cards and category buttons
+  only. Shared dialog and Retro materials remain as prior baseline.
+- `src/game/rigged-binturong.ts`, `src/game/character.ts`, `src/game/modern.ts`: portraits
+  wait for the real GLB to load before the first snapshot. Loading retry is safe after an
+  asset failure. The character's idle gaze supports elevation in front camera views.
+  This is **visual gaze only**, not player movement or camera steering.
+- `src/game/wardrobe-rig-attachments.ts`: wearable gloves have a fitted paw-cover shape
+  and distinguishable cuff/knuckle detail; themed weapons in the wardrobe use the actual
+  expedition weapon model rather than a generic cylinder. Tail, back, feet and torso
+  selection still follow the same rig and saved profile data.
+- `tools/build_binturong.py` and `public/models/binturong_master_rigged.glb`: native GLB
+  regenerated with small skinned paw/toe surface details and less bulbous boot tips.
+  Existing skin and 8 motions retained; **the sculpt still needs art approval**.
+- `src/game/comfort-camera.ts`: retain most recent clear camera position to avoid a
+  collision-recovery jump across the world; only accept turn-follow when the player is
+  actually translating. Wall-hold/free-view logic otherwise stays intact.
+- `src/main.ts`: async wardrobe thumbnail completion is generation-guarded so stale
+  category images cannot overwrite a newer selection.
+
+### Validation and open items
+
+- UI source audit 14/14, maze source audit 22/22.
+- Seven deterministic camera smoke tests passed, including wall hold, manual free view,
+  gradual player turn and an L-shaped corridor.
+- Directed reset source/asset contract 15/15; changed TypeScript files syntactically
+  parsed; changed CSS parsed by PostCSS without `!important`.
+- Regenerated `.glb`: actual four-angle offscreen render and mesh/skin inspection passed.
+- **Full Vite build and device WebGL behavior not verified** in this environment:
+  npm dependency installation failed, leading to missing TypeScript type packages.
+- Pending art acceptance: true sculpt proportions, surface polish, fully fitted 42-item
+  wardrobe models, animation performance and dynamic camera comfort in real maze play.
+  Do not treat static contract or 3D turnaround as user approval.
+
+
+## 2026-11-21 — Pemulihan sistem kostum modular (menghentikan jalur karakter GLB)
+
+**Masalah:** setelah karakter master diganti ke satu rig GLB, banyak variasi Shop dan Wardrobe hanya berubah warna atau komponen generik. Topi, backpack, sarung tangan, sepatu, dan outfit kehilangan karakteristik bentuk 3D masing-masing. Preview juga menunggu pemuatan asset yang bisa menghasilkan tampilan identik.
+
+**Perbaikan terarah:**
+- `src/game/character.ts`: mengembalikan pemilik tunggal karakter Three.js modular dari baseline pra-GLB, termasuk bentuk berbeda untuk headgear, outfit, backpack, gloves, boots, dan perlengkapan khusus arena. API `CharacterAction` tetap kompatibel dengan `cameraElevation` dan `gearShot`. GLB tidak lagi menjadi sumber karakter aktif.
+- `src/game/modern.ts`: menghentikan preload GLB untuk gambar kartu Wardrobe; gambar tiap pilihan diambil dari karakter modular yang telah siap secara sinkron.
+- `tests/binturong-master-contract.test.mjs` dan `tests/directed-reset-contract.mjs`: validasi diperbarui untuk menguji pemilik karakter baru dan fitur bentuk kosmetik, bukan memaksa GLB sebagai implementasi. Tes tidak dinonaktifkan.
+
+**Batasan:** rollback ini memulihkan kekayaan bentuk perlengkapan dari baseline lama, **bukan** menghasilkan sculpt berkualitas ilustrasi final. File GLB legacy masih tersimpan di repo agar delta upload tidak menghapus asset secara tak terduga, tetapi tidak lagi diimpor oleh jalur karakter aktif. Gerak dan tampilan WebGL harus diverifikasi melalui Deploy Preview. Retro, kamera, progres, dan aturan UI tidak disentuh.

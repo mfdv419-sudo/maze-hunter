@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const text=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const checks=[];
+const check=(name,ok)=>checks.push([name,!!ok]);
+const portrait=text('src/game/modern.ts');
+const character=text('src/game/character.ts');
+const gear=text('src/game/gear-model.ts');
+const home=text('src/home-ui.css');
+const picker=text('src/adventure-picker.css');
+const presentation=text('src/presentation.css');
+const camera=text('src/game/comfort-camera.ts');
+check('wardrobe portrait generates model for each item',/createBinturong\(outfit,undefined,appearances\[i\]\)/.test(portrait));
+check('wardrobe portrait does not cache unloaded GLB placeholders',!/preloadBinturongMaster/.test(portrait));
+check('character uses the restored modular geometry owner',/loftBody\(body,fur/.test(character)&&!/createRiggedBinturong/.test(character));
+check('head and bag change physical appearance',/a.head==='explorer'/.test(character)&&/a.head==='leaf'/.test(character)&&/a.back==='pack'/.test(character));
+check('gloves and shoes have physical models',/gloveModel\(/.test(character)&&/bootModel\(/.test(character));
+check('expedition items have distinct equipment geometry',/expeditionWearables\(/.test(character)&&/expeditionWeaponModel\(/.test(character));
+check('idle front view supports elevated camera gaze',character.includes('cameraElevation?:number')&&character.includes('action.cameraElevation'));
+check('camera retains a safe previous eye',camera.includes('lastClearEye')&&camera.includes('remembered&&clear(remembered)'));
+check('camera not auto-orbiting at static walls',camera.includes('movement.lengthSq()>1e-8'));
+check('home buttons do not use a decorative second outline',!home.includes('.mode-tile:before{'));
+check('home selection has no gold top-band gradient',!home.includes('#fff4a3 0 5px'));
+check('ordinary difficulty buttons use muted trim',picker.includes('border: 2px solid #90bbb9;'));
+check('only selected wardrobe tab uses gold fill',presentation.includes('.cosmetic-tabs [aria-selected="true"]')&&presentation.includes('border:2px solid #8bc7c9'));
+check('no forced CSS or ignore directives in changed files',![home,picker,presentation,gear,camera,character,portrait].some(s=>/!important|@ts-ignore|@ts-nocheck|eslint-disable/.test(s)));
+let bad=0;for(const [name,ok] of checks){console.log(ok?'PASS':'FAIL',name);if(!ok)bad++}
+console.log(`${checks.length-bad}/${checks.length} restored wardrobe contracts passed`);if(bad)process.exit(1);

@@ -841,6 +841,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     if(this.heldExpeditionWeapon)this.heldExpeditionWeapon.visible=gearShot;
     this.hero.animate(this.time, actual / 2.3, this.outcome === "won", {gearShot,greet:this.time-this.emoteAt<1.1?(this.time-this.emoteAt)/1.1:undefined,
       cameraLook:actual<.1?Math.atan2(this.camera.position.x-this.position.x*U,this.camera.position.z-this.position.y*U)-this.drawnAngle:undefined,
+      cameraElevation:actual<.1?Math.atan2(this.camera.position.y-(this.terrain(this.position.x,this.position.y)+1.35),Math.hypot(this.camera.position.x-this.position.x*U,this.camera.position.z-this.position.y*U)):undefined,
       actionKind:localPose?.kind,actionAge:localPose?this.elapsed-localPose.at:100,cakeColor:cakeColors[(localPose?.cake as keyof typeof cakeColors)||'normal'],hurtAge:this.adventure?this.elapsed-this.adventure.lastHit:100,defeated:this.adventure?.phase==='lost'&&this.adventure.reason==='lives',pickup:this.adventure&&['seal','star'].includes(this.adventure.message)?this.elapsed-this.adventure.messageAt:100,allowIdle:!!this.adventure&&!this.adventure.guards.some(g=>!g.dead&&Math.hypot(g.position.x-this.position.x,g.position.y-this.position.y)<8),
       jumpCount:this.jumpCount,jumpAge:this.elapsed-this.jumpStarted,jumpBase:this.jumpBase,treeClimb,
       eat:this.adventure?this.adventure.elapsed-this.adventure.eatingAt:100,carrying:!!this.adventure?.carried,jump:this.jumpAt(this.elapsed),swim:this.adventure?.swimming,pole:explorerPole(!!this.adventure?.expedition,this.adventure?.area||'classic',this.adventure?.climber.state.phase,this.adventure?.swimming,this.elapsed-this.hitStarted,this.jumpAt(this.elapsed),!!this.adventure?.carried),lookUp:this.cameraPitch<0,climb:this.adventure?.climber.state.phase==='hanging'?'hanging':this.adventure?.climber.state.phase==='climbing'?'climbing':'ground',climbProgress:(this.adventure?.climber.state.elapsed||0)/climbDuration(!!treeClimb),
@@ -1063,11 +1064,33 @@ export function characterPreview(host: HTMLElement, outfit: string,color?:number
 }
 
 const portraitCache=new Map<string,string>();
-export function avatarPortraits(outfit:string,appearances:Appearance[],view:'front'|'back'|'tail'='front',focus:PreviewFocus='full'){
- const keys=appearances.map(a=>JSON.stringify({a,view,focus}));if(keys.every(k=>portraitCache.has(k)))return keys.map(k=>portraitCache.get(k)!);
- const renderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power'});renderer.setSize(160,190);renderer.setClearColor(0x000000,0);const scene=new T.Scene(),camera=new T.PerspectiveCamera(32,160/190,.1,15);camera.position.set(view==='front'?.18:1.8,.95,view==='front'?3.6:-3.2);camera.lookAt(0,.72,0);scene.add(new T.HemisphereLight(0xfff7e4,0x779986,2.8));const light=new T.DirectionalLight(0xffedc9,2);light.position.set(-2,4,3);scene.add(light);
- framePreview(camera,focus,160/190);
- appearances.forEach((a,i)=>{if(portraitCache.has(keys[i]))return;const hero=createBinturong(outfit,undefined,a);hero.animate(0,0,false,{hit:0,showBack:focus==='back'});hero.root.rotation.y=view==='front'?0:Math.PI*.85;scene.add(hero.root);renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));scene.remove(hero.root);hero.dispose();});renderer.dispose();renderer.forceContextLoss();const result=keys.map(k=>portraitCache.get(k)!);while(portraitCache.size>120)portraitCache.delete(portraitCache.keys().next().value!);return result;
+/** Wardrobe portraits render each ready-to-display modular 3D outfit.
+ * The character factory is synchronous, so no GLB placeholder can be cached.
+ */
+export async function avatarPortraits(outfit:string,appearances:Appearance[],view:'front'|'back'|'tail'='front',focus:PreviewFocus='full'):Promise<string[]>{
+ const keys=appearances.map(a=>JSON.stringify({outfit,a,view,focus}));
+ if(keys.every(k=>portraitCache.has(k)))return keys.map(k=>portraitCache.get(k)!);
+ const width=240,height=280;
+ const renderer=new T.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true,powerPreference:'low-power'});
+ renderer.setSize(width,height,false);renderer.setClearColor(0x000000,0);
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(32,width/height,.1,15);
+ camera.position.set(view==='front'?.18:1.8,1.12,view==='front'?3.6:-3.2);
+ camera.lookAt(0,.78,0);
+ scene.add(new T.HemisphereLight(0xfff7e4,0x779986,2.8));
+ const light=new T.DirectionalLight(0xffedc9,2);light.position.set(-2,4,3);scene.add(light);
+ framePreview(camera,focus,width/height);
+ for(let i=0;i<appearances.length;i++){
+  if(portraitCache.has(keys[i]))continue;
+  const hero=createBinturong(outfit,undefined,appearances[i]);
+  hero.root.rotation.y=view==='front'?0:Math.PI*.85;
+  scene.add(hero.root);hero.animate(0,0,false,{hit:0,showBack:view!=='front'});
+  renderer.render(scene,camera);portraitCache.set(keys[i],renderer.domElement.toDataURL('image/png'));
+  scene.remove(hero.root);hero.dispose();
+ }
+ renderer.dispose();renderer.forceContextLoss();
+ const result=keys.map(k=>portraitCache.get(k)!);
+ while(portraitCache.size>100)portraitCache.delete(portraitCache.keys().next().value!);
+ return result;
 }
 
 function rootImpact(radius:number){const group=new T.Group(),mat=new T.MeshLambertMaterial({color:0x7d6447});for(let i=0;i<5;i++){const a=i*Math.PI*2/5,curve=new T.CatmullRomCurve3([new T.Vector3(Math.sin(a)*radius,0,Math.cos(a)*radius),new T.Vector3(Math.sin(a)*radius*.55,.45,Math.cos(a)*radius*.55),new T.Vector3(Math.sin(a)*radius*.3,.8,Math.cos(a)*radius*.3)]);group.add(new T.Mesh(new T.TubeGeometry(curve,7,.055,5,false),mat));}return group;}
