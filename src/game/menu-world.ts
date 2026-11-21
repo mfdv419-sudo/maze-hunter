@@ -37,7 +37,7 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  const gate=goldGate();gate.position.set(2.3,0,-4.2);gate.scale.setScalar(1.6);scene.add(gate);
  const hedgeMat=new T.MeshLambertMaterial({color:0x6c9950,map:groundTexture('leaf')});
  for(const [x,z,w]of [[-1,-4.2,2.3],[4,-4.2,2],[3,-7,4]]){const h=new T.Mesh(new T.BoxGeometry(w,.8,.6),hedgeMat);h.position.set(x,.35,z);scene.add(h);hedges.push(h);}
- const hero=createBinturong(outfit,color,appearance);hero.root.scale.setScalar(1.275);hero.root.position.y=.05;scene.add(hero.root);
+ const hero=createBinturong(outfit,color,appearance);hero.root.scale.setScalar(1.06);hero.root.position.y=.05;scene.add(hero.root);
  const pedestal=new T.Mesh(new T.CylinderGeometry(.93,1.04,.16,12),new T.MeshLambertMaterial({color:0x8aaba0,flatShading:true}));pedestal.position.y=.015;scene.add(pedestal);const rim=new T.Mesh(new T.TorusGeometry(.92,.025,4,32),new T.MeshLambertMaterial({color:0xe6ce83}));rim.rotation.x=-Math.PI/2;rim.position.y=.105;scene.add(rim);
  const butterflies:T.Mesh[]=[];for(let i=0;i<6;i++){const b=new T.Mesh(new T.PlaneGeometry(.09,.06),new T.MeshBasicMaterial({color:i%2?0xffd888:0xa7eee1,side:T.DoubleSide}));scene.add(b);butterflies.push(b);}
  const button=document.createElement('button');button.id='mascot-touch';button.className='mascot-touch';button.setAttribute('aria-label',language==='id'?'Sapa binturong':'Greet the binturong');host.append(button);
@@ -79,7 +79,8 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
   butterflies.forEach((b,i)=>{b.position.set(Math.sin(t*.3+i)*3.4,1+Math.sin(t*.8+i)*.5,-1.2-Math.cos(t*.3+i)*1.75);b.rotation.y=Math.sin(t*11+i)*1.1;});
   hero.animate(clock,0,false,{hit:0,lookUp:false,allowIdle:!reduced.matches,...(reacting?{greet:age/.95}:{})});
   water.children.forEach((o,i)=>{if(o.name==='water-ripple')o.position.x=Math.sin(t*.7+i)*.08+(i-2)*.15;});
-  sun.intensity=2.2+Math.sin(t*.72)*.14;sky.update(camera,false);renderer.render(scene,camera);
+  sun.intensity=2.2+Math.sin(t*.72)*.14;sky.update(camera,true);renderer.render(scene,camera);
+  if(!host.classList.contains('world3d-ready'))host.classList.add('world3d-ready');
  });
  return{setMode,setArea,dispose(){ro.disconnect();renderer.setAnimationLoop(null);sky.dispose();button.remove();const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>();scene.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});for(const g of geometries)g.dispose();for(const m of materials){(m as T.MeshLambertMaterial).map?.dispose();m.dispose();}renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove();}};
 }

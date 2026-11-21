@@ -298,7 +298,7 @@ function home() {
        </div>
       </nav>
       <div class="mascot-hint">${tr('Ketuk karakter untuk menyapa · geser untuk memutar','Tap the character to greet · drag to rotate')}</div>
-      <div class="title-tools">
+      <div class="title-tools" id="home-utilities">
         ${homeTool('settings','settings',tr('Pengaturan','Settings'))}
         ${profile?homeTool('scores','trophy',tr('Peringkat','Scores')):''}
         ${homeTool('how','help',tr('Panduan','Guide'))}
@@ -308,6 +308,9 @@ function home() {
       ${import.meta.env.DEV&&!profile?button('Uji kontrol','lab','dev-lab'):''}
     </main>`,
   );
+  // Own Home utility placement in the real header; never hide it beneath the header overlay.
+  const utilityRail=el('home-utilities');
+  root.querySelector(':scope > header')?.prepend(utilityRail);
   el("how").setAttribute("aria-label", tr("Cara bermain", "How to play"));
   el("fullscreen").setAttribute("aria-label", tr("Layar penuh", "Fullscreen"));
   if (el("wardrobe"))
