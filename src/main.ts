@@ -1,4 +1,4 @@
-import {equipmentAreas,equipmentBenefits,expeditionEquipment,type EquipmentArea} from './game/expedition-equipment';
+import {equipmentBenefits,expeditionEquipment} from './game/expedition-equipment';
 import {adventureBackdrop,expandedDifficulties,expeditionDifficulties,expeditionPicker} from './ui/adventure-picker';
 import {forestIcon} from './ui/forest-icons';
 import {mountForestHud} from './ui/forest-hud';
@@ -928,7 +928,7 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
     loadError(error);
   }
 }
-let wardrobeSlot:Slot='head',wardrobeArea:EquipmentArea|'style'='forest';
+let wardrobeSlot:Slot='head';
 function collection(){
  if(!profile)return;const p=profile,s=stats(p),quests=cosmeticQuests(p);
  begin('collection',`<main class="page collection-page"><div class="inventory-heading"><div><div class="eyebrow">${tr('JEJAK PETUALANGANKU','MY ADVENTURE TRAIL')}</div><h1>${esc(p.name)}</h1></div>${button('×','collection-close','round-tool')}</div><div class="collection-totals"><span>★ ${s.stars}</span><span>◉ ${s.coins}</span><span>${tr('Zona','Zones')} ${s.zones}/7</span><span>${tr('Peti','Chests')} ${s.chests}</span></div><div class="quest-grid">${quests.map(q=>`<article class="quest-card ${q.value>=q.target?'complete':''}"><span>${q.value>=q.target?'✓':'◇'}</span><h2>${q.name[lang==='id'?0:1]}</h2><progress max="${q.target}" value="${q.value}"></progress><p>${q.value}/${q.target} · ${q.value>=q.target?tr('PENCAPAIAN TERBUKA','ACHIEVEMENT UNLOCKED'):tr('DALAM PETUALANGAN','IN PROGRESS')}</p></article>`).join('')}</div><p>${tr('Koin dihitung dari catatan terbaik tiap peta. Bintang pencapaian tetap tercatat; saldo bintang ditukar untuk memiliki kostum.','Coins come from your best record on each map. Earned stars remain in your record; spend the balance to own cosmetic pieces.')}</p>${button(tr('BUKA KOLEKSI KOSTUM','OPEN WARDROBE'),'collection-wardrobe')}</main>`);
@@ -938,21 +938,18 @@ function wardrobe(){
  if(!profile)return;
  const p=profile,a=appearanceOf(p,readPreferences().fur),statsNow=stats(p),balance=starBalance(p);
  const language=lang==='id'?0:1;
- const items=cosmetics.filter(c=>wardrobeArea==='style'?!c.expedition&&c.slot===wardrobeSlot:c.expedition?.area===wardrobeArea);
+ const items=cosmetics.filter(c=>c.slot===wardrobeSlot);
  const slotNames={head:['Kepala','Head'],face:['Wajah','Face'],body:['Badan','Body'],back:['Punggung','Back'],tail:['Ekor','Tail'],palette:['Warna','Palette'],hands:['Sarung tangan','Gloves'],feet:['Sepatu','Boots']};
- const tabs=wardrobeArea==='style'
-  ? `<div class="cosmetic-tabs" role="tablist">${slots.map(slot=>`<button id="slot-${slot}" role="tab" aria-selected="${slot===wardrobeSlot}">${slotNames[slot][language]}</button>`).join('')}</div>`
-  : `<p class="small">${tr('Tukar bintang untuk memiliki sekarang, atau selesaikan tahap Solo secara berurutan untuk membuka gratis.','Redeem stars to own now, or clear the Solo stages in order to unlock for free.')}</p>`;
- begin('wardrobe',`<main class="page wardrobe-page"><section class="wardrobe-stage"><div class="wardrobe-title"><span>${tr('PERLENGKAPAN PETUALANG','EXPEDITION EQUIPMENT')}</span><h1>${esc(p.name)}</h1></div><div id="outfit-preview"></div><div class="wardrobe-caption">★ ${balance} ${tr('tersedia','available')} · ${statsNow.stars} ${tr('pencapaian','earned')}<small>${tr('Geser karakter untuk melihat semua sisi','Swipe the character to see every side')}</small></div></section><section class="outfit-options"><div class="inventory-heading"><h2>${tr('Toko Petualangan','Adventure Shop')}</h2>${button('×','wardrobe-close','round-tool')}</div><label class="gear-world-filter">${tr('Koleksi','Collection')}<select id="gear-world">${equipmentAreas.map(area=>`<option value="${area}" ${wardrobeArea===area?'selected':''}>${esc(areaName(area,lang))}</option>`).join('')}<option value="style" ${wardrobeArea==='style'?'selected':''}>${tr('Kostum & warna','Costumes & colors')}</option></select></label>${tabs}<div class="outfit-grid cosmetic-grid">${items.map((c,i)=>{
+ const tabs=`<div class="cosmetic-tabs" role="tablist" aria-label="${tr('Jenis perlengkapan','Equipment category')}">${slots.map(slot=>`<button id="slot-${slot}" role="tab" aria-selected="${slot===wardrobeSlot}">${slotNames[slot][language]}</button>`).join('')}</div>`;
+ begin('wardrobe',`<main class="page wardrobe-page"><section class="wardrobe-stage"><div class="wardrobe-title"><span>${tr('PERLENGKAPAN PETUALANG','EXPEDITION EQUIPMENT')}</span><h1>${esc(p.name)}</h1></div><div id="outfit-preview"></div><div class="wardrobe-caption">★ ${balance} ${tr('tersedia','available')} · ${statsNow.stars} ${tr('pencapaian','earned')}<small>${tr('Geser karakter untuk melihat semua sisi','Swipe the character to see every side')}</small></div></section><section class="outfit-options"><div class="inventory-heading"><h2>${tr('Toko Petualangan','Adventure Shop')}</h2>${button('×','wardrobe-close','round-tool')}</div><p class="shop-category-note">${tr('Perlengkapan dari semua arena tersedia dalam kategori yang sama. Hadiah tahap Solo juga muncul di sini.','All worlds share the same equipment categories. Solo stage rewards appear here too.')}</p>${tabs}<div class="outfit-grid cosmetic-grid">${items.map((c,i)=>{
   const owned=owns(p,c),equipped=a[c.slot]===c.id,gear=c.expedition;
   const locked=!owned&&(balance<c.stars||statsNow.wins<(c.wins||0));
   const caption=equipped?tr('DIPAKAI ✓','EQUIPPED ✓'):owned?tr('PAKAI','EQUIP'):locked?`${c.stars} ★`:tr('TUKAR','REDEEM')+' '+c.stars+' ★';
-  return `<button id="piece-${i}" ${gear?`data-gear="${gear.id}"`:''} class="outfit outfit-card rarity-${c.rarity} ${equipped?'selected':''}" ${locked?'disabled':''}><span class="avatar-portrait"><img id="portrait-${i}" alt=""></span><small class="rarity-label">${gear?forestStageLabel[gear.stage]:c.rarity.toUpperCase()}</small><b>${esc(c.name[language])}</b>${gear?`<small class="gear-benefit">${esc(equipmentBenefits[gear.effect][language])}</small>`:''}<span class="outfit-state">${caption}</span></button>`;
+  return `<button id="piece-${i}" ${gear?`data-gear="${gear.id}"`:''} class="outfit outfit-card rarity-${c.rarity} ${equipped?'selected':''}" ${locked?'disabled':''}><span class="avatar-portrait"><img id="portrait-${i}" alt=""></span><small class="rarity-label">${gear?`${esc(areaName(gear.area,lang))} · ${forestStageLabel[gear.stage]}`:c.rarity.toUpperCase()}</small><b>${esc(c.name[language])}</b>${gear?`<small class="gear-benefit">${esc(equipmentBenefits[gear.effect][language])}</small>`:''}<span class="outfit-state">${caption}</span></button>`;
  }).join('')}</div></section></main>`);
  click('wardrobe-close',()=>home());
- el<HTMLSelectElement>('gear-world').onchange=event=>{wardrobeArea=(event.currentTarget as HTMLSelectElement).value as typeof wardrobeArea;wardrobe();el('gear-world').focus();};
  for(const slot of slots)click('slot-'+slot,()=>{wardrobeSlot=slot;wardrobe();});
- const detail=wardrobeArea==='style'?wardrobeSlot:'body';
+ const detail=wardrobeSlot;
  const view=detail==='back'?'back':detail==='tail'?'tail':'front';
  void preview('outfit-preview',a.body,view,detail);
  const token=generation;
@@ -962,7 +959,7 @@ function wardrobe(){
   const frontItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot!=='back'&&item.slot!=='tail');
   for(const [entries,angle] of [[frontItems,'front'],[backItems,'back']] as const){
    if(!entries.length)continue;
-   const images=avatarPortraits(p.outfit,entries.map(({item})=>({...a,[item.slot]:item.id})),angle,wardrobeArea==='style'?detail:'full');
+   const images=avatarPortraits(p.outfit,entries.map(({item})=>({...a,[item.slot]:item.id})),angle,detail);
    entries.forEach(({index},i)=>{const img=el<HTMLImageElement>('portrait-'+index);if(img)img.src=images[i];});
   }
  }).catch(showError);

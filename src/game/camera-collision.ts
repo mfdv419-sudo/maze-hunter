@@ -53,5 +53,25 @@ export class CameraCollision {
   }
   return target.clone().addScaledVector(ray.direction,safe);
  }
+ /** Recover a camera eye *already embedded* in world geometry. This is not a
+  * wall-contact orbit: use the smallest clear displacement, with a fixed
+  * candidate order so nearby corners cannot cause left/right oscillation.
+  * Ordinary wall contact never calls this method. */
+ recoverEmbedded(eye:T.Vector3,target:T.Vector3,radius=.28):T.Vector3|null{
+  if(this.isClear(eye,radius))return eye.clone();
+  const toward=target.clone().sub(eye).setY(0);
+  if(toward.lengthSq()<1e-8)toward.set(0,0,1);
+  toward.normalize();
+  const sideways=new T.Vector3(-toward.z,0,toward.x);
+  for(const step of [.12,.24,.4,.65,.95,1.35,1.9,2.6]){
+   // Prefer the player's side of an obstruction; never select a remote orbit.
+   for(const [forward,lateral,up] of [[1,0,0],[.7,0,.7],[.7,0,-.7],[.8,.5,0],[.8,-.5,0],[0,0,1],[0,0,-1],[0,1,0],[0,-1,0]] as const){
+    const candidate=eye.clone().addScaledVector(toward,step*forward)
+     .addScaledVector(sideways,step*lateral).add(new T.Vector3(0,step*up,0));
+    if(this.isClear(candidate,radius))return candidate;
+   }
+  }
+  return null;
+ }
  dispose(){this.meshes=[];this.cache=new WeakMap();}
 }

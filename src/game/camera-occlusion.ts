@@ -12,7 +12,10 @@ export class CameraOcclusion {
   for(const hit of this.ray.intersectObjects(this.meshes,false))if(hit.object instanceof T.Mesh)hits.add(hit.object);
   for(const mesh of hits)if(!this.faded.has(mesh)){
    const original=Array.isArray(mesh.material)?mesh.material:[mesh.material],amount={value:0};
-   const clones=original.map(m=>{const c=m.clone(),previous=c.onBeforeCompile,key=c.customProgramCacheKey();c.alphaHash=true;
+   const clones=original.map(m=>{const c=m.clone(),previous=c.onBeforeCompile,key=c.customProgramCacheKey();
+    // Use smooth, local transparency for obstructing geometry. Alpha hashing
+    // produced large stippled patterns when the camera approached a wall.
+    c.alphaHash=false;c.transparent=true;c.depthWrite=false;
     c.onBeforeCompile=(shader,renderer)=>{previous.call(c,shader,renderer);Object.assign(shader.uniforms,{mhCamera:this.cameraUniform,mhTarget:this.targetUniform,mhFade:amount});shader.vertexShader='varying vec3 mhWorldPosition;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
 vec4 mhLocal=vec4(transformed,1.0);
 #ifdef USE_INSTANCING
@@ -24,10 +27,10 @@ float mhT=dot(mhWorldPosition-mhCamera,mhAxis)/max(dot(mhAxis,mhAxis),0.0001);
 float mhDistance=length(mhWorldPosition-(mhCamera+mhAxis*clamp(mhT,0.0,1.0)));
 float mhMask=step(0.0,mhT)*step(mhT,1.0)*(1.0-smoothstep(0.28,0.42,mhDistance));
 diffuseColor.a*=1.0-mhMask*mhFade;
-#include <alphahash_fragment>`);};c.customProgramCacheKey=()=>key+'|camera-segment-mask-v2';return c;});
+#include <alphahash_fragment>`);};c.customProgramCacheKey=()=>key+'|camera-segment-smooth-mask-v3';return c;});
    mesh.material=Array.isArray(mesh.material)?clones:clones[0];this.faded.set(mesh,{original,amount});
   }
-  for(const[mesh,data]of this.faded){data.amount.value+=((hits.has(mesh)?.35:0)-data.amount.value)*(1-Math.exp(-dt*18));if(!hits.has(mesh)&&data.amount.value<.005){(Array.isArray(mesh.material)?mesh.material:[mesh.material]).forEach(m=>m.dispose());mesh.material=data.original.length===1?data.original[0]:data.original;this.faded.delete(mesh);}}
+  for(const[mesh,data]of this.faded){data.amount.value+=((hits.has(mesh)?.78:0)-data.amount.value)*(1-Math.exp(-dt*18));if(!hits.has(mesh)&&data.amount.value<.005){(Array.isArray(mesh.material)?mesh.material:[mesh.material]).forEach(m=>m.dispose());mesh.material=data.original.length===1?data.original[0]:data.original;this.faded.delete(mesh);}}
  }
  dispose(){for(const[mesh,{original}]of this.faded){(Array.isArray(mesh.material)?mesh.material:[mesh.material]).forEach(m=>m.dispose());mesh.material=original.length===1?original[0]:original;}this.faded.clear();this.meshes=[];}
 }

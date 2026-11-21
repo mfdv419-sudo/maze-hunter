@@ -57,7 +57,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  }
  const arms:T.Group[]=[],elbows:T.Group[]=[],legs:T.Group[]=[],knees:T.Group[]=[];
  for(const side of [-1,1]){
-  const arm=joint(body,side*.274,.739,0,'shoulder');arms.push(arm);
+  const arm=joint(body,side*.328,.739,0,'shoulder');arms.push(arm);
   organicOrb(arm,fur,'shoulder-blend',0,-.049,0,.109,.137,.112);
   sculptedLimb(arm,fur,'upper-arm',.198,.092,.074,1.08);
   const elbow=joint(arm,0,-.190,0,'elbow');elbows.push(elbow);
@@ -191,7 +191,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   chest.scale.y=1+Math.sin(time*2)*.021;
   for(let i=0;i<2;i++){const swing=i?stride:-stride;
    const gentle=1-Math.min(1,walk),side=i?1:-1;
-   arms[i].rotation.set(swing*.85+gentle*Math.sin(time*.92+i)*.035,side*Math.min(.065,walk*.055),side*(.095+Math.abs(swing)*.10));
+   arms[i].rotation.set(swing*.85+gentle*Math.sin(time*.92+i)*.035,side*Math.min(.065,walk*.055),side*(.135+Math.abs(swing)*.08));
    elbows[i].rotation.x=-.16-Math.max(0,swing)*.28-gentle*Math.sin(time*1.7+i)*.045;const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   if(action?.cameraLook!==undefined&&walk<.04){const angle=Math.atan2(Math.sin(action.cameraLook),Math.cos(action.cameraLook));if(Math.abs(angle)<1.15)head.rotation.y=angle*.65;}

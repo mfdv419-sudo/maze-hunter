@@ -40,7 +40,7 @@ export function bootModel(parent:T.Group,kind:string,side:number){
  for(let i=0;i<4;i++){
   const dx=(i-1.5)*.050;
   organicOrb(root,surface,`foot-paw-digit-${i+1}`,dx,-.016,.196,.033,.046,.066,'paw');
-  organicOrb(root,pad,'foot-toe-pad',dx,-.073,.220,.024,.009,.025);
+  organicOrb(root,pad,'foot-toe-pad',dx,-.082,.121,.020,.006,.022);
  }
  organicOrb(root,pad,'foot-center-pad',0,-.087,.067,.078,.010,.052);
  if(!bare){

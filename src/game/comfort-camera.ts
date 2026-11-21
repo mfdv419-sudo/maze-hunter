@@ -43,6 +43,7 @@ const angleBetween=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 export interface CameraSpace {
  resolve(from:T.Vector3,to:T.Vector3,radius?:number):T.Vector3;
  isClear(point:T.Vector3,radius?:number):boolean;
+ recoverEmbedded?(eye:T.Vector3,target:T.Vector3,radius?:number):T.Vector3|null;
 }
 interface CameraFrame {
  mode:'follow'|'manual'|'reset';
@@ -74,12 +75,22 @@ export class AdventureCamera {
   const radius=offset.length();
   const old=this.eye;
   if(!old||!space.isClear(old,CAMERA_MARGIN)){
-   let safe=space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
-   // A spawn or traversal transition can start with the focus inside the
-   // terrain margin. Establish a clear eye on entry before normal follow.
+   // Distinguish *embedded* (invalid eye) from normal contact with a wall.
+   // An embedded eye must be moved clear before rendering: otherwise the
+   // wall covers the screen with flickering coplanar triangles.
+   const freed=old?space.recoverEmbedded?.(old,target,CAMERA_MARGIN):null;
+   let safe=freed&&space.isClear(freed,CAMERA_MARGIN)?freed:
+    space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
+   // Handle a spawn/traversal transition with focus inside terrain margin.
    if(!space.isClear(safe,CAMERA_MARGIN)){
     const above=space.resolve(target,target.clone().add(new T.Vector3(0,1,0)),CAMERA_MARGIN);
-    safe=space.isClear(above,CAMERA_MARGIN)?above:old??target;
+    if(space.isClear(above,CAMERA_MARGIN))safe=above;
+    else if(old&&space.isClear(old,CAMERA_MARGIN))safe=old;
+    else{
+     // Do not continue normal follow from a non-clear camera pose.
+     const near=space.recoverEmbedded?.(safe,target,CAMERA_MARGIN);
+     if(near&&space.isClear(near,CAMERA_MARGIN))safe=near;
+    }
    }
    this.waitingForRoom=safe.distanceTo(target)<radius-EPSILON;
    this.eye=safe.clone();
