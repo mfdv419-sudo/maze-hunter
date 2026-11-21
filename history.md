@@ -206,3 +206,10 @@ approved concept art.
 - `tests/binturong-master-contract.test.mjs` dan `tests/directed-reset-contract.mjs`: validasi diperbarui untuk menguji pemilik karakter baru dan fitur bentuk kosmetik, bukan memaksa GLB sebagai implementasi. Tes tidak dinonaktifkan.
 
 **Batasan:** rollback ini memulihkan kekayaan bentuk perlengkapan dari baseline lama, **bukan** menghasilkan sculpt berkualitas ilustrasi final. File GLB legacy masih tersimpan di repo agar delta upload tidak menghapus asset secara tak terduga, tetapi tidak lagi diimpor oleh jalur karakter aktif. Gerak dan tampilan WebGL harus diverifikasi melalui Deploy Preview. Retro, kamera, progres, dan aturan UI tidak disentuh.
+
+## 2026-11-21 — Wardrobe async preview TypeScript build fix
+
+- **Penyebab:** rollback karakter modular mengubah `avatarPortraits()` pada `src/game/modern.ts` menjadi `async` (menghasilkan `Promise<string[]>`), tetapi delta ZIP sebelumnya tidak menyertakan pembaruan pemanggilnya di `src/main.ts`. Akibatnya Netlify gagal pada `TS7053` saat mencoba `images[i]` dari `Promise`.
+- **Perbaikan:** callback import `modern` menjadi async, `avatarPortraits()` ditunggu dengan `await`, kemudian `generation` diverifikasi ulang sebelum DOM kartu Wardrobe diisi. Tidak ada suppress TypeScript, `!important`, atau penggantian fungsi.
+- **Lingkup delta:** `src/main.ts` dan satu `history.md`; tidak mengubah GLB/modular character, kamera, CSS, harga Shop, Retro, progression, atau fungsi server.
+- **Validasi:** perubahan source dibandingkan dengan versi pemanggil sebelum async dan dipastikan hanya tiga edit dalam blok Wardrobe; source TypeScript diparse. Audit UI dan Maze dari log Netlify sudah lolos sebelum tahap `tsc`. Build Vite penuh perlu diverifikasi saat deploy karena dependensi lokal tidak lengkap.

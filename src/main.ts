@@ -988,13 +988,14 @@ function wardrobe(){
  const view=detail==='back'?'back':detail==='tail'?'tail':'front';
  void preview('outfit-preview',a.body,view,detail);
  const token=generation;
- void import('./game/modern').then(({avatarPortraits})=>{
+ void import('./game/modern').then(async ({avatarPortraits})=>{
   if(token!==generation)return;
   const backItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot==='back'||item.slot==='tail');
   const frontItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot!=='back'&&item.slot!=='tail');
   for(const [entries,angle] of [[frontItems,'front'],[backItems,'back']] as const){
    if(!entries.length)continue;
-   const images=avatarPortraits(p.outfit,entries.map(({item})=>({...a,[item.slot]:item.id})),angle,detail);
+   const images=await avatarPortraits(p.outfit,entries.map(({item})=>({...a,[item.slot]:item.id})),angle,detail);
+   if(token!==generation)return;
    entries.forEach(({index},i)=>{const img=el<HTMLImageElement>('portrait-'+index);if(img)img.src=images[i];});
   }
  }).catch(showError);
