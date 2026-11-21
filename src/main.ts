@@ -24,6 +24,7 @@ import {onlineDialog} from './ui/online-dialog';
 import {levelArt} from './game/level-art';
 import {screenArt} from './game/screen-art';
 import {adventureAreas,areaThemes,areaName,areaSize,type AdventureArea} from './game/areas';
+import {canEnterAdventureArea,isAdventureReviewer} from './game/adventure-access';
 import {expeditionQuests} from './game/expedition-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
@@ -40,6 +41,7 @@ import {readPreferences,writePreferences,furColors} from "./services/preferences
 import {bindJoystick} from "./game/touch-controls";
 import "./style.css";
 import "./presentation.css";
+import "./home-ui.css";
 import "./adventure-picker.css";
 import "./adventure-hud.css";
 import "./adventure-action-pad.css";
@@ -101,7 +103,8 @@ let cleanup: () => void = () => {},
   generation = 0,
   saving = 0;
 const buildLabel = "26.10.26";
-let homeMode: "retro" | "modern" = "retro";
+let homeMode: "retro" | "modern" = "modern";
+const hasReviewerAccess=()=>!lab&&isAdventureReviewer(uid,import.meta.env.VITE_MH_REVIEWER_UIDS);
 function signInPanel(title: string, message: string, code = "", detail = "") {
   document.getElementById("auth-error")?.remove();
   const panel = document.createElement("section");
@@ -264,24 +267,45 @@ async function preview(id: string, outfit = "classic",view:'front'|'back'|'tail'
   }
 }
 function home() {
+  const homeTool=(id:string,icon:string,label:string)=>`<button type="button" id="${id}" class="home-tool" aria-label="${esc(label)}">${forestIcon(icon)}</button>`;
+  const activeArea=homeMode==='retro'?'classic':selectedArea;
+  const canStart=homeMode==='retro'||!profile||canEnterAdventureArea(profile,selectedArea,hasReviewerAccess());
   begin(
     "home",
     `<main class="title-screen">
-      <div id="title-world" class="title-world" aria-label="${tr("Pratinjau labirin Rimba Pagi", "Morning Forest maze preview")}"></div>
+      <div id="title-world" class="title-world" style="--home-world-art:url('${adventureBackdrop(activeArea)}')" aria-label="${tr('Panorama arena yang dipilih','Preview of the selected world')}"></div>
       <div class="title-vignette"></div>
-      <div class="home-kicker"><span></span> ${tr("PETUALANGAN KECIL, DUNIA LUAS", "LITTLE PAWS. BIG ADVENTURES.")}</div>
-      <h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span></h1>
-      <p class="home-tagline">${tr("Setiap belokan, petualangan baru.", "A new adventure around every corner.")}</p>
-      <div class="mode-selector" role="group" aria-label="${tr("Pilih petualangan", "Choose your adventure")}">
-        <button id="retro-mode" class="mode-tile" aria-pressed="${homeMode === "retro"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>RETRO JOURNEY</b><small>${tr("Sentuh & telusuri jalurnya", "Touch & trace your path")}</small></span><i>✓</i></button>
-        <button id="modern-mode" class="mode-tile" aria-pressed="${homeMode === "modern"}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr("Jelajahi labirin dalam 3D", "Explore the maze in 3D")}</small></span><i>✓</i></button>
+      <section class="home-brand">
+       <div class="home-kicker">${tr('PETUALANGAN KECIL, DUNIA LUAS','LITTLE PAWS. BIG ADVENTURES.')}</div>
+       <h1 class="game-title" aria-label="Maze Hunter"><span class="title-maze">MAZE</span><span class="title-hunter">HUNTER</span></h1>
+       <p class="home-tagline">${tr('Setiap belokan, petualangan baru.','A new adventure around every corner.')}</p>
+       ${profile?`<div class="title-progress">★ ${retroTotalStars(profile)} <span>${tr('LEVEL','LEVEL')} ${unlocked(profile)}</span></div>`:''}
+      </section>
+      <nav class="home-right" aria-label="${tr('Pilihan permainan','Game modes')}">
+       <div class="home-section-label">${tr('PILIH PETUALANGAN','CHOOSE YOUR ADVENTURE')}</div>
+       <div class="mode-selector" role="group" aria-label="${tr('Pilih petualangan','Choose your adventure')}">
+        <button type="button" id="retro-mode" class="mode-tile" aria-pressed="${homeMode==='retro'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>${tr('LABIRIN KLASIK','CLASSIC MAZE')}</b><small>${tr('Telusuri rute dan gerbang','Find the route and gate')}</small></span><i aria-hidden="true">◆</i></button>
+        <button type="button" id="modern-mode" class="mode-tile" aria-pressed="${homeMode==='modern'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr('Jelajahi dunia 3D','Explore the 3D worlds')}</small></span><i aria-hidden="true">◆</i></button>
+       </div>
+       <div class="home-area-chooser" id="home-area-chooser" ${homeMode==='retro'?'hidden':''}>
+         <button type="button" id="home-area-prev" aria-label="${tr('Arena sebelumnya','Previous world')}">‹</button>
+         <div class="home-area-name" aria-live="polite"><span id="home-area-name">${areaName(selectedArea,lang)}</span><small id="home-area-state">${canStart?tr('Siap dijelajahi','Ready to explore'):tr('Terkunci · selesaikan dunia sebelumnya','Locked · complete the previous world')}</small></div>
+         <button type="button" id="home-area-next" aria-label="${tr('Arena berikutnya','Next world')}">›</button>
+       </div>
+       <button type="button" id="home-start" class="home-start" ${!canStart?'disabled':''}>${tr('▶ MULAI BERMAIN','▶ PLAY NOW')}</button>
+       <div class="home-shortcuts">
+         ${profile?`<button id="collection-open" type="button">${tr('◈ Koleksi & Misi','◈ Collection & Quests')}</button><button id="home-shop" type="button">${tr('✦ Shop & Kostum','✦ Shop & Outfit')}</button>`:''}
+       </div>
+      </nav>
+      <div class="mascot-hint">${tr('Ketuk karakter untuk menyapa · geser untuk memutar','Tap the character to greet · drag to rotate')}</div>
+      <div class="title-tools">
+        ${homeTool('settings','settings',tr('Pengaturan','Settings'))}
+        ${profile?homeTool('scores','trophy',tr('Peringkat','Scores')):''}
+        ${homeTool('how','help',tr('Panduan','Guide'))}
+        ${profile?homeTool('wardrobe','bag',tr('Kostum','Wardrobe')):''}
+        ${homeTool('fullscreen','expand',tr('Layar penuh','Fullscreen'))}
       </div>
-      <div class="scene-caption"><span class="scene-eyebrow">${tr("SAHABAT PETUALANGANMU", "YOUR ADVENTURE COMPANION")}</span><strong>${profile?esc(profile.name):tr("Sahabat Rimba", "Forest Friend")}</strong><span id="scene-description">${homeMode === "retro" ? tr("Temukan buah favorit binturong", "Find the binturong’s favorite figs") : tr("Temukan jalan di balik kabut", "Find your way through the fog")}</span></div>
-      <div class="mascot-hint">${tr("Ketuk untuk lompat · tahan & geser untuk putar", "Tap to jump · hold & drag to rotate")} <span>↗</span></div>
-      <div class="title-tools">${button("⚙", "settings", "round-tool")}${profile?button('<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 3h10v6a5 5 0 0 1-10 0V3Zm0 2H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 2v7m-5 0h10"/></svg>',"scores","round-tool"):""}${button("?", "how", "round-tool")}${profile ? button('<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 3-6 4 3 5 3-1v10h8V11l3 1 3-5-6-4c-1 3-7 3-8 0Z"/></svg>', "wardrobe", "round-tool") : ""}${button('<svg width="21" height="21" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>', "fullscreen", "round-tool")}</div>
-      ${profile ? `<div class="title-progress">★ ${retroTotalStars(profile)} <span>${tr("LEVEL", "LEVEL")} ${unlocked(profile)}</span></div>` : ""}
-      ${profile?`<div class="home-collection"><button id="collection-open"><b>◉ ${stats(profile).coins}</b><span>${tr('KOLEKSI & MISI','COLLECTION & QUESTS')}</span><small>${cosmetics.filter(c=>owns(profile!,c)).length}/${cosmetics.length}</small></button></div>`:''}
-      ${import.meta.env.DEV && !profile ? button("Uji kontrol", "lab", "dev-lab") : ""}
+      ${import.meta.env.DEV&&!profile?button('Uji kontrol','lab','dev-lab'):''}
     </main>`,
   );
   el("how").setAttribute("aria-label", tr("Cara bermain", "How to play"));
@@ -292,16 +316,33 @@ function home() {
       tr("Karakter dan kostum", "Character and outfits"),
     );
   const token = generation;
-  let setPreview: ((mode: "retro" | "modern") => void) | undefined;
+  let setPreview: ((mode: "retro" | "modern", area:AdventureArea) => void) | undefined;
   void import("./game/menu-world")
     .then(({ menuWorld }) => {
-      if (token === generation) {
-        const world = menuWorld(el("title-world"), profile?.outfit, lang, homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
-        cleanup = world.dispose;
-        setPreview = world.setMode;
-      }
+      if (token !== generation) return;
+      const world = menuWorld(el("title-world"),profile?.outfit,lang,homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
+      cleanup = world.dispose;
+      setPreview=(mode,area)=>{world.setMode(mode);world.setArea(area);};
+      world.setArea(homeMode==='retro'?'classic':selectedArea);
     })
-    .catch(error=>{if(token!==generation)return;const stage=el('title-world');stage.dataset.fallback='true';stage.style.backgroundImage=`url("${screenArt('forest')}")`;stage.style.backgroundSize='cover';stage.style.backgroundPosition='center';console.warn('3D preview unavailable; using illustrated scene',error);});
+    .catch(error=>{
+      if(token!==generation)return;
+      console.warn('Home 3D preview unavailable; keeping selected arena artwork',error);
+    });
+  const updateHomeSelection=()=>{
+    el('retro-mode').setAttribute('aria-pressed',String(homeMode==='retro'));
+    el('modern-mode').setAttribute('aria-pressed',String(homeMode==='modern'));
+    const area=homeMode==='retro'?'classic':selectedArea;
+    el<HTMLElement>('title-world').style.setProperty('--home-world-art',`url("${adventureBackdrop(area)}")`);
+    const chooser=el('home-area-chooser');chooser.hidden=homeMode==='retro';
+    el('home-area-name').textContent=areaName(selectedArea,lang);
+    const available=homeMode==='retro'||!profile||canEnterAdventureArea(profile,selectedArea,hasReviewerAccess());
+    el('home-area-state').textContent=available?tr('Siap dijelajahi','Ready to explore'):tr('Terkunci · selesaikan dunia sebelumnya','Locked · complete the previous world');
+    const play=el<HTMLButtonElement>('home-start');play.disabled=!available;
+    setPreview?.(homeMode,area);
+  };
+  click('home-area-prev',()=>{const i=adventureAreas.indexOf(selectedArea);selectedArea=adventureAreas[(i+adventureAreas.length-1)%adventureAreas.length];localStorage.setItem('mh-last-adventure-area',selectedArea);updateHomeSelection();});
+  click('home-area-next',()=>{const i=adventureAreas.indexOf(selectedArea);selectedArea=adventureAreas[(i+1)%adventureAreas.length];localStorage.setItem('mh-last-adventure-area',selectedArea);updateHomeSelection();});
   const enterMode = async (play:HTMLButtonElement) => {
     rememberLoginIntent(homeMode);try{await restoreAuth();}catch(e){showError(e);return;}
     if(uid&&!profile){if(accountLoading)toast(tr('Memuat profil game…','Loading game profiles…'));else profiles();return;}
@@ -347,16 +388,13 @@ function home() {
   click("how", () => instructions());
   function chooseMode(mode: "retro" | "modern") {
     homeMode = mode;
-    if (profile) return mode === "retro" ? journey() : setup();
-    void enterMode(el<HTMLButtonElement>(mode === "retro" ? "retro-mode" : "modern-mode"));
-    el("retro-mode").setAttribute("aria-pressed", String(mode === "retro"));
-    el("modern-mode").setAttribute("aria-pressed", String(mode === "modern"));
-    el("scene-description").textContent = mode === "retro" ? tr("Temukan buah favorit binturong", "Find the binturong’s favorite figs") : tr("Temukan jalan di balik kabut", "Find your way through the fog");
-    setPreview?.(mode);
+    updateHomeSelection();
     tone(mode === "retro" ? 520 : 660);
   }
-  click("retro-mode", () => chooseMode("retro"));
-  click("modern-mode", () => chooseMode("modern"));
+  click('retro-mode',()=>chooseMode('retro'));
+  click('modern-mode',()=>chooseMode('modern'));
+  click('home-start',()=>void enterMode(el<HTMLButtonElement>('home-start')));
+  click('home-shop',()=>wardrobe());click('collection-open',()=>collection());
   click("wardrobe", () => wardrobe());click("collection-open",()=>collection());
   click("fullscreen", requestGameFullscreen);
   click("lab", () => {
@@ -630,7 +668,7 @@ function result(
   click("result-retry", won ? retry : () => home());
 }
 let currentDifficulty:Difficulty='medium';
-let selectedArea:AdventureArea='forest';
+let selectedArea:AdventureArea=adventureAreas.find(area=>area===localStorage.getItem('mh-last-adventure-area'))||'forest';
 let expandedDifficulty:ForestWorldDifficulty|undefined;
 function adventureHelp(){const overlay=document.createElement('div');overlay.className='modal-backdrop';overlay.innerHTML=`<section class="modal adventure-help" role="dialog" aria-modal="true"><div class="eyebrow">MAZE HUNTER · ADVENTURE</div><h2>${tr('Siap menjelajah?','Ready to explore?')}</h2><ol><li>${tr('Pilih area dan tingkat kesulitan, lalu main Solo atau Online. Labirin Asli mempertahankan rute Solo yang sudah ada.','Choose an area and difficulty, then play Solo or Online. Original Maze retains the existing Solo routes.')}</li><li>${tr('Joystick kiri untuk berjalan; geser sisi kanan untuk kamera. A untuk lompat dua kali atau panjat, B untuk lempar kue, tebas dan cari bekal. Di air dalam gunakan Selam / Permukaan (V); kelapa dengan cincin emas bisa dipanjat.','Left joystick moves; drag the right side for camera. A double jumps or climbs; B throws cakes, cuts and gathers supplies. In deep water use Dive / Surface (V); beach palms with gold rings can be climbed.')}</li><li>${tr('Segel adalah kristal toska melayang. Cari ◆ pada bagian peta yang sudah ditemukan, lalu dekati kristalnya.','Seals are floating turquoise crystals. Look for ◆ on the explored minimap and walk into the crystal.')}</li><li>${tr('Buka jurnal untuk petunjuk. Setiap wilayah segel dijaga 3 penjaga besar dan 2 kecil. Setelah semua segel lengkap, cuplikan Raja bangkit berlangsung 6 detik dengan perlindungan pemain; bisa dilewati. Mouse: klik arena sekali, gerakkan untuk melihat; klik kiri menyerang, Esc melepas. Minimap menyimpan area yang ditemukan.','Each seal region has 3 large and 2 small keepers. All seals trigger a six-second protected King awakening scene; the camera sequence can be skipped. Mouse: click once to capture, move to look, left click to attack, Esc to release. The minimap remembers discoveries.')}</li><li>${tr('Online: Easy/Medium 4, Hard 8, Extreme 10 pemain. Co-op: 3 × jumlah anggota awal, siapa pun boleh mengumpulkan; penjaga dan Raja dilawan bersama tanpa saling melukai. Race: 3 segel dan Raja pribadi; yang pertama lolos menang.','Online: Easy/Medium 4, Hard 8, Extreme 10 players. Co-op: 3 × starting members, anyone can collect; shared guardians and King, no friendly fire. Race: 3 personal seals and a personal King; first escape wins.')}</li></ol>${button(tr('Panduan benda','Item guide'),'setup-guide-items','secondary')}${button(tr('Mengerti','Got it'),'setup-guide-close')}</section>`;document.body.append(overlay);click('setup-guide-close',()=>overlay.remove());click('setup-guide-items',()=>{overlay.remove();fieldGuide();});}
 function availableForestEquipment(player:Profile) {
@@ -642,8 +680,9 @@ function setup(focusId?:string){
  const currentPicker=root.querySelector<HTMLElement>('.adventure-select');
  const scrollTop=focusId?currentPicker?.scrollTop:undefined;
  if(selectedArea==='classic')expandedDifficulty=undefined;
+ const reviewer=hasReviewerAccess();
  const rank=selectedArea==='classic'?0:expeditionRank(profile,selectedArea);
- const markup=expeditionPicker(selectedArea,currentDifficulty,lang,expandedDifficulty,rank,expandedDifficulty&&selectedArea==='forest'?availableForestEquipment(profile):[]);
+ const markup=expeditionPicker(selectedArea,currentDifficulty,lang,expandedDifficulty,rank,expandedDifficulty&&selectedArea==='forest'?availableForestEquipment(profile):[],reviewer,canEnterAdventureArea(profile,selectedArea,reviewer),area=>canEnterAdventureArea(profile!,area,reviewer));
  if(focusId&&currentPicker)currentPicker.outerHTML=markup;
  else begin('setup',markup);
  const picker=root.querySelector<HTMLElement>('.adventure-select')!;
@@ -652,7 +691,7 @@ function setup(focusId?:string){
  click('setup-guide',adventureHelp);
  for(const area of adventureAreas)click('area-'+area,()=>{
   if(area!==selectedArea)expandedDifficulty=undefined;
-  selectedArea=area;
+  selectedArea=area;localStorage.setItem('mh-last-adventure-area',selectedArea);
   setup('area-'+area);
  });
  for(const difficulty of expeditionDifficulties)click('difficulty-'+difficulty,()=>{
@@ -704,8 +743,10 @@ async function playModern(difficulty: Difficulty, room?: Room, reuse=false,fores
   const soloForest=!room&&!sample&&!training&&activeArea==='forest';
   const gearArea=!room&&!sample&&!training&&activeArea!=='classic'?activeArea:undefined;
   const stage=gearArea?forestStage(difficulty,!!forestWorld):undefined;
-  if(forestWorld&&gearArea&&!canEnterForestWorld(expeditionRank(profile,gearArea),forestWorld))return setup();
+  if(!training&&!sample&&!canEnterAdventureArea(profile,activeArea,hasReviewerAccess()))return setup();
+  if(forestWorld&&gearArea&&!hasReviewerAccess()&&!canEnterForestWorld(expeditionRank(profile,gearArea),forestWorld))return setup();
   if(!forestWorld)currentDifficulty = difficulty;
+  if(!training&&!sample&&!room)localStorage.setItem('mh-last-adventure-area',activeArea);
   if (!navigator.onLine && !lab) {
     toast(
       tr(

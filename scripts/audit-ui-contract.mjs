@@ -6,7 +6,7 @@ const pass=(name,ok,detail='')=>{console.log(`${ok?'PASS':'FAIL'} ${name}${detai
 const text=Object.fromEntries(css.map(f=>[f,read(f)]));
 pass('no CSS !important anywhere',css.every(f=>!text[f].includes('!important')));
 const owners={
- home:['.title-screen','.mode-selector','.mode-tile','.title-tools','.home-collection'],
+ home:['.title-screen','.mode-selector','.mode-tile','.title-tools','.home-right'],
  hud:['.minimap-panel','.joystick','.forest-health','.forest-tools','.forest-mission','.forest-world-dialogue'],
  pad:['.action-controls','#jump-action','#hit-action','.forest-ability','.forest-merge'],
  pages:['.collection-page','.wardrobe-page','.scores-page','.adventure-select','.field-guide'],

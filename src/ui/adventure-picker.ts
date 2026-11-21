@@ -17,14 +17,15 @@ export function adventureBackdrop(area: AdventureArea, expanded?: ForestWorldDif
 export function expeditionPicker(
   area: AdventureArea, difficulty: Difficulty, lang: 'id' | 'en',
   expanded: ForestWorldDifficulty | undefined, rank: number, gear: ReturnType<typeof forestEquipment>,
+ reviewer=false,areaUnlocked=true,canEnterArea:(area:AdventureArea)=>boolean=()=>true,
 ) {
   const text = (id: string, en: string) => lang === 'id' ? id : en;
   const label = areaName(area, lang);
   const size = areaSize(area, difficulty);
   const preview = adventureBackdrop(area, expanded);
-  const ready = !expanded || canEnterForestWorld(rank, expanded);
+  const ready = areaUnlocked && (!expanded || reviewer || canEnterForestWorld(rank, expanded));
   const next = forestStages[rank];
-  const expandedHint = expanded === 'hard'
+  const expandedHint = reviewer ? text('Akses review · semua tingkat terbuka tanpa mengubah hadiah progres.', 'Review access · all stages available without modifying progress rewards.') : expanded === 'hard'
     ? (ready ? (area==='forest'?text('Jembatan hutan, air terjun, dan jalur gua.', 'Forest bridges, waterfalls, and cavern trails.'):'147 × 147')
       : text('Selesaikan Easy, Medium, Hard, dan Extreme di Solo untuk membuka Expanded Hard.', 'Clear Easy, Medium, Hard, and Extreme in Solo to unlock Expanded Hard.'))
     : (ready ? (area==='forest'?text('Jalur kanopi dan pulau terapung.', 'Canopy trails and floating islands.'):'165 × 165')
@@ -50,9 +51,9 @@ export function expeditionPicker(
       <div>
         <h2 id="expedition-area-title">${text('Pilih arena', 'Choose a world')}</h2>
         <div class="area-options" role="group" aria-labelledby="expedition-area-title">
-          ${adventureAreas.map(option => `<button type="button" id="area-${option}" class="area-option" aria-pressed="${area === option}">
+          ${adventureAreas.map(option => `<button type="button" id="area-${option}" class="area-option" aria-pressed="${area === option}" data-unlocked="${canEnterArea(option)}">
             <img src="${thumbnail(option)}" alt="" decoding="async">
-            <span class="area-mark" aria-hidden="true">${forestIcon('check')}</span><b>${areaName(option, lang)}</b>
+            <span class="area-mark" aria-hidden="true">${forestIcon(canEnterArea(option)?'check':'lock')}</span><b>${areaName(option, lang)}</b>
           </button>`).join('')}
         </div>
       </div>
@@ -72,9 +73,9 @@ export function expeditionPicker(
         ${area !== 'classic' ? `<section id="forest-world-options" class="forest-world-options" aria-label="${label} · Expanded World" ${expanded ? '' : 'hidden'}>
           <div class="forest-world-modes" role="group" aria-label="${text('Tingkat Expanded World', 'Expanded World difficulty')}">
             ${expandedDifficulties.map(mode => `<button type="button" id="forest-world-${mode}" aria-pressed="${mode === expanded}">
-              ${forestIcon(canEnterForestWorld(rank, mode) ? difficultyIcons[mode] : 'lock')}
+              ${forestIcon(reviewer||canEnterForestWorld(rank, mode) ? difficultyIcons[mode] : 'lock')}
               <span>${mode}</span>
-              ${canEnterForestWorld(rank, mode) ? '' : `<span class="expedition-sr-only"> · ${text('Terkunci', 'Locked')}</span>`}
+              ${reviewer||canEnterForestWorld(rank, mode) ? '' : `<span class="expedition-sr-only"> · ${text('Terkunci', 'Locked')}</span>`}
             </button>`).join('')}
             <span class="forest-world-progress" title="${next ? forestStageLabel[next] : ''}">${text('Progres', 'Progress')} ${rank}/${forestStages.length} · Solo</span>
           </div>
@@ -84,9 +85,10 @@ export function expeditionPicker(
           </details>` : ''}
         </section>` : ''}
       </div>
+      ${!areaUnlocked ? `<p class="expedition-area-locked" role="status">${text('Arena terkunci · selesaikan empat tahap Solo di arena sebelumnya untuk membuka.', 'World locked · clear the four Solo stages in the previous world to unlock.')}</p>`:''}
       <div class="expedition-actions">
         ${action('explore-area', text('Main Solo', 'Play Solo'), 'play', !ready)}
-        ${action('online-menu', 'Online', 'users', !!expanded)}
+        ${action('online-menu', 'Online', 'users', !!expanded || !areaUnlocked)}
         ${action('practice-area', text('Latihan Kontrol', 'Practice Controls'), 'gamepad')}
       </div>
     </section>

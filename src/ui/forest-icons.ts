@@ -41,6 +41,8 @@ export function forestIcon(name:string){
  volume:line('<path d="M8 19h7l10-9v28l-10-9H8V19Zm22 0a8 8 0 0 1 0 10m4-15a14 14 0 0 1 0 20"/>'),
  muted:line('<path d="M8 19h7l10-9v28l-10-9H8V19Zm22 0 10 10m0-10L30 29"/>'),
  settings:line('<path d="m19 7-1 5-4 2-5-1-4 7 4 4v4l-3 4 4 7 5-1 4 2 1 4h8l2-5 3-2 5 1 4-7-4-4v-4l4-3-4-7-5 1-4-2-1-5h-9Z"/><circle cx="24" cy="25" r="6"/>'),
+ trophy:line('<path d="M15 8h18v12a9 9 0 0 1-18 0V8Zm0 3H8v6a7 7 0 0 0 7 7m18-13h7v6a7 7 0 0 1-7 7m-9 5v7m-9 0h18"/>'),
+ expand:line('<path d="M17 6H6v11m25-11h11v11M6 31v11h11m25-11v11H31"/>'),
  bag:line('<path d="M17 13v-2a7 7 0 0 1 14 0v2m-11 11h8m-13 1h18v10H15z"/><rect x="9" y="13" width="30" height="28" rx="6"/>'),
 
  };

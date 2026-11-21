@@ -15,16 +15,16 @@ export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343
  const colors:Record<string,number>={trail:0x638b71,climber:0xc77951,desert:0xc7ac7b,diver:0x457481};
  const paw=plushMaterial(bare?furColor:colors[kind]??colors.trail),pad=plushMaterial(0x604b50),trim=detailMaterial(kind==='diver'?0x81d2c6:kind==='climber'?0xf2c878:0xe9d6af);
  // Wrist and palm are intersecting smooth volumes with a single animal-paw silhouette.
- organicOrb(root,paw,'paw-continuous-base',0,-.005,0,.072,.109,.077);
- organicOrb(root,paw,'paw-palm-integrated',0,-.086,.012,.101,.111,.087,'paw');
+ organicOrb(root,paw,'paw-continuous-base',0,-.005,0,.065,.101,.070);
+ organicOrb(root,paw,'paw-palm-integrated',0,-.086,.012,.086,.103,.081,'paw');
  for(let i=0;i<4;i++){
-  const dx=(i-1.5)*.041;
-  const toe=organicOrb(root,paw,`paw-finger-${i+1}`,dx,-.168,.048,.032,.043,.045,'paw');
+  const dx=(i-1.5)*.034;
+  const toe=organicOrb(root,paw,`paw-finger-${i+1}`,dx,-.159,.045,.026,.037,.040,'paw');
   // Match names from the earlier three-digit render for compatibility without a second mesh.
   if(i<3){const alias=joint(toe,0,0,0,`paw-digit-${i+1}`);alias.userData.aliasOnly=true;}
   organicOrb(root,pad,'finger-pad',dx,-.18,.084,.017,.012,.010);
  }
- organicOrb(root,paw,'paw-thumb',side*.081,-.106,-.008,.035,.067,.048);
+ organicOrb(root,paw,'paw-thumb',side*.075,-.102,-.008,.032,.062,.042);
  organicOrb(root,pad,'paw-center-pad',0,-.096,.095,.060,.035,.012);
  if(!bare){
   const band=ovalRing(root,trim,'glove-cuff',0,.017,0,.080,.071,.010);band.rotation.x=Math.PI/2;

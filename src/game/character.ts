@@ -57,12 +57,12 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  }
  const arms:T.Group[]=[],elbows:T.Group[]=[],legs:T.Group[]=[],knees:T.Group[]=[];
  for(const side of [-1,1]){
-  const arm=joint(body,side*.328,.739,0,'shoulder');arms.push(arm);
-  organicOrb(arm,fur,'shoulder-blend',0,-.049,0,.109,.137,.112);
-  sculptedLimb(arm,fur,'upper-arm',.198,.092,.074,1.08);
-  const elbow=joint(arm,0,-.190,0,'elbow');elbows.push(elbow);
-  organicOrb(elbow,fur,'elbow-volume',0,-.008,0,.075,.092,.076);
-  sculptedLimb(elbow,fur,'forearm',.162,.078,.060,1.08);
+  const arm=joint(body,side*.350,.746,0,'shoulder');arms.push(arm);
+  organicOrb(arm,fur,'shoulder-blend',0,-.040,0,.084,.116,.084);
+  sculptedLimb(arm,fur,'upper-arm',.210,.083,.071,1.05);
+  const elbow=joint(arm,0,-.196,0,'elbow');elbows.push(elbow);
+  organicOrb(elbow,fur,'elbow-volume',0,-.008,0,.065,.083,.068);
+  sculptedLimb(elbow,fur,'forearm',.181,.071,.058,1.06);
   const leg=joint(body,side*.145,.346,-.008,'hip');legs.push(leg);
   organicOrb(leg,fur,'hip-blend',0,-.027,0,.128,.130,.135);
   sculptedLimb(leg,fur,'thigh',.153,.113,.104,1.06);
@@ -75,14 +75,26 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  const gear=a as typeof a & {hands?:string;feet?:string};
  const coatTone=a.body==='raincoat'?0xe7bf62:a.body==='space'?0xd8e9e0:a.body==='aurora'?0x79bbc1:a.body==='climber'?0xbe774e:a.body==='desert'?0xd6b98d:a.body==='diver'?0x355c66:0xf3e8d0;
  const vest=plushMaterial(coatTone);
- organicOrb(body,vest,'fitted-soft-vest',0,.545,.078,.239,.260,.157,'torso');
- organicOrb(body,cream,'soft-bib',0,.550,.216,.194,.214,.046);
+ // Tailored cloth shell follows the torso contour; the old oval belly patch is removed.
+ loftBody(body,vest,'tailored-expedition-vest',[
+  {y:.337,rx:.218,rz:.172,z:.009},{y:.368,rx:.250,rz:.198,z:.020},
+  {y:.470,rx:.269,rz:.221,z:.030},{y:.595,rx:.267,rz:.217,z:.015},
+  {y:.700,rx:.241,rz:.194,z:.008},{y:.773,rx:.194,rz:.154,z:0},
+  {y:.797,rx:.162,rz:.115,z:0}
+ ]);
+ // Seams, placket and compact pockets turn the silhouette into a readable garment.
+ for(const side of [-1,1]){
+  curvedBand(body,detailMaterial(0xd9c79c),'vest-side-seam',[[side*.228,.737,.080],[side*.264,.593,.085],[side*.255,.45,.088],[side*.213,.363,.095]],.009);
+  curvedBand(body,detailMaterial(0xe0c798),'vest-lapel',[[side*.112,.784,.170],[side*.125,.678,.202],[side*.09,.595,.236]],.011);
+  organicOrb(body,cream,'vest-pocket-flap',side*.144,.470,.246,.079,.041,.025);
+ }
+ curvedBand(body,detailMaterial(0xbe9f65),'vest-zipper',[[0,.75,.169],[0,.625,.236],[0,.483,.249],[0,.373,.224]],.011);
  const collar=addMesh(body,new T.TorusGeometry(.122,.037,10,32),teal,0,.834,.005);collar.rotation.x=Math.PI/2;collar.name='organic-scarf-collar';
- const scarf=organicOrb(body,teal,'scarf-tip',.106,.714,.250,.078,.111,.028);scarf.rotation.z=-.38;
+ const scarf=organicOrb(body,teal,'scarf-tip',.106,.735,.215,.068,.088,.036);scarf.rotation.z=-.38;
  for(const side of [-1,1]){
   curvedBand(body,detailMaterial(0xa88953),'suspender',[[side*.17,.785,.178],[side*.173,.652,.235],[side*.149,.476,.237]],.016);
-  const pouch=organicOrb(body,gold,'rounded-gear-pouch',side*.140,.479,.263,.073,.063,.042);
-  organicOrb(body,teal,'pouch-rivet',side*.140,.504,.300,.015,.013,.009);
+  const pouch=organicOrb(body,gold,'rounded-gear-pouch',side*.151,.452,.253,.068,.050,.031);
+  organicOrb(body,teal,'pouch-rivet',side*.151,.470,.283,.012,.011,.008);
  }
  if(a.head==='explorer'){
   const brim=organicOrb(head,gold,'soft-explorer-hat-brim',0,.288,0,.425,.031,.307);

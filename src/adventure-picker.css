@@ -277,3 +277,7 @@
   .expedition-capacity { font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) { .adventure-select button { transition: none; } }
+
+/* Area progression status belongs to the expedition picker. */
+#game[data-screen="setup"] .area-option[data-unlocked="false"]{filter:saturate(.38) brightness(.72)}
+#game[data-screen="setup"] .expedition-area-locked{padding:9px 12px;color:#ffe1ac;background:#20354e;border:1px solid #d9ad697d}
