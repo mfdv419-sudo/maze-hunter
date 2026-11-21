@@ -27,5 +27,5 @@ export function createBinturong(outfit='classic', color=0x343c45, appearance?:Ch
   const adapted = appearance ? expeditionAppearance(appearance) : undefined;
   const body = adapted?.body ?? outfit;
   const fur = adapted ? (paletteColors[adapted.palette] ?? color) : color;
-  return createRiggedBinturong(body,fur,adapted);
+  return createRiggedBinturong(body,fur,adapted,appearance);
 }

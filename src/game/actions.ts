@@ -44,7 +44,7 @@ export function hitTargets(
 }
 /** Shared client/server airborne boost; a third press cannot grant a third impulse. Times are seconds. */
 export interface JumpStamp {at:number;base:number;count:number;boost?:number;profile?:'forest'}
-export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;if(j.profile==='forest'){return j.count===2?Math.max(0,forestJump(age,1.35)+j.base*Math.max(0,1-age/(forestRules.jumpRise+forestRules.jumpFall))):forestJump(age,forestRules.jumpHeight*(j.boost||1));}return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/(JUMP_SECONDS*Math.sqrt(j.boost||1)))*(j.boost||1);}
+export function airborneHeight(j:JumpStamp,now:number){const age=now-j.at;if(age<0)return 0;if(j.profile==='forest'){return j.count===2?Math.max(0,forestJump(age,1.50)+j.base*Math.max(0,1-age/(forestRules.jumpRise+forestRules.jumpFall))):forestJump(age,forestRules.jumpHeight*(j.boost||1));}return j.count===2?Math.max(0,j.base+4.1*age-5.8*age*age):jumpHeight(age/(JUMP_SECONDS*Math.sqrt(j.boost||1)))*(j.boost||1);}
 export function nextJump(j:JumpStamp,now:number,boost=1):JumpStamp|null{
  const height=airborneHeight(j,now),age=now-j.at;
  if(age<.12)return null;

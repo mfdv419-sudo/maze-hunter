@@ -363,7 +363,7 @@ def clip(name,duration,keys):
  # keys: dict bone => transform(time): quaternion list
  tracks={}
  for bone,fn in keys.items():
-  times=np.linspace(0,duration,9,dtype=np.float32)
+  times=np.linspace(0,duration,17,dtype=np.float32)
   tracks[bone]=(times,np.asarray([fn(t/duration) for t in times],dtype=np.float32))
  CLIPS[name]=tracks
 clip('Idle',2.2,{
@@ -375,17 +375,17 @@ clip('Idle',2.2,{
  })
 for name,dur,stride in [('Walk',.92,.46),('Run',.65,.76)]:
  clip(name,dur,{
-  'Spine':lambda t:qrot(.035,.024*math.sin(2*math.pi*t),.037*math.sin(4*math.pi*t)),
-  'Head':lambda t:qrot(-.02,.022*math.sin(2*math.pi*t),0),
+  'Spine':lambda t:qrot((.075 if name=='Run' else .035)+.022*math.cos(4*math.pi*t),.035*math.sin(2*math.pi*t),.055*math.sin(2*math.pi*t)),
+  'Head':lambda t:qrot(-.03+.025*math.cos(4*math.pi*t),-.030*math.sin(2*math.pi*t),-.015*math.sin(2*math.pi*t)),
   'UpperArm_L':lambda t:qrot(-stride*.64*math.sin(t*math.tau),0,.11),
   'UpperArm_R':lambda t:qrot(stride*.64*math.sin(t*math.tau),0,-.11),
-  'ForeArm_L':lambda t:qrot(-.16-.16*max(0,math.sin(t*math.tau))),
-  'ForeArm_R':lambda t:qrot(-.16-.16*max(0,-math.sin(t*math.tau))),
-  'Thigh_L':lambda t:qrot(stride*math.sin(t*math.tau)),
-  'Thigh_R':lambda t:qrot(-stride*math.sin(t*math.tau)),
-  'Shin_L':lambda t:qrot(-.12-max(0,math.sin(t*math.tau))*.45),
-  'Shin_R':lambda t:qrot(-.12-max(0,-math.sin(t*math.tau))*.45),
-  'TailBase':lambda t:qrot(0,.10*math.sin(t*math.tau))
+  'ForeArm_L':lambda t:qrot(-.14-.21*max(0,math.sin(t*math.tau))),
+  'ForeArm_R':lambda t:qrot(-.14-.21*max(0,-math.sin(t*math.tau))),
+  'Thigh_L':lambda t:qrot(stride*math.sin(t*math.tau),0,.025*math.cos(t*math.tau)),
+  'Thigh_R':lambda t:qrot(-stride*math.sin(t*math.tau),0,-.025*math.cos(t*math.tau)),
+  'Shin_L':lambda t:qrot(-.14-max(0,math.sin(t*math.tau))*.55),
+  'Shin_R':lambda t:qrot(-.14-max(0,-math.sin(t*math.tau))*.55),
+  'TailBase':lambda t:qrot(0,.14*math.sin(t*math.tau))
  })
 clip('Jump',.90,{
  'UpperArm_L':lambda t:qrot(-.82*math.sin(math.pi*t),0,.2),

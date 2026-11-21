@@ -288,7 +288,6 @@ function home() {
         <button type="button" id="retro-mode" class="mode-tile" aria-pressed="${homeMode==='retro'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M6 8h36v32H6V8m9 0v12h16v12H15v8m27-20H31V8"/><path class="mode-route" d="M7 28h16v-8h17"/><circle cx="7" cy="28" r="3"/></svg><span><b>${tr('LABIRIN KLASIK','CLASSIC MAZE')}</b><small>${tr('Telusuri rute dan gerbang','Find the route and gate')}</small></span><i aria-hidden="true">◆</i></button>
         <button type="button" id="modern-mode" class="mode-tile" aria-pressed="${homeMode==='modern'}"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m5 19 19-11 19 11v20L24 28 5 39V19m19-11v20m-10 6V21l10-6 10 6v13"/><path class="mode-route" d="m18 33 6-4 6 4"/></svg><span><b>ADVENTURE</b><small>${tr('Jelajahi dunia 3D','Explore the 3D worlds')}</small></span><i aria-hidden="true">◆</i></button>
        </div>
-       <button type="button" id="home-start" class="home-start">${tr('▶ MULAI BERMAIN','▶ PLAY NOW')}</button>
        <div class="home-shortcuts">
          ${profile?`<button id="collection-open" type="button">${tr('◈ Koleksi & Misi','◈ Collection & Quests')}</button><button id="home-shop" type="button">${tr('✦ Shop & Kostum','✦ Shop & Outfit')}</button>`:''}
        </div>
@@ -385,9 +384,9 @@ function home() {
     updateHomeSelection();
     tone(mode === "retro" ? 520 : 660);
   }
-  click('retro-mode',()=>chooseMode('retro'));
-  click('modern-mode',()=>chooseMode('modern'));
-  click('home-start',()=>void enterMode(el<HTMLButtonElement>('home-start')));
+  // Two primary game choices are the real entry actions. No duplicate Play Now.
+  click('retro-mode',()=>{chooseMode('retro');void enterMode(el<HTMLButtonElement>('retro-mode'));});
+  click('modern-mode',()=>{chooseMode('modern');void enterMode(el<HTMLButtonElement>('modern-mode'));});
   click('home-shop',()=>wardrobe());click('collection-open',()=>collection());
   click("wardrobe", () => wardrobe());click("collection-open",()=>collection());
   click("fullscreen", requestGameFullscreen);

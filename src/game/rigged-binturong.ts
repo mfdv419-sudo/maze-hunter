@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { Character, CharacterAction, CharacterAppearance } from './character';
 import {doubleJumpSomersault} from './double-jump-motion';
+import {attachWardrobeEquipment} from './wardrobe-rig-attachments';
 
 /** Native skinned GLB. There is no second, legacy character mesh implementation. */
 const MASTER_URL='/models/binturong_master_rigged.glb';
@@ -17,7 +18,7 @@ function master():Promise<RigAsset> {
 }
 
 const VEST:Record<string,number>={
-  classic:0xf4deb9,explorer:0xf4deb9,climber:0xe0bb84,desert:0xeacda2,
+  classic:0xf4deb9,explorer:0xc1c993,climber:0xe0bb84,desert:0xeacda2,
   diver:0x75a8bb,raincoat:0xf3ce64,space:0xb4cddd,aurora:0x86d0b9,
 };
 const BOOT:Record<string,number>={
@@ -36,10 +37,10 @@ function outfitOn(scene:T.Object3D,outfit:string,fur:number,appearance?:Characte
     if ((slot==='base'||slot==='tail')&&mat==='fur')m.color.setHex(fur);
     if(slot==='outfit'&&mat==='ivory')m.color.setHex(VEST[outfit]??VEST.classic);
     if(slot==='shoes'&&mat==='boot')m.color.setHex(BOOT[outfit]??BOOT.classic);
-    if(slot==='headwear_hat')o.visible=appearance?.head!=='bare'&&appearance?.head!=='leaf';
-    if(slot==='headwear_leaf')o.visible=appearance?.head!=='bare';
-    if(slot==='eyewear')o.visible=appearance?.face!=='bare'&&appearance?.face!=='mask';
-    if(slot==='backpack')o.visible=appearance?.back!=='bare';
+    if(slot==='headwear_hat')o.visible=['explorer','climber','desert','diver'].includes(appearance?.head??'bare');
+    if(slot==='headwear_leaf')o.visible=['leaf','explorer','climber','crown'].includes(appearance?.head??'bare');
+    if(slot==='eyewear')o.visible=!['mask','diver'].includes(appearance?.face??'bare');
+    if(slot==='backpack')o.visible=['pack','climber','desert','diver'].includes(appearance?.back??'bare');
     o.castShadow=true;o.receiveShadow=true;
   });
 }
@@ -60,7 +61,7 @@ function state(speed:number,celebrate:boolean,a?:CharacterAction){
  * pseudo-model; loading is handled by the existing arena/website loader. For portraits,
  * the first Home/gameplay load warms the cache and subsequent clones attach synchronously.
  */
-export function createRiggedBinturong(outfit:string,fur:number,appearance?:CharacterAppearance):Character{
+export function createRiggedBinturong(outfit:string,fur:number,appearance?:CharacterAppearance,rawAppearance?:CharacterAppearance):Character{
   const root=new T.Group();root.name='binturong';root.userData.modelVersion='rigged-binturong-glb-v1';
   root.userData.assetStatus='loading';
   let disposed=false,rig:T.Object3D|undefined,mixer:T.AnimationMixer|undefined,playing:T.AnimationAction|undefined;
@@ -72,6 +73,7 @@ export function createRiggedBinturong(outfit:string,fur:number,appearance?:Chara
     const model=cloneSkinned(asset.scene);
     model.name='Binturong Master Rig';model.scale.setScalar(.75);
     outfitOn(model,outfit,fur,appearance);
+    attachWardrobeEquipment(model,appearance??{head:'bare',face:'bare',body:outfit,back:'bare',tail:'bare',palette:'charcoal',hands:'bare',feet:'bare'},outfit,rawAppearance);
     // Rotate around the character's center, not the feet, for the second jump.
     animationPivot=new T.Group();animationPivot.position.y=.72;model.position.y=-.72;
     animationPivot.add(model);root.add(animationPivot);rig=model;
@@ -113,9 +115,16 @@ export function createRiggedBinturong(outfit:string,fur:number,appearance?:Chara
       mixer.update(dt);
       if(animationPivot)animationPivot.rotation.x=doubleJumpSomersault(a?.jumpCount??0,a?.jumpAge??0,a?.jump??0);
       // Manual free look is prioritized without moving the root/camera.
-      if(a?.cameraLook!==undefined && speed<.04 && rig){
+      // Never accumulate camera-facing yaw on the same head bone every frame;
+      // accumulation previously caused visible twitching and deformation.
+      if(rig){
         const head=rig.getObjectByName('Head') as T.Bone|undefined;
-        if(head)head.rotation.y+=Math.max(-.75,Math.min(.75,a.cameraLook))*.15;
+        if(head&&a?.cameraLook!==undefined&&speed<.04){
+          const look=Math.atan2(Math.sin(a.cameraLook),Math.cos(a.cameraLook));
+          // A player-controlled front view gets a subtle natural gaze;
+          // a rear view must not twist the neck through 180 degrees.
+          head.rotation.y=Math.abs(look)<1.4?T.MathUtils.clamp(look,-1.15,1.15)*.55:0;
+        }
       }
     },
     dispose(){

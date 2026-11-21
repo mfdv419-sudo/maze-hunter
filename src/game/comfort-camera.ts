@@ -57,168 +57,157 @@ export class AdventureCamera {
  private eye?:T.Vector3;
  private target?:T.Vector3;
  private heading?:number;
- private turnWindow=0;
- private turnDirection=0;
- private waitingForRoom=false;
+ private turnAge=0;
+ private turnSide=0;
+ private turnTravel=0;
+ private heldAtWall=false;
 
- reset(){
-  this.eye=this.target=undefined;
-  this.heading=undefined;
-  this.turnWindow=0;
-  this.waitingForRoom=false;
-  this.turnDirection=0;
- }
+ reset(){this.eye=undefined;this.target=undefined;this.heading=undefined;this.turnAge=0;this.turnSide=0;this.turnTravel=0;this.heldAtWall=false;}
 
  step(target:T.Vector3,offset:T.Vector3,space:CameraSpace,frame:CameraFrame):T.Vector3{
   if(this.target&&this.target.distanceToSquared(target)>20)this.reset();
-  const motion=this.target?target.clone().sub(this.target):new T.Vector3();
-  const oldDistance=this.eye&&this.target?this.eye.distanceTo(this.target):0;
+  const oldTarget=this.target?.clone();
+  const movement=oldTarget?target.clone().sub(oldTarget):new T.Vector3();
   this.target=target.clone();
   const radius=offset.length();
-  const old=this.eye;
-  if(!old||!space.isClear(old,CAMERA_MARGIN)){
-   // Distinguish *embedded* (invalid eye) from normal contact with a wall.
-   // An embedded eye must be moved clear before rendering: otherwise the
-   // wall covers the screen with flickering coplanar triangles.
-   const freed=old?space.recoverEmbedded?.(old,target,CAMERA_MARGIN):null;
-   let safe=freed&&space.isClear(freed,CAMERA_MARGIN)?freed:
-    space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
-   // Handle a spawn/traversal transition with focus inside terrain margin.
-   if(!space.isClear(safe,CAMERA_MARGIN)){
-    const above=space.resolve(target,target.clone().add(new T.Vector3(0,1,0)),CAMERA_MARGIN);
-    if(space.isClear(above,CAMERA_MARGIN))safe=above;
-    else if(old&&space.isClear(old,CAMERA_MARGIN))safe=old;
-    else{
-     // Do not continue normal follow from a non-clear camera pose.
-     const near=space.recoverEmbedded?.(safe,target,CAMERA_MARGIN);
-     if(near&&space.isClear(near,CAMERA_MARGIN))safe=near;
-    }
-   }
-   this.waitingForRoom=safe.distanceTo(target)<radius-EPSILON;
-   this.eye=safe.clone();
+  const dt=T.MathUtils.clamp(frame.dt,0,.05);
+  const clear=(p:T.Vector3)=>space.isClear(p,CAMERA_MARGIN);
+  const safeMove=(from:T.Vector3,to:T.Vector3)=>{
+   const safe=space.resolve(from,to,CAMERA_MARGIN);
+   return clear(safe)?safe:from.clone();
+  };
+  const place=(angle:number,elevation:number,d:number)=>new T.Vector3(
+   target.x+Math.sin(angle)*Math.cos(elevation)*d,
+   target.y+Math.sin(elevation)*d,
+   target.z+Math.cos(angle)*Math.cos(elevation)*d);
+
+  if(!this.eye){
+   this.eye=space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
+   this.heldAtWall=this.eye.distanceTo(target)<radius-EPSILON;
+   if(frame.heading!==undefined)this.heading=frame.heading;
    return this.eye.clone();
   }
-
-  const dt=T.MathUtils.clamp(frame.dt,0,.05);
-  const relative=old.clone().sub(target);
-  const distance=relative.length();
-  const yaw=Math.atan2(relative.x,relative.z);
-  const pitch=Math.atan2(relative.y,Math.hypot(relative.x,relative.z));
-  const desiredYaw=Math.atan2(offset.x,offset.z);
-  const desiredPitch=Math.atan2(offset.y,Math.hypot(offset.x,offset.z));
-  const place=(angle:number,elevation:number,length:number)=>{
-   const horizontal=length*Math.cos(elevation);
-   return new T.Vector3(target.x+Math.sin(angle)*horizontal,target.y+Math.sin(elevation)*length,target.z+Math.cos(angle)*horizontal);
-  };
-  const move=(destination:T.Vector3)=>{
-   const safe=space.resolve(old,destination,CAMERA_MARGIN);
-   return space.isClear(safe,CAMERA_MARGIN)?safe:old;
-  };
+  // Only a truly embedded camera is recovered; touching a wall is not a
+  // trigger to orbit/zoom. Recover deterministically, never oscillate sides.
+  if(!clear(this.eye)){
+   const recovered=space.recoverEmbedded?.(this.eye,target,CAMERA_MARGIN);
+   if(recovered&&clear(recovered))this.eye.copy(recovered);
+   else {
+    const fallback=space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
+    if(clear(fallback))this.eye.copy(fallback);
+   }
+   this.heldAtWall=true;
+   return this.eye.clone();
+  }
+  const old=this.eye.clone();
+  const rel=old.clone().sub(target),distance=rel.length();
+  const yaw=Math.atan2(rel.x,rel.z),pitch=Math.atan2(rel.y,Math.hypot(rel.x,rel.z));
 
   if(frame.mode!=='follow'){
-   this.turnWindow=0;
+   this.turnAge=0;this.turnTravel=0;this.turnSide=0;
    if(frame.heading!==undefined)this.heading=frame.heading;
+   // Free view is a deliberate orbit: only the wall/ground clips its radius.
+   // There is no elastic spring or automatic zoom-out on finger release.
+   const desiredYaw=Math.atan2(offset.x,offset.z);
+   const desiredPitch=Math.atan2(offset.y,Math.hypot(offset.x,offset.z));
    const turn=angleBetween(desiredYaw,yaw),tilt=desiredPitch-pitch;
-   const nextYaw=yaw+T.MathUtils.clamp(turn,-dt*6,dt*6);
+   const nextYaw=yaw+T.MathUtils.clamp(turn,-dt*5,dt*5);
    const nextPitch=pitch+T.MathUtils.clamp(tilt,-dt*4,dt*4);
-   const orbit=place(nextYaw,nextPitch,radius);
-   const clearRadius=space.resolve(target,orbit,CAMERA_MARGIN).distanceTo(target);
-   const radiusLimit=Math.min(radius,distance+(Math.abs(turn)>.001||Math.abs(tilt)>.001||frame.mode==='reset'?dt*3:0));
-   const nextRadius=Math.min(radiusLimit,clearRadius);
-   const wished=place(nextYaw,nextPitch,nextRadius);
-   // Move along a swept path. The orbit may compress under the user's hand,
-   // with bounded travel so a corner cannot snap the view inward.
-   const next=old.clone().add(wished.clone().sub(old).clampLength(0,dt*13));
-   this.eye=move(next);
-   if(this.eye.distanceToSquared(old)<.000001&&nextRadius<distance-EPSILON){
-    const inward=relative.clone().setLength(Math.max(0,distance-dt*9));
-    this.eye=move(target.clone().add(inward));
+   const clearDistance=space.resolve(target,place(nextYaw,nextPitch,radius),CAMERA_MARGIN).distanceTo(target);
+   const canGrow=Math.abs(turn)>.001||Math.abs(tilt)>.001||frame.mode==='reset';
+   const nextDistance=Math.min(radius,clearDistance,distance+(canGrow?dt*4:0));
+   const wished=place(nextYaw,nextPitch,nextDistance);
+   const step=wished.clone().sub(old).clampLength(0,dt*13);
+   this.eye.copy(safeMove(old,old.clone().add(step)));
+   // When orbiting into a barrier, permit moving closer to the avatar on the
+   // current ray; only the player's requested view has this permission.
+   if(this.eye.distanceToSquared(old)<1e-8&&clearDistance<distance-EPSILON){
+    const inward=place(yaw,pitch,Math.max(0,distance-dt*9));
+    this.eye.copy(safeMove(old,inward));
    }
-   this.waitingForRoom=this.eye.distanceTo(target)<radius-EPSILON;
+   this.heldAtWall=this.eye.distanceTo(target)<radius-EPSILON;
    return this.eye.clone();
   }
 
-  this.turnWindow=Math.max(0,this.turnWindow-dt);
-  // Remember accumulated *player* turning. A maze corner often consists of
-  // many small joystick steps; waiting for a single 45-degree frame misses it.
+  // A stable turn intent is owned by the actual player's heading, never by
+  // collision ray noise. Hold one chosen direction through a whole corner.
+  this.turnAge=Math.max(0,this.turnAge-dt);
   if(frame.heading!==undefined&&Number.isFinite(frame.heading)){
    if(this.heading===undefined)this.heading=frame.heading;
    else{
-    const delta=angleBetween(frame.heading,this.heading);
-    if(Math.abs(delta)>.10){
+    const change=angleBetween(frame.heading,this.heading);
+    if(Math.abs(change)>.018){
      this.heading=frame.heading;
-     // Keep a stable turn side during one corner; changing it every frame is
-     // what made the camera oscillate left/right against a wall.
-     if(!this.turnWindow||this.turnDirection===0)this.turnDirection=Math.sign(delta);
-     else if(Math.sign(delta)!==this.turnDirection&&Math.abs(delta)>.35)this.turnDirection=Math.sign(delta);
-     this.turnWindow=1.1;
+     if(this.turnAge<=0){this.turnSide=Math.sign(change);this.turnTravel=0;}
+     if(Math.sign(change)===this.turnSide)this.turnTravel=Math.min(Math.PI,this.turnTravel+Math.abs(change));
+     // Reverse joystick motion starts a new turn only after a substantial
+     // deliberate reversal, never on 1-frame camera-relative noise.
+     else if(Math.abs(change)>.55){this.turnSide=Math.sign(change);this.turnTravel=Math.abs(change);}
+     this.turnAge=.95;
     }
    }
   }
+  if(this.turnAge<=0){this.turnSide=0;this.turnTravel=0;}
 
-  const turnToClearSight=(from:T.Vector3):T.Vector3|null=>{
-   // Turn follow is allowed ONLY after real player heading change, with a
-   // blocked camera-to-character sight line. A stationary wall contact is not
-   // a reason to spin the camera or force it behind the player.
-   if(!this.turnWindow||!this.turnDirection)return null;
-   const sightBlocked=space.resolve(target,from,.18).distanceToSquared(from)>EPSILON**2;
-   const turnLag=this.heading===undefined?0:Math.abs(angleBetween(this.heading+Math.PI,yaw));
-   // As the avatar rounds a corner, the intended trailing view can disappear
-   // BEFORE a wall entirely cuts the player off. Only a real turn activates
-   // gentle lateral tracking; touching a wall without turning does not.
-   if(!sightBlocked&&turnLag<.34&&!frame.outOfFrame)return null;
-   const sideways=new T.Vector3(Math.cos(yaw)*this.turnDirection,0,-Math.sin(yaw)*this.turnDirection);
-   const wish=from.clone().addScaledVector(sideways,dt*2.15);
-   const slide=move(wish);
-   return slide.distanceToSquared(from)>1e-6&&space.isClear(slide,CAMERA_MARGIN)?slide:null;
-  };
-  if(this.waitingForRoom){
-   // The player can approach a camera held against a wall; do not compress
-   // distance or recenter. If the player actually turns and becomes hidden,
-   // a tiny lateral tracking move may release the view without a snap.
-   if(distance<radius-EPSILON||distance<=oldDistance+.00001){
-    const slide=turnToClearSight(old);
-    if(slide){this.eye=slide;return slide.clone();}
-    return old.clone();
+  // Physical translation first. When the camera hits an obstacle the avatar
+  // can approach it. This is NOT an instruction to shrink the camera radius.
+  let next=old.clone();
+  let contact=false;
+  if(movement.lengthSq()>1e-10){
+   const delta=movement.clone().clampLength(0,dt*12);
+   const intended=old.clone().add(delta);
+   const swept=safeMove(old,intended);
+   contact=swept.distanceToSquared(intended)>EPSILON*EPSILON;
+   if(!this.heldAtWall||distance>=radius-EPSILON){
+    next=swept;
+   }else if(distance>radius-EPSILON&&distance>=old.distanceTo(oldTarget??target)-EPSILON){
+    next=swept;
    }
-   // Regain the normal radius by walking the eye, not by jumping to the
-   // newly calculated 7.2-unit point in one render frame.
-   const wished=place(yaw,pitch,radius);
-   const candidate=move(old.clone().add(wished.sub(old).clampLength(0,dt*4)));
-   this.eye=candidate;
-   this.waitingForRoom=candidate.distanceTo(target)<radius-EPSILON;
-   return candidate.clone();
+   if(contact&&next.distanceToSquared(old)<1e-8){
+    // Stable wall tangent: resolve X and Z independently, favor whichever
+    // moves farther toward the real player translation. No side alternation.
+    const x=safeMove(old,old.clone().add(new T.Vector3(delta.x,0,0)));
+    const z=safeMove(old,old.clone().add(new T.Vector3(0,0,delta.z)));
+    const choices=[x,z].filter(p=>p.distanceToSquared(old)>1e-8);
+    if(choices.length&&!this.heldAtWall)
+     next=choices.sort((a,b)=>a.distanceToSquared(intended)-b.distanceToSquared(intended))[0];
+   }
+  }
+  const isSightBlocked=(eye:T.Vector3)=>{
+   const sight=space.resolve(target,eye,.15);
+   return sight.distanceToSquared(eye)>.10*.10;
+  };
+  const headingBehind=this.heading===undefined?yaw:this.heading+Math.PI;
+  const angleError=angleBetween(headingBehind,Math.atan2(next.x-target.x,next.z-target.z));
+  const turned=this.turnAge>0&&this.turnTravel>.10&&this.turnSide!==0;
+  const occluded=isSightBlocked(next)||!!frame.outOfFrame;
+
+  if(turned&&(occluded||Math.abs(angleError)>.36)){
+   // Orbit only because the character ACTUALLY turned and is losing camera
+   // framing. Do not orbit on stationary wall contact. Clamp to sub-degree
+   // steps and select a fixed turn side, eliminating left-right vibration.
+   const currentYaw=Math.atan2(next.x-target.x,next.z-target.z);
+   const currentPitch=Math.atan2(next.y-target.y,Math.hypot(next.x-target.x,next.z-target.z));
+   const aim=angleBetween(headingBehind,currentYaw);
+   const easeIn=Math.min(1,Math.max(0,(this.turnTravel-.10)/.34));
+   const angleStep=T.MathUtils.clamp(aim,-dt*.70*easeIn,dt*.70*easeIn);
+   const desiredRadius=Math.min(radius,next.distanceTo(target));
+   const orbit=place(currentYaw+angleStep,currentPitch,desiredRadius);
+   const candidate=safeMove(next,orbit);
+   if(candidate.distanceToSquared(next)>1e-7)next=candidate;
+   else if(occluded){
+    // At a corner the orbit arc may graze a wall. Slide on the already clear
+    // wall tangent *in the fixed direction of the player's turn*.
+    const tangent=new T.Vector3(Math.cos(currentYaw)*this.turnSide,0,-Math.sin(currentYaw)*this.turnSide);
+    const slide=safeMove(next,next.clone().addScaledVector(tangent,dt*2.0*easeIn));
+    if(slide.distanceToSquared(next)>1e-7)next=slide;
+   }
   }
 
-  if(motion.lengthSq()<.0000001){
-   const slide=turnToClearSight(old);
-   if(slide){this.eye=slide;return slide.clone();}
-   return old.clone();
-  }
-  const translated=old.clone().add(motion);
-  const follow=move(translated);
-  if(follow.distanceToSquared(translated)>EPSILON**2){
-   // This is a real wall contact. Keep the eye still unless the player has
-   // deliberately turned AND the line of sight is being blocked. No random
-   // wall-triggered side search, zoom, oscillation, or teleport behind player.
-   const slide=turnToClearSight(follow);
-   if(slide){this.eye=slide;this.waitingForRoom=false;return slide.clone();}
-   this.waitingForRoom=true;
-   this.eye=follow;
-   return follow.clone();
-  }
-
-  if(this.turnWindow>0&&frame.heading!==undefined&&
-    (frame.outOfFrame||space.resolve(target,follow,.18).distanceToSquared(follow)>EPSILON**2)){
-   const turn=angleBetween(frame.heading+Math.PI,yaw);
-   const adjusted=place(yaw+T.MathUtils.clamp(turn,-dt*.85,dt*.85),pitch,radius);
-   // The turn is player-driven. If its next step touches a wall, use the
-   // already clear straight follow position and leave the yaw alone.
-   const turned=move(adjusted);
-   if(turned.distanceToSquared(adjusted)<=EPSILON**2)this.eye=turned;
-   else{this.eye=follow;this.turnWindow=0;}
-   if(Math.abs(turn)<.04)this.turnWindow=0;
-  }else this.eye=follow;
+  // Keep the wall hold until the player makes room again. No dolly zoom,
+  // no teleport back behind the character, no idle automatic recenter.
+  this.eye.copy(next);
+  this.heldAtWall=(contact||this.heldAtWall)&&this.eye.distanceTo(target)<radius-EPSILON;
   return this.eye.clone();
  }
 }
