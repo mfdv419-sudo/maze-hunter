@@ -1,16 +1,16 @@
 /* Adventure menu: a single panorama with the arena and difficulty controls below. */
 #game[data-screen="setup"] {
   --expedition-paper: #fff1d3;
-  --expedition-gold: #f4d68b;
-  --expedition-quiet: #bacdc1;
-  --expedition-ink: #111d1e;
-  --expedition-edge: #445751;
+  --expedition-gold: #ffd66b;
+  --expedition-quiet: #d0e6db;
+  --expedition-ink: #155873;
+  --expedition-edge: #f7d57a;
   --expedition-gutter: clamp(15px, 4vw, 72px);
   display: grid;
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
-  background: var(--expedition-ink);
+  background: #155d72;
   color: var(--expedition-paper);
 }
 #game[data-screen="setup"]:has(> .lab-banner) { grid-template-rows: auto minmax(0, 1fr); }
@@ -21,7 +21,7 @@
   height: auto;
   min-height: 59px;
   padding: 7px var(--expedition-gutter);
-  background: linear-gradient(180deg, #071411c4, transparent);
+  background: linear-gradient(180deg, #0f516899, transparent);
   border: 0;
   pointer-events: none;
 }
@@ -36,11 +36,11 @@
   gap: 5px;
   min-height: 36px;
   padding: 4px 9px;
-  border-radius: 8px;
+  border-radius: 20px;
   color: var(--expedition-paper);
-  background: #14221fe8;
-  border: 1px solid #ede6ce44;
-  box-shadow: none;
+  background: linear-gradient(#1a748a,#0c3b56);
+  border: 2px solid #f4d278;
+  box-shadow: inset 0 2px #98d6d5,0 3px 0 #735225;
   font-size: clamp(11px, 1vw, 14px);
   white-space: nowrap;
 }
@@ -54,7 +54,7 @@
   align-content: end;
   min-height: clamp(260px, 57dvh, 720px);
   overflow: hidden;
-  background: #20392f;
+  background: #74b8ac;
 }
 #adventure-preview, .adventure-poster::after {
   position: absolute;
@@ -68,8 +68,8 @@
 .adventure-poster::after {
   content: "";
   z-index: -1;
-  background: linear-gradient(180deg, #09151262, transparent 33%, transparent 45%, #111d1e),
-    linear-gradient(90deg, #0c1a18df, #0c1a187f 32%, transparent 76%);
+  background: linear-gradient(180deg, #0e5f7335, transparent 38%, transparent 62%, #0b536e9a),
+    linear-gradient(90deg, #0e5d7a75, transparent 46%);
 }
 .poster-copy { padding: 73px var(--expedition-gutter) clamp(15px, 3vw, 36px); }
 .expedition-kicker {
@@ -110,9 +110,9 @@
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid #dbebcd55;
+  border: 3px solid #ffdc82;
   border-radius: 50%;
-  background: #14221fe8;
+  background: linear-gradient(#20798d,#0e4262);
   color: var(--expedition-paper);
 }
 .expedition-guide svg { width: 25px; height: 25px; }
@@ -140,9 +140,9 @@
   min-width: 0;
   min-height: clamp(60px, 10dvh, 124px);
   padding: clamp(5px, .7vw, 11px);
-  border: 1px solid #82988887;
+  border: 3px solid #d7b46b;
   border-radius: 7px;
-  background: #21352e;
+  background: #3693a0;
   color: #fff1d4;
   text-align: left;
 }
@@ -153,10 +153,10 @@
   height: 100%;
   border-radius: 6px;
 }
-.area-option img { object-fit: cover; object-position: center 46%; z-index: -2; filter: saturate(.83) brightness(.87); }
-.area-option::before { content: ""; z-index: -1; background: linear-gradient(180deg, transparent 21%, #080d0af2 100%); }
+.area-option img { object-fit: cover; object-position: center 46%; z-index: -2; filter: saturate(1.13) brightness(1.07); }
+.area-option::before { content: ""; z-index: -1; background: linear-gradient(180deg, transparent 45%, #06374ba8 100%); }
 .area-option b { font-size: clamp(11px, 1.13vw, 17px); font-weight: 620; line-height: 1.1; text-shadow: 0 2px 4px #08111b; }
-.area-option[aria-pressed="true"] { border-color: var(--expedition-gold); box-shadow: 0 0 0 1px var(--expedition-gold); }
+.area-option[aria-pressed="true"] { border-color: #ffe487; box-shadow: 0 0 0 2px #fff1c1,0 4px 0 #84592a,0 0 13px #ffd46d; }
 .area-option[aria-pressed="true"] img { filter: none; }
 .area-mark {
   display: none;
@@ -190,26 +190,27 @@
   font-weight: 570;
   line-height: 1.1;
   color: #eee9da;
-  background: #192929;
-  border: 1px solid var(--expedition-edge);
-  border-radius: 7px;
+  background: linear-gradient(180deg,#2586a2,#0c466c);
+  border: 2px solid #ffde83;
+  border-radius: 16px 10px 16px 10px;
+  box-shadow:inset 0 2px #9ddedc,0 4px 0 #755026;
 }
 .expedition-difficulty svg, .forest-world-modes svg { width: 1.25em; height: 1.25em; color: #a6bfb1; flex: none; }
 .expedition-difficulty button[aria-pressed="true"], .forest-world-modes button[aria-pressed="true"] {
-  color: var(--expedition-gold);
-  background: #343625;
-  border-color: #a78c53;
+  color: #633912;
+  background: linear-gradient(#ffeca3,#f6bb41);
+  border-color: #fff2c4;
 }
 .adventure-select button[aria-pressed="true"] svg { color: inherit; }
-#forest-world-open { margin-left: 5px; color: #f0dfb0; border-color: #697558; background: #25332e; }
-#forest-world-open[aria-expanded="true"] { border-color: var(--expedition-gold); background: #353c2a; }
+#forest-world-open { margin-left: 5px; color: #f0dfb0; border-color: #697558; background: linear-gradient(#227d8d,#0c435f); }
+#forest-world-open[aria-expanded="true"] { border-color: var(--expedition-gold); background: linear-gradient(#ffe5a2,#e8b447); }
 #forest-world-open[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
 .forest-world-options {
   margin-top: 7px;
   padding: 8px 10px;
   border-left: 2px solid #b6a173;
   border-radius: 0 7px 7px 0;
-  background: #1d2b28;
+  background: #1a657c;
 }
 .forest-world-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .forest-world-modes button { min-width: 81px; min-height: 40px; }
@@ -229,9 +230,11 @@
   font-size: clamp(11px, 1.22vw, 17px);
   font-weight: 600;
   line-height: 1.1;
-  color: #dbe8dc;
-  background: transparent;
-  border-radius: 8px;
+  color: #fff1cf;
+  background: linear-gradient(#247e90,#0c3c60);
+  border: 2px solid #f6d881;
+  border-radius: 17px 10px 17px 10px;
+  box-shadow:inset 0 2px #91d2d1,0 4px 0 #74512c;
 }
 .expedition-action svg { width: 1.35em; height: 1.35em; flex: none; }
 #explore-area {
@@ -240,9 +243,9 @@
   text-transform: uppercase;
   letter-spacing: .045em;
   color: #281f12;
-  background: linear-gradient(174deg, #ffe5a2, #eabd61);
-  border: 1px solid #fbda8c;
-  box-shadow: inset 0 1px 0 #fff5cb, 0 3px 0 #876332, 0 6px 12px #091211;
+  background: linear-gradient(180deg,#fff3a8,#ffd84c 32%,#f4b029 80%,#c47a21);
+  border: 3px solid #fff2b5;
+  box-shadow: inset 0 2px 0 #fff6c9, 0 5px 0 #876332, 0 9px 16px #145c6766;
 }
 #practice-area { margin-left: auto; color: var(--expedition-quiet); }
 .adventure-select button:focus-visible { outline: 2px solid #fff4ca; outline-offset: 2px; }
@@ -279,5 +282,5 @@
 @media (prefers-reduced-motion: reduce) { .adventure-select button { transition: none; } }
 
 /* Area progression status belongs to the expedition picker. */
-#game[data-screen="setup"] .area-option[data-unlocked="false"]{filter:saturate(.38) brightness(.72)}
+#game[data-screen="setup"] .area-option[data-unlocked="false"]{filter:saturate(.5) brightness(.82)}
 #game[data-screen="setup"] .expedition-area-locked{padding:9px 12px;color:#ffe1ac;background:#20354e;border:1px solid #d9ad697d}

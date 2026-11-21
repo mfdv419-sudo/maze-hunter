@@ -273,7 +273,7 @@ function home() {
   begin(
     "home",
     `<main class="title-screen">
-      <div id="title-world" class="title-world" style="--home-world-art:url('${adventureBackdrop(activeArea)}')" aria-label="${tr('Panorama arena yang dipilih','Preview of the selected world')}"></div>
+      <div id="title-world" class="title-world" style="--home-world-art:url('${screenArt(activeArea,1)}')" aria-label="${tr('Panorama arena yang dipilih','Preview of the selected world')}"></div>
       <div class="title-vignette"></div>
       <section class="home-brand">
        <div class="home-kicker">${tr('PETUALANGAN KECIL, DUNIA LUAS','LITTLE PAWS. BIG ADVENTURES.')}</div>
@@ -336,7 +336,7 @@ function home() {
     el('retro-mode').setAttribute('aria-pressed',String(homeMode==='retro'));
     el('modern-mode').setAttribute('aria-pressed',String(homeMode==='modern'));
     const area=homeMode==='retro'?'classic':selectedArea;
-    el<HTMLElement>('title-world').style.setProperty('--home-world-art',`url("${adventureBackdrop(area)}")`);
+    el<HTMLElement>('title-world').style.setProperty('--home-world-art',`url("${screenArt(area,1)}")`);
     const chooser=el('home-area-chooser');chooser.hidden=homeMode==='retro';
     el('home-area-name').textContent=areaName(selectedArea,lang);
     const available=homeMode==='retro'||!profile||canEnterAdventureArea(profile,selectedArea,hasReviewerAccess());
