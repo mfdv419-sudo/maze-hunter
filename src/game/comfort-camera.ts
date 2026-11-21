@@ -34,101 +34,139 @@ export class RadiusOrbitCamera {
   const desired=target.clone().addScaledVector(direction,this.length),safe=resolve(target,desired);this.length=Math.min(this.length,safe.distanceTo(target));this.target=target.clone();return target.clone().addScaledVector(direction,this.length);
  }
 }
-export const FOREST_CAMERA_RADIUS = 7.2;
-const SIDE_STEP = Math.PI / 12;
-const CAMERA_CLEARANCE = 0.035;
-const angleBetween = (a:number,b:number) => Math.atan2(Math.sin(a-b), Math.cos(a-b));
+export const ADVENTURE_CAMERA_RADIUS=7.2;
+export const ADVENTURE_CAMERA_FOV=60;
+const CAMERA_MARGIN=.28;
+const EPSILON=.035;
+const angleBetween=(a:number,b:number)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 
-/** Land camera for Forest Grove. Obstructions change the orbit before they change the framing. */
-export class SlidingOrbitCamera {
- private eye?: T.Vector3;
- private target?: T.Vector3;
- private side = 0;
+export interface CameraSpace {
+ resolve(from:T.Vector3,to:T.Vector3,radius?:number):T.Vector3;
+ isClear(point:T.Vector3,radius?:number):boolean;
+}
+interface CameraFrame {
+ mode:'follow'|'manual'|'reset';
+ dt:number;
+ heading?:number;
+ outOfFrame?:boolean;
+}
 
- reset() {
-  this.eye = this.target = undefined;
-  this.side = 0;
+/** Adventure free view and trailing camera share only physical clearance. */
+export class AdventureCamera {
+ private eye?:T.Vector3;
+ private target?:T.Vector3;
+ private heading?:number;
+ private turnWindow=0;
+ private waitingForRoom=false;
+
+ reset(){
+  this.eye=this.target=undefined;
+  this.heading=undefined;
+  this.turnWindow=0;
+  this.waitingForRoom=false;
  }
 
- resetView() {
-  this.side = 0;
- }
+ step(target:T.Vector3,offset:T.Vector3,space:CameraSpace,frame:CameraFrame):T.Vector3{
+  if(this.target&&this.target.distanceToSquared(target)>20)this.reset();
+  const motion=this.target?target.clone().sub(this.target):new T.Vector3();
+  const oldDistance=this.eye&&this.target?this.eye.distanceTo(this.target):0;
+  this.target=target.clone();
+  const radius=offset.length();
+  const old=this.eye;
+  if(!old||!space.isClear(old,CAMERA_MARGIN)){
+   let safe=space.resolve(target,target.clone().add(offset),CAMERA_MARGIN);
+   // A spawn or traversal transition can start with the focus inside the
+   // terrain margin. Establish a clear eye on entry before normal follow.
+   if(!space.isClear(safe,CAMERA_MARGIN)){
+    const above=space.resolve(target,target.clone().add(new T.Vector3(0,1,0)),CAMERA_MARGIN);
+    safe=space.isClear(above,CAMERA_MARGIN)?above:old??target;
+   }
+   this.waitingForRoom=safe.distanceTo(target)<radius-EPSILON;
+   this.eye=safe.clone();
+   return this.eye.clone();
+  }
 
- step(target:T.Vector3, offset:T.Vector3, resolve:(a:T.Vector3,b:T.Vector3)=>T.Vector3, dt=1/60) {
-  if (this.target && this.target.distanceToSquared(target) > 20) this.reset();
-  this.target = target.clone();
-  const radius = offset.length();
-  const yaw = Math.atan2(offset.x, offset.z);
-  const pitch = Math.atan2(offset.y, Math.hypot(offset.x, offset.z));
-  const old = this.eye;
-  const stepTime = T.MathUtils.clamp(dt, 0, .05);
-  const place = (angle:number, elevation:number, distance=radius) => {
-   const horizontal = distance * Math.cos(elevation);
-   return new T.Vector3(
-    target.x + Math.sin(angle) * horizontal,
-    target.y + Math.sin(elevation) * distance,
-    target.z + Math.cos(angle) * horizontal,
-   );
+  const dt=T.MathUtils.clamp(frame.dt,0,.05);
+  const relative=old.clone().sub(target);
+  const distance=relative.length();
+  const yaw=Math.atan2(relative.x,relative.z);
+  const pitch=Math.atan2(relative.y,Math.hypot(relative.x,relative.z));
+  const desiredYaw=Math.atan2(offset.x,offset.z);
+  const desiredPitch=Math.atan2(offset.y,Math.hypot(offset.x,offset.z));
+  const place=(angle:number,elevation:number,length:number)=>{
+   const horizontal=length*Math.cos(elevation);
+   return new T.Vector3(target.x+Math.sin(angle)*horizontal,target.y+Math.sin(elevation)*length,target.z+Math.cos(angle)*horizontal);
   };
-  const clear = (from:T.Vector3,to:T.Vector3) =>
-   resolve(from,to).distanceToSquared(to) < CAMERA_CLEARANCE ** 2;
-
-  let initial = target.clone();
-  const tryOrbit = (turn:number,lift:number) => {
-   const angle = yaw + turn;
-   const elevation = Math.min(Math.PI / 2 - .03, pitch + lift);
-   const destination = place(angle,elevation);
-   const safe = resolve(target,destination);
-   if (!old && safe.distanceToSquared(target) > initial.distanceToSquared(target)) initial = safe;
-   if (safe.distanceToSquared(destination) >= CAMERA_CLEARANCE ** 2) return;
-
-   if (!old) return destination;
-   const previous = old.clone().sub(target);
-   const priorYaw = Math.atan2(previous.x,previous.z);
-   const priorPitch = Math.atan2(previous.y,Math.hypot(previous.x,previous.z));
-   // Limit orbit speed during manual turns and during obstacle avoidance.
-   const turnLimit = stepTime * 2.6;
-   const tiltLimit = stepTime * 1.3;
-   const nextYaw = priorYaw + T.MathUtils.clamp(angleBetween(angle,priorYaw),-turnLimit,turnLimit);
-   const nextPitch = priorPitch + T.MathUtils.clamp(elevation-priorPitch,-tiltLimit,tiltLimit);
-   const beforeRadius = previous.length();
-   const nextRadius = beforeRadius + T.MathUtils.clamp(radius-beforeRadius,-stepTime*8,stepTime*8);
-   const next = place(nextYaw,nextPitch,nextRadius);
-   if (clear(old,next)) return next;
-
-   // Following the chord of a turn can hit a projecting corner. Advance only on a clear orbit.
-   const midpoint = place(priorYaw + angleBetween(nextYaw,priorYaw) * .5,
-    T.MathUtils.lerp(priorPitch,nextPitch,.5),T.MathUtils.lerp(beforeRadius,nextRadius,.5));
-   if (midpoint.distanceToSquared(old) > .000001 && clear(old,midpoint)) return midpoint;
+  const move=(destination:T.Vector3)=>{
+   const safe=space.resolve(old,destination,CAMERA_MARGIN);
+   return space.isClear(safe,CAMERA_MARGIN)?safe:old;
   };
 
-  let result = tryOrbit(0,0);
-  // Retain the previous side on ties to avoid alternating between two equivalent views.
-  const oldYaw = old ? Math.atan2(old.x-target.x,old.z-target.z) : yaw;
-  const preferredSide = this.side || Math.sign(angleBetween(yaw,oldYaw)) || 1;
-  let side = 0;
-  if (!result) {
-   for (const lift of [0,.15]) {
-    for (let i=lift ? 0 : 1;i<=6 && !result;i++) {
-     for (const sign of (i ? [preferredSide,-preferredSide] : [preferredSide])) {
-      result = tryOrbit(i * SIDE_STEP * sign,lift);
-      if (result) { side = sign; break; }
-     }
-    }
-    if (result) break;
+  if(frame.mode!=='follow'){
+   this.turnWindow=0;
+   if(frame.heading!==undefined)this.heading=frame.heading;
+   const turn=angleBetween(desiredYaw,yaw),tilt=desiredPitch-pitch;
+   const nextYaw=yaw+T.MathUtils.clamp(turn,-dt*6,dt*6);
+   const nextPitch=pitch+T.MathUtils.clamp(tilt,-dt*4,dt*4);
+   const orbit=place(nextYaw,nextPitch,radius);
+   const clearRadius=space.resolve(target,orbit,CAMERA_MARGIN).distanceTo(target);
+   const radiusLimit=Math.min(radius,distance+(Math.abs(turn)>.001||Math.abs(tilt)>.001||frame.mode==='reset'?dt*3:0));
+   const nextRadius=Math.min(radiusLimit,clearRadius);
+   const wished=place(nextYaw,nextPitch,nextRadius);
+   // Move along a swept path. The orbit may compress under the user's hand,
+   // with bounded travel so a corner cannot snap the view inward.
+   const next=old.clone().add(wished.clone().sub(old).clampLength(0,dt*13));
+   this.eye=move(next);
+   if(this.eye.distanceToSquared(old)<.000001&&nextRadius<distance-EPSILON){
+    const inward=relative.clone().setLength(Math.max(0,distance-dt*9));
+    this.eye=move(target.clone().add(inward));
+   }
+   this.waitingForRoom=this.eye.distanceTo(target)<radius-EPSILON;
+   return this.eye.clone();
+  }
+
+  this.turnWindow=Math.max(0,this.turnWindow-dt);
+  if(frame.heading!==undefined){
+   if(this.heading===undefined)this.heading=frame.heading;
+   else if(Math.abs(angleBetween(frame.heading,this.heading))>Math.PI/7){
+    this.heading=frame.heading;
+    this.turnWindow=1.2;
    }
   }
-  if (result) {
-   const actual = result.clone().sub(target);
-   const aligned = Math.abs(angleBetween(Math.atan2(actual.x,actual.z),yaw)) < .025 &&
-    Math.abs(Math.atan2(actual.y,Math.hypot(actual.x,actual.z))-pitch) < .025;
-   this.side = aligned ? 0 : side || this.side;
-   this.eye = result;
-  } else {
-   // In a closed corner the world-space camera stays put. Movement by the player can
-   // change their distance until an unobstructed view at the requested radius opens up.
-   this.eye = old ?? initial;
+
+  if(this.waitingForRoom){
+   // The player can approach a camera held against a wall. Resume only once
+   // player movement has naturally restored enough separation.
+   if(distance<radius-EPSILON||distance<=oldDistance+.00001){
+    this.turnWindow=0;
+    return old.clone();
+   }
+   this.waitingForRoom=false;
+   this.eye=move(place(yaw,pitch,radius));
+   return this.eye.clone();
   }
+
+  if(motion.lengthSq()<.0000001)return old.clone();
+  const translated=old.clone().add(motion);
+  const follow=move(translated);
+  if(follow.distanceToSquared(translated)>EPSILON**2){
+   this.waitingForRoom=true;
+   this.turnWindow=0;
+   this.eye=follow;
+   return follow.clone();
+  }
+
+  if(this.turnWindow>0&&frame.heading!==undefined&&
+    (frame.outOfFrame||space.resolve(target,follow,0).distanceToSquared(follow)>EPSILON**2)){
+   const turn=angleBetween(frame.heading+Math.PI,yaw);
+   const adjusted=place(yaw+T.MathUtils.clamp(turn,-dt*.85,dt*.85),pitch,radius);
+   // The turn is player-driven. If its next step touches a wall, use the
+   // already clear straight follow position and leave the yaw alone.
+   const turned=move(adjusted);
+   if(turned.distanceToSquared(adjusted)<=EPSILON**2)this.eye=turned;
+   else{this.eye=follow;this.turnWindow=0;}
+   if(Math.abs(turn)<.04)this.turnWindow=0;
+  }else this.eye=follow;
   return this.eye.clone();
  }
 }

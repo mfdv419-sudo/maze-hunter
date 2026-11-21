@@ -14,6 +14,25 @@ export class CameraCollision {
   else boxes.push(local.clone().applyMatrix4(mesh.matrixWorld));
   this.cache.set(mesh,{version,world:[...world],boxes});return boxes;
  }
+ private samples(point:T.Vector3,radius:number){
+  if(!this.solid)return false;
+  if(this.solid(point))return true;
+  if(radius<=0)return false;
+  const probe=point.clone();
+  for(let axis=0;axis<3;axis++){
+   const center=point.getComponent(axis);
+   if(this.solid(probe.setComponent(axis,center-radius))||this.solid(probe.setComponent(axis,center+radius)))return true;
+   probe.setComponent(axis,center);
+  }
+  return false;
+ }
+ isClear(point:T.Vector3,radius=.22){
+  if(this.samples(point,radius))return false;
+  for(const mesh of this.meshes){
+   if(mesh.visible&&this.boxes(mesh).some(box=>box.distanceToPoint(point)<radius||box.containsPoint(point)))return false;
+  }
+  return true;
+ }
  resolve(target:T.Vector3,desired:T.Vector3,radius=.22){
   const delta=desired.clone().sub(target),length=delta.length();if(length<.0001)return desired.clone();
   const ray=new T.Ray(target,delta.divideScalar(length));let safe=length;
@@ -24,8 +43,8 @@ export class CameraCollision {
    const hit=ray.intersectBox(expanded,new T.Vector3());if(hit)safe=Math.min(safe,Math.max(0,target.distanceTo(hit)-.025));
   }}
   if(this.solid){
-   const offsets=[new T.Vector3(),new T.Vector3(radius,0,0),new T.Vector3(-radius,0,0),new T.Vector3(0,radius,0),new T.Vector3(0,-radius,0),new T.Vector3(0,0,radius),new T.Vector3(0,0,-radius)];
-   const blocked=(at:number)=>{const p=target.clone().addScaledVector(ray.direction,at);return offsets.some(o=>this.solid!(p.clone().add(o)));};
+   const probe=new T.Vector3();
+   const blocked=(at:number)=>this.samples(probe.copy(target).addScaledVector(ray.direction,at),radius);
    let last=0,exited=!blocked(0);for(let at=Math.min(.09,safe);at<=safe+.00001;at=Math.min(safe,at+.09)){
     if(!exited){exited=!blocked(at);last=at;if(at>=safe)break;continue;}
     if(blocked(at)){let lo=last,hi=at;for(let i=0;i<6;i++){const mid=(lo+hi)/2;if(blocked(mid))hi=mid;else lo=mid;}safe=Math.max(0,lo-.025);break;}

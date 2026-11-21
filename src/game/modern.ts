@@ -5,10 +5,11 @@ import {forestSigil} from './forest-sigil';
 import {pilotGround,pilotWaterDepth,pilotWaterLevelAt} from './forest-pilot';
 import {ForestClimber} from './forest-traversal';
 import {forestRules} from './forest-rules';
+import {forestSurfaceCliffHeight} from './forest-master-world';
 import {forestPilotProp} from './forest-pilot-props';
 import {jumpPower} from './traversal-features';
 import {traversalWorld} from './traversal-world';
-import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,RadiusOrbitCamera,SlidingOrbitCamera,FOREST_CAMERA_RADIUS,steerOrbit} from './comfort-camera';
+import {CAMERA_PITCH,clampPitch,lookDelta,autoCenter,cameraFocus,cameraOrbit,sceneAzimuth,travelYaw,edgePan,RadiusOrbitCamera,AdventureCamera,ADVENTURE_CAMERA_RADIUS,ADVENTURE_CAMERA_FOV,steerOrbit} from './comfort-camera';
 import {holdProp,restoreProp,releaseProp} from './prop-presentation';
 import {actionKind,releaseTime,actionDuration,handOrigin,projectileOrigin,type AvatarAction} from './avatar-actions';
 import {explorerPole} from './avatar-presentation';
@@ -142,7 +143,7 @@ export class ModernGame {
   private occlusion=new CameraOcclusion();
   private cameraCollision=new CameraCollision(p=>this.cameraBlocked(p));
   private skippedAwakening=-1;private cinematicReturnAt=-100;private wasCinematic=false;private awakeningPanel?:HTMLDivElement;private heardAwakening=-1;private heardHazards=new Set<number>();private fieldCycles=new Map<number,string>();private ambienceAt=0;private guardTelegraphs=new Map<number,number>();
-  private contactCamera:RadiusOrbitCamera|SlidingOrbitCamera;private cameraYaw=0;
+  private contactCamera:RadiusOrbitCamera|AdventureCamera;private cameraYaw=0;
   private desiredCameraYaw=0;
   private cameraPitch=CAMERA_PITCH;
   private desiredPitch=CAMERA_PITCH;
@@ -162,6 +163,9 @@ export class ModernGame {
   private lastLook=0;
   private lookPointer:number|null=null;
   private lookX=0;private lookTouch=false;
+  private lookPending=false;
+  private wasManualLook=false;
+  private resettingCamera=false;
   private actionSounds:{kind:Parameters<typeof sfx>[0];at:number}[]=[];private feedbackPose?:AvatarAction;private heroIcing=icing();private foodShots?:T.InstancedMesh;private fireModels=new Map<number,T.Mesh>();
   private guardIcing:T.Group[]=[];
   private leaves?:T.InstancedMesh;
@@ -220,7 +224,9 @@ export class ModernGame {
     // Match climbable solid footprints, not decorative crowns or pickup rings.
     const a=this.adventure;if(a)for(const l of a.layout.ledges){const move=a.propMoves[String(l.id)];if(move?.holder)continue;const cx=move?.x??l.point.x+.5,cz=move?.y??l.point.y+.5,base=this.terrain(cx,cz)+(move?.elevation||0);if(p.y<=base+.04||p.y>=base+l.height)continue;const tree=l.kind==='tree'||l.kind==='palm';if(tree?Math.hypot(x-cx,z-cz)<.15:Math.abs(x-cx)<(l.width?l.width/2:.48)&&Math.abs(z-cz)<(l.depth?l.depth/2:.48))return true;}
 
-    if(this.maze.grid[iz]?.[ix]===1&&!this.adventure?.layout.grass.some(g=>g.x===ix&&g.y===iz)){const top=this.adventure?.expedition&&!this.adventure.sample?biomeWallTop(this.adventure.area,x,z,this.adventure.layout):this.terrain(ix+.5,iz+.5)+(this.adventure?.sample?(ix>=55&&ix<=71&&iz>=54&&iz<=71?4.2:2.18):this.wallHeight+.23);if(p.y<top+.08)return true;}
+    if(this.maze.grid[iz]?.[ix]===1&&!this.adventure?.layout.grass.some(g=>g.x===ix&&g.y===iz)){const top=this.adventure?.expedition&&!this.adventure.sample?biomeWallTop(this.adventure.area,x,z,this.adventure.layout):this.terrain(ix+.5,iz+.5)+(this.adventure?.sample?(ix>=55&&ix<=71&&iz>=54&&iz<=71?4.2:2.18):this.wallHeight+.23);const renderedTop=a?.layout.ring&&ix>=2&&ix<179&&iz>=2&&iz<179
+      ?this.terrain(ix+.5,iz+.5)+forestSurfaceCliffHeight(ix,iz)+.14:top;
+     if(p.y<Math.max(top,renderedTop)+.08)return true;}
     if(a?.pilot&&Math.abs(x-61.5)<1.8&&Math.abs(z-37.5)<.5&&p.y>-.075&&p.y<.375)return true;
     if(this.adventure?.area==='gorge'){const r=gorgeLandmarks(this.adventure.layout).river,base=gorgeBank(r.x,r.y,this.adventure.layout);if(Math.abs(x-r.x)<2.8&&Math.abs(z-r.y+1)<1.4){const roof=base+2.3+Math.sqrt(Math.max(0,1-Math.pow((x-r.x)/2.3,2)))*1.25;if(p.y>roof-.5&&p.y<roof+.65)return true;}}
     return false;
@@ -326,8 +332,7 @@ export class ModernGame {
     private host: HTMLElement,
     private options: ModernOptions,
   ) {
-    const forestCamera=options.area==='forest'&&options.adventureMap!==undefined&&!options.forestSample&&!options.training;
-    this.contactCamera=forestCamera?new SlidingOrbitCamera():new RadiusOrbitCamera();
+    this.contactCamera=options.adventureMap!==undefined?new AdventureCamera():new RadiusOrbitCamera();
     if(options.adventureMap!==undefined){
       const forest = options.area==='forest'&&!options.forestSample&&!options.training&&!options.online;
       const world = forest && (options.forestWorld ??
@@ -357,7 +362,7 @@ export class ModernGame {
     this.desiredCameraYaw=this.cameraYaw;this.angle=this.drawnAngle=this.movementHeading=this.cameraYaw;if(this.adventure?.sample){this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.PI;this.heroIcing.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).color.set(0xc69bd2);});}
     if(this.adventure?.expedition&&!this.adventure.sample){const path=this.adventure.layout.solution,target=path[Math.min(10,path.length-1)];if(target)this.cameraYaw=this.desiredCameraYaw=this.angle=this.drawnAngle=this.movementHeading=Math.atan2(target.x+.5-this.position.x,target.y+.5-this.position.y);}
     const expandedForest=!!this.adventure?.layout.ring;
-    const groveLight=forestCamera&&!expandedForest;
+    const groveLight=options.area==='forest'&&options.adventureMap!==undefined&&!options.forestSample&&!options.training&&!expandedForest;
     const layeredGorge=this.adventure?.area==='gorge';
     this.daylight=new T.HemisphereLight(
       layeredGorge?0xfff2df:0xf9ffe4,
@@ -489,7 +494,7 @@ export class ModernGame {
       signal: this.abort.signal,
     });
     host.addEventListener('contextmenu',e=>e.preventDefault(),{signal:this.abort.signal});
-    const look=(dx:number,dy:number,touch=false)=>{if(this.adventure?.awakening)return;const d=lookDelta(dx,dy,host.clientWidth,host.clientHeight,touch?this.mousePreferences.touchSensitivity:this.mousePreferences.sensitivity,touch);this.desiredCameraYaw+=d.yaw;this.desiredPitch=clampPitch(this.desiredPitch+d.pitch);this.lastLook=this.time;};
+    const look=(dx:number,dy:number,touch=false)=>{if(this.adventure?.awakening)return;const d=lookDelta(dx,dy,host.clientWidth,host.clientHeight,touch?this.mousePreferences.touchSensitivity:this.mousePreferences.sensitivity,touch);this.desiredCameraYaw+=d.yaw;this.desiredPitch=clampPitch(this.desiredPitch+d.pitch);this.lookPending||=!!(d.yaw||d.pitch);this.lastLook=this.time;};
     host.addEventListener('pointerdown',e=>{const r=host.getBoundingClientRect();if(this.expandedMap||document.getElementById('maze-transition')||this.paused)return;
       if(e.pointerType==='mouse'&&this.mousePreferences.mouse!=='drag'){
         if(document.pointerLockElement===host){if(e.button===0)this.useAction('hit');return;}
@@ -559,7 +564,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
   }
   skipAwakening(){this.skippedAwakening=this.adventure?.bossAwakeAt??-1;this.acc=0;}
   setTouchSensitivity(value:number){this.mousePreferences.touchSensitivity=T.MathUtils.clamp(value,.3,2);}
-  resetCamera(){this.contactCamera?.resetView();this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
+  resetCamera(){this.resettingCamera=true;this.desiredCameraYaw=this.angle;this.desiredPitch=CAMERA_PITCH;this.lastLook=this.time;return 18;}
   cycleCameraView(){return this.resetCamera();}
   private resize() {
     const w=Math.max(1,this.host.clientWidth),h=Math.max(1,this.host.clientHeight),short=Math.min(w,h),aspect=w/h;
@@ -572,7 +577,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     const aspectPenalty=T.MathUtils.clamp((1.55-aspect)/.65,0,1);
     this.responsiveCameraDistance=T.MathUtils.lerp(5.35,6.65,compact)-aspectPenalty*.22;
     this.responsiveCameraFov=T.MathUtils.lerp(55.5,59.5,compact)+aspectPenalty*1.2;
-    this.camera.fov=this.responsiveCameraFov;
+    this.camera.fov=this.contactCamera instanceof RadiusOrbitCamera?this.responsiveCameraFov:ADVENTURE_CAMERA_FOV;
     this.camera.updateProjectionMatrix();
   }
   beginMovement(){}
@@ -584,6 +589,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
 
   clearInput() {
     this.lookPointer=null;
+    this.lookPending=false;
 
     this.heldHit=false;this.keys.clear();
     this.joystick = { x: 0, y: 0 };
@@ -757,6 +763,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     this.last = t;
     this.time += Math.min(raw,.15);this.actionSounds=this.actionSounds.filter(sound=>{if(sound.at>this.time)return true;if(!this.paused)sfx(sound.kind);return false;});
     let actual = 0;
+    let travelHeading:number|undefined;
     const action = this.actionState;
     this.options.onActionChange?.("jump", action.jumping);
     this.options.onActionChange?.("hit", action.hitting);
@@ -776,7 +783,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
         dx /= length;
         dy /= length;
       }
-      this.desiredCameraYaw=steerOrbit(this.desiredCameraYaw,dx,dt,this.lookPointer!==null||this.time-this.lastLook<.12);
+      if(this.contactCamera instanceof RadiusOrbitCamera)this.desiredCameraYaw=steerOrbit(this.desiredCameraYaw,dx,dt,this.lookPointer!==null||this.time-this.lastLook<.12);
       this.camera.getWorldDirection(this.cameraDirection);
       const renderedYaw=this.acc?Math.atan2(this.cameraDirection.x,this.cameraDirection.z):this.cameraYaw;
       const before={...this.position},movement=screenMotion(dx,dy,renderedYaw,length>.78?2.6:2.3);
@@ -793,6 +800,7 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
         ? Math.hypot(this.position.x - before.x, this.position.y - before.y) /
           Math.min(raw,.2)
         : 0;
+      if(movement.angle!==null&&actual>.2)travelHeading=movement.angle;
       if(this.adventure&&this.adventure.phase!=='playing'&&!this.options.online) {
         this.ended=true;this.outcome=this.adventure.phase==='won'?'won':'lost';this.options.onFinish(this.outcome==='won');return;
       } else if (!this.options.online&&!this.adventure) {
@@ -901,23 +909,59 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     if(this.lookPointer!==null&&this.lookTouch&&!this.paused&&!this.adventure?.awakening){const r=this.host.getBoundingClientRect(),pan=edgePan(this.lookX-r.left,r.width);this.desiredCameraYaw-=pan*cameraInputDt*1.5*(this.mousePreferences.touchSensitivity||1);this.lastLook=this.time;}
     if(!this.paused&&!this.adventure?.awakening){if(this.keys.has('q'))this.desiredCameraYaw+=cameraInputDt*1.7;if(this.keys.has('e'))this.desiredCameraYaw-=cameraInputDt*1.7;if(this.keys.has('r'))this.desiredPitch=clampPitch(this.desiredPitch+cameraInputDt*.8);if(this.keys.has('f'))this.desiredPitch=clampPitch(this.desiredPitch-cameraInputDt*.8);}
     if(this.keys.has('q')||this.keys.has('e')||this.keys.has('r')||this.keys.has('f'))this.lastLook=this.time;
-    const centering=autoCenter(this.comfortMode,this.time-this.lastLook,actual,this.lookPointer!==null||this.paused||!!this.adventure?.awakening);
-    if(centering)this.desiredCameraYaw=travelYaw(this.desiredCameraYaw,this.angle,dt,centering);
+    const adventureCamera=this.contactCamera instanceof AdventureCamera?this.contactCamera:undefined;
+    const keyboardLook=['q','e','r','f'].some(key=>this.keys.has(key));
+    const manualLook=!this.paused&&(this.lookPointer!==null||this.lookPending||keyboardLook);
+    this.lookPending=false;
+    if(adventureCamera){
+      if(manualLook)this.resettingCamera=false;
+      if(this.wasManualLook&&!manualLook&&!this.resettingCamera){
+        this.desiredCameraYaw=this.cameraYaw;
+        this.desiredPitch=this.cameraPitch;
+      }
+      this.wasManualLook=manualLook;
+    }else{
+      const centering=autoCenter(this.comfortMode,this.time-this.lastLook,actual,this.lookPointer!==null||this.paused||!!this.adventure?.awakening);
+      if(centering)this.desiredCameraYaw=travelYaw(this.desiredCameraYaw,this.angle,dt,centering);
+    }
     if(!Number.isFinite(this.desiredCameraYaw))this.desiredCameraYaw=Number.isFinite(this.angle)?this.angle:0;
     this.desiredPitch=clampPitch(this.desiredPitch);
-    this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,18);this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*18));
+    if(!adventureCamera){
+      this.cameraYaw=dampAngle(this.cameraYaw,this.desiredCameraYaw,dt,18);
+      this.cameraPitch+=(this.desiredPitch-this.cameraPitch)*(1-Math.exp(-dt*18));
+    }
 
-    let target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?(ringWaterLine??-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
+    const target=new T.Vector3(this.position.x*U,(this.adventure?.swimming?(ringWaterLine??-.68)-this.adventure.depth:this.terrain(this.position.x,this.position.y))+1.15+(this.adventure?.climber.elevation||0),this.position.y*U);
     if(this.acc&&!this.adventure?.awakening){this.followHeight+=(target.y-this.followHeight)*(1-Math.exp(-dt*6));target.y=this.followHeight;}else this.followHeight=target.y;
-    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45; if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38); const forestLandCamera=this.contactCamera instanceof SlidingOrbitCamera&&!underwater;
-    const distance=this.previewMode?12:underwater?Math.max(5.2,this.responsiveCameraDistance-.35):forestLandCamera?FOREST_CAMERA_RADIUS:this.responsiveCameraDistance;
-    // Only underwater: place the orbit itself below the waterline and permit vertical looking.
-    // Land camera yaw, comfort mode and collision rules are preserved untouched.
-    const orbit=underwater?{horizontal:distance*Math.cos(Math.max(-.32,Math.min(.12,this.cameraPitch))),height:Math.max(-1.35,Math.min(.1,distance*Math.sin(this.cameraPitch)*.4))}:cameraOrbit(this.cameraPitch,distance),height=orbit.height;
-    const desired=target.clone().add(new T.Vector3(-Math.sin(this.cameraYaw)*orbit.horizontal,height,-Math.cos(this.cameraYaw)*orbit.horizontal));
+    const underwater=!!this.adventure?.swimming&&this.adventure.depth>.45;
+    if(underwater)target.y-=Math.min(.75,.18+this.adventure!.depth*.38);
+    const distance=this.previewMode?12:underwater?Math.max(5.2,this.responsiveCameraDistance-.35):adventureCamera?ADVENTURE_CAMERA_RADIUS:this.responsiveCameraDistance;
+    const intentionalView=!!adventureCamera&&(manualLook||this.resettingCamera);
+    const viewYaw=intentionalView?this.desiredCameraYaw:this.cameraYaw;
+    const viewPitch=intentionalView?this.desiredPitch:this.cameraPitch;
+    // Underwater framing retains the existing below-water angle. A manual
+    // land view can lower the eye, subject to the same swept ground clearance.
+    const orbit=underwater?{horizontal:distance*Math.cos(Math.max(-.32,Math.min(.12,viewPitch))),height:Math.max(-1.35,Math.min(.1,distance*Math.sin(viewPitch)*.4))}
+      :adventureCamera?{horizontal:distance*Math.cos(viewPitch),height:distance*Math.sin(viewPitch)}:cameraOrbit(viewPitch,distance);
+    const offset=new T.Vector3(-Math.sin(viewYaw)*orbit.horizontal,orbit.height,-Math.cos(viewYaw)*orbit.horizontal);
+    const desired=target.clone().add(offset);
     if(!this.previewMode&&!this.adventure?.awakening){
       if(!this.acc)this.contactCamera.reset();
-      desired.copy(this.contactCamera.step(target,desired.clone().sub(target),(a,b)=>this.cameraCollision.resolve(a,b),dt));
+      if(adventureCamera){
+        const framing=target.clone().project(this.camera);
+        desired.copy(adventureCamera.step(target,offset,this.cameraCollision,{
+          mode:manualLook?'manual':this.resettingCamera?'reset':'follow',dt,heading:travelHeading,
+          outOfFrame:!!this.acc&&(Math.abs(framing.x)>.89||Math.abs(framing.y)>.89||framing.z>1||framing.z<-1),
+        }));
+        const toPlayer=target.clone().sub(desired);
+        if(toPlayer.lengthSq()>.00001){
+          this.cameraYaw=Math.atan2(toPlayer.x,toPlayer.z);
+          this.cameraPitch=Math.atan2(-toPlayer.y,Math.hypot(toPlayer.x,toPlayer.z));
+        }
+        if(this.resettingCamera&&((Math.abs(Math.sin((this.desiredCameraYaw-this.cameraYaw)/2))<.013&&
+          (underwater||Math.abs(this.desiredPitch-this.cameraPitch)<.026))||
+          (this.acc&&dt>0&&desired.distanceToSquared(this.camera.position)<.000001)))this.resettingCamera=false;
+      }else desired.copy((this.contactCamera as RadiusOrbitCamera).step(target,offset,(a,b)=>this.cameraCollision.resolve(a,b),dt));
     }
     const state=this.adventure,cinematic=!!state?.awakening&&this.skippedAwakening!==state.bossAwakeAt;
     if(this.awakeningPanel){this.awakeningPanel.hidden=!cinematic;this.awakeningPanel.style.setProperty('--scene-fade',cinematic?String(Math.max(0,(awakeningProgress(state!.elapsed,state!.bossAwakeAt)-.9)*10)): '0');}
@@ -931,10 +975,10 @@ this.awakeningPanel=document.createElement('div');this.awakeningPanel.className=
     }
     if(this.wasCinematic&&!cinematic){this.clearInput();}this.wasCinematic=cinematic;
     if(!cinematic){
-    if(!this.acc){this.camera.position.copy(desired);this.lookAt.copy(target);}else{this.camera.position.copy(desired);this.lookAt.copy(target);}
+    this.camera.position.copy(desired);this.lookAt.copy(target);
     // Normal orbit was already volume-tested; do not apply a second post-smoothing snap.
     const framing=Math.min(1,this.camera.position.distanceTo(target)/Math.max(.01,distance));
-    this.camera.lookAt(this.lookAt.x,this.lookAt.y+cameraFocus(this.cameraPitch,distance)*framing,this.lookAt.z);
+    this.camera.lookAt(this.lookAt.x,this.lookAt.y+(adventureCamera?0:cameraFocus(this.cameraPitch,distance)*framing),this.lookAt.z);
     }
     if(this.dust){const effects=this.splats.filter(e=>this.time-e.at<.75);this.splats=effects;let count=0;for(const effect of effects)for(let j=0;j<6&&count<160;j++){
       const age=this.time-effect.at,a=j/6*Math.PI*2;this.matrix.position.set(effect.point.x+Math.cos(a)*age*.35,(effect.height??this.terrain(effect.point.x,effect.point.y))+.15+Math.sin(age*4)*.25,effect.point.y+Math.sin(a)*age*.35);this.matrix.scale.setScalar((1-age/.75)*(.6+j%2*.3));this.matrix.updateMatrix();this.dust.setMatrixAt(count,this.matrix.matrix);this.dust.setColorAt(count,this.particleColor.set(effect.color));count++;
