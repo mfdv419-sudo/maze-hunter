@@ -9,6 +9,39 @@ const hud=read('src/ui/forest-hud.ts');
 const pilotCss=read('src/forest-pilot.css');
 const adventureHud=read('src/adventure-hud.css');
 const gear=read('src/game/gear-model.ts');
+// The Organic Binturong rebuild no longer uses the old box-model comment or
+// fixed foot-pad coordinates. Audit the current geometry/orientation instead.
+const numeric='(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))';
+const geometryArgs=(name,material)=>{
+ const literal=name.includes('${')?`\`${name}\``:`'${name}'`;
+ const quoted=literal.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ const pattern=new RegExp(`organicOrb\\(root,${material},${quoted},\\s*([^;\\n]+)\\)`);
+ const call=gear.match(pattern)?.[1];
+ if(!call)return null;
+ // Mesh arguments may contain symbolic x coordinates (e.g. dx for toe pads).
+ return call.split(',').map(v=>v.trim());
+};
+const asNumber=value=>value===undefined||!new RegExp(`^${numeric}$`).test(value)?NaN:Number(value);
+const palm=geometryArgs('paw-center-pad','pad');
+const handAxisCorrect=/root\.rotation\.y\s*=\s*side\s*\*\s*Math\.PI\s*\/\s*2\s*;/.test(gear)
+ &&gear.includes("joint(parent,0,-.122,.009,'paw-hand')")
+ &&palm!==null&&Number.isFinite(asNumber(palm[1]))&&asNumber(palm[3])>0;
+const foot=geometryArgs('continuous-foot-paw','surface');
+const centerPad=geometryArgs('foot-center-pad','pad');
+const toe=geometryArgs('foot-paw-digit-${i+1}','surface');
+const toePad=geometryArgs('foot-toe-pad','pad');
+const footPadCorrect=(()=>{
+ if(!foot||!centerPad||!toe||!toePad)return false;
+ const fy=asNumber(foot[1]),fr=asNumber(foot[4]);
+ const py=asNumber(centerPad[1]),pr=asNumber(centerPad[4]);
+ const ty=asNumber(toe[1]),tr=asNumber(toe[4]);
+ const tpy=asNumber(toePad[1]),tpr=asNumber(toePad[4]);
+ if(![fy,fr,py,pr,ty,tr,tpy,tpr].every(Number.isFinite))return false;
+ // Pad must lie on the *underside* of the foot, not on the front/top.
+ const footBottom=fy-fr,padBottom=py-pr,toeBottom=ty-tr;
+ return py<fy&&Math.abs(padBottom-footBottom)<.045
+  &&tpy<ty&&tpy+tpr<=toeBottom+.025;
+})();
 // UI geometry is audited by scripts/audit-job1-gameplay-ui15.mjs.
 // This MAZE11 audit intentionally owns world/gameplay checks only.
 const checks=[
@@ -29,8 +62,8 @@ const checks=[
  ['soil arena clearings',world.includes('arena-soil-clearing')],
  ['earth cliff natural brown',world.includes('color:0xa06f45')&&world.includes('authoritative-earth-cliff-boundary')],
  ['forest floor soil-first',world.includes('Forest floor is soil-first')],
- ['hand paw axis corrected',gear.includes('Paw follows the forearm axis downward')],
- ['foot pad underside corrected',gear.includes("foot-center-pad")&&gear.includes('-.074,.070')],
+ ['hand paw axis corrected',handAxisCorrect],
+ ['foot pad underside corrected',footPadCorrect],
  ['merchant inventory offers remain',hud.includes('forestMarketOffers')&&rpg.includes('forestMarketOffers')],
  ['quest not permanent during dialogue',hud.includes('npcTalk')&&hud.includes('quest')],
  ['clue wording not GPS',!rpg.includes('sisi timur mengarah ke Cross Tunnel')]
