@@ -124,6 +124,12 @@ export function mountAdventureActionPad(root: HTMLElement, game: ModernGame, en:
   return {kind, ...slot};
  });
 
+ const areaWeapon=game.adventure?.expeditionWeapon;
+ const expeditionSlot=areaWeapon?makeSlot(abilitiesRow,areaWeapon.name[language],'throw',()=>{
+  if(!blocked()&&game.fireExpeditionWeapon())close(true);
+ }):undefined;
+ if(expeditionSlot)expeditionSlot.button.dataset.expeditionWeapon=areaWeapon!.id;
+
  const back = makeButton(text('Kembali ke kemampuan', 'Back to abilities'), '‹', () => {
   setCakeRow(false);
   abilitySlots[0].button.focus();
@@ -166,6 +172,7 @@ export function mountAdventureActionPad(root: HTMLElement, game: ModernGame, en:
 
  function updateTray(state: AdventureState) {
   for (const slot of abilitySlots) updateSlot(slot, stock(state, slot.kind), game.equippedWeapon === slot.kind);
+  if(expeditionSlot)updateSlot(expeditionSlot,state.ammo,false);
   for (const slot of cakeSlots) updateSlot(slot, cakeStock(state, slot.kind), state.selectedCake === slot.kind);
   lift.hidden = !!state.carried || state.elapsed >= state.strengthUntil;
   place.hidden = throwObject.hidden = !state.carried;
@@ -194,6 +201,7 @@ export function mountAdventureActionPad(root: HTMLElement, game: ModernGame, en:
   const key = e.key.toLowerCase();
   if (key === 'c') ability.click();
   if (key === 'x') merge.click();
+  if (key === '5' && game.fireExpeditionWeapon()) { e.preventDefault(); close(); }
   const kind = /^[1-4]$/.test(key) ? abilities[Number(key) - 1] : undefined;
   if (kind && lastState && stock(lastState, kind) > 0 && game.selectWeapon(kind)) close();
  }, {capture: true, signal});

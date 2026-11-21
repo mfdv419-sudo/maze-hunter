@@ -52,7 +52,7 @@ export function forestMasterWorld(scene:T.Scene,world:T.Group,l:AdventureLayout,
   new T.Color(mineralBands[band]).toArray(cliffColors,i*3);
  }
  cliffGeo.setAttribute('color',new T.BufferAttribute(cliffColors,3));
- const cliffCapGeo=new T.BoxGeometry(1.015,.145,1.015),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],cliffTreeSeeds:{x:number;y:number;z:number;seed:number}[]=[],dummy=new T.Object3D();
+ const cliffCapGeo=new T.BoxGeometry(1.055,.21,1.055),cliffMatrices:T.Matrix4[]=[],capMatrices:T.Matrix4[]=[],cliffTreeSeeds:{x:number;y:number;z:number;seed:number}[]=[],dummy=new T.Object3D();
  for(let z=2;z<179;z++)for(let x=2;x<179;x++){
   if(grid[z]?.[x]!==1)continue;const edge=grid[z-1]?.[x]===0||grid[z+1]?.[x]===0||grid[z]?.[x-1]===0||grid[z]?.[x+1]===0;if(!edge)continue;
   const base=pilotGround(x+.5,z+.5),h=3.6+((x*17+z*23)%5)*.34;

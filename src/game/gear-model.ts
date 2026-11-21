@@ -72,3 +72,37 @@ export function expeditionWearables(body:T.Group,head:T.Group,arms:T.Group[],leg
   const tank=joint(body,0,.58,-.28,'diving-tank');for(const side of [-1,1]){addMesh(tank,new T.CapsuleGeometry(.09,.26,3,10),moon,side*.095,0,-.025);box(tank,.17,.045,.19,ink,side*.095,.11,-.025,.012);box(tank,.17,.045,.19,ink,side*.095,-.1,-.025,.012);addMesh(tank,new T.CylinderGeometry(.025,.025,.07,7),gold,side*.095,.23,-.025);}for(const side of [-1,1])box(body,.04,.34,.035,ink,side*.2,.66,.2,.012);
  }
 }
+
+/** Lightweight props for the earned expedition weapon displayed on the outfit. */
+export function expeditionWeaponModel(area:import('./expedition-equipment').EquipmentArea) {
+ const g=new T.Group();
+ g.name=area+'-expedition-weapon';
+ const metal=satin(0x455966);
+ const color={forest:0xa7844e,desert:0xd2a961,gorge:0xa39d81,mountain:0x89cede,coast:0xddba74,sea:0x49b2ac,volcano:0xd96947}[area];
+ const surface=satin(color);
+ const light=satin(area==='sea'?0xb2ece2:0xf6dc9a);
+ const line=(points:T.Vector3[],radius:number,material:T.Material)=>addMesh(g,new T.TubeGeometry(new T.CatmullRomCurve3(points),12,radius,5,false),material);
+ if(area==='forest'){
+  line([new T.Vector3(.02,-.35,0),new T.Vector3(-.11,-.18,0),new T.Vector3(-.17,0,0),new T.Vector3(-.11,.18,0),new T.Vector3(.02,.35,0)],.027,surface);
+  addMesh(g,new T.CylinderGeometry(.005,.005,.7,5),light,.02,0,0);
+ }else if(area==='sea'){
+  box(g,.2,.31,.13,metal,0,-.12,0,.035);
+  addMesh(g,new T.CylinderGeometry(.12,.095,.28,7),surface,0,.075,0);
+  for(const side of [-1,1]){
+   line([new T.Vector3(side*.07,.10,0),new T.Vector3(side*.16,.21,0),new T.Vector3(side*.13,.32,0),new T.Vector3(side*.025,.38,0)],.043,surface);
+   addMesh(g,new T.CylinderGeometry(.023,.027,.18,6),light,side*.042,.19,.018);
+  }
+ }else{
+  const rod=area==='coast'||area==='mountain';
+  addMesh(g,new T.CylinderGeometry(rod?.028:.075,rod?.031:.09,rod?.62:.44,7),metal,0,0,0);
+  if(rod){
+   addMesh(g,new T.OctahedronGeometry(area==='mountain'?.12:.075,0),surface,0,.35,0).scale.y=1.5;
+   addMesh(g,new T.CylinderGeometry(.045,.045,.065,6),light,0,.23,0);
+  }else{
+   box(g,.19,.24,.15,surface,0,.01,0,.032);
+   for(const side of [-1,1])box(g,.04,.18,.115,light,side*.085,.01,.015,.009);
+   addMesh(g,new T.CylinderGeometry(.085,.071,.072,8),surface,0,.24,0);
+  }
+ }
+ return g;
+}

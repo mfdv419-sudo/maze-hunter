@@ -274,7 +274,7 @@ export function forestWaterfallValley(parent: T.Group, grid: Grid, basin: Point,
    const faces = new T.BoxGeometry(1.02, 1, 1.02, 2, 6, 2);
    const position = faces.attributes.position;
    const colors: number[] = [];
-   const bands = [0x9e8777, 0xbda994, 0xd3bfa6, 0xa9957f, 0xe8d3b8, 0xcdbba0, 0xbcc4a0];
+   const bands = [0x9e8777, 0xbda994, 0xd3bfa6, 0xa9957f, 0xe8d3b8, 0xcdbba0, 0x96a773];
    for (let i = 0; i < position.count; i++) {
     const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
     const band = Math.round((y + 0.5) * 6);

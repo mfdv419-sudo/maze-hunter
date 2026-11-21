@@ -1,7 +1,9 @@
-import {forestRankAfterWin, forestStages, type ForestStage} from '../game/forest-progression';
+import type {EquipmentArea} from '../game/expedition-equipment';
+import {forestRankAfterWin, forestStages, type ForestStage,type ForestWorldDifficulty} from '../game/forest-progression';
 import {ensureWallet} from './cosmetics';
 import type {Appearance} from './cosmetics';
-export interface ExpeditionRecord {coins:number;stars:number;chests:number;zones:number[];forestRank?:number}
+interface ExpeditionResult {coins:number;stars:number;chests:number;zones:number[];guardStars?:number}
+export interface ExpeditionRecord extends ExpeditionResult {forestRank?:number;worlds?:Partial<Record<ForestWorldDifficulty,ExpeditionResult>>}
 export interface LevelResult {
   seconds: number;
   stars: number;
@@ -105,32 +107,53 @@ export function recordLevel(p: Profile, id: number, r: LevelResult) {
   p.updatedAt = Date.now();
 }
 
-const forestRankRecord = 'forest-extreme-0';
+const rankRecord=(area:EquipmentArea)=>`${area}-extreme-0`;
 
 function validForestRank(rank?: number) {
  return Number.isInteger(rank) && rank! >= 0 && rank! <= forestStages.length ? rank! : 0;
 }
 
-function mergeExpedition(old: ExpeditionRecord, result: ExpeditionRecord): ExpeditionRecord {
- const forestRank = Math.max(validForestRank(old.forestRank), validForestRank(result.forestRank));
+function mergeExpeditionResult(old:ExpeditionResult,result:ExpeditionResult):ExpeditionResult{
  return {
   coins:Math.max(old.coins,result.coins),
   stars:Math.max(old.stars,result.stars),
+  guardStars:Math.max(old.guardStars||0,result.guardStars||0),
   chests:Math.max(old.chests,result.chests),
   zones:[...new Set([...old.zones,...result.zones])].sort(),
-  ...(forestRank ? {forestRank} : {}),
  };
 }
 
-export function forestRank(profile: Profile) {
- return validForestRank(profile.adventures?.[forestRankRecord]?.forestRank);
+function mergeExpedition(old:ExpeditionRecord,result:ExpeditionRecord):ExpeditionRecord{
+ const forestRank=Math.max(validForestRank(old.forestRank),validForestRank(result.forestRank));
+ const worlds={...old.worlds};
+ for(const mode of ['hard','extreme'] as const){
+  const next=result.worlds?.[mode],previous=worlds[mode];
+  if(next)worlds[mode]=previous?mergeExpeditionResult(previous,next):next;
+ }
+ return {...mergeExpeditionResult(old,result),...(forestRank?{forestRank}:{}),
+  ...(Object.keys(worlds).length?{worlds}:{})};
 }
 
-export function recordForestWin(profile: Profile, stage: ForestStage) {
- const rank = forestRank(profile), next = forestRankAfterWin(rank,stage);
+export function recordExpandedExpedition(profile:Profile,area:EquipmentArea,mode:ForestWorldDifficulty,result:ExpeditionResult){
+ recordExpedition(profile,rankRecord(area),{coins:0,stars:0,chests:0,zones:[],worlds:{[mode]:result}});
+}
+
+export function expeditionRank(profile: Profile,area:EquipmentArea) {
+ return validForestRank(profile.adventures?.[rankRecord(area)]?.forestRank);
+}
+export function forestRank(profile: Profile) {
+ return expeditionRank(profile,'forest');
+}
+
+export function recordExpeditionWin(profile: Profile, area:EquipmentArea,stage: ForestStage) {
+ const rank = expeditionRank(profile,area), next = forestRankAfterWin(rank,stage);
  if(next === rank)return false;
- recordExpedition(profile,forestRankRecord,{coins:0,stars:0,chests:0,zones:[],forestRank:next});
+ recordExpedition(profile,rankRecord(area),{coins:0,stars:0,chests:0,zones:[],forestRank:next});
  return true;
+}
+
+export function recordForestWin(profile:Profile,stage:ForestStage){
+ return recordExpeditionWin(profile,'forest',stage);
 }
 
 export function recordExpedition(p:Profile,id:string,r:ExpeditionRecord){

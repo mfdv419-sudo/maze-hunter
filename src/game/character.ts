@@ -1,17 +1,19 @@
+import {expeditionAppearance,expeditionItem} from './expedition-equipment';
 import {throwPose,releaseTime,actionDuration,type AvatarActionKind} from './avatar-actions';
 import {foodArt} from './food-art';
 import {walkingLeg} from './avatar-presentation';
 import {airPose,smooth01,armGrip} from './motion-quality';
-import {gloveModel,bootModel,expeditionWearables} from './gear-model';
+import {gloveModel,bootModel,expeditionWearables,expeditionWeaponModel} from './gear-model';
 import {paletteColors,type Appearance} from '../services/cosmetics';
 import * as T from 'three';
 import {roundBox,satin,addMesh,joint,disposeModel} from './model-parts';
 export type CharacterAppearance=Appearance & {hands?:string;feet?:string};
-export interface CharacterAction {cameraLook?:number;actionKind?:AvatarActionKind;actionAge?:number;cakeColor?:number;hurtAge?:number;defeated?:boolean;pickup?:number;allowIdle?:boolean;jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
+export interface CharacterAction {gearShot?:boolean;cameraLook?:number;actionKind?:AvatarActionKind;actionAge?:number;cakeColor?:number;hurtAge?:number;defeated?:boolean;pickup?:number;allowIdle?:boolean;jumpAge?:number;jumpCount?:number;jumpBase?:number;treeClimb?:boolean;eat?:number;carrying?:boolean;hit:number;greet?:number;lookUp?:boolean;climb?:'hanging'|'climbing'|'top'|'ground';climbProgress?:number;showBack?:boolean;jump?:number;pole?:boolean;swim?:boolean}
 export interface Character {root:T.Group;animate:(time:number,speed:number,celebrate?:boolean,action?:CharacterAction)=>void;dispose:()=>void}
 /** Original forest explorer: tufted ears, tapered muzzle, dark face mask and a continuous prehensile tail. */
 export function createBinturong(outfit='classic',color=0x343c45,appearance?:CharacterAppearance):Character{
- if(appearance){outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
+ const loadout=appearance;
+ if(appearance){appearance=expeditionAppearance(appearance);outfit=appearance.body;color=paletteColors[appearance.palette]??color;}
  const root=new T.Group();root.name='binturong';root.userData.modelVersion='forest-paw-tail-v6';const body=joint(root,0,0,0,'body');
  const fur=satin(color),grey=satin(0x858e88),muzzle=satin(0x69746e),ink=satin(0x172f31),cream=satin(0xffedca),teal=satin(0x35bda3),gold=satin(0xefbd62),leaf=satin(0x7fa957),pink=satin(0xee9caa),moon=satin(0xa0d9dc);
  const box=(p:T.Object3D,w:number,h:number,d:number,m:T.Material,x:number,y:number,z:number,r=.06)=>addMesh(p,roundBox(w,h,d,r),m,x,y,z);
@@ -74,6 +76,20 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
  }
  if(a.back==='wings')for(const side of [-1,1]){const wing=ell(body,moon,side*.34,.65,-.23,.3,.14,.045);wing.rotation.z=side*.4;for(let i=0;i<3;i++)ell(body,cream,side*(.23+i*.09),.65-i*.04,-.27,.11,.04,.022);}
  expeditionWearables(body,head,arms,legs,a);
+ const weapon=expeditionItem(loadout?.back);
+ if(weapon?.effect==='weapon'){
+  const prop=expeditionWeaponModel(weapon.area);
+  prop.position.set(-.16,.61,-.30);prop.rotation.z=-.38;body.add(prop);
+ }
+ const armor=expeditionItem(loadout?.body);
+ if(armor?.effect==='armor'){
+  const edge=armor.area==='sea'?0x93e8e2:armor.area==='volcano'?0xf69561:0xedc578;
+  const plating=satin(edge);
+  for(const side of [-1,1]){
+   const plate=ell(body,plating,side*.21,.74,.06,.105,.091,.185);plate.rotation.z=side*.2;
+  }
+  addMesh(body,new T.OctahedronGeometry(.071,0),plating,0,.6,.257);
+ }
  // The root of the tail is embedded in the pelvis and transitions continuously into the curve.
  // Starting behind the torso surface creates a visible seam/disconnected appendage in profile.
  const tail=joint(body,0,0,0,'prehensile-tail');
@@ -106,16 +122,17 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   poseJoints.forEach((q,i)=>previousPose[i].copy(q.rotation));
   const dt=Math.min(.05,Math.max(0,time-previous));previous=time;motion+=(speed-motion)*(1-Math.exp(-dt*18));const walk=Math.min(1.2,motion);gait+=dt*7.2*walk;const stride=Math.sin(gait)*walk*.7;const jump=action?.jump||0;if(lastJump>.025&&jump<=.015)landing=1;landing*=Math.exp(-dt*14);lastJump=jump;pivot.rotation.set(0,0,0);pivot.position.y=.65-landing*.09;
   const walkStep=Math.floor(gait/Math.PI);root.userData.footfall=walk>.08&&walkStep!==root.userData.walkStep;root.userData.walkStep=walkStep;
-  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.005*walk:Math.sin(time*2)*.004));body.rotation.set(-walk*.045,0,0);chest.scale.y=1+Math.sin(time*2)*.012;
+  body.position.y=-.65+(celebrate?Math.abs(Math.sin(time*5))*.1:(walk>.05?Math.cos(gait*2)*.014*walk:Math.sin(time*2)*.012));body.rotation.set(-walk*.065,Math.sin(gait)*walk*.04,Math.sin(gait)*walk*.035+(1-Math.min(1,walk))*Math.sin(time*1.15)*.032);
+  chest.scale.y=1+Math.sin(time*2)*.021;
   for(let i=0;i<2;i++){const swing=i?stride:-stride;arms[i].rotation.set(swing,0,(i?.14:-.14));elbows[i].rotation.x=-.18-Math.max(0,swing)*.35-Math.sin(time*1.7+i)*.045*(1-walk);const step=walkingLeg(gait,walk,i);legs[i].rotation.x=step.hip;legs[i].position.y=.35+step.lift;knees[i].rotation.x=step.knee;}
   head.scale.x=1;head.rotation.set(action?.lookUp?-.24:Math.sin(time*1.5)*.012,Math.sin(time*.8)*.025,Math.sin(time*2)*.016);
   if(action?.cameraLook!==undefined&&walk<.04){const angle=Math.atan2(Math.sin(action.cameraLook),Math.cos(action.cameraLook));if(Math.abs(angle)<1.15)head.rotation.y=angle*.65;}
-  const blink=time%4.6>4.43?.12:1;eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
+  const blink=1-.88*Math.max(0,Math.sin(Math.PI*Math.max(0,(time%4.6-4.37)/.23)));eyes.forEach(e=>e.scale.y=blink);brows.forEach((b,i)=>b.rotation.z=(i?1:-1)*(.13+Math.sin(time)*.025));
   const hit=action?.hit||0;arms[1].rotation.x-=Math.sin(hit*Math.PI)*1.9;
-  if(action?.greet!==undefined){const p=Math.sin(action.greet*Math.PI);arms.forEach((a,i)=>{a.rotation.x=-p*2.65;a.rotation.z=(i?1:-1)*(.12+p*.32);});elbows.forEach(e=>e.rotation.x=-.12);head.rotation.x=-p*.12;}
+  if(action?.greet!==undefined){const age=action.greet,p=Math.sin(age*Math.PI);arms[1].rotation.x=-p*2.2;arms[1].rotation.z=.14+p*(.36+Math.sin(age*22)*.19);elbows[1].rotation.x=-.18-p*.7;arms[0].rotation.x=-p*.28;head.rotation.x=-p*.14;head.rotation.z=p*.1;}
   if((action?.jump||0)>.05){const p=Math.min(1,action!.jump!);arms.forEach((a,i)=>{a.rotation.x=-.8-p*.5;a.rotation.z=(i?1:-1)*.35;});knees.forEach(k=>k.rotation.x=.5);}
   pole.visible=false;
-  if(action?.allowIdle&&walk<.04&&time%16>14&&action?.greet===undefined&&!(action?.actionKind&&(action.actionAge??100)<actionDuration(action.actionKind))){arms[0].rotation.x=-.55;arms[0].rotation.z=-.28;elbows[0].rotation.x=-.8;head.rotation.y=Math.sin(time*2)*.12;}
+  if(action?.allowIdle&&walk<.04&&time%16>14&&action?.greet===undefined&&!(action?.actionKind&&(action.actionAge??100)<actionDuration(action.actionKind))){const curious=Math.sin((time%16-14)*Math.PI/2);arms[0].rotation.x=-.55*curious;arms[0].rotation.z=-.14-.14*curious;elbows[0].rotation.x=-.18-.62*curious;head.rotation.y=Math.sin(time*2)*.23*curious;head.rotation.z=-.10*curious;}
 
   if((action?.eat??100)<.75){arms[1].rotation.x=-1.8;elbows[1].rotation.x=-1.1;head.rotation.x=.12;head.scale.y=1+Math.sin(time*24)*.02;}else head.scale.y=1;if(action?.carrying){arms.forEach(a=>a.rotation.x=-2.2);elbows.forEach(e=>e.rotation.x=-.4);}
   if(celebrate)arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*1.8);
@@ -127,7 +144,7 @@ export function createBinturong(outfit='classic',color=0x343c45,appearance?:Char
   if(jump<=.015&&landing>.01){knees.forEach(k=>k.rotation.x+=landing*.65);body.rotation.x+=landing*.14;}
 
   const kind=action?.actionKind,age=action?.actionAge??100,active=!!kind&&age>=0&&age<actionDuration(kind),ground=action?.climb!=='climbing'&&action?.climb!=='hanging';
-  heldCake.visible=ground&&active&&(kind==='cake'||kind==='grenade')&&age<releaseTime(kind!);heldIcing.material instanceof T.MeshLambertMaterial&&heldIcing.material.color.setHex(action?.cakeColor??0xe67d83);
+  heldCake.visible=!action?.gearShot&&ground&&active&&(kind==='cake'||kind==='grenade')&&age<releaseTime(kind!);heldIcing.material instanceof T.MeshLambertMaterial&&heldIcing.material.color.setHex(action?.cakeColor??0xe67d83);
   heldFoods.forEach((m,i)=>m.visible=ground&&active&&kind===['chili','watermelon','spinach'][i]&&age<.6);
   if(active&&ground){pole.visible=false;if(kind==='cake'||kind==='grenade'||kind==='throw-object'||kind==='cut'){const pose=throwPose(kind==='cut'?'cake':kind,age);body.rotation.y=pose.twist;body.position.y-=pose.weight;arms[1].rotation.x=pose.shoulder;elbows[1].rotation.x=pose.elbow;arms[0].rotation.x=-.3-pose.twist*2;if(kind==='throw-object'){arms[0].rotation.x=pose.shoulder;elbows[0].rotation.x=pose.elbow;}}
    else if(kind==='chili'||kind==='watermelon'||kind==='spinach'){const grip=armGrip(.21,.28);arms[1].rotation.x=grip.shoulder;elbows[1].rotation.x=grip.elbow;head.rotation.x=age<.24?.05:-.08;body.rotation.x+=age>.24&&kind!=='spinach'?.12:0;head.scale.x=1+(age>.22&&age<.8?.018:0);if(kind==='spinach'&&age>.45)arms.forEach((a,i)=>a.rotation.z=(i?1:-1)*.35);}

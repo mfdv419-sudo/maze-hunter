@@ -1,6 +1,6 @@
 import {expect, test} from '@playwright/test';
 
-test('the Forest picker exposes two expanded modes and keeps a new profile locked', async ({page}) => {
+test('the picker exposes two expanded modes and keeps a new profile locked', async ({page}) => {
  test.setTimeout(90000);
  await page.setViewportSize({width:844,height:390});
  await page.goto('/');
@@ -11,7 +11,7 @@ test('the Forest picker exposes two expanded modes and keeps a new profile locke
  const entry = page.locator('#forest-world-open');
  await expect(page.locator('.expedition-difficulty').locator('#forest-world-open')).toBeInViewport();
  await entry.click();
- const options=page.getByRole('region',{name:'Forest Grove · Expanded World'});
+ const options=page.getByRole('region',{name:/(Forest Grove|Hutan Rimbun) · Expanded World/});
  const panorama=page.locator('#adventure-preview');
  await expect(entry).toHaveAttribute('aria-expanded','true');
  await expect(options).toBeVisible();
@@ -32,6 +32,10 @@ test('the Forest picker exposes two expanded modes and keeps a new profile locke
  await expect(panorama).toHaveAttribute('src','/adventure/forest-panorama.webp');
  await expect(page.locator('#explore-area')).toBeEnabled();
  await page.locator('#area-gorge').click();
+ await entry.click();
+ await expect(page.getByRole('region',{name:/(Verdant Gorge|Ngarai Rimba) · Expanded World/})).toBeVisible();
+ await expect(page.locator('#explore-area')).toBeDisabled();
+ await page.locator('#area-classic').click();
  await expect(entry).toHaveCount(0);
  await page.locator('#area-forest').click();
  await page.locator('#difficulty-easy').click();

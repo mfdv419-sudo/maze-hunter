@@ -25,7 +25,42 @@ function temple(){const g=new T.Group();g.name='desert-royal-temple';const stone
 /** Cloud silhouettes and horizon placement belong to the biome, not a shared tinted template. */
 export function biomeSky(area:AdventureArea){const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d')!,gr=x.createLinearGradient(0,0,0,256);const colors:Record<AdventureArea,string[]>={volcano:['#806c75','#d6b19a'],classic:['#77adc3','#d7e7cb'],forest:['#639eae','#dce8c6'],desert:['#6fa4bf','#f1d5a0'],gorge:['#5b9bbb','#d7e4cd'],mountain:['#578eae','#e5edf0'],coast:['#8c9db7','#f3c4a0'],sea:['#5aabc3','#d5eee5']};gr.addColorStop(0,colors[area][0]);gr.addColorStop(1,colors[area][1]);x.fillStyle=gr;x.fillRect(0,0,512,256);if(area==='desert'){x.fillStyle='#fff0be';x.beginPath();x.arc(365,72,19,0,Math.PI*2);x.fill();x.fillStyle='#fff1ce55';x.beginPath();x.ellipse(145,82,65,3,.1,0,Math.PI*2);x.fill();}else if(area==='mountain'){for(let i=0;i<23;i++){x.fillStyle=i%2?'#ecf3f4b0':'#d9e6ec9a';x.beginPath();x.ellipse(i*43%550,151+i*13%61,58+i%4*13,12+i%3*5,0,0,Math.PI*2);x.fill();}}else if(area==='coast'){x.fillStyle='#ffdfae';x.beginPath();x.arc(343,137,29,0,Math.PI*2);x.fill();for(let i=0;i<9;i++){x.fillStyle='#ffe4c766';x.beginPath();x.ellipse(i*83%512,68+i*19%71,45+i%3*11,4+i%2*3,0,0,Math.PI*2);x.fill();}}else for(let i=0;i<12;i++){const cx=i*89%512,cy=48+i*23%80;x.fillStyle=area==='forest'?'#eff3da80':'#f2f4e7b0';for(let j=0;j<4;j++){x.beginPath();x.ellipse(cx+j*11,cy-Math.sin(j)*6,20+j%2*6,7+j%2*4,0,0,Math.PI*2);x.fill();}}const texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;return texture;}
 /** All large static props occupy already-solid scenic ledges, not walkable corridors. */
-export function biomeScenery(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea){const n=layout.maze.grid.length,props=new T.Group(),horizon=new T.Group();props.name=`${area}-scenic-landmarks`;horizon.name=`${area}-horizon`;scene.add(horizon);const rock=mat(area==='mountain'?0x94a1a6:0x8b8e76),grass=mat(0x608f5e),wood=mat(0x8c7655),height=area==='gorge'?8.4:area==='mountain'?2.8:area==='sea'?5.5:2.05;
+const horizonStyles={
+ classic:{back:0xadc6aa,front:0x759c76,cloud:0xe4edd4,height:16},
+ forest:{back:0xb4c89f,front:0x789667,cloud:0xe4edd4,height:22},
+ desert:{back:0xe2cc99,front:0xc69a68,cloud:0xfce9be,height:18},
+ gorge:{back:0xa9c8b1,front:0x739d85,cloud:0xdcebd9,height:31},
+ mountain:{back:0xd1e1e4,front:0x9bb6c2,cloud:0xf2f6ec,height:48},
+ coast:{back:0xc4bdad,front:0x518f9b,cloud:0xffdbb0,height:13},
+ sea:{back:0x91bac2,front:0x479caa,cloud:0xdbe8c8,height:15},
+ volcano:{back:0x957d81,front:0x67535a,cloud:0xbda199,height:38},
+} as const;
+function distantLandscape(horizon:T.Group,area:AdventureArea){
+ const style=horizonStyles[area];
+ const rock=new T.IcosahedronGeometry(1,1);
+ for(let layer=0;layer<2;layer++){
+  const tint=mat(layer?style.front:style.back);
+  for(let i=0;i<10;i++){
+   const angle=i*Math.PI/5+layer*.35,distance=115-layer*22;
+   const hill=add(horizon,rock,tint,Math.sin(angle)*distance,-14+layer*3,Math.cos(angle)*distance);
+   hill.rotation.y=angle;
+   hill.scale.set(34+i%3*8,style.height*(.7+(i%4)*.135),14+i%3*3);
+  }
+ }
+ const clouds=new T.Group();
+ clouds.name=area+'-moving-horizon-fog';
+ const vapor=mat(style.cloud);
+ for(let i=0;i<12;i++){
+  const angle=i*Math.PI/6+.25;
+  const height=area==='volcano'?(i%4)*4+2:6+i%5*4;
+  const cloud=add(clouds,rock,vapor,Math.sin(angle)*98,height,Math.cos(angle)*98);
+  cloud.scale.set(12+i%3*5,1.1+i%4*.46,4+i%3);
+  cloud.rotation.y=angle;
+ }
+ horizon.add(clouds);
+ return clouds;
+}
+export function biomeScenery(scene:T.Scene,world:T.Group,layout:AdventureLayout,area:AdventureArea){const n=layout.maze.grid.length,props=new T.Group(),horizon=new T.Group();props.name=`${area}-scenic-landmarks`;horizon.name=`${area}-horizon`;scene.add(horizon);const clouds=distantLandscape(horizon,area);const rock=mat(area==='mountain'?0x94a1a6:0x8b8e76),grass=mat(0x608f5e),wood=mat(0x8c7655),height=area==='gorge'?8.4:area==='mountain'?2.8:area==='sea'?5.5:2.05;
  const near=(q:{x:number;y:number})=>{let best:{x:number;y:number}|undefined,score=Infinity;for(let z=Math.max(1,q.y-9);z<=Math.min(n-2,q.y+9);z++)for(let x=Math.max(1,q.x-9);x<=Math.min(n-2,q.x+9);x++)if(layout.maze.grid[z][x]===1&&[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dz])=>layout.maze.grid[z+dz]?.[x+dx]===0)){const d=Math.hypot(x-q.x,z-q.y);if(d>2.5&&d<score){best={x,y:z};score=d;}}return best;};
  const place=(g:T.Group,q:{x:number;y:number},scale=1)=>{const p=near(q);if(!p)return;g.position.set(p.x+.5,biomeElevation(area,p.x+.5,p.y+.5,layout)+height-.12,p.y+.5);g.scale.setScalar(scale);props.add(g);};
  if(area==='desert'){place(ancientSkeleton(),layout.forest!.cave,1.35);place(expeditionCart(),layout.forest!.cabin,1.1);place(dryTree(),layout.maze.start,1.5);place(temple(),layout.forest!.highland,.85);for(let i=0;i<5;i++){const p=pyramid(8+i%3*3);p.position.set(Math.sin(i*.8+1)*92,-13,Math.cos(i*.8+1)*92);horizon.add(p);}}
@@ -34,5 +69,5 @@ export function biomeScenery(scene:T.Scene,world:T.Group,layout:AdventureLayout,
  else if(area==='coast'){place(shipwreck(),layout.forest!.cave,1.3);place(lighthouse(),layout.forest!.highland,1.3);const island=add(horizon,new T.SphereGeometry(14,12,6),mat(0x789e86),60,-10,-77);island.scale.set(1,.23,.7);const l=lighthouse();l.scale.setScalar(3.4);l.position.set(60,-6,-77);horizon.add(l);}
  else if(area==='sea'){place(shipwreck(),layout.forest!.cave,1.25);place(temple(),layout.forest!.cabin,.85);const coral=mat(0x8bada8);for(let i=0;i<9;i++){const p=near(layout.areas[i%layout.areas.length].point);if(!p)continue;const h=biomeElevation(area,p.x,p.y,layout)+5.3;for(let j=0;j<3;j++)add(props,new T.CylinderGeometry(.08,.13,.8+j*.4,6),coral,p.x+.3+j*.2,h+.6,p.y+.5).rotation.z=(j-1)*.45;}}
  else if(area==='gorge'){place(expeditionCart(),layout.forest!.cabin,1.05);place(dryTree(),layout.forest!.cave,1.4);for(let i=0;i<40;i++){const x=2+i*29%(n-4),z=2+i*43%(n-4);if(layout.maze.grid[z][x]!==1||layout.maze.grid[z+1]?.[x]!==1)continue;const tree=forestTree(i);tree.scale.set(1.9,2.7,1.9);tree.position.set(x+.5,biomeElevation(area,x+.5,z+.5,layout)+8,z+.5);props.add(tree);}for(let i=0;i<5;i++)add(horizon,new T.SphereGeometry(20,10,5),grass,Math.sin(i*1.2)*94,-11,Math.cos(i*1.2)*94).scale.set(1,.6,.55);}
- horizon.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).fog=false;});batchStatic(props);world.add(props);return{update(camera:T.Camera){horizon.position.set(camera.position.x,0,camera.position.z);},dispose(){/* owning scene disposes these assets */}};
+ horizon.traverse(o=>{if(o instanceof T.Mesh)(o.material as T.MeshLambertMaterial).fog=false;});batchStatic(props);world.add(props);return{update(camera:T.Camera,time=0){horizon.position.set(camera.position.x,0,camera.position.z);clouds.rotation.y=time*.006;horizon.visible=area!=='sea'||camera.position.y>-.25;},dispose(){/* owning scene disposes these assets */}};
 }

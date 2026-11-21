@@ -10,7 +10,7 @@ const difficultyIcons = {easy: 'sprout', medium: 'signpost', hard: 'mountain', e
 const thumbnail = (area: AdventureArea) => `/adventure/${area}.webp`;
 
 export function adventureBackdrop(area: AdventureArea, expanded?: ForestWorldDifficulty) {
-  return expanded ? `/adventure/forest-expanded-${expanded}.webp`
+  return expanded&&area==='forest' ? `/adventure/forest-expanded-${expanded}.webp`
     : area === 'forest' ? '/adventure/forest-panorama.webp' : thumbnail(area);
 }
 
@@ -25,9 +25,9 @@ export function expeditionPicker(
   const ready = !expanded || canEnterForestWorld(rank, expanded);
   const next = forestStages[rank];
   const expandedHint = expanded === 'hard'
-    ? (ready ? text('Jembatan hutan, air terjun, dan jalur gua.', 'Forest bridges, waterfalls, and cavern trails.')
+    ? (ready ? (area==='forest'?text('Jembatan hutan, air terjun, dan jalur gua.', 'Forest bridges, waterfalls, and cavern trails.'):'147 × 147')
       : text('Selesaikan Easy, Medium, Hard, dan Extreme di Solo untuk membuka Expanded Hard.', 'Clear Easy, Medium, Hard, and Extreme in Solo to unlock Expanded Hard.'))
-    : (ready ? text('Jalur kanopi dan pulau terapung.', 'Canopy trails and floating islands.')
+    : (ready ? (area==='forest'?text('Jalur kanopi dan pulau terapung.', 'Canopy trails and floating islands.'):'165 × 165')
       : text('Selesaikan Expanded Hard untuk membuka Expanded Extreme.', 'Clear Expanded Hard to unlock Expanded Extreme.'));
   const action = (id: string, name: string, icon: string, disabled = false) =>
     `<button type="button" class="expedition-action" id="${id}" ${disabled ? 'disabled' : ''}>${forestIcon(icon)}<span>${name}</span></button>`;
@@ -65,11 +65,11 @@ export function expeditionPicker(
           ${expeditionDifficulties.map(option => `<button type="button" id="difficulty-${option}" aria-pressed="${!expanded && difficulty === option}">
             ${forestIcon(difficultyIcons[option])}<span>${option}</span>
           </button>`).join('')}
-          ${area === 'forest' ? `<button type="button" id="forest-world-open" aria-expanded="${!!expanded}" aria-controls="forest-world-options">
+          ${area !== 'classic' ? `<button type="button" id="forest-world-open" aria-expanded="${!!expanded}" aria-controls="forest-world-options">
             ${forestIcon('map')}<span>Expanded World</span>${forestIcon('chevron-down')}
           </button>` : ''}
         </div>
-        ${area === 'forest' ? `<section id="forest-world-options" class="forest-world-options" aria-label="Forest Grove · Expanded World" ${expanded ? '' : 'hidden'}>
+        ${area !== 'classic' ? `<section id="forest-world-options" class="forest-world-options" aria-label="${label} · Expanded World" ${expanded ? '' : 'hidden'}>
           <div class="forest-world-modes" role="group" aria-label="${text('Tingkat Expanded World', 'Expanded World difficulty')}">
             ${expandedDifficulties.map(mode => `<button type="button" id="forest-world-${mode}" aria-pressed="${mode === expanded}">
               ${forestIcon(canEnterForestWorld(rank, mode) ? difficultyIcons[mode] : 'lock')}
