@@ -8,7 +8,7 @@ import {batchStatic} from './static-model';
 /** Continuous cliff faces replace the repeated hedge blocks. All terrain heights are shared with gameplay. */
 export function gorgeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout){
  const n=layout.maze.grid.length,props=new T.Group();props.name='gorge-landmarks';
- const sand=new T.MeshLambertMaterial({color:0xbdb795}),stone=new T.MeshLambertMaterial({color:0x9f9781,flatShading:true}),dark=new T.MeshLambertMaterial({color:0x6f7765}),wood=new T.MeshLambertMaterial({color:0x9a7d5b}),waterMat=new T.MeshLambertMaterial({color:0x70b5b5,transparent:true,opacity:.66,side:T.DoubleSide});
+ const sand=new T.MeshLambertMaterial({color:0xc5b08b}),stone=new T.MeshLambertMaterial({color:0xa68b68,flatShading:true}),dark=new T.MeshLambertMaterial({color:0x6f7765}),wood=new T.MeshLambertMaterial({color:0x9a7d5b}),waterMat=new T.MeshLambertMaterial({color:0x70b5b5,transparent:true,opacity:.66,side:T.DoubleSide});
  const add=(geo:T.BufferGeometry,mat:T.Material,x:number,y:number,z:number,parent:T.Group=props)=>{const mesh=new T.Mesh(geo,mat);mesh.position.set(x,y,z);parent.add(mesh);return mesh;};
  const moss=new T.MeshLambertMaterial({color:0x769961}),rootMat=new T.MeshLambertMaterial({color:0x7c7559});
  const color=new T.Color(),terrain=new T.PlaneGeometry(n,n,n*2,n*2);terrain.rotateX(-Math.PI/2);const attr=terrain.attributes.position,colors:number[]=[];
@@ -17,7 +17,7 @@ export function gorgeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout){
  const floor=new T.Mesh(terrain,new T.MeshLambertMaterial({vertexColors:true,map:groundMap}));floor.name='canyon-contoured-ground';world.add(floor);
  let positions:number[]=[],tints:number[]=[];const sectors=new Map<string,{positions:number[];tints:number[];x:number;z:number}>();
  const triangle=(a:number[],b:number[],c:number[],hex:number,shade=1)=>{positions.push(...a,...b,...c);color.set(hex).multiplyScalar(shade);for(let i=0;i<3;i++)tints.push(color.r,color.g,color.b);};
- const palette=[0x858674,0x96927c,0xa29b82,0x8b8a76,0xa69e87,0x9b967e,0xaaa58b,0x969b7b,0xada98f,0xa29b82,0x9ca180,0x8d9873];
+ const palette=[0x987f62,0xab8d6d,0xb99b79,0x8b765c,0xc2a485,0x9f896a,0xb5a184,0x90785f,0xc0a583,0x9d8167,0xb29c7d,0x927e66];
  const sculpt=(x:number,z:number,f:number)=>[x+Math.sin(z*.61+x*.19)*.34*f*f,z+Math.cos(x*.52-z*.23)*.34*f*f];
  for(let z=0;z<n;z++)for(let x=0;x<n;x++)if(layout.maze.grid[z][x]===1){
   const key=`${Math.floor(x/12)},${Math.floor(z/12)}`;let sector=sectors.get(key);if(!sector){sector={positions:[],tints:[],x:Math.floor(x/12)*12+6,z:Math.floor(z/12)*12+6};sectors.set(key,sector);}positions=sector.positions;tints=sector.tints;
@@ -33,7 +33,7 @@ export function gorgeWorld(scene:T.Scene,world:T.Group,layout:AdventureLayout){
   if((x*13+z*7)%7===0)for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]])if(layout.maze.grid[z+dz]?.[x+dx]===0){const px=x+.5+dx*.49,pz=z+.5+dz*.49,base=gorgeElevation(px,pz,layout),height=gorgeCliffTop(px,pz,layout)-base,sy=base+height*(.38+(x+z)%2*.2);const shelf=add(new T.BoxGeometry(dx?.27:1.05,.13,dx?1.05:.27),moss,px+dx*.06,sy,pz+dz*.06);shelf.rotation.y=Math.sin(x+z)*.04;for(let k=0;k<2;k++){const vine=add(new T.CylinderGeometry(.018,.028,.5+k*.25,5),rootMat,px+dx*.18+(dz?(k-.5)*.45:0),sy-.28-k*.1,pz+dz*.18+(dx?(k-.5)*.45:0));vine.rotation.z=Math.sin(x+z+k)*.14;}}
   const cap=(x:number,z:number)=>{const v=sculpt(x,z,1);return[v[0],gorgeCliffTop(x,z,layout),v[1]];};const a=cap(x,z),b=cap(x+1,z),c=cap(x+1,z+1),d=cap(x,z+1);triangle(a,c,b,0x6d9059);triangle(a,d,c,0x73985f);
  }
- const cliffs=new T.Group();cliffs.name='stratified-canyon-cliffs';cliffs.userData.cameraOccluder=true;const cliffMaterial=new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide}),chunks:{mesh:T.Mesh;x:number;z:number}[]=[];
+ const cliffs=new T.Group();cliffs.name='stratified-canyon-cliffs';cliffs.userData.cameraOccluder=true;const cliffMaterial=new T.MeshLambertMaterial({vertexColors:true,flatShading:true,side:T.DoubleSide}),chunks:{mesh:T.Mesh;x:number;z:number}[]=[];
  for(const sector of sectors.values()){const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(sector.positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(sector.tints,3));geo.computeVertexNormals();geo.computeBoundingSphere();const mesh=new T.Mesh(geo,cliffMaterial);cliffs.add(mesh);chunks.push({mesh,x:sector.x,z:sector.z});}world.add(cliffs);
  const additions=expeditionAdditions(world,layout,'gorge',layout.maze.grid.length<70);const scenery=biomeScenery(scene,world,layout,'gorge'),effects=expeditionEffects(world,layout,'gorge');
  const {river:r,bridge:b,arch}=gorgeLandmarks(layout),base=gorgeBank(r.x,r.y,layout);

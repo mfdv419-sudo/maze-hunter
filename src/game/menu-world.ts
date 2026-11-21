@@ -3,8 +3,9 @@ import * as T from 'three';
 import {createBinturong} from './character';
 import {forestGroveSky} from './forest-grove-art';
 import {forestCascade} from './forest-waterfall-valley';
+import {homeLandscape} from './home-landscape';
 import {goldGate} from './adventure-props';
-import {forestTree,groundTexture,riverTile} from './world-art';
+import {forestTree,groundTexture} from './world-art';
 import type {AdventureArea} from './areas';
 export type MenuMode='retro'|'modern';
 export interface MenuWorld {dispose:()=>void;setMode:(mode:MenuMode)=>void;setArea:(area:AdventureArea)=>void}
@@ -19,21 +20,13 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  const grass=new T.MeshLambertMaterial({color:0x89c76b,map:groundTexture('leaf')}),pathMat=new T.MeshLambertMaterial({color:0xf0dbaf,map:groundTexture('path')});grass.map!.repeat.set(8,8);pathMat.map!.repeat.set(3,4);
  const ground=new T.Mesh(new T.PlaneGeometry(25,25),grass);ground.rotation.x=-Math.PI/2;ground.position.y=-.08;scene.add(ground);
  const path=new T.Mesh(new T.CircleGeometry(1.7,40),pathMat);path.rotation.x=-Math.PI/2;path.position.y=-.065;scene.add(path);
- const trees:T.Group[]=[];const cliffs:T.Mesh[]=[];const hedges:T.Mesh[]=[];
+ const trees:T.Group[]=[];const hedges:T.Mesh[]=[];
  for(const [x,z,s]of [[-2.5,-1.8,1.8],[2.6,-2.8,2],[-4,-5,2],[4,-6,2],[-1.7,-7,2.4],[6,-9,3],[-7,-10,3.2],[.8,-12,3.1]]){
   const tree=forestTree(Math.round(x*5));tree.position.set(x,-.05,z);tree.scale.setScalar(s);scene.add(tree);trees.push(tree);
  }
- const bank=new T.MeshLambertMaterial({color:0xa88766,flatShading:true});
- const cap=new T.MeshLambertMaterial({color:0x719356,flatShading:true});
- const rock=new T.IcosahedronGeometry(1,0);
- for(let i=0;i<9;i++){
-  const cliff=new T.Mesh(rock,bank);
-  cliff.position.set(3.2+i*.68,.5+(i%3)*.1,-7.1+Math.sin(i)*.2);cliff.scale.set(1.2,2,1.05);scene.add(cliff);cliffs.push(cliff);
-  const summit=new T.Mesh(rock,cap);summit.position.copy(cliff.position).add(new T.Vector3(0,1.67,0));summit.scale.set(1.02,.38,.84);scene.add(summit);cliffs.push(summit);
- }
+ const landscape=homeLandscape(scene);
  const fallsTime={value:0},falls=forestCascade([[0,2.17,-.17,1.23],[0,2.08,.03,1.3],[.05,.9,.19,1.42],[.1,.04,.64,1.63]],fallsTime);
  falls.position.set(4.45,0,-6.12);scene.add(falls);
- const water=riverTile(false);water.position.set(-3,-.06,-1);water.scale.set(2.8,1,8);scene.add(water);
  const gate=goldGate();gate.position.set(2.3,0,-4.2);gate.scale.setScalar(1.6);scene.add(gate);
  const hedgeMat=new T.MeshLambertMaterial({color:0x6c9950,map:groundTexture('leaf')});
  for(const [x,z,w]of [[-1,-4.2,2.3],[4,-4.2,2],[3,-7,4]]){const h=new T.Mesh(new T.BoxGeometry(w,.8,.6),hedgeMat);h.position.set(x,.35,z);scene.add(h);hedges.push(h);}
@@ -58,11 +51,11 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
  function setArea(area:AdventureArea){
   activeArea=area;host.dataset.area=area;
   const forest=['forest','classic','gorge'].includes(area);
-  const river=['forest','gorge','sea','coast'].includes(area);
+  // River visibility belongs to homeLandscape, not a detached blue tile.
   trees.forEach(tree=>tree.visible=forest||area==='coast');
-  cliffs.forEach(cliff=>cliff.visible=area==='forest'||area==='gorge'||area==='mountain');
+  landscape.setArea(area);
   hedges.forEach(hedge=>hedge.visible=forest);
-  falls.visible=area==='forest'||area==='gorge';water.visible=river;
+  falls.visible=area==='forest'||area==='gorge';
   gate.visible=area==='forest'||area==='classic';
   const groundColors:Record<AdventureArea,number>={classic:0x84ad6e,forest:0x89c76b,desert:0xc7aa75,gorge:0x8a9d74,mountain:0xb3c2bd,coast:0xe1c992,sea:0x75b4bc,volcano:0x7c6b64};
   grass.color.setHex(groundColors[area]);
@@ -81,7 +74,7 @@ export function menuWorld(host:HTMLElement,outfit='classic',language:'id'|'en'='
   trees.forEach((tree,i)=>{tree.rotation.z=Math.sin(t*.93+i)*.035;tree.rotation.x=Math.sin(t*.62+i*1.5)*.022;});
   butterflies.forEach((b,i)=>{b.position.set(Math.sin(t*.3+i)*3.4,1+Math.sin(t*.8+i)*.5,-1.2-Math.cos(t*.3+i)*1.75);b.rotation.y=Math.sin(t*11+i)*1.1;});
   hero.animate(clock,0,false,{hit:0,lookUp:false,allowIdle:!reduced.matches,...(reacting?{greet:age/.95}:{})});
-  water.children.forEach((o,i)=>{if(o.name==='water-ripple')o.position.x=Math.sin(t*.7+i)*.08+(i-2)*.15;});
+  landscape.update(t);
   sun.intensity=2.8+Math.sin(t*.72)*.14;sky.update(camera,true);renderer.render(scene,camera);
   if(!host.classList.contains('world3d-ready'))host.classList.add('world3d-ready');
  });

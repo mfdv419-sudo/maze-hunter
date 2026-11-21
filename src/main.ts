@@ -25,6 +25,7 @@ import {levelArt} from './game/level-art';
 import {screenArt} from './game/screen-art';
 import {adventureAreas,areaThemes,areaName,areaSize,type AdventureArea} from './game/areas';
 import {canEnterAdventureArea,isAdventureReviewer} from './game/adventure-access';
+import {equipHomeBackdrop,homeBackdropAreas,selectedHomeBackdrop} from './game/home-backdrops';
 import {expeditionQuests} from './game/expedition-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
@@ -268,7 +269,7 @@ async function preview(id: string, outfit = "classic",view:'front'|'back'|'tail'
 }
 function home() {
   const homeTool=(id:string,icon:string,label:string)=>`<button type="button" id="${id}" class="home-tool" aria-label="${esc(label)}">${forestIcon(icon)}</button>`;
-  const activeArea=homeMode==='retro'?'classic':selectedArea;
+  const activeArea=homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess());
   const canStart=homeMode==='retro'||!profile||canEnterAdventureArea(profile,selectedArea,hasReviewerAccess());
   begin(
     "home",
@@ -292,6 +293,7 @@ function home() {
          <div class="home-area-name" aria-live="polite"><span id="home-area-name">${areaName(selectedArea,lang)}</span><small id="home-area-state">${canStart?tr('Siap dijelajahi','Ready to explore'):tr('Terkunci · selesaikan dunia sebelumnya','Locked · complete the previous world')}</small></div>
          <button type="button" id="home-area-next" aria-label="${tr('Arena berikutnya','Next world')}">›</button>
        </div>
+       <button type="button" id="home-backdrop-equip" class="home-backdrop-equip" aria-label="${tr('Pakai latar arena ini','Use this world as Home background')}">${tr('PAKAI LATAR','USE BACKGROUND')}</button>
        <button type="button" id="home-start" class="home-start" ${!canStart?'disabled':''}>${tr('▶ MULAI BERMAIN','▶ PLAY NOW')}</button>
        <div class="home-shortcuts">
          ${profile?`<button id="collection-open" type="button">${tr('◈ Koleksi & Misi','◈ Collection & Quests')}</button><button id="home-shop" type="button">${tr('✦ Shop & Kostum','✦ Shop & Outfit')}</button>`:''}
@@ -326,7 +328,7 @@ function home() {
       const world = menuWorld(el("title-world"),profile?.outfit,lang,homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
       cleanup = world.dispose;
       setPreview=(mode,area)=>{world.setMode(mode);world.setArea(area);};
-      world.setArea(homeMode==='retro'?'classic':selectedArea);
+      world.setArea(homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess()));
     })
     .catch(error=>{
       if(token!==generation)return;
@@ -335,15 +337,20 @@ function home() {
   const updateHomeSelection=()=>{
     el('retro-mode').setAttribute('aria-pressed',String(homeMode==='retro'));
     el('modern-mode').setAttribute('aria-pressed',String(homeMode==='modern'));
-    const area=homeMode==='retro'?'classic':selectedArea;
+    const area=homeMode==='retro'?'classic':selectedHomeBackdrop(profile,hasReviewerAccess());
     el<HTMLElement>('title-world').style.setProperty('--home-world-art',`url("${screenArt(area,1)}")`);
     const chooser=el('home-area-chooser');chooser.hidden=homeMode==='retro';
     el('home-area-name').textContent=areaName(selectedArea,lang);
     const available=homeMode==='retro'||!profile||canEnterAdventureArea(profile,selectedArea,hasReviewerAccess());
     el('home-area-state').textContent=available?tr('Siap dijelajahi','Ready to explore'):tr('Terkunci · selesaikan dunia sebelumnya','Locked · complete the previous world');
+    const earned=homeBackdropAreas(profile,hasReviewerAccess()).includes(selectedArea);
+    const bg=el<HTMLButtonElement>('home-backdrop-equip');
+    bg.hidden=homeMode==='retro';bg.disabled=!profile||!earned||selectedHomeBackdrop(profile,hasReviewerAccess())===selectedArea;
+    bg.textContent=!earned?tr('LATAR TERKUNCI','BACKGROUND LOCKED'):bg.disabled?tr('LATAR DIPAKAI','BACKGROUND EQUIPPED'):tr('PAKAI LATAR','USE BACKGROUND');
     const play=el<HTMLButtonElement>('home-start');play.disabled=!available;
     setPreview?.(homeMode,area);
   };
+  click('home-backdrop-equip',()=>{if(!profile)return;if(equipHomeBackdrop(profile,selectedArea,hasReviewerAccess())){cache();void save();updateHomeSelection();}});
   click('home-area-prev',()=>{const i=adventureAreas.indexOf(selectedArea);selectedArea=adventureAreas[(i+adventureAreas.length-1)%adventureAreas.length];localStorage.setItem('mh-last-adventure-area',selectedArea);updateHomeSelection();});
   click('home-area-next',()=>{const i=adventureAreas.indexOf(selectedArea);selectedArea=adventureAreas[(i+1)%adventureAreas.length];localStorage.setItem('mh-last-adventure-area',selectedArea);updateHomeSelection();});
   const enterMode = async (play:HTMLButtonElement) => {

@@ -1,4 +1,5 @@
 import type {EquipmentArea} from '../game/expedition-equipment';
+import {adventureAreas} from '../game/areas';
 import {forestRankAfterWin, forestStages, type ForestStage,type ForestWorldDifficulty} from '../game/forest-progression';
 import {ensureWallet} from './cosmetics';
 import type {Appearance} from './cosmetics';
@@ -15,6 +16,8 @@ export interface Profile {knowledge?:{version:1;bestRewards:Record<string,number
   language: "id" | "en";
   outfit: string;
   appearance?:Appearance;
+  /** Home panoramas are earned with world progression and saved per family profile. */
+  homeBackdrops?: {equipped?:import('../game/areas').AdventureArea;unlocked:import('../game/areas').AdventureArea[]};
   adventures?:Record<string,ExpeditionRecord>;
   retro: Record<string, LevelResult>;
   modernWins: number;
@@ -61,6 +64,7 @@ export function newProfile(name: string, language: "id" | "en"): Profile {
     name: name.trim().slice(0, 24),
     language,
     outfit: "classic",
+    homeBackdrops:{equipped:'forest',unlocked:['classic','forest']},
     wardrobeSchema:1,wardrobe:{version:1,legacy:[],purchases:[],pending:[],paid:{}},
     retro: {},
     modernWins: 0,
@@ -84,6 +88,11 @@ export function mergeProfile(a: Profile, b: Profile): Profile {
       : r;
   }
   out.knowledge=a.knowledge||b.knowledge;
+  // Merge earned backdrops monotonically. The latest profile selects the visible one.
+  out.homeBackdrops={
+   unlocked:[...new Set(['classic','forest',...(a.homeBackdrops?.unlocked||[]),...(b.homeBackdrops?.unlocked||[])])] as import('../game/areas').AdventureArea[],
+   equipped:(a.updatedAt>=b.updatedAt?a:b).homeBackdrops?.equipped || a.homeBackdrops?.equipped || b.homeBackdrops?.equipped || 'forest',
+  };
   out.adventures={...a.adventures};
   for(const [id,r]of Object.entries(b.adventures||{})){const old=out.adventures[id];out.adventures[id]=old?mergeExpedition(old,r):r;}
   const wa=ensureWallet(a),wb=ensureWallet(b);out.wardrobe={version:1,legacy:[...new Set([...wa.legacy,...wb.legacy])],purchases:[...new Set([...wa.purchases,...wb.purchases])],pending:[...new Set([...wa.pending,...wb.pending])].filter(k=>!wa.purchases.includes(k)&&!wb.purchases.includes(k)),paid:{...wa.paid,...wb.paid}};out.wardrobeSchema=1;
@@ -149,7 +158,17 @@ export function recordExpeditionWin(profile: Profile, area:EquipmentArea,stage: 
  const rank = expeditionRank(profile,area), next = forestRankAfterWin(rank,stage);
  if(next === rank)return false;
  recordExpedition(profile,rankRecord(area),{coins:0,stars:0,chests:0,zones:[],forestRank:next});
+ grantHomeBackdrop(profile,area);
+ // Completing Extreme opens the following world's panorama as an earned reward.
+ if(next>=4){const i=adventureAreas.indexOf(area);if(i>=0&&i<adventureAreas.length-1)grantHomeBackdrop(profile,adventureAreas[i+1]);}
  return true;
+}
+
+/** Backdrop earns are tied to profile wins; no global unlock or nickname bypass. */
+export function grantHomeBackdrop(profile:Profile,area:import('../game/areas').AdventureArea):boolean{
+ const old=profile.homeBackdrops??{equipped:'forest' as const,unlocked:['classic','forest'] as import('../game/areas').AdventureArea[]};
+ if(old.unlocked.includes(area)){profile.homeBackdrops=old;return false;}
+ old.unlocked.push(area);profile.homeBackdrops=old;profile.updatedAt=Date.now();return true;
 }
 
 export function recordForestWin(profile:Profile,stage:ForestStage){

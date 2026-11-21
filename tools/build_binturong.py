@@ -19,10 +19,10 @@ BONES = [
  ('Spine',0,(0.,1.08,0.)),
  ('Neck',1,(0.,1.38,0.)),
  ('Head',2,(0.,1.65,0.)),
- ('UpperArm_L',1,(-.395,1.23,0.)),
- ('ForeArm_L',4,(-.46,.90,.01)),
- ('UpperArm_R',1,(.395,1.23,0.)),
- ('ForeArm_R',6,(.46,.90,.01)),
+ ('UpperArm_L',1,(-.425,1.23,0.)),
+ ('ForeArm_L',4,(-.49,.90,.01)),
+ ('UpperArm_R',1,(.425,1.23,0.)),
+ ('ForeArm_R',6,(.49,.90,.01)),
  ('Thigh_L',0,(-.206,.62,0.)),
  ('Shin_L',8,(-.205,.34,0.)),
  ('Thigh_R',0,(.206,.62,0.)),
@@ -100,30 +100,30 @@ shapes=[
  ((0,.92,-.002),(.34,.456,.294)),
  ((0,1.338,0),(.242,.210,.221)),
  ((0,1.675,.02),(.435,.360,.348)),
- ((-.28,1.532,.224),(.208,.154,.165)),((.28,1.532,.224),(.208,.154,.165)),
- ((0,1.475,.346),(.202,.126,.156)),
+ ((-.255,1.535,.220),(.174,.127,.131)),((.255,1.535,.220),(.174,.127,.131)),
+ ((0,1.487,.342),(.184,.113,.144)),
  ((-.339,1.939,-.06),(.107,.143,.078)),((.339,1.939,-.06),(.107,.143,.078)),
 ]
 for s in [-1,1]:
  shapes+= [
- ((s*.368,1.164,-.002),(.136,.174,.128)),
- ((s*.397,.993,.009),(.110,.188,.101)),
- ((s*.426,.796,.063),(.100,.151,.095)),
- ((s*.434,.668,.128),(.128,.126,.114)),
- ((s*.196,.580,-.013),(.159,.219,.157)),
- ((s*.197,.357,.008),(.136,.206,.129)),
- ((s*.207,.169,.148),(.207,.140,.232)),
+ ((s*.416,1.166,-.006),(.114,.167,.115)),
+ ((s*.449,.985,.018),(.092,.176,.091)),
+ ((s*.478,.806,.067),(.091,.157,.087)),
+ ((s*.493,.657,.130),(.111,.109,.110)),
+ ((s*.207,.563,-.013),(.140,.229,.137)),
+ ((s*.209,.343,.020),(.128,.205,.125)),
+ ((s*.210,.167,.131),(.185,.137,.206)),
  ]
 # two hands/feet significantly thinner than the old segmented spheres; fingers sculpted as small connected lobes
 for side in [-1,1]:
  for f in [-.065,0,.065]:
-  shapes.append(((side*.434+f,.634,.225),(.050,.054,.058)))
+  shapes.append(((side*.493+f*.70,.631,.216),(.039,.043,.048)))
  for f in [-.112,-.037,.038,.113]:
-  shapes.append(((side*.207+f,.098,.347),(.055,.072,.087)))
+  shapes.append(((side*.209+f*.85,.112,.291),(.047,.055,.062)))
 field=None
 for j,(c,r) in enumerate(shapes):
  d=ell_sdf(X,Y,Z,c,r)
- field=d if field is None else smin(field,d,.071 if j<8 else .057)
+ field=d if field is None else smin(field,d,.051 if j<8 else .047)
 v,f,n,values=marching_cubes(field,level=0,spacing=(step,step,step),allow_degenerate=False)
 v+=np.array([xs[0],ys[0],zs[0]],np.float32)
 part('Organic continuous Binturong — sculpted body, shoulders and paws',v,f,'fur')
@@ -131,8 +131,8 @@ del field,X,Y,Z
 
 # Charcoal-to-cream face lobe and a short smooth muzzle. Eye glasses have profile rather than cutout triangles.
 for side in [-1,1]:
- ell_mesh('Muzzle fur cheek', (side*.132,1.53,.328),(.142,.105,.071),'muzzle',BI['Head'],3)
- ell_mesh('Muzzle side patch', (side*.28,1.47,.224),(.093,.074,.050),'muzzle',BI['Head'],3)
+ ell_mesh('Muzzle fur cheek', (side*.132,1.53,.328),(.116,.086,.066),'muzzle',BI['Head'],3)
+ ell_mesh('Muzzle side patch', (side*.28,1.47,.224),(.077,.066,.038),'muzzle',BI['Head'],3)
 ell_mesh('Soft nose',(0,1.525,.503),(.085,.059,.065),'black',BI['Head'],3)
 tube('Smile', [(-.092,1.462,.450),(0,1.452,.480),(.092,1.462,.450)],[.007,.008,.007],'black',BI['Head'],9)
 for side in [-1,1]:
@@ -174,10 +174,16 @@ def shell_mesh(name,kind='vest'):
    faces.extend([[k,l,k+1],[k+1,l,l+1]])
  part(name,verts,faces,'ivory',BI['Spine'])
 shell_mesh('Tailored adventure vest front and complete back')
+# Continuous garment has raised panels; back and sides remain visible at all angles.
+# These pieces are rigid on Spine so they do not stretch with the elbow/forearm.
+for side in [-1,1]:
+ tube('Jacket side piping',[(side*.304,.75,-.052),(side*.351,.91,-.055),(side*.332,1.11,-.071)],[.014,.015,.012],'vest_edge',BI['Spine'])
+ tube('Vest lower hem',[(side*.29,.686,-.02),(side*.20,.684,.185),(side*.06,.689,.276)],[.020,.019,.018],'vest_edge',BI['Spine'])
+ ell_mesh('Reinforced leather side panel',(side*.321,.93,.040),(.036,.240,.186),'vest_edge',BI['Spine'],3)
 # Material edging, asymmetric pockets and neckline have strong garment readability
 for side in [-1,1]:
  tube('Front lapel seam',[(side*.09,1.045,.310),(side*.114,.970,.317),(side*.101,.815,.299)],[.014,.012,.010],'vest_edge',BI['Spine'])
- ell_mesh('Expedition pocket',(side*.184,.812,.258),(.076,.076,.036),'gear_cream',BI['Spine'],3)
+ ell_mesh('Expedition pocket',(side*.184,.812,.258),(.075,.060,.027),'gear_cream',BI['Spine'],3)
  ell_mesh('Pocket button',(side*.184,.831,.290),(.014,.014,.009),'gold',BI['Spine'],2)
  # backpack shoulder straps follow front and back shoulder
  tube('Backpack shoulder strap',[(side*.18,1.249,-.176),(side*.246,1.119,-.198),(side*.243,.968,-.238)],[.035,.031,.027],'vest_edge',BI['Spine'])
@@ -240,22 +246,25 @@ def skin_weights(V,bind):
  n=len(V);ids=np.zeros((n,4),dtype=np.uint16);ww=np.zeros((n,4),dtype=np.float32)
  if bind is not None:ids[:,0]=bind;ww[:,0]=1.;return ids,ww
  x,y,z=V[:,0],V[:,1],V[:,2]
- # geodesic region blend approximations: left/right limb selectors (x sign), strongest near centerline limb.
+ # Anatomically localized bone weights. Limb influence is radial, strongest away
+ # from torso; prevents skinning spikes across waist and neck during actions.
  score=np.zeros((n,len(BONES)),np.float32)
- score[:,BI['Hips']]=np.exp(-((y-.68)/.24)**2)*.70
- score[:,BI['Spine']]=np.exp(-((y-1.05)/.32)**2)*1.25
- score[:,BI['Neck']]=np.exp(-((y-1.37)/.11)**2)*.9
- score[:,BI['Head']]=np.exp(-((y-1.70)/.30)**2)*2.3
+ core=np.clip((.47-np.abs(x))/.25,0,1)
+ score[:,BI['Hips']]=np.exp(-((y-.70)/.23)**2)*.8*core
+ score[:,BI['Spine']]=np.exp(-((y-1.04)/.34)**2)*1.8*core
+ score[:,BI['Neck']]=np.exp(-((y-1.37)/.12)**2)*1.0*core
+ score[:,BI['Head']]=np.exp(-((y-1.7)/.28)**2)*2.8*np.clip((y-1.23)/.27,0,1)
  for side,names in [(-1,('UpperArm_L','ForeArm_L','Thigh_L','Shin_L')),(1,('UpperArm_R','ForeArm_R','Thigh_R','Shin_R'))]:
-  ax=(x-side*.45)/.16;arm=np.exp(-ax**2)*np.exp(-((y-.94)/.42)**2)*1.8
-  score[:,BI[names[0]]]+=arm*np.clip((y-.70)/.37,0,1)**.7
-  score[:,BI[names[1]]]+=arm*np.clip((1.20-y)/.45,0,1)**.6
-  lx=(x-side*.20)/.14;leg=np.exp(-lx**2)*np.exp(-((y-.31)/.33)**2)*2.3
-  score[:,BI[names[2]]]+=leg*np.clip(y/.42,0,1)**.8
-  score[:,BI[names[3]]]+=leg*np.clip((.65-y)/.40,0,1)**.8
- # core must not leak left/right arm when under hip
- score[:,BI['Spine']]*=np.clip((.75-abs(x))/.45,.1,1.)
- score[:,BI['Head']]*=np.clip((y-1.2)/.33,0,1)**.8
+  armRad=np.exp(-((x-side*.47)/.145)**2)*np.exp(-((y-.98)/.35)**2)
+  # Soft shoulder transition; upper arm moves without pulling the vest/cheek.
+  armRad*=np.clip((abs(x)-.28)/.13,0,1)
+  score[:,BI[names[0]]]+=armRad*(np.clip((y-.78)/.34,0,1)**1.4)*2.8
+  score[:,BI[names[1]]]+=armRad*(np.clip((1.20-y)/.45,0,1)**1.2)*3.1
+  legRad=np.exp(-((x-side*.21)/.17)**2)*np.exp(-((y-.31)/.35)**2)
+  legRad*=np.clip((.77-y)/.18,0,1)
+  score[:,BI[names[2]]]+=legRad*np.clip(y/.42,0,1)*2.8
+  score[:,BI[names[3]]]+=legRad*np.clip((.62-y)/.37,0,1)*3.0
+ score[:,BI['Spine']]*=np.clip((y-.57)/.13,0,1)
  if 'tail' in current_part_name.lower():
   score*=0
   score[:,BI['TailBase']]=np.exp(-((z+.36)/.28)**2)
@@ -424,14 +433,14 @@ for name,tracks in CLIPS.items():
   channels.append({'sampler':si,'target':{'node':BI[bone],'path':'rotation'}})
  animations.append({'name':name,'samplers':sams,'channels':channels})
 
-j={'asset':{'version':'2.0','generator':'Maze Hunter Character Rebuild / continuous SDF skinned model v1'},
+j={'asset':{'version':'2.0','generator':'Maze Hunter Character Rebuild / skin weights and integrated vest v2'},
  'scene':0,'scenes':[{'name':'Maze Hunter Binturong','nodes':[rootNode]}],
  'nodes':nodes,'skins':[{'name':'BinturongRig','joints':list(range(len(BONES))),'skeleton':0,'inverseBindMatrices':ibmIdx}],
  'meshes':meshdefs,
  'materials':materials,'buffers':[{'byteLength':len(writer.data)}],
  'bufferViews':writer.views,'accessors':writer.access,
  'animations':animations,
- 'extras':{'version':1,'wardrobeSlots':['headwear','eyewear','scarf','outfit','backpack','gloves','shoes'],
+ 'extras':{'version':2,'wardrobeSlots':['headwear','eyewear','scarf','outfit','backpack','gloves','shoes'],
            'modelMeters':2.2,'authoring':'Implicit sculpt with blended segments, detachable skinned outfit shell',
            'readme':'Import GLB to Blender; bones and eight animation tracks are editable. Anatomy is not a scan or literal image reconstruction.'}}
 # GLB chunks
