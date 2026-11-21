@@ -139,13 +139,20 @@ export class AdventureCamera {
   }
 
   this.turnWindow=Math.max(0,this.turnWindow-dt);
-  if(frame.heading!==undefined){
+  // Remember accumulated *player* turning. A maze corner often consists of
+  // many small joystick steps; waiting for a single 45-degree frame misses it.
+  if(frame.heading!==undefined&&Number.isFinite(frame.heading)){
    if(this.heading===undefined)this.heading=frame.heading;
-   else if(Math.abs(angleBetween(frame.heading,this.heading))>Math.PI/7){
+   else{
     const delta=angleBetween(frame.heading,this.heading);
-    this.turnDirection=Math.sign(delta);
-    this.heading=frame.heading;
-    this.turnWindow=1.7;
+    if(Math.abs(delta)>.10){
+     this.heading=frame.heading;
+     // Keep a stable turn side during one corner; changing it every frame is
+     // what made the camera oscillate left/right against a wall.
+     if(!this.turnWindow||this.turnDirection===0)this.turnDirection=Math.sign(delta);
+     else if(Math.sign(delta)!==this.turnDirection&&Math.abs(delta)>.35)this.turnDirection=Math.sign(delta);
+     this.turnWindow=1.1;
+    }
    }
   }
 
@@ -154,7 +161,12 @@ export class AdventureCamera {
    // blocked camera-to-character sight line. A stationary wall contact is not
    // a reason to spin the camera or force it behind the player.
    if(!this.turnWindow||!this.turnDirection)return null;
-   if(space.resolve(target,from,.18).distanceToSquared(from)<=EPSILON**2)return null;
+   const sightBlocked=space.resolve(target,from,.18).distanceToSquared(from)>EPSILON**2;
+   const turnLag=this.heading===undefined?0:Math.abs(angleBetween(this.heading+Math.PI,yaw));
+   // As the avatar rounds a corner, the intended trailing view can disappear
+   // BEFORE a wall entirely cuts the player off. Only a real turn activates
+   // gentle lateral tracking; touching a wall without turning does not.
+   if(!sightBlocked&&turnLag<.34&&!frame.outOfFrame)return null;
    const sideways=new T.Vector3(Math.cos(yaw)*this.turnDirection,0,-Math.sin(yaw)*this.turnDirection);
    const wish=from.clone().addScaledVector(sideways,dt*2.15);
    const slide=move(wish);
@@ -169,9 +181,13 @@ export class AdventureCamera {
     if(slide){this.eye=slide;return slide.clone();}
     return old.clone();
    }
-   this.waitingForRoom=false;
-   this.eye=move(place(yaw,pitch,radius));
-   return this.eye.clone();
+   // Regain the normal radius by walking the eye, not by jumping to the
+   // newly calculated 7.2-unit point in one render frame.
+   const wished=place(yaw,pitch,radius);
+   const candidate=move(old.clone().add(wished.sub(old).clampLength(0,dt*4)));
+   this.eye=candidate;
+   this.waitingForRoom=candidate.distanceTo(target)<radius-EPSILON;
+   return candidate.clone();
   }
 
   if(motion.lengthSq()<.0000001){
@@ -188,7 +204,6 @@ export class AdventureCamera {
    const slide=turnToClearSight(follow);
    if(slide){this.eye=slide;this.waitingForRoom=false;return slide.clone();}
    this.waitingForRoom=true;
-   this.turnWindow=0;
    this.eye=follow;
    return follow.clone();
   }

@@ -114,3 +114,39 @@ describe('Adventure camera collision and free view',()=>{
   expect(eye.x).toBeLessThan(point.x-.1);
  });
 });
+
+/** Regression: repeated small heading changes at a maze corner must not strand
+ * the camera behind a wall or make it teleport toward the hero. */
+describe('maze corner tracking regression',()=>{
+ const dt=1/60;
+ const offset=new T.Vector3(0,0,-ADVENTURE_CAMERA_RADIUS);
+ const follow={mode:'follow',dt} as const;
+ const corridor={
+  isClear:(p:T.Vector3,r=.28)=>!(p.z<-8+r||(p.x>1.15-r&&p.z<-.9+r&&p.z>-7.5-r)),
+  resolve(a:T.Vector3,b:T.Vector3,r=.28){
+   const direction=b.clone().sub(a),n=Math.max(1,Math.ceil(direction.length()/.05));
+   let safe=a.clone();
+   for(let i=1;i<=n;i++){
+    const next=a.clone().addScaledVector(direction,i/n);
+    if(!this.isClear(next,r))return safe;
+    safe=next;
+   }
+   return b.clone();
+  },
+ };
+ it('gently tracks small consecutive turns in an L-shaped passage, no sudden zoom',()=>{
+  const camera=new AdventureCamera(),pos=new T.Vector3(0,1,0);
+  let eye=camera.step(pos,offset,corridor,follow),cumulativeLateral=0;
+  for(let i=0;i<160;i++){
+   const heading=Math.min(Math.PI/2,(i/90)*Math.PI/2);
+   pos.x+=.022;pos.z+=.012;
+   const next=camera.step(pos,offset,corridor,{...follow,heading,outOfFrame:i>36});
+   expect(next.distanceTo(eye)).toBeLessThan(.35);
+   expect(corridor.isClear(next,.28)).toBe(true);
+   cumulativeLateral+=Math.abs(next.x-eye.x);
+   eye=next;
+  }
+  expect(cumulativeLateral).toBeGreaterThan(1);
+  expect(eye.distanceTo(pos)).toBeLessThanOrEqual(ADVENTURE_CAMERA_RADIUS+.1);
+ });
+});
