@@ -51,15 +51,16 @@ function gearOwned(p:Profile,item:ExpeditionGear,pending=false){
 }
 export function owns(p:Profile,c:Cosmetic){
  const wallet=ensureWallet(p),key=cosmeticKey(c);
- return c.stars===0||(c.expedition?gearOwned(p,c.expedition,true):
-  wallet.legacy.includes(key)||wallet.purchases.includes(key)||wallet.pending.includes(key));
+ // Pending purchases reserve currency, but cannot be equipped before server settlement.
+ return c.stars===0||(c.expedition?gearOwned(p,c.expedition):
+  wallet.legacy.includes(key)||wallet.purchases.includes(key));
 }
 export function activeExpeditionGear(profile:Profile,area:EquipmentArea):ExpeditionGear[]{
  return expeditionEquipment.filter(item=>item.area===area&&gearOwned(profile,item));
 }
 export function starBalance(p:Profile){const w=ensureWallet(p);return Math.max(0,stats(p).stars-[...new Set([...w.purchases,...w.pending])].filter(k=>!w.legacy.includes(k)).reduce((n,k)=>n+(w.paid[k]??legacyCatalogue.find(c=>cosmeticKey(c)===k)?.stars??0),0));}
 export function available(p:Profile,item:Cosmetic){return owns(p,item);}
-export function redeem(p:Profile,item:Cosmetic){if(owns(p,item))return true;if(starBalance(p)<item.stars||stats(p).wins<(item.wins||0))return false;const w=ensureWallet(p),key=cosmeticKey(item);w.pending.push(key);w.paid[key]=item.stars;p.updatedAt=Date.now();return true;}
+export function redeem(p:Profile,item:Cosmetic){if(owns(p,item))return true;const w=ensureWallet(p),key=cosmeticKey(item);if(w.pending.includes(key))return true;if(starBalance(p)<item.stars||stats(p).wins<(item.wins||0))return false;w.pending.push(key);w.paid[key]=item.stars;p.updatedAt=Date.now();return true;}
 /** Server settles fixed-catalogue item IDs; receipts retain price paid across future price changes. */
 export function settleWardrobe(p:Profile,stored:WardrobeWallet|undefined,pending:string[]){const base={...p,wardrobe:stored?structuredClone(stored):undefined};const wallet=ensureWallet(base),rejected:string[]=[];wallet.pending=[];for(const key of [...new Set(pending)].slice(0,80)){const item=cosmetics.find(c=>cosmeticKey(c)===key);if(!item){rejected.push(key);continue;}if(owns(base,item))continue;if(starBalance(base)<item.stars||stats(base).wins<(item.wins||0)){rejected.push(key);continue;}wallet.purchases.push(key);wallet.paid[key]=item.stars;}return{wallet,rejected};}
 export function appearanceOf(p:Pick<Profile,'outfit'|'appearance'>,fallbackPalette='charcoal'):Appearance {

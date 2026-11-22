@@ -47,6 +47,7 @@ import "./adventure-picker.css";
 import "./adventure-hud.css";
 import "./adventure-action-pad.css";
 import "./forest-pilot.css";
+import "./wardrobe-preview.css";
 import { authErrorInfo, loginErrorDetails, safeLoginText } from "./services/auth-errors";
 import { tone, isMuted, setMuted,unlockAudio,setAudioScene,sfx,audioVolumes,setAudioVolumes } from "./systems/audio";
 import {
@@ -974,47 +975,114 @@ function collection(){
 }
 function wardrobe(){
  if(!profile)return;
- const p=profile,a=appearanceOf(p,readPreferences().fur),statsNow=stats(p),balance=starBalance(p);
- const language=lang==='id'?0:1;
+ const p=profile,base=appearanceOf(p,readPreferences().fur),balance=starBalance(p),achieved=stats(p),language=lang==='id'?0:1;
  const items=cosmetics.filter(c=>c.slot===wardrobeSlot);
  const slotNames={head:['Kepala','Head'],face:['Wajah','Face'],body:['Badan','Body'],back:['Punggung','Back'],tail:['Ekor','Tail'],palette:['Warna','Palette'],hands:['Sarung tangan','Gloves'],feet:['Sepatu','Boots']};
- const tabs=`<div class="cosmetic-tabs" role="tablist" aria-label="${tr('Jenis perlengkapan','Equipment category')}">${slots.map(slot=>`<button id="slot-${slot}" role="tab" aria-selected="${slot===wardrobeSlot}">${slotNames[slot][language]}</button>`).join('')}</div>`;
- begin('wardrobe',`<main class="page wardrobe-page"><section class="wardrobe-stage"><div class="wardrobe-title"><span>${tr('PERLENGKAPAN PETUALANG','EXPEDITION EQUIPMENT')}</span><h1>${esc(p.name)}</h1></div><div id="outfit-preview"></div><div class="wardrobe-caption">★ ${balance} ${tr('tersedia','available')} · ${statsNow.stars} ${tr('pencapaian','earned')}<small>${tr('Geser karakter untuk melihat semua sisi','Swipe the character to see every side')}</small></div></section><section class="outfit-options"><div class="inventory-heading"><h2>${tr('Toko Petualangan','Adventure Shop')}</h2>${button('×','wardrobe-close','round-tool')}</div><p class="shop-category-note">${tr('Perlengkapan dari semua arena tersedia dalam kategori yang sama. Hadiah tahap Solo juga muncul di sini.','All worlds share the same equipment categories. Solo stage rewards appear here too.')}</p>${tabs}<div class="outfit-grid cosmetic-grid">${items.map((c,i)=>{
-  const owned=owns(p,c),equipped=a[c.slot]===c.id,gear=c.expedition;
-  const locked=!owned&&(balance<c.stars||statsNow.wins<(c.wins||0));
-  const caption=equipped?tr('DIPAKAI ✓','EQUIPPED ✓'):owned?tr('PAKAI','EQUIP'):locked?`${c.stars} ★`:tr('TUKAR','REDEEM')+' '+c.stars+' ★';
-  return `<button id="piece-${i}" ${gear?`data-gear="${gear.id}"`:''} class="outfit outfit-card rarity-${c.rarity} ${equipped?'selected':''}" ${locked?'disabled':''}><span class="avatar-portrait"><img id="portrait-${i}" alt=""></span><small class="rarity-label">${gear?`${esc(areaName(gear.area,lang))} · ${forestStageLabel[gear.stage]}`:c.rarity.toUpperCase()}</small><b>${esc(c.name[language])}</b>${gear?`<small class="gear-benefit">${esc(equipmentBenefits[gear.effect][language])}</small>`:''}<span class="outfit-state">${caption}</span></button>`;
- }).join('')}</div></section></main>`);
+ const initiallyEquipped=items.findIndex(c=>base[c.slot]===c.id);
+ let selectedIndex=Math.max(0,initiallyEquipped),viewer:import('./game/wardrobe-preview').ShopPreview|undefined;
+ const cards=items.map((c,i)=>{
+   const owned=owns(p,c),pending=!!p.wardrobe?.pending.includes(cosmeticKey(c)),equipped=base[c.slot]===c.id,gear=c.expedition;
+   return `<button type="button" id="shop-item-${i}" class="mh-shop-item" aria-pressed="${i===selectedIndex}" data-owned="${owned}" data-equipped="${equipped}">
+    <span class="mh-shop-item-pic"><img id="shop-portrait-${i}" alt="" loading="lazy"></span>
+    <small>${gear?`${esc(areaName(gear.area,lang))} · ${forestStageLabel[gear.stage]}`:c.rarity.toUpperCase()}</small>
+    <b>${esc(c.name[language])}</b>
+    <span class="mh-shop-item-state">${equipped?tr('DIPAKAI','EQUIPPED'):owned?tr('DIMILIKI · LIHAT','OWNED · VIEW'):pending?tr('MENUNGGU VERIFIKASI','PENDING RECEIPT'):`${tr('PRATINJAU','PREVIEW')} · ${c.stars} ★`}</span>
+   </button>`;
+ }).join('');
+ const tabs=`<div class="mh-shop-categories" role="tablist" aria-label="${tr('Kategori perlengkapan','Equipment category')}">${slots.map(slot=>`<button type="button" id="shop-slot-${slot}" role="tab" aria-selected="${slot===wardrobeSlot}">${slotNames[slot][language]}</button>`).join('')}</div>`;
+ begin('wardrobe',`<main class="page mh-shop"><section class="mh-shop-stage">
+    <div class="mh-shop-head"><small>${tr('RUANG COBA · MAZE HUNTER','TRY-ON STUDIO · MAZE HUNTER')}</small><h1>${esc(p.name)}</h1></div>
+    <div id="mh-shop-preview" class="mh-shop-viewport" aria-label="${tr('Karakter 3D bisa diputar dan diperbesar','Rotatable zoomable 3D character')}"></div>
+    <div class="mh-shop-viewbar" role="group" aria-label="${tr('Sudut kamera','Camera angle')}">
+      <button type="button" id="shop-front">${tr('Depan','Front')}</button><button type="button" id="shop-left">${tr('Kiri','Left')}</button>
+      <button type="button" id="shop-right">${tr('Kanan','Right')}</button><button type="button" id="shop-back">${tr('Belakang','Back')}</button>
+      <button type="button" id="shop-top">${tr('Atas','Top')}</button><button type="button" id="shop-bottom">${tr('Bawah','Bottom')}</button>
+    </div><div class="mh-shop-zoom" role="group" aria-label="Zoom"><button type="button" id="shop-zoom-out" aria-label="Zoom out">−</button><button type="button" id="shop-reset">${tr('Atur ulang','Reset')}</button><button type="button" id="shop-zoom-in" aria-label="Zoom in">+</button></div>
+    <div class="mh-shop-status" aria-live="polite"><h2 class="mh-shop-name" id="shop-selected-name"></h2><p class="mh-shop-state" id="shop-selected-status"></p><button type="button" class="mh-shop-action" id="shop-equip-action"></button>
+      <p class="mh-shop-hint">${tr('Geser untuk memutar 360° · Cubit atau scroll untuk zoom · Mencoba tidak membeli','Drag to orbit 360° · Pinch or scroll to zoom · Trying does not buy')}</p>
+    </div>
+  </section><section class="mh-shop-browser"><div class="mh-shop-topbar"><h2>${tr('Shop & Outfit','Shop & Outfit')}</h2><button type="button" id="wardrobe-close" class="mh-shop-close" aria-label="${tr('Tutup','Close')}">×</button></div>
+  <p class="mh-shop-subhead">★ ${balance} ${tr('bintang tersedia · Pratinjau gratis, pemakaian setelah dimiliki','stars available · Free preview, equip after ownership')}</p>${tabs}<div class="mh-shop-items">${cards}</div></section></main>`);
  click('wardrobe-close',()=>home());
- for(const slot of slots)click('slot-'+slot,()=>{wardrobeSlot=slot;wardrobe();});
- const detail=wardrobeSlot;
- const view=detail==='back'?'back':detail==='tail'?'tail':'front';
- void preview('outfit-preview',a.body,view,detail);
+ for(const slot of slots)click('shop-slot-'+slot,()=>{wardrobeSlot=slot;wardrobe();});
  const token=generation;
- void import('./game/modern').then(async ({avatarPortraits})=>{
-  if(token!==generation)return;
-  const backItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot==='back'||item.slot==='tail');
-  const frontItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot!=='back'&&item.slot!=='tail');
-  for(const [entries,angle] of [[frontItems,'front'],[backItems,'back']] as const){
-   if(!entries.length)continue;
-   const images=await avatarPortraits(p.outfit,entries.map(({item})=>({...a,[item.slot]:item.id})),angle,detail);
+ const updateSelection=(index:number)=>{
    if(token!==generation)return;
-   entries.forEach(({index},i)=>{const img=el<HTMLImageElement>('portrait-'+index);if(img)img.src=images[i];});
-  }
- }).catch(showError);
- items.forEach((c,i)=>click('piece-'+i,()=>{
-  const equip=()=>{
-   if(!redeem(p,c))return;
-   p.appearance={...a,[c.slot]:c.id};
-   if(c.slot==='body')p.outfit=['classic','explorer','raincoat','space'].includes(c.id)?c.id:'classic';
-   p.updatedAt=Date.now();void save();wardrobe();
-  };
-  if(owns(p,c)){equip();return;}
-  const modal=document.createElement('div');modal.className='modal-backdrop';
-  modal.innerHTML=`<section class="modal" role="dialog" aria-modal="true"><h2>${esc(c.name[language])}</h2><p>${tr('Tukar','Redeem')} ${c.stars} ★ · ${tr('Sisa','Remaining')} ${balance-c.stars} ★</p>${button(tr('TUKAR & PAKAI','REDEEM & EQUIP'),'redeem-confirm')}${button(tr('Batal','Cancel'),'redeem-cancel','quiet')}</section>`;
-  document.body.append(modal);click('redeem-cancel',()=>modal.remove());click('redeem-confirm',()=>{modal.remove();equip();});
- }));
+   selectedIndex=index;
+   const c=items[index],owned=owns(p,c),pending=!!p.wardrobe?.pending.includes(cosmeticKey(c)),equipped=base[c.slot]===c.id;
+   const eligible=balance>=c.stars&&achieved.wins>=(c.wins||0);
+   document.querySelectorAll<HTMLElement>('.mh-shop-item').forEach((node,i)=>node.setAttribute('aria-pressed',String(i===index)));
+   el('shop-selected-name').textContent=c.name[language];
+   el('shop-selected-status').textContent=equipped?tr('Sedang dipakai dalam permainan','Currently equipped in gameplay'):
+     owned?tr('Sudah dimiliki. Bisa dipakai kapan saja.','Owned. Ready to equip.'):
+     pending?tr('Pembelian menunggu verifikasi. Belum dapat dipakai.','Purchase awaiting verification. Cannot equip yet.'):
+     `${tr('MODE PRATINJAU SAJA · Belum bisa digunakan','PREVIEW ONLY · Cannot use yet')} · ${c.stars} ★${c.wins&&!eligible?' · '+tr('Perlu kemenangan','Win required'):''}`;
+   const action=el<HTMLButtonElement>('shop-equip-action');
+   action.disabled=equipped||(!owned&&!pending&&(!eligible||lab||!navigator.onLine));
+   action.textContent=equipped?tr('SUDAH DIPAKAI ✓','ALREADY EQUIPPED ✓'):
+     owned?tr('PAKAI ITEM INI','EQUIP THIS ITEM'):
+     pending?tr('SINKRONKAN PEMBELIAN','VERIFY PURCHASE'):
+     eligible&&!lab&&navigator.onLine?`${tr('BELI & PAKAI','BUY & EQUIP')} · ${c.stars} ★`:
+     `${lab?tr('LAB · PRATINJAU SAJA','LAB · PREVIEW ONLY'):!navigator.onLine?tr('OFFLINE · PRATINJAU SAJA','OFFLINE · PREVIEW ONLY'):`${tr('TERKUNCI · BUTUH','LOCKED · NEED')} ${c.stars} ★`}`;
+   // A temporary appearance is never written to Profile. Ownership is checked separately.
+   viewer?.show({...base,[c.slot]:c.id},c.slot);
+ };
+ items.forEach((c,i)=>click('shop-item-'+i,()=>updateSelection(i)));
+ for(const angle of ['front','left','right','back','top','bottom'] as const)click('shop-'+angle,()=>viewer?.view(angle));
+ click('shop-zoom-in',()=>viewer?.zoom('in'));click('shop-zoom-out',()=>viewer?.zoom('out'));click('shop-reset',()=>viewer?.reset());
+ click('shop-equip-action',()=>{
+   const item=items[selectedIndex];if(!item)return;
+   const equip=()=>{
+     if(!owns(p,item))return;
+     p.appearance={...base,[item.slot]:item.id};
+     if(item.slot==='body')p.outfit=['classic','explorer','raincoat','space'].includes(item.id)?item.id:'classic';
+     p.updatedAt=Date.now();void save();wardrobe();
+   };
+   if(owns(p,item)){equip();return;}
+   const syncPurchase=async()=>{
+     if(lab||!navigator.onLine){toast(tr('Harus online untuk memverifikasi pembelian.','Go online to verify purchase.'));return;}
+     try{
+       await save(true);
+       if(profile?.id===p.id&&owns(profile,item)){
+         profile.appearance={...appearanceOf(profile),[item.slot]:item.id};
+         if(item.slot==='body')profile.outfit=['classic','explorer','raincoat','space'].includes(item.id)?item.id:'classic';
+         profile.updatedAt=Date.now();await save(true);
+       }else toast(tr('Pembelian masih menunggu verifikasi. Item belum dapat dipakai.','Purchase still awaiting verification. Item cannot be equipped yet.'));
+     }catch(error){showError(error);}
+     if(token===generation)wardrobe();
+   };
+   if(p.wardrobe?.pending.includes(cosmeticKey(item))){void syncPurchase();return;}
+   if(balance<item.stars||achieved.wins<(item.wins||0)||lab||!navigator.onLine)return;
+   const modal=document.createElement('div');modal.className='modal-backdrop';
+   modal.innerHTML=`<section class="modal" role="dialog" aria-modal="true"><h2>${esc(item.name[language])}</h2>
+     <p>${tr('Beli dengan','Buy for')} ${item.stars} ★ · ${tr('Sisa','Balance after purchase')} ${balance-item.stars} ★</p>
+     ${button(tr('KONFIRMASI BELI & PAKAI','CONFIRM BUY & EQUIP'),'shop-buy-confirm')}
+     ${button(tr('BATAL','CANCEL'),'shop-buy-cancel','quiet')}</section>`;
+   document.body.append(modal);
+   click('shop-buy-cancel',()=>modal.remove());
+   click('shop-buy-confirm',()=>{modal.remove();if(redeem(p,item)){void syncPurchase();}else toast(tr('Bintang atau persyaratan belum cukup.','Not enough stars or requirements.'));});
+ });
+ updateSelection(selectedIndex);
+ void import('./game/wardrobe-preview').then(({mountWardrobePreview})=>{
+   if(token!==generation)return;
+   const host=el('mh-shop-preview');if(!host)return;
+   const c=items[selectedIndex];
+   viewer=mountWardrobePreview(host,{...base,[c.slot]:c.id},c.slot);
+   const former=cleanup;cleanup=()=>{viewer?.dispose();viewer=undefined;former();};
+ }).catch(error=>{if(token!==generation)return;const stage=el('mh-shop-preview');if(stage){const fallback=document.createElement('div');fallback.className='mh-shop-fallback';fallback.textContent=tr('Preview 3D belum tersedia di perangkat ini. Item tidak akan terbeli atau terpakai otomatis.','3D preview unavailable on this device. The item will not buy or equip automatically.');stage.append(fallback);}console.error('Wardrobe 3D preview unavailable',error);});
+ void import('./game/modern').then(async ({avatarPortraits})=>{
+   if(token!==generation)return;
+   const backItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot==='back'||item.slot==='tail');
+   const frontItems=items.map((item,index)=>({item,index})).filter(({item})=>item.slot!=='back'&&item.slot!=='tail');
+   for(const [entries,angle] of [[frontItems,'front'],[backItems,'back']] as const){
+     if(!entries.length)continue;
+     const images=await avatarPortraits(p.outfit,entries.map(({item})=>({...base,[item.slot]:item.id})),angle,wardrobeSlot);
+     if(token!==generation)return;
+     entries.forEach(({index},i)=>{const img=el<HTMLImageElement>('shop-portrait-'+index);if(img)img.src=images[i];});
+   }
+ }).catch(error=>console.warn('Shop card thumbnails unavailable',error));
 }
+
 function scores(kind:'retro'|'adventure'='retro',level=1,map=0,difficulty:Difficulty='medium',scoreArea:AdventureArea='classic') {
  if(!profile)return home();
  const rows=kind==='retro'?family.profiles.filter(p=>p.retro[String(level)]).map(p=>({name:p.name,seconds:p.retro[String(level)].seconds,stars:Math.max(p.retro[String(level)].stars,p.knowledge?.bestRewards[String(level)]||0)})).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds):readRuns(uid).filter(r=>(r.area||'classic')===scoreArea&&r.map===map&&r.difficulty===difficulty).sort((a,b)=>b.stars-a.stars||a.seconds-b.seconds);

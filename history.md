@@ -1,261 +1,35 @@
-# JOB 1F UI19 — Full In-Game UI Correction
-
-Replaces the partial UI18 pass. Scope: in-game Adventure UI only.
-
-- Rebuilt approved HUD layout hierarchy.
-- Minimap and four utility buttons use one aligned right-side grid.
-- Quest/context text typography reduced and spacing opened up.
-- One four-button action-pad owner; generic Ability icon prevents duplicate Cake visuals.
-- Rebuilt Settings, Adventure Bag, Adventure Guide and NPC modal presentation.
-- Removed forbidden layout overrides / !important from owned UI styles.
-- Fixed invalid hyphenated message keys in forest-hud.ts.
-- MAZE11 audit no longer duplicates UI ownership checks.
-
-## 2026-11-21 — Home Adventure/Character/Area Progression Delta
-
-**Dasar:** branch `maze-1` setelah delta Organic Binturong, Camera Contact, dan Camera/Pose/Shop Categories. Revisi mengikuti konsep character sheet dan Home game-first yang disetujui.
-
-**Home:** Menghapus posisi lama (mode cards kiri bawah, utilitas berbentuk office card) dan menggantinya di owner `src/home-ui.css`: karakter 3D di tengah, skala preview 85% dari sebelumnya, tombol Classic/Adventure di kanan berbentuk plakat game berlapis, tombol utilitas kiri atas berbentuk emblem yang sama tema, tombol Main yang jelas, dan pemilihan area yang mengubah panorama yang terlihat. Tema latar sesuai biome pilihan dan disimpan secara lokal sebagai pilihan terakhir, dengan animasi 3D karakter/Home yang tetap merespons tap serta drag. Tidak ada penambahan CSS `!important`.
-
-**Model:** Memperbaiki siluet lengan, mengurangi ukuran paw yang menggumpal, dan mengganti lingkaran perut polos dengan shell vest mengikuti torso lengkap dengan tepi jahitan, lapel, resleting, dan kantong. Geometri tetap prosedural; kesamaan penuh dengan ilustrasi sculpted 3D memerlukan verifikasi visual.
-
-**Progress:** Classic dan Forest terbuka sejak awal. Dunia selanjutnya (Desert, Gorge, Mountain, Coast, Sea, Volcano) dibuka setelah empat tahap Solo berurutan di biome sebelumnya. Rank lama tidak di-reset. Expanded Hard/Extreme memakai aturan progres yang sudah ada. Akses review disediakan lewat `VITE_MH_REVIEWER_UIDS` (UID Firebase autentik), bukan nama profil `mf`, dan hanya untuk masuk ke area saat review; tidak menghadiahkan gear/rekor yang tidak diperoleh.
-
-**Berubah:** `src/main.ts`, `src/home-ui.css`, `src/style.css`, `src/presentation.css`, `src/game/menu-world.ts`, `src/game/character.ts`, `src/game/gear-model.ts`, `src/game/adventure-access.ts`, `src/ui/adventure-picker.ts`, `src/ui/forest-icons.ts`, `src/adventure-picker.css`, `scripts/audit-ui-contract.mjs`, `.env.example`, `tests/home-adventure-progression.test.ts`, `history.md`. Tidak mengubah file Retro, logika kamera gameplay, atau seluruh source aplikasi.
-
-**Validasi:** UI19 14/14, MAZE11 22/22 audit lulus; pemeriksaan sintaks TypeScript seluruh file berubah lulus. Build Vite/runtime WebGL belum diverifikasi karena paket npm tidak tersedia secara lengkap di lingkungan eksekusi. Uji dunia di dua perangkat dan server-side enforcement unlock Online belum dinyatakan selesai.
-
-**Pemasangan:** ekstrak ZIP delta ke root source terbaru; tambahkan UID Firebase akun review ke `VITE_MH_REVIEWER_UIDS` di Netlify Deploy Preview agar semua biome dan Expanded bisa dipilih tanpa menyamakan nama profil dengan hak akses. Tidak perlu mengubah cache/progres yang sudah tersimpan.
-
-## 2026-11-21 — Home regression correction (limited scope, NOT character rebuild)
-
-**Baseline:** the existing `maze-1` Home/Character/Unlock revision. This delta targets the reproduced Home regressions seen in user screenshots. It does not claim to fix the still-unapproved body, limbs, outfit, or character rig.
-
-- **Fullscreen and utilities:** The Home utility buttons were rendered *under* the page header stacking context. Moved their existing DOM element into the actual header, preserving button IDs, handlers, and keyboard interaction. Fullscreen remains one owner.
-- **Mode choice:** Removed obsolete `.title-screen .mode-selector` rules, including one `!important`, from the shared stylesheet; they still imposed a 46% width on the new right-hand panel. The Home stylesheet now owns mode tile width, insets, text wrapping and responsive layout, with distinct plaque treatment and sufficient spacing.
-- **Backdrop:** When the 3D scene renders successfully, the scene-owned sky remains visible and the 440×439 fallback thumbnail is removed instead of scaling it behind the transparent canvas. Fallback art remains for failed WebGL initialization. Home character size remains 85% of its original 1.275 scene scale (now 1.06).
-- **No changes:** Retro, camera gameplay, arena layouts, unlock rewards, Wardrobe data, saved progress, or character meshes. The user rejected the segmented character; a genuine replacement needs a continuous surface and rigged character asset, not more sphere primitives or cosmetic CSS patches.
-- **Validation:** UI ownership audit 14/14 and Extreme Maze audit 22/22 PASS. TypeScript transpilation syntax checks for affected TS modules passed. Full Vite/WebGL visual QA is **not verified** in this environment; do not label the appearance approved until a tested preview has been compared to references.
-- **File scope:** `src/main.ts`, `src/style.css`, `src/home-ui.css`, `src/game/menu-world.ts`, `history.md`.
-
-## 2026-11-21 — Locked Game Visual Direction / UI Pass 1 (Home, Expedition, shared controls)
-
-**Visual baseline locked by user:** bright family-adventure game language, clear and colorful in-world landscape (no heavy blur/dark vignette); navy + cream/champagne + lively gold/teal; large sculpted game signboards for game mode and primary action; round gold-rimmed medallions for utility actions. Use the same material and visual proportions for Home, Expedition, Shop/Wardrobe, Collection, Settings/Guide and shared modal buttons. Keep approved in-game HUD geometry unchanged.
-
-**Implementation in this delta:**
-- Replaced `src/home-ui.css` owner rules with bright background treatment, responsive branded left panel, central hero area, more substantial dimensional Classic/Adventure signboards at right, an ornate gold Start signboard, wood-toned arena selection and unified round utility medallions. Header is transparent only on Home; Fullscreen remains visible and click handlers are untouched.
-- Refactored original shared visual owners in `src/presentation.css` and `src/style.css`: changed dark/office controls to the gold/teal signboard/medallion family, updated shared dialogs and item cards, and removed all `!important` from these modified files. Legacy `.game-button` duplicate style definitions were removed from `style.css`; shared presentation has the canonical material appearance.
-- Updated `src/adventure-picker.css` to use the same brighter palette, placket selection style, premium primary action and the existing layout positions of Expanded World in difficulty selection; without changing navigation logic or requirements.
-- Home fallback panorama now uses its existing resolution-independent vector artwork (`screenArt`) instead of stretching 440px square thumbnails (`src/main.ts`). Home in-engine 3D scene lighting is brighter, distant fog less dense, and the 3D character preview is resized from 1.06 to 0.90 (`src/game/menu-world.ts`). No gameplay camera logic changed.
-
-**Character 3D status / do not misrepresent:** The screenshot-approved stylized sculpted character is **not yet implemented**. The current character geometry remains the rejected procedural part assembly. This visual-system delta **does not** claim a skinned or unioned final 3D model. A true replacement requires a continuous sculpted mesh, properly fitted layered vest/gear, a retargeted skeleton, weight painting and `.glb` animation/export QA (front/side/back and moving). Keep the approved character concept as the modeling reference; do not add spherical placeholders or claim completion prematurely.
-
-**Verification:** UI19 audit 14/14 PASS; MAZE11 audit 22/22 PASS; CSS parser reports 0 syntax errors in 4 modified stylesheets; no `!important` in these stylesheets. Full Vite build not verified because the offline npm cache is missing `yargs-parser@21.1.1` and current local Node is v22 while project requires Node >=24. Headless Chromium screenshot attempt also did not complete in this environment. The visual look must be checked on the real Deploy Preview before calling it approved.
-
-**Changed files only:** `src/home-ui.css`, `src/presentation.css`, `src/style.css`, `src/adventure-picker.css`, `src/main.ts`, `src/game/menu-world.ts`, `history.md`. No Retro, Shop inventory/reward data, character gameplay rig, camera gameplay, or Firebase rules changed.
-
-
-## 2026-11-21 — Skinned Binturong Master GLB (3D asset integration, review build)
-
-**Scope:** Replaced the former procedural geometry *owner* in `src/game/character.ts` with a genuine skinned `.glb` asset and one dedicated loader in `src/game/rigged-binturong.ts`. No new CSS overrides, no `!important`, no Retro or camera changes. UI/design baseline remains locked.
-
-- **Master 3D asset:** `public/models/binturong_master_rigged.glb` is a real editable glTF binary (~2.7 MB): one connected body surface sculpted through a smooth implicit union, fully wrapped vest (front/sides/back), accessory geometry (scarf, headwear, goggles, backpack, boots), 15 weighted skeletal bones, and 8 native animation clips (Idle, Walk, Run, Jump, Climb, Swim, Attack, Wave). Approximately 75k triangles and 26 material/wardrobe rendering batches, reduced from 70 individual part calls.
-- **Source asset:** `tools/build_binturong.py` regenerates the same master GLB without adding a new Markdown manual; import the generated `.glb` into Blender to continue sculpting/weight painting or create a `.blend` working file.
-- **Integration:** `createBinturong()` remains a synchronous, stable gameplay API, but its old sphere/kapsule construction has been **replaced**, not layered with new mesh. The asset is loaded once via GLTFLoader, then each appearance uses a separately cloned skeleton, buffer geometries, and materials so Home/gameplay/Wardrobe/online characters can be animated and disposed independently. Existing actions are mapped to named clips. Some headwear, eyewear and backpack visibility states and outfit/boot color tints are supported.
-- **Home interaction:** adjusted `src/game/menu-world.ts` to wait until rig geometry is ready before calculating the character's touch/drag hit region; an empty initial GLTF container no longer yields invalid projection bounds.
-- **Limits / not approved final:** This is the first real rigged asset, **not yet equivalent to the approved illustration**. Higher-quality cloth sculpt/fur details and 42 fully distinct wardrobe mesh variants still require additional modeling; the gear catalog and entitlements remain unchanged. Animated skin deformation, FPS, touch, WebGL rendering, and full Vite build have NOT been verified on the deployed browser, so do not claim visual final approval.
-- **Validation actually performed:** GLB imported and displayed in VTK; front/three-quarter/side/back static previews generated; binary format validated; skin/bone/animation/source-ownership checks 4/4 PASS; UI audit 14/14 PASS and Maze audit 22/22 PASS; syntax transpilation of modified TS files PASS. Full Vite TypeScript and runtime WebGL QA unavailable because local dependency installation is incomplete.
-
-**Delta files:** `src/game/character.ts`, `src/game/rigged-binturong.ts`, `src/game/menu-world.ts`, `public/models/binturong_master_rigged.glb`, `tools/build_binturong.py`, `tests/binturong-master-contract.test.mjs`, `history.md`. Apply on top of Visual System V1 branch. No file deletion, server changes or Firestore mutations.
-
-## 2026-11-21 — Character Rig/Outfit, Home Backdrop Rewards, and Canyon Readability (V2 delta)
-
-**Basis:** Visual System V1 + Rigged Binturong Master, using the original `maze-1` source. The last Home/game character screenshots and 18-second Home interaction recording were reviewed. This remains a review build, not a claim of final concept-art equivalence.
-
-- **Character source and asset:** regenerated `public/models/binturong_master_rigged.glb` from the existing single authoring script. Reduced oversized cheeks and blob-like paw/feet contours, separated arms slightly from the torso, localized shoulder/forearm skin weighting to prevent deformation dragging the vest, and added side/hem fabric definition to the front/back garment. Same 15-bone rig and eight named animation clips; no second procedural character implementation or extra runtime geometry workaround. Four-angle VTK turnaround rendered successfully. **Still needs mobile gameplay and animation review**, especially action poses and costume clipping; this remains a procedurally sculpted master, not a final professional sculpt/weight-painted asset.
-- **Home backdrop as earned profile cosmetic:** added `Profile.homeBackdrops` (equipped and unlocked) with a non-destructive merge for local/cloud profile sync. Starting Classic and Forest backgrounds are granted; completing stage progression grants the corresponding biome and, on Extreme completion, the next accessible biome. Older profiles' saved adventure rank is consulted when checking eligibility. A reviewer may choose any background only with the existing authenticated UID allowlist. Home mode Classic always displays the Classic scene. A compact 'Use Background' control equips an earned arena panorama and saves immediately; moving through a locked arena never grants its backdrop. This does not alter rank, gear ownership, rewards, or checkpoint data.
-- **Home world rendering:** removed the detached flat-blue river tile in the 3D preview, replacing it with a winding river with visible banks and animated foam. Replaced isolated faceted rock blobs with a continuous low-poly canyon face and grass-topped rim. Added recognizable scenery per biome (floating land, bridge, snow summit, temple, lighthouse, coral or volcano) in the existing Home Three.js scene. Existing vector fallback art remains resolution-independent; do not upscale a small 440px thumbnail. Home menu art remains scene-specific with moving trees and waterfall when available. No gameplay camera behavior was touched.
-- **Verdant Gorge gameplay art:** updated the existing canyon surface palettes and facet-specific coloring, retaining existing collision, navmesh, elevation, ledge gates and bridges. Result targets readable earthy rock with a grassy cap, not horizontally repeated color bands. Game visual acceptance across devices is still pending.
-- **One visual system:** reused current navy/teal/champagne/gold material family for the earned-background button instead of a standard browser card. The Classic/Adventure mode buttons remain selectors; Play Now remains the only launch CTA. No new `!important`, `@ts-ignore`, `!ignore` or duplicate component owners were introduced.
-- **Changed files:** `src/main.ts`, `src/home-ui.css`, `src/services/local.ts`, `src/game/home-backdrops.ts`, `src/game/home-landscape.ts`, `src/game/menu-world.ts`, `src/game/gorge-world.ts`, `tools/build_binturong.py`, `public/models/binturong_master_rigged.glb`, `tests/home-character-landscape-contract.test.mjs`, and `history.md`. No Retro, multiplayer server, camera code, Firebase rules, or Shop inventory files were edited.
-- **Validation:** native GLB VTK rendering and binary inspection PASS; rig and native animation contract PASS (4/4); Home/progression/landscape static contract PASS (3/3); UI audit 14/14 PASS; Maze audit 22/22 PASS; TypeScript syntax parsing for changed modules PASS. A full dependency-based Vite/TypeScript build and live browser WebGL animation review are **NOT verified** in this environment; npm dependency install was not completed. The delta is ready for Deploy Preview verification, not final art sign-off.
-
-
-## 2026-11-21 — Recovery: Adventure camera, salto, banner, screen size, Home separation
-
-**Scope/fault origin:** User screenshots show a low-resolution Sunset Coast panorama stretched into a wide banner, Adventure Selection scrolling vertically, second jump no longer performing a salto following GLB replacement, wall see-through from camera-occlusion shader, and world selection duplicated in Home. These are regressions; the earlier accepted gameplay mechanics and visual contract remain authoritative.
-
-**Corrections in code (replace, not override):**
-- `src/ui/adventure-picker.ts`: large posters use existing resolution-independent `screenArt` data-SVG for Classic, Desert, Gorge, Mountain, Coast, Coral Sea and Volcano. The 440px WebP assets are *only* thumbnails. Forest retains its 1599px panorama and Expanded Forest its 1440px-specific image. Arena choices and background equip belong to Adventure, not Home.
-- `src/adventure-picker.css`: replaces scrollable poster + oversize minimum-height rules with one-viewport grid layout. All arena/difficulty/action controls fit within a fixed scene; no page scrolling. The background equip button follows the existing game button family.
-- `src/main.ts` and `src/home-ui.css`: remove arena cycling and Home-background equip widgets from Home. Home selects only Classic vs Adventure, with Play Now opening the selected game; the already equipped earned background remains visible and stored. Background selection now appears within the Adventure picker; its existing profile persistence, earned ownership and reviewer UID protections are unchanged.
-- `src/game/rigged-binturong.ts` and `src/game/double-jump-motion.ts`: restore visually distinct double-jump somersault to rigged GLB using a body-center pivot; first jump stays upright. This changes *presentation only*, not gravity, jump boost, stamina or collision. The existing Climb clip is additionally driven by actual ledge progress (hanging pose held, one ascent cycle) instead of free-running while the player is stationary.
-- `src/game/modern.ts`: remove active shader-based occlusion fade registration/use from gameplay. Solid wall geometry remains visible; no x-ray effect. Existing collision and cinematic camera are separate.
-- `src/game/comfort-camera.ts`: preserve wall hold, manual free view, fixed radius, and no idle recenter. Introduce bounded lateral relief **only** while a real player heading turn is in progress and camera-to-player line of sight is being obstructed. This also works for turning while in place; no wall-triggered side search, random oscillation or snap-behind.
-
-**Validation actually performed:** UI19 audit 14/14 PASS, MAZE11 audit 22/22 PASS, TypeScript syntax transpilation 6/6 PASS; pure somersault math checked at 0, 50%, 100%; static Chromium layout at 1759×900, 1366×768, 844×390, 640×360, 390×844 and 360×640 produced no vertical/horizontal page scroll, including open Expanded options. Automated gameplay WebGL, camera tracking in actual terrain, and full Vite/TypeScript build remain **unverified** here because project `node_modules` are incomplete (missing Three and Vite) and the container cannot open the full site in a browser. Dedicated Vitest contracts have been added for normal/expanded poster source and salto. Real Deploy Preview review is required before visual/gameplay approval. No changes to Retro, Shop catalog, multiplayer server, Firebase, or the GLB master asset. This is a recovery delta, **not** a claim that the underlying model art and all climbing motions are final.
-
-**Only changed files:** `src/main.ts`, `src/home-ui.css`, `src/ui/adventure-picker.ts`, `src/adventure-picker.css`, `src/game/modern.ts`, `src/game/comfort-camera.ts`, `src/game/rigged-binturong.ts`, `src/game/double-jump-motion.ts`, `tests/double-jump-presentation.test.ts`, `tests/adventure-screen-contract.test.ts`, `history.md`.
-
-
-## 2026-11-21 — Camera-only corner-follow recovery (review build)
-
-**Reason:** The previously approved Adventure camera was still becoming stuck behind walls on sequences of small turns. An earlier turn detector waited for a single large heading change (45°), and a collision branch cleared its turn state when the camera touched a wall. That interaction could prevent the legitimate lateral tracking needed for maze corners.
-
-**Changed implementation:** `src/game/comfort-camera.ts` now accumulates small real-player heading changes, maintains a consistent lateral direction during a corner, and permits limited lateral follow for a turn whose trailing view is drifting away or obstructed. A plain wall contact without turning still leaves the camera in place. Once the character restores enough room, the camera walks back to its normal radius instead of jumping to the radius point. Manual/free-view behavior is not changed; camera FOV and default radius (7.2) are unchanged. No collision transparency or look-through-wall effect is introduced. No alternative-side search is performed for stationary wall contact.
-
-**Tests and scope:** Added an L-shaped corridor turn regression to `tests/comfort-camera.test.ts`. The camera-only smoke harness passed movement, wall hold and 160-frame corner tracking (each frame under 0.35 world units). Source audits passed UI19 14/14 and Maze11 22/22. Full TypeScript/Vite build and actual-device WebGL gameplay are **not verified** in this environment because the npm offline cache is incomplete. Do not call this camera approved until it is tested in a real corridor on Deploy Preview. Only `src/game/comfort-camera.ts`, `tests/comfort-camera.test.ts`, and this `history.md` changed; no Retro, animations, Shop, UI or Firebase changes.
-
-## 2026-11-21 — Combined stabilization: maze camera, forward flip, character motion, wardrobe, Home/UI
-
-**Scope and baseline:** Apply after the 2026-11-21 Camera Maze Corner Recovery delta. This is one combined correction rather than another series of unrelated fixes. It does not touch Retro Quiz, Firebase credentials, room-server logic, world placement, player profiles, Shop prices, or rank/unlock records. Camera and UI contracts from prior approved conversations remain the intent; this delta is **not yet final gameplay approval**.
-
-### Camera: replace the prior automatic-orbit logic
-- `src/game/comfort-camera.ts`: replaced turn-window/wall-sliding branches that could alternate left and right with a stable turn direction and accumulated player-heading intent. Camera translation sweeps against solid geometry first; a wall contact alone never initiates a spin or zoom. While the player actually turns and the rear shot is losing alignment or line of sight, the camera moves along a bounded, eased lateral/orbit path to seek visibility, including when held near a maze wall. A stationary blocked camera is held in place so the player can approach it. Manual right-side free view can compress its radius on a physical collision; release retains the chosen view. Radius 7.2 and FOV 60 are unchanged. Embedded-eye recovery remains separate from wall contact. No transparency/x-ray through walls.
-- Added `tests/camera-simulation-regression.cjs`: executes the actual transpiled AdventureCamera source with a tiny deterministic Vector3 test shim. Seven smoke scenarios: straight tracking, wall hold/character approach, neutral heading jitter, bounded turn, free-view persistence, corner relief without alternating directions, and L-shaped maze sweep. **7/7 PASS locally in the math simulation.** This does not replace testing real camera-collision meshes in WebGL.
-
-### Jump and motion
-- `src/game/double-jump-motion.ts`: the second jump rotates forward (positive local X for the GLB facing local +Z), not backward; animation duration aligned to the longer Forest air time. First jump stays upright.
-- `src/game/forest-rules.ts`, `src/game/actions.ts`: Forest jump height increased modestly from 1.15 to 1.30 world units, second impulse from 1.35 to 1.50, with a 0.36s rise; other biome movement physics stay as before. The shared Forest rule is used by client/server; rebuild and redeploy the realtime server if hosting online play.
-- `tools/build_binturong.py`, `public/models/binturong_master_rigged.glb`: regenerated the existing *single* 15-bone rig with 17-sample animation curves, more readable alternating gait/knee motion and head counter-motion; same asset ownership and eight clip names. Fixed cumulative camera-look addition in `rigged-binturong.ts` that could twist the Head bone over many frames. No further spheres added to the base body.
-
-### Wardrobe and Home
-- `src/game/character.ts`, `src/game/rigged-binturong.ts`, `src/game/wardrobe-rig-attachments.ts`: passed the original equipment ID as well as its normalized style to the same master GLB. Added selectable physical gear for gloves, boots/fins, crown, mask/visor, cape/wings, backpacks, cylinders, weapon stowage and arena-color reward markers. This is **visible attachment differentiation**, not a claim that 42 fully sculpted outfit meshes are complete. Attachment parts follow the existing skeleton; game weapon mechanics and entitlements remain unchanged.
-- `src/main.ts`, `src/home-ui.css`: the two Home buttons, Classic and Adventure, are now the entry controls, eliminating the redundant Home Play Now. Arena/difficulty still selected within Adventure. Removed obsolete Home CTA styles and the inappropriate gold rims on inactive Home mode/utility controls. `src/presentation.css` reduces gold framing on unselected Shop cards/categories; gold remains for selected/primary states. The Home screen is kept within the viewport; no new `!important`, `@ts-ignore`, disabled audits, or CSS override files.
-
-### Verification and limitations
-- Source UI audit **14/14 PASS**, maze/world audit **22/22 PASS**; camera math smoke **7/7 PASS**; TypeScript **syntax parsing PASS**; changed CSS **syntax parsing PASS**; forward-flip math checks **PASS**; exported GLB has **15 bones, 8 named clips, 27 material batches**, format checks PASS.
-- **Not completed here:** full Vite TypeScript build (container dependencies incomplete), Playwright/WebGL gameplay on actual maze geometry and phones, all wardrobe items visually reviewed, premium 3D sculpt/artwork equivalence, cross-biome animation QA. Do not infer this build is approved from static tests. On Deploy Preview, specifically test 90-degree corridor, wall-hold-to-corner, manual orbit against rock/ground, long idle, two jumps, gloves/fins/body outfit/back weapon, mobile Home layout.
-- **Changed files only** are provided in one delta ZIP with this `history.md` as the only new revision history entry. No additional Markdown change files created.
-
----
-
-## 2026-11-21 — Directed reset: UI materials, wardrobe visibility and camera guard
-
-**Scope: Adventure/Home/Shop + shared Binturong rig presentation. Retro source, its quiz,
-progression, online server, and gameplay controls are not edited.** This delta is an
-implementation revision, **not** a claim that the character sculpt/animation now matches
-approved concept art.
-
-### Locked visual and behavior contract
-
-- Family-adventure theme is bright and legible. Navy and teal are primary game materials;
-  gold is for the **primary action and actively selected** options, not every idle button.
-  Home uses two mode entries (Retro and Adventure), world selection remains inside Adventure.
-  Utility icons use restrained circular medallions. No stacked top-gold stripes or
-  decorative duplicate outlines on Home mode buttons.
-- Camera **at a wall** stays physically stopped; the hero may approach. A real player turn
-  with lost line of sight can cause a smooth lateral response. Manual free view can come
-  closer to the hero and is stopped only by physical geometry. No automatic oscillation,
-  distance pop, or forced recenter on release. The default trailing radius is ~7.2.
-  At a valid **front view while idle**, the avatar may turn its gaze upward toward the camera
-  without rotating the gameplay/collision root.
-- Body and wearable equipment have different owners: the native skinned GLB is the base;
-  wearing gloves, boots, vest, backpack, headgear and arena weapons adds visible attachments
-  to existing rig joints. Shop categories are **item types**, not worlds. A reward's original
-  arena/level is metadata, not a separate Shop category.
-
-### Changes applied directly to owners
-
-- `src/home-ui.css`: removed duplicate inner rim from mode planks and the stacked gold/cyan
-  selection cap; neutral medallion/border materials for idle UI, active teal/gold only for
-  the chosen mode. Home composition and gameplay HUD dimensions unchanged.
-- `src/adventure-picker.css`: muted default borders and bevels for world, difficulty and
-  support actions. Gold stays on selected elements and actual primary Play.
-- `src/presentation.css`: reduced excessive bevel on wardrobe cards and category buttons
-  only. Shared dialog and Retro materials remain as prior baseline.
-- `src/game/rigged-binturong.ts`, `src/game/character.ts`, `src/game/modern.ts`: portraits
-  wait for the real GLB to load before the first snapshot. Loading retry is safe after an
-  asset failure. The character's idle gaze supports elevation in front camera views.
-  This is **visual gaze only**, not player movement or camera steering.
-- `src/game/wardrobe-rig-attachments.ts`: wearable gloves have a fitted paw-cover shape
-  and distinguishable cuff/knuckle detail; themed weapons in the wardrobe use the actual
-  expedition weapon model rather than a generic cylinder. Tail, back, feet and torso
-  selection still follow the same rig and saved profile data.
-- `tools/build_binturong.py` and `public/models/binturong_master_rigged.glb`: native GLB
-  regenerated with small skinned paw/toe surface details and less bulbous boot tips.
-  Existing skin and 8 motions retained; **the sculpt still needs art approval**.
-- `src/game/comfort-camera.ts`: retain most recent clear camera position to avoid a
-  collision-recovery jump across the world; only accept turn-follow when the player is
-  actually translating. Wall-hold/free-view logic otherwise stays intact.
-- `src/main.ts`: async wardrobe thumbnail completion is generation-guarded so stale
-  category images cannot overwrite a newer selection.
-
-### Validation and open items
-
-- UI source audit 14/14, maze source audit 22/22.
-- Seven deterministic camera smoke tests passed, including wall hold, manual free view,
-  gradual player turn and an L-shaped corridor.
-- Directed reset source/asset contract 15/15; changed TypeScript files syntactically
-  parsed; changed CSS parsed by PostCSS without `!important`.
-- Regenerated `.glb`: actual four-angle offscreen render and mesh/skin inspection passed.
-- **Full Vite build and device WebGL behavior not verified** in this environment:
-  npm dependency installation failed, leading to missing TypeScript type packages.
-- Pending art acceptance: true sculpt proportions, surface polish, fully fitted 42-item
-  wardrobe models, animation performance and dynamic camera comfort in real maze play.
-  Do not treat static contract or 3D turnaround as user approval.
-
-
-## 2026-11-21 — Pemulihan sistem kostum modular (menghentikan jalur karakter GLB)
-
-**Masalah:** setelah karakter master diganti ke satu rig GLB, banyak variasi Shop dan Wardrobe hanya berubah warna atau komponen generik. Topi, backpack, sarung tangan, sepatu, dan outfit kehilangan karakteristik bentuk 3D masing-masing. Preview juga menunggu pemuatan asset yang bisa menghasilkan tampilan identik.
-
-**Perbaikan terarah:**
-- `src/game/character.ts`: mengembalikan pemilik tunggal karakter Three.js modular dari baseline pra-GLB, termasuk bentuk berbeda untuk headgear, outfit, backpack, gloves, boots, dan perlengkapan khusus arena. API `CharacterAction` tetap kompatibel dengan `cameraElevation` dan `gearShot`. GLB tidak lagi menjadi sumber karakter aktif.
-- `src/game/modern.ts`: menghentikan preload GLB untuk gambar kartu Wardrobe; gambar tiap pilihan diambil dari karakter modular yang telah siap secara sinkron.
-- `tests/binturong-master-contract.test.mjs` dan `tests/directed-reset-contract.mjs`: validasi diperbarui untuk menguji pemilik karakter baru dan fitur bentuk kosmetik, bukan memaksa GLB sebagai implementasi. Tes tidak dinonaktifkan.
-
-**Batasan:** rollback ini memulihkan kekayaan bentuk perlengkapan dari baseline lama, **bukan** menghasilkan sculpt berkualitas ilustrasi final. File GLB legacy masih tersimpan di repo agar delta upload tidak menghapus asset secara tak terduga, tetapi tidak lagi diimpor oleh jalur karakter aktif. Gerak dan tampilan WebGL harus diverifikasi melalui Deploy Preview. Retro, kamera, progres, dan aturan UI tidak disentuh.
-
-## 2026-11-21 — Wardrobe async preview TypeScript build fix
-
-- **Penyebab:** rollback karakter modular mengubah `avatarPortraits()` pada `src/game/modern.ts` menjadi `async` (menghasilkan `Promise<string[]>`), tetapi delta ZIP sebelumnya tidak menyertakan pembaruan pemanggilnya di `src/main.ts`. Akibatnya Netlify gagal pada `TS7053` saat mencoba `images[i]` dari `Promise`.
-- **Perbaikan:** callback import `modern` menjadi async, `avatarPortraits()` ditunggu dengan `await`, kemudian `generation` diverifikasi ulang sebelum DOM kartu Wardrobe diisi. Tidak ada suppress TypeScript, `!important`, atau penggantian fungsi.
-- **Lingkup delta:** `src/main.ts` dan satu `history.md`; tidak mengubah GLB/modular character, kamera, CSS, harga Shop, Retro, progression, atau fungsi server.
-- **Validasi:** perubahan source dibandingkan dengan versi pemanggil sebelum async dan dipastikan hanya tiga edit dalam blok Wardrobe; source TypeScript diparse. Audit UI dan Maze dari log Netlify sudah lolos sebelum tahap `tsc`. Build Vite penuh perlu diverifikasi saat deploy karena dependensi lokal tidak lengkap.
-
-## 2026-11-21 — Home: approved illustrated game-mode buttons and hover
-
-**Baseline:** source `maze-1` assembled from the previously delivered deltas through `Restore Modular Character & Wardrobe` and `Wardrobe async build fix`. The approved reference is the bright Maze Hunter Home illustration with illustrated Classic Maze / Adventure panels, small utility medallions, and lightweight secondary actions. **Home has no Play CTA**; clicking Classic or Adventure opens that mode's own screen.
-
-**Changes (single owner, no override CSS):**
-- `src/main.ts`: the two Home entry buttons now include distinct scene artwork layers, consistent SVG mode icons, title/subtitle, accessible names and selected-state check icons. Collection/Quests and Shop/Outfit use proper SVG icons; duplicate Collection click registration removed. Kept existing `enterMode` behaviour, Fullscreen, audio, profile, wardrobe, mode-dependent Home panorama, and existing character interaction.
-- `src/home-ui.css`: replaced the entire previous Home stylesheet with a cohesive bright navy/teal system: light rim rather than heavy gold, asymmetric game-shaped mode tiles, different illustrated scenes, selection glow, moving hover states, keyboard focus indicators, responsive portrait/landscape layouts and reduced-motion support. Uses existing `/adventure/classic.webp` at small card scale and `/adventure/forest-panorama.webp` at proper quality. Home background remains the existing responsive 3D scene; no enlarged 440px full-screen image is introduced.
-- `tests/home-visual-contract.test.mjs`: four regression checks for two-mode navigation without duplicate Play button, distinct illustrated cards, hover/focus/reduced-motion, and retained Fullscreen/Shop wiring.
-
-**Scope control:** no changes to Retro, camera, gameplay controls, character geometry/rig/animations, Shop catalogue/progression, Firebase or Netlify configuration. No `!important`, ignore directives, or parallel CSS owner added.
-
-**Validation:** UI audit 14/14; Maze audit 22/22; Home checks 4/4; TypeScript parser 0 syntax errors; CSS parser 0 syntax errors. **Full Vite build and browser/WebGL screenshots not verified** because dependency installation did not complete in this environment. Visual match with illustrated reference remains a Deploy Preview review item; original Home 3D Binturong appearance remains unchanged in this delta.
-
-**Installation:** extract the ZIP into the root of branch `maze-1` after the `Wardrobe async build fix` delta, overwriting only matching paths. `history.md` remains the sole chronological revision document.
-
-## 2026-11-21 — Home Approved Artwork Implementation (separate art layers)
-
-**Status:** UI art source integration, pending deployed-browser visual acceptance. The prior CSS-only approximation of the approved picture was rejected by user; the original approved illustration is now the authoritative source for Home artwork.
-
-**Implementation:** Replaced the Home mode-card DOM owner in `src/main.ts` and Home-only styles in `src/home-ui.css`. Instead of procedural CSS rectangles or a low-poly WebGL scene automatically replacing the approved artwork, Home now composes seven independently rendered high-resolution source-art assets: panorama, mascot, logo, Classic Maze, Adventure, Collection, and Shop. The two main buttons route to their existing Retro and Adventure handlers; no separate Play button exists on Home. All buttons have real hover/focus/active states. Header account controls, settings, help, scores, wardrobe and Fullscreen remain wired. Player level/stars are live profile values, not invented numbers baked into the artwork. No full-screen blur/vignette. The waterfall shimmer and floating pollen are lightweight decorative animation, respecting reduced-motion.
-
-**Character interaction:** The approved illustrated mascot is used on the initial Home to preserve the screenshot's look. On tap, the existing `menuWorld` 3D character is loaded in a dedicated inspection viewer that supports greet and drag-to-rotate; closing the viewer returns to approved Home art. This does not rebuild the in-game model or its outfit system, and should not be represented as final sculpt/rig acceptance. The illustrated mascot is not the current player's equipped 3D avatar until the inspection viewer is opened. For non-Forest selected backdrops the existing resolution-independent scene art is retained rather than stretching a 440px thumbnail; the approved Forest artwork is only supplied for Forest.
-
-**Compatibility:** Existing profile, auth, mode entry, backdrop unlock, Shop, Retro, gameplay camera, movement, and character runtime are unchanged. No `!important`, `@ts-ignore`, ignore directives, new CSS owner, or file deletion. Assets are cropped from the already-approved artwork and independent from interaction hitboxes; there are no screenshot-only clickable illusions.
-
-**Changed paths:** `src/main.ts`, `src/home-ui.css`, `tests/home-visual-contract.test.mjs`, `tests/home-character-landscape-contract.test.mjs`, `tests/browser/home.spec.ts`, `tests/browser/expedition-home.spec.ts`, seven files in `public/adventure/home-approved/`, `history.md`.
-
-**QA performed:** UI prebuild source audit 14/14 PASS; Maze source audit 22/22 PASS; seven Home/profile contracts PASS; TypeScript transpile syntax diagnostics 0; asset alpha/size audit PASS and a composed-image comparison to the approved artwork prepared. **Not verified:** full Vite/typecheck build (installed node_modules incomplete; local Node v22 vs required v24), Chromium/WebGL screenshot (browser navigation blocked by environment administrator), mobile browser and deployed hover interaction. Do not claim deployed fidelity/3D rotation passed until Deploy Preview is reviewed.
-
-## 2026-11-21 — Home live 3D scene recovery (delta only)
-
-- Replaced the static illustrated character on Home with the **same modular Binturong model used in gameplay and Wardrobe**, equipped from the active profile. It renders directly in Home as a transparent Three.js layer, not behind a separate preview popup.
-- The character is interactive in place: rotate by dragging or arrow keys, greet by tapping/Enter/Space, with idle animation and reduced-motion support. It is disposed cleanly when navigating away.
-- Kept the approved high-resolution Forest Grove backdrop and illustrated mode buttons; these remain separate interactive UI controls with hover, not a single flattened screenshot. Two mode entrances only: Classic and Adventure.
-- Consolidated Home positioning and responsive rules under `src/home-ui.css`; removed overlapping Home positioning from `src/style.css` instead of introducing override CSS. No `!important` or ignore directives.
-- **Scope deliberately restricted to Home.** Existing Adventure, Retro, gameplay camera, jump, shop inventory and player progression logic unchanged. This restores actual 3D Home representation; it does **not** claim the modular character sculpt, all wardrobe shapes, or non-Forest backgrounds now match the approved illustration.
-- QA: built-in static contract checks and UI/Maze audits passed. Complete Vite build and live WebGL browser verification not available in the build environment; deployment remains unverified.
-
-## 2026-11-22 — Inventaris produksi Binturong dan Wardrobe independen
-
-- Menetapkan tahap inventaris produksi berdasarkan katalog source `src/services/cosmetics.ts`, matriks `src/game/expedition-equipment.ts` dari Adventure Polish & Shop Delta (delta terakhir yang mengubah kedua file), dan `src/game/forest-progression.ts` dari Adventure V2 Forest Grove. Baseline pemasangan: setelah Home Live Character Recovery. Tidak mengganti ID, harga, rarity, syarat kemenangan, kategori runtime atau kepemilikan.
-- Menambahkan `assets/production/binturong-asset-inventory.json` sebagai manifest produksi yang bisa dipakai tools asset berikutnya, dengan 90 entri katalog, ID persis, deskripsi bentuk individual, komponen, slot/attachment, syarat unlock, path model source/game, preview, dan kriteria QA. CSV adalah representasi tabular dari data yang sama untuk review. Semua entri diberi status `planned_not_created` secara eksplisit. Terdapat 79 entri mesh, 6 pilihan tanpa aksesori (bukan membuat mesh palsu), dan 5 pilihan palette (material bulu). Empat tautan kepemilikan reward Forest Grove dipertahankan; 2 reward gabungan Sea/Volcano memiliki kebutuhan aset pakaian dan gloves terpisah. Kategori produksi Weapon/Tool tidak mengubah slot `back` pada katalog yang digunakan pemain.
-- Foundation: proporsi mascot compact yang lebih lucu seperti referensi bentuk beruang/Naylong, tetap binturong, ekor panjang prehensile, telinga bertuft, kumis, moncong pendek, tangan berjari dan telapak menghadap sisi paha. Target awal sekitar 2,5 tinggi kepala tanpa topi; perlu validasi terhadap visual master. Pakaian utuh depan-belakang; rig dan bind pose bersama, skinning sesuai jenis gear, aksesori keras dengan socket, bukan satu vest untuk semua varian. Animation inventory mencakup forward flip pada lompatan kedua; tidak mengubah fisika atau animasi runtime sekarang.
-- Menambahkan `scripts/audit-asset-inventory.mjs` untuk membandingkan manifest dengan katalog TS aktual menggunakan dependency `typescript` proyek. Jalankan `node scripts/audit-asset-inventory.mjs` dari root. Audit lokal terhadap source katalog hasil ekstraksi: 90/90 entri, 42 reward, 4 link legacy, ID unik, harga/rarity/slot/stage identik, serta path export per item unik. Audit hanya memeriksa inventaris, bukan kualitas model atau gameplay.
-- Status: inventaris dan audit selesai; belum menghasilkan model sculpt/rig/perlengkapan baru. Path `.blend`, `.glb`, icon, preview dan QA per entri adalah target output produksi, bukan file yang sudah ada. Tidak ada Blender/bpy di lingkungan kerja saat ini. Tidak ada perubahan runtime, kamera, Home, Retro, Shop, progression, CSS, Netlify atau GitHub; build browser tidak diperlukan untuk delta data produksi ini dan tidak diuji. Tidak ada ignore directive atau override CSS. File history tetap satu.
+# Maze Hunter — Shop 3D Try-On + Verified Ownership Delta
+
+Date: 2026-11-22
+
+## Scope
+- Uses 90 real entries from the existing cosmetics / expedition-equipment catalogue. Does not add proposed concepts to players' inventories, alter IDs, prices, rarity, or reward stages.
+- Replaces Shop/Wardrobe UI with a single-owner `mh-shop` view, independent CSS, in-scene player character, selectable items including locked ones, and clear **preview only / owned / equipped / pending** states.
+- Adds a Three.js OrbitControls try-on scene. Mouse/touch drag rotates horizontally and vertically; wheel/pinch zooms; presets front/left/right/back/top/bottom; +/- and Reset controls. A selected item's appearance exists only inside the preview. It cannot change `Profile.appearance` by previewing.
+- Purchase uses the existing ★ stars and existing server-validated `maze-room` Wardrobe settlement (not an external cash payment gateway). Pending purchase reserves ★ but is **not an equip entitlement**. Equip is offered only to owned equipment. Purchases made while offline or in local Lab cannot be initiated; these modes remain preview-only.
+- Active equipped appearance and game logic stay unchanged until confirmed purchase. Reuses the current runtime character mesh, NOT the unapproved generic GLB. No camera, Retro, map/world, or gameplay rendering code changed.
+
+## Changed files (relative to repository root)
+- `src/main.ts` — Shop selection UI, temporary preview appearance, purchase confirmation, pending sync, category buttons, status and zoom/orbit controls.
+- `src/services/cosmetics.ts` — pending no longer counts as owned until server confirms; idempotent pending redeem.
+- `src/game/wardrobe-preview.ts` — dedicated Three.js interactive preview renderer with full orbit/zoom and proper disposal.
+- `src/wardrobe-preview.css` — new Shop-only layout and responsive controls. No `!important`, no legacy layered CSS overrides on the Shop.
+- `tests/shop-preview-ownership.test.ts` — catalogue, preview isolation, pending ownership and settlement tests.
+- `tests/browser/shop-preview.spec.ts` — interactive Shop browser regression (requires project dependencies and browser).
+- `history.md` — this single handover record.
+
+## Integration
+Extract ZIP into the repository root of branch `maze-1`, on top of the previously delivered **Home Live Character Recovery** delta and **Adventure Polish & Shop** catalogue. Overwrite paths with the matching names. No GitHub edits were made.
+
+## Verification actually performed
+- Source-level UI audit: 14/14 pass.
+- Source-level Maze audit: 22/22 pass.
+- 90 unique (slot,id) entries checked via executed cosmetics TypeScript module.
+- Runtime wallet tests executed: preview does not write profile; unowned cannot equip; pending reserves currency but does not grant ownership; repeated pending redeem is idempotent; confirmed server-style settlement grants ownership.
+- Updated TypeScript files syntactically transpiled with 0 diagnostics.
+- Shop CSS parsed with 0 errors; no `!important` in new files.
+
+## Not yet verified / not included
+- Full `npm run build` and Playwright browser/WebGL screenshots: unavailable in this environment because npm dependencies could not be installed from the offline package cache (registry DNS unreachable); host Node 22 whereas project targets Node 24.
+- High-quality newly sculpted 3D base binturong master and independent GLBs for the 79 mesh requirements: **not created** in this delta. Existing model remains the one used for gameplay, which means similar-looking items will still appear similar until genuinely distinct model assets are produced. This delta solves the try-on workflow, not the sculpture/rigging backlog.
+- Real-money checkout/transactions: not implemented; existing Shop uses ★ stars.
