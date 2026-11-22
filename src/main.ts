@@ -30,7 +30,7 @@ import {expeditionQuests} from './game/expedition-quests';
 import {fieldGuideContent} from './game/field-guide';
 import {mazeTransition} from './systems/transitions';
 import {dismissArenaLoading,startArenaLoading} from './ui/arena-loading';
-import {activeExpeditionGear,appearanceOf,permittedAppearance,owns,redeem,ensureWallet,starBalance,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
+import {activeExpeditionGear,appearanceOf,permittedAppearance,owns,redeem,ensureWallet,starBalance,cosmeticKey,cosmetics,slots,stats,cosmeticQuests,type Slot} from './services/cosmetics';
 import {areaInformation} from './game/navigation';
 import {expeditionRank,forestRank,recordExpedition,recordExpeditionWin,recordExpandedExpedition} from './services/local';
 import {canEnterForestWorld,forestEquipment,forestStage,forestStageLabel,forestStages,
