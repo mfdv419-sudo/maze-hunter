@@ -8,24 +8,24 @@ const ell=(p:T.Object3D,m:T.Material,x:number,y:number,z:number,sx:number,sy:num
  */
 export function gloveModel(parent:T.Group,kind:string,side:number,furColor=0x343b40){
  const root=joint(parent,0,-.122,.009,'paw-hand');root.userData.gear=kind;
- root.userData.handModel='binturong-paw-palms-inward-organic-v2';
+ root.userData.handModel='binturong-paw-short-digit-v3';
  // Pads face the trouser seams, rather than appearing like open human palms.
  root.rotation.y=side*Math.PI/2;
  const bare=kind==='bare';
  const colors:Record<string,number>={trail:0x638b71,climber:0xc77951,desert:0xc7ac7b,diver:0x457481};
  const paw=plushMaterial(bare?furColor:colors[kind]??colors.trail),pad=plushMaterial(0x604b50),trim=detailMaterial(kind==='diver'?0x81d2c6:kind==='climber'?0xf2c878:0xe9d6af);
  // Wrist and palm are intersecting smooth volumes with a single animal-paw silhouette.
- organicOrb(root,paw,'paw-continuous-base',0,-.005,0,.065,.101,.070);
- organicOrb(root,paw,'paw-palm-integrated',0,-.086,.012,.086,.103,.081,'paw');
+ organicOrb(root,paw,'paw-continuous-base',0,.001,0,.078,.083,.080);
+ organicOrb(root,paw,'paw-palm-integrated',0,-.079,.014,.104,.091,.088,'paw');
  for(let i=0;i<4;i++){
-  const dx=(i-1.5)*.034;
-  const toe=organicOrb(root,paw,`paw-finger-${i+1}`,dx,-.159,.045,.026,.037,.040,'paw');
+  const dx=(i-1.5)*.042;
+  const toe=organicOrb(root,paw,`paw-finger-${i+1}`,dx,-.143,.054,.029,.037,.048,'paw');
   // Match names from the earlier three-digit render for compatibility without a second mesh.
   if(i<3){const alias=joint(toe,0,0,0,`paw-digit-${i+1}`);alias.userData.aliasOnly=true;}
-  organicOrb(root,pad,'finger-pad',dx,-.18,.084,.017,.012,.010);
+  organicOrb(root,pad,'finger-pad',dx,-.162,.095,.015,.011,.010);
  }
- organicOrb(root,paw,'paw-thumb',side*.075,-.102,-.008,.032,.062,.042);
- organicOrb(root,pad,'paw-center-pad',0,-.096,.095,.060,.035,.012);
+ organicOrb(root,paw,'paw-thumb',side*.079,-.103,-.011,.034,.052,.043);
+ organicOrb(root,pad,'paw-center-pad',0,-.087,.104,.061,.031,.010);
  if(!bare){
   const band=ovalRing(root,trim,'glove-cuff',0,.017,0,.080,.071,.010);band.rotation.x=Math.PI/2;
   const cuff=organicOrb(root,paw,'rounded-glove-cuff',0,.027,0,.082,.029,.077);
@@ -36,11 +36,11 @@ export function bootModel(parent:T.Group,kind:string,side:number){
  const root=joint(parent,0,-.091,.050,'boots');root.userData.gear=kind;
  const bare=kind==='bare';const colors:Record<string,number>={trail:0x927653,climber:0xb76d4f,desert:0xcbb189,diver:0x326779};
  const surface=plushMaterial(bare?0x343b40:colors[kind]??colors.trail),pad=plushMaterial(0x5a4b51),trim=detailMaterial(kind==='diver'?0x80d7cc:0xe5d6b4);
- const foot=organicOrb(root,surface,'continuous-foot-paw',0,-.011,.063,.121,.086,.179,'paw');
+ const foot=organicOrb(root,surface,'continuous-foot-paw',0,-.011,.063,.127,.083,.183,'paw');
  for(let i=0;i<4;i++){
   const dx=(i-1.5)*.050;
-  organicOrb(root,surface,`foot-paw-digit-${i+1}`,dx,-.016,.196,.033,.046,.066,'paw');
-  organicOrb(root,pad,'foot-toe-pad',dx,-.082,.121,.020,.006,.022);
+  organicOrb(root,surface,`foot-paw-digit-${i+1}`,dx,-.014,.203,.036,.041,.063,'paw');
+  organicOrb(root,pad,'foot-toe-pad',dx,-.073,.220,.024,.009,.025);
  }
  organicOrb(root,pad,'foot-center-pad',0,-.087,.067,.078,.010,.052);
  if(!bare){
