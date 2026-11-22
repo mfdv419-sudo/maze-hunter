@@ -219,54 +219,7 @@ input {
   flex: 1;
   min-width: 0;
 }
-/* The title screen is a game scene; it has no marketing hero or admin status panel. */
-#game[data-screen="home"] {
-  height: 100dvh;
-  overflow: hidden;
-  background: #79bab4;
-}
-#game[data-screen="home"] header {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  border: 0;
-  background: transparent;
-  pointer-events: none;
-  justify-content: flex-end;
-  padding: 16px 24px;
-}
-#game[data-screen="home"] #brand {
-  display: none;
-}
-#game[data-screen="home"] .header-right {
-  pointer-events: auto;
-}
-#game[data-screen="home"] .header-right button {
-  background: #153c48cf;
-  border: 2px solid #ffedb180;
-  color: #fff6d4;
-  box-shadow: 0 4px 0 #10324050;
-  font-size: 15px;
-  backdrop-filter: blur(5px);
-}
-.lab-banner {
-  position: relative;
-  z-index: 6;
-  background: #f7d887;
-  text-align: center;
-  padding: 5px 12px;
-  font-size: 10px;
-  color: #684d28;
-  line-height: 1.6;
-}
-#game[data-screen="home"]:has(.lab-banner) .title-screen {
-  height: calc(100dvh - 26px);
-}
-#game[data-screen="home"]:has(.lab-banner) header {
-  top: 26px;
-}
+/* Home screen layout is owned exclusively by home-ui.css. */
 /* Journey map */
 .journey-land {
   height: 430px;

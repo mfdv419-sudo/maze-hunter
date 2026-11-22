@@ -286,15 +286,8 @@ function home() {
         <img class="home-brand-art" src="/adventure/home-approved/logo.png" alt="Maze Hunter" width="442" height="162" />
         <div class="home-brand-tagline">EXPLORE <span>•</span> SOLVE <span>•</span> ADVENTURE</div>
       </section>
-      <div class="home-hero-stage" aria-label="${tr('Karakter binturong petualang','Binturong adventurer character')}">
-        <button type="button" class="home-hero-action" id="home-hero-inspect" aria-label="${tr('Buka tampilan karakter 3D untuk diputar dan menyapa','Open the interactive 3D character to rotate and greet')}">
-          <img src="/adventure/home-approved/hero.png" alt="" width="614" height="708" draggable="false" />
-        </button>
-      </div>
-      <div class="home-3d-viewer" id="home-viewer" hidden>
-        <div class="title-world" id="title-world" aria-label="${tr('Preview karakter 3D interaktif','Interactive 3D character preview')}"></div>
-        <button type="button" id="home-viewer-close" class="home-viewer-close" aria-label="${tr('Tutup preview 3D','Close 3D preview')}">×</button>
-        <p>${tr('Geser untuk memutar · ketuk untuk menyapa','Drag to rotate · tap to greet')}</p>
+      <div class="home-hero-stage" id="home-hero-stage" aria-label="${tr('Putar atau sapa Binturong dengan kostum yang aktif','Rotate or greet your equipped 3D Binturong')}">
+        <div class="home-hero-render" id="home-hero-render" tabindex="0" role="button" aria-label="${tr('Putar atau sapa Binturong','Rotate or greet Binturong')}"></div>
       </div>
       <nav class="home-right" aria-label="${tr('Pilih permainan','Choose game mode')}">
         <button type="button" id="retro-mode" class="home-art-button home-art-button--classic" aria-pressed="${homeMode==='retro'}" aria-label="${tr('Masuk ke Classic Maze','Enter Classic Maze')}">
@@ -328,31 +321,23 @@ function home() {
   el("fullscreen").setAttribute("aria-label", tr("Layar penuh", "Fullscreen"));
   el("wardrobe")?.setAttribute("aria-label", tr("Karakter dan kostum", "Character and outfits"));
   const token = generation;
-  // Do not replace the approved Home art with a low-poly canvas.
-  // The existing 3D character remains available as an explicitly opened, interactive viewer.
-  let disposeViewer: (()=>void) | undefined;
-  let viewerOpening = false;
-  const viewer=el<HTMLElement>('home-viewer');
-  const openViewer=async()=>{
-    if(viewerOpening || !viewer.hidden)return;
-    viewer.hidden=false;
-    viewerOpening=true;
-    const currentToken=token;
-    try{
-      const {menuWorld}=await import('./game/menu-world');
-      if(currentToken!==generation || viewer.hidden)return;
-      const world=menuWorld(el('title-world'),profile?.outfit,lang,homeMode,furColors[readPreferences().fur],profile?appearanceOf(profile,readPreferences().fur):undefined);
-      world.setArea(activeArea);
-      disposeViewer=world.dispose;
-    }catch(error){
-      viewer.hidden=true;
-      console.warn('3D character inspection unavailable',error);
-    }finally{viewerOpening=false;}
-  };
-  const closeViewer=()=>{viewer.hidden=true;disposeViewer?.();disposeViewer=undefined;el('title-world').replaceChildren();};
-  cleanup=()=>{disposeViewer?.();disposeViewer=undefined;};
-  click('home-hero-inspect',()=>void openViewer());
-  click('home-viewer-close',closeViewer);
+  // Actual gameplay avatar, using the same selected outfit as Shop/Adventure.
+  // The 3D model is composited in the Home scene, not a pop-up or a static hero cutout.
+  let disposeHomeCharacter:(()=>void)|undefined;
+  void import('./game/home-character').then(({mountHomeCharacter})=>{
+    if(token!==generation)return;
+    disposeHomeCharacter=mountHomeCharacter(
+      el('home-hero-render'),profile?.outfit||'classic',
+      furColors[readPreferences().fur],
+      profile?appearanceOf(profile,readPreferences().fur):undefined,
+    );
+  }).catch(error=>{
+    if(token===generation){
+      console.error('Home character 3D initialization failed',error);
+      el('home-hero-stage').setAttribute('aria-label',tr('Model karakter 3D tidak tersedia','3D character unavailable'));
+    }
+  });
+  cleanup=()=>{disposeHomeCharacter?.();disposeHomeCharacter=undefined;};
   const updateHomeSelection=()=>{
     el('retro-mode').setAttribute('aria-pressed',String(homeMode==='retro'));
     el('modern-mode').setAttribute('aria-pressed',String(homeMode==='modern'));
