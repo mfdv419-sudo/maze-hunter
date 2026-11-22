@@ -1,0 +1,4 @@
+import {test,expect} from '@playwright/test';
+test('wardrobe focuses face and tail while allowing rotation, and setup identifies seals',async({page})=>{
+ await page.goto('/');await page.locator('#lab').click();await page.locator('#wardrobe').click();await page.locator('#slot-face').click();await expect(page.locator('#outfit-preview')).toHaveAttribute('data-focus','face');await expect(page.locator('#portrait-1')).toHaveAttribute('src',/^data:image\/png/);await page.screenshot({path:'test-results/screenshots/retro-visibility-face.png'});await page.locator('#slot-tail').click();await expect(page.locator('#outfit-preview')).toHaveAttribute('data-focus','tail');await page.screenshot({path:'test-results/screenshots/retro-visibility-tail.png'});await page.locator('#wardrobe-close').click();await page.locator('#modern-mode').click();await expect(page.locator('.picker-objectives')).toContainText('segel');await expect(page.locator('.seal-example')).toBeVisible();
+});

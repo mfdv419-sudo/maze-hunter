@@ -1,0 +1,10 @@
+export const zones=[
+ {id:'gardens',idName:'Kebun Liar',enName:'Wild Gardens',ground:0xd9dca4,hedge:0x79a85a},
+ {id:'paths',idName:'Jalur Terlupakan',enName:'Forgotten Paths',ground:0xd2c3a0,hedge:0x6c985d},
+ {id:'guards',idName:'Wilayah Penjaga',enName:'Guard Territory',ground:0xbac1a0,hedge:0x527756},
+ {id:'conflict',idName:'Simpang Perebutan',enName:'Conflict Zone',ground:0xe0c593,hedge:0x69914d},
+ {id:'deep',idName:'Rimba Dalam',enName:'Deep Maze',ground:0xa5bdad,hedge:0x436e64},
+ {id:'fortress',idName:'Benteng Raja',enName:'King Fortress',ground:0xa7a8bd,hedge:0x455c69},
+ {id:'escape',idName:'Jalan Kebebasan',enName:'Final Escape',ground:0xe7d7a8,hedge:0x72885b},
+] as const;
+export type GrassKind='normal'|'tall'|'rare'|'danger';

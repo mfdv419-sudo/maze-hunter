@@ -1,0 +1,12 @@
+import * as T from 'three';
+import {jumpPads} from './traversal-features';
+import type {AdventureLayout} from './adventure-layout';
+import type {AdventureArea} from './areas';
+export function traversalWorld(world:T.Group,l:AdventureLayout,area:AdventureArea,height:(x:number,z:number)=>number){
+ const root=new T.Group();root.name='traversal-practice';world.add(root);const rings:T.Mesh[]=[],textures:T.Texture[]=[];
+ const sign=(text:string,x:number,z:number)=>{const c=document.createElement('canvas');c.width=768;c.height=160;const ctx=c.getContext('2d')!;ctx.fillStyle='#193344';ctx.fillRect(0,0,768,160);ctx.strokeStyle='#ecd296';ctx.lineWidth=8;ctx.strokeRect(4,4,760,152);ctx.fillStyle='#fff0c5';ctx.textAlign='center';ctx.font='bold 32px sans-serif';text.split('\n').forEach((line,i)=>ctx.fillText(line,384,60+i*48));const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;textures.push(t);const m=new T.Mesh(new T.PlaneGeometry(2.5,.6),new T.MeshBasicMaterial({map:t,side:T.DoubleSide}));m.position.set(x,height(x,z)+1.8,z);root.add(m);};
+ const id=document.documentElement.lang==='id';
+ for(const p of jumpPads(l,area)){const base=height(p.x,p.y),stone=new T.Mesh(new T.CylinderGeometry(.63,.72,.16,10),new T.MeshLambertMaterial({color:0x777c67}));stone.position.set(p.x,base+.08,p.y);root.add(stone);const ring=new T.Mesh(new T.TorusGeometry(.45,.035,6,24),new T.MeshBasicMaterial({color:0xffd176}));ring.rotation.x=-Math.PI/2;ring.position.set(p.x,base+.19,p.y);root.add(ring);rings.push(ring);for(let i=0;i<3;i++){const arrow=new T.Mesh(new T.ConeGeometry(.085,.2,3),new T.MeshBasicMaterial({color:0xffe7a2}));arrow.position.set(p.x,base+.35+i*.28,p.y);root.add(arrow);}sign(id?'BATU PELONTAR\nA / SPACE → LOMPAT TINGGI':'SPRING STONE\nA / SPACE → HIGH JUMP',p.x,p.y-1.2);}
+ if(l.training){const floor=new T.Mesh(new T.PlaneGeometry(31,31,1,1),new T.MeshLambertMaterial({color:0x83a36b}));floor.rotation.x=-Math.PI/2;floor.position.set(17.5,-.02,17.5);root.add(floor);sign(id?'LATIHAN AMAN\nJoystick kiri · Geser kanan':'PRACTICE GARDEN\nLeft stick · Right drag',9.5,21);sign(id?'POHON · A UNTUK MERAIH\nA LAGI UNTUK NAIK':'TREE · A TO GRAB\nA AGAIN TO CLIMB',8.5,13);sign(id?'PIJAKAN · LOMPAT & MENDARAT':'STEPS · JUMP & LAND',24.5,25);}
+ return{update(t:number){rings.forEach(r=>{const s=1+Math.sin(t*3)*.055;r.scale.set(s,s,1);});},dispose(){textures.forEach(t=>t.dispose());root.traverse(o=>{if(o instanceof T.Mesh){o.geometry.dispose();(o.material as T.Material).dispose();}});world.remove(root);}};
+}

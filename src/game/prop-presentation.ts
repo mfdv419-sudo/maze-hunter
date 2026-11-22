@@ -1,0 +1,8 @@
+import * as T from 'three';
+import type {Point} from './maze';
+import {WORLD_UNIT} from './world-art';
+import {releaseTime,type AvatarAction} from './avatar-actions';
+function rest(model:T.Object3D){return model.userData.carryRest??=( {q:model.quaternion.clone(),scale:model.scale.clone()} );}
+export function restoreProp(model:T.Object3D){const r=rest(model);model.quaternion.copy(r.q);model.scale.copy(r.scale);}
+export function holdProp(model:T.Object3D,p:Point,ground:number,angle:number,kind?:string){const r=rest(model);model.quaternion.copy(r.q);model.scale.copy(r.scale);if(kind==='tree'||kind==='palm'){model.rotation.x+=Math.PI/2;model.scale.y/=WORLD_UNIT;model.scale.z*=WORLD_UNIT;}model.position.set(p.x+Math.sin(angle)*.28,ground+1.25,p.y+Math.cos(angle)*.28);model.updateWorldMatrix(true,true);const b=new T.Box3().setFromObject(model);model.position.y-=b.getCenter(new T.Vector3()).y-model.position.y;}
+export function releaseProp(model:T.Object3D,action:AvatarAction|undefined,age:number,ground:(x:number,y:number)=>number){if(!action?.from||!['place','throw-object'].includes(action.kind))return;const release=releaseTime(action.kind),u=Math.max(0,Math.min(1,(age-release)/.28));if(age<0||u>=1)return;const destination=model.position.clone();model.updateWorldMatrix(true,true);const centerOffset=new T.Box3().setFromObject(model).getCenter(new T.Vector3()).y-model.position.y,from=action.from;model.position.set(from.x+(destination.x-from.x)*u,(ground(from.x,from.y)+1.25)*(1-u)+(destination.y+centerOffset)*u+Math.sin(u*Math.PI)*(action.kind==='throw-object'?.5:.1)-centerOffset,from.y+(destination.z-from.y)*u);}

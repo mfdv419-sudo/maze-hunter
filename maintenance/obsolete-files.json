@@ -1,0 +1,214 @@
+[
+  {
+    "path": "LOGIN_DIAGNOSTIC_UPDATE.md",
+    "sha256": "10f6cd2249b97fe994d7cc99860d753e8474a33f2a8c554d04f681bbea07fc52"
+  },
+  {
+    "path": "QA_REPORT.md",
+    "sha256": "a4eafe2252ec3a33a239cf7ce4c834695855c011fac36542e2c3687a8cc1f2a8"
+  },
+  {
+    "path": "docs/GAME_UI_UPDATE.md",
+    "sha256": "8f0b8a8ca3f13dc7fda8e52ac09dfe217b4973260e8ba33f58dc4fefb3ab8765"
+  },
+  {
+    "path": "docs/HOME_M4.md",
+    "sha256": "ca45197636d6ac95e0a00188c81629be19c201fee7c71647a5da41697dcb4a5d"
+  },
+  {
+    "path": "docs/LOGIN_M3.md",
+    "sha256": "a8389a9a428fa5fcc9eda158a05f6baf4c5415121ab7e2811f682761d83b5145"
+  },
+  {
+    "path": "docs/LOGIN_MASCOT_M2.md",
+    "sha256": "70543d95a38c4efa1c53a8229063be492e86180eb22291bc40bc50b1972c6ca4"
+  },
+  {
+    "path": "docs/M10_MAZE_HEDGES_GUIDE.md",
+    "sha256": "acfe1cd597f533fcc19ea4293b3feb1561aff6b7188d0331ecf0b5e377e46cd5"
+  },
+  {
+    "path": "docs/M11_STAGED_RETRO_FREE_CAMERA.md",
+    "sha256": "2bbda3dd08b29594c8fa581c2a22682e8f201f349c69474bf61fc50ade2f593f"
+  },
+  {
+    "path": "docs/M12_FOREST_GROVE_SAMPLE.md",
+    "sha256": "91491a6f055e8d9e332c53c5334b9615d8fac6d2f033e3e2db45710f227f4ed9"
+  },
+  {
+    "path": "docs/M13_EXPEDITION_HOME_RETRO.md",
+    "sha256": "1f7518ab6217307f32bb6ad8e2902ab63d70bd7acfb2cc5f252a7f3a382c9e41"
+  },
+  {
+    "path": "docs/M14_RETRO_LANDSCAPE.md",
+    "sha256": "50baa6d036141bd7447be9dc408de952d8ecf9f2094fb5bbb33ceb87fd155a6c"
+  },
+  {
+    "path": "docs/M15_RESTORE_RETRO_AND_AREAS.md",
+    "sha256": "6cb05f043b6335f52e49c8a920f5da81eed1cf0ac2487487c5bead5800d1eb58"
+  },
+  {
+    "path": "docs/M5_GAMEPLAY.md",
+    "sha256": "9085076247757ec604778417e7dbfbec99400002b6bb2f07b0d5732ac829088e"
+  },
+  {
+    "path": "docs/M6_PRESENTATION.md",
+    "sha256": "c6ed1f13efc5eb5301965289d2c2c76fdc6ba797459b8c2a0bb65b0f8c525219"
+  },
+  {
+    "path": "docs/M7_ADVENTURE.md",
+    "sha256": "d8f11ea492e67be7155691cde8b384c7af314af7adc0e70a25768a0e90d121e9"
+  },
+  {
+    "path": "docs/M8_CONTROLS_AVATAR_NAVIGATION.md",
+    "sha256": "5465aaa98f505766a7ee1a4e83eccca4997fa98cb6e004360228db1dbf13362c"
+  },
+  {
+    "path": "docs/M9_RETRO_SEALS_PREVIEW.md",
+    "sha256": "a7e30047ac8609f6d6bff0901981ff777f408d834987b4c2bf2c70aecfb73845"
+  },
+  {
+    "path": "docs/MASTER_PROJECT_PROMPT.md",
+    "sha256": "f121033a691ec6f2e218275964ffa08ec63e61b4df5fa09f1e655f4759b6af9a"
+  },
+  {
+    "path": "docs/MULAI_DI_SINI.md",
+    "sha256": "f0b36c218c1c14d415100a396720889f4a17a61c7abaf4d512c7965114798b92"
+  },
+  {
+    "path": "docs/NETLIFY_BUILD_FIX.md",
+    "sha256": "9d0f86fffc1d1bcd65aef07cc33360ba89c4cc93324a5f4975727e4f14510aa2"
+  },
+  {
+    "path": "scripts/generate-retro-v10.py",
+    "sha256": "1997f724a3624794710e1b5ce9294a787d4330667dfd951053ce539ea81ed861"
+  },
+  {
+    "path": "scripts/generate-retro-v11.py",
+    "sha256": "e33e005b69087c005fb9034f21b5e95fbb4729a897eb271d55f91c1f6cae82c6"
+  },
+  {
+    "path": "scripts/generate-retro-v13.py",
+    "sha256": "fda8ecf0bd2178a4a8df516c0febd625190c611df23bdb6781044a7817859dfe"
+  },
+  {
+    "path": "scripts/generate-retro-v14.py",
+    "sha256": "96774421c04a864c3defb7dfc74810901290b325fd645ebf548a2aa6193f289e"
+  },
+  {
+    "path": "scripts/generate-retro-v15.py",
+    "sha256": "90ac59c8cfd08c0aed1d53925de710a944f5f2aee55893d12fb9797e547257a1"
+  },
+  {
+    "path": "scripts/generate-retro-v8.py",
+    "sha256": "02b6c6157309e7ae1ab954e5ef29dba0484ab210bcd69b837fdc3743ac247c8a"
+  },
+  {
+    "path": "src/game/retro-catalog-fast.json",
+    "sha256": "686312870941e6724f9b1c2840d8f849fda22d36a5afcc56a6d8e76c2fcd5724"
+  },
+  {
+    "path": "src/game/retro-catalog-final.json",
+    "sha256": "b207e4b38e0bb851bdf1c07bdf9bfc3d0d94d0a4ef5d42a0a4d5fa3f26d64179"
+  },
+  {
+    "path": "src/game/retro-catalog-refined.json",
+    "sha256": "30cc78a74eb04002e9ccb93949e38c3bb39c0aafcdfa82d2df6c9a9aaa2d2e2e"
+  },
+  {
+    "path": "src/game/retro-catalog-v10.json",
+    "sha256": "89bbd0303af9af6a8d2e9b3be13c705d3e152e1113c0f0b0719825fefb9c51af"
+  },
+  {
+    "path": "src/game/retro-catalog-v11.json",
+    "sha256": "33525e60b5c528899b3703550e427984a18c268087f47794d4f1c99326db499a"
+  },
+  {
+    "path": "src/game/retro-catalog-v13.json",
+    "sha256": "8cbef56b62e342b1d9cdb89d0f6bcf89ffe56161227fcd089b868059b495eb17"
+  },
+  {
+    "path": "src/game/retro-catalog-v14.json",
+    "sha256": "7785e42c8c11717d519015dc031ce56c372965cdc9c5b3d523507eeac16162f6"
+  },
+  {
+    "path": "src/game/retro-catalog-v15.json",
+    "sha256": "edd25aecb4aa33b698c99669e5a8ca0736bc17ca4a693cb44dc4cfa63f1064ac"
+  },
+  {
+    "path": "src/game/retro-catalog-v7.json",
+    "sha256": "30cc78a74eb04002e9ccb93949e38c3bb39c0aafcdfa82d2df6c9a9aaa2d2e2e"
+  },
+  {
+    "path": "src/game/retro-catalog-v8.json",
+    "sha256": "97ef9f0b074c561486b386d76732ba4a30b6f42672bf37502aaf0ecbf3a3d47c"
+  },
+  {
+    "path": "tests/adventure-v7.test.ts",
+    "sha256": "cbc5791b914f62656d01516814e51dbd19480759a7e0b1047dda0cec03d40ad5"
+  },
+  {
+    "path": "tests/browser/adventure-v7.spec.ts",
+    "sha256": "5726c574af4790cf28cb70421d258368decc580ed6d5dd355342e9b454a99721"
+  },
+  {
+    "path": "tests/browser/m10.spec.ts",
+    "sha256": "942562696b890eaf9206456dc629177eaf664babfe7c4e116abc662d14ee21b4"
+  },
+  {
+    "path": "tests/browser/m11.spec.ts",
+    "sha256": "961fb24aac91db1f81967d20e37e9367d37124fc3d491ec5a57a9b1928f2cb8f"
+  },
+  {
+    "path": "tests/browser/m12.spec.ts",
+    "sha256": "a9bbdaf56a62ab472f38a67d2c9553294dc4105dbcd340b99ffaef4249bb69a1"
+  },
+  {
+    "path": "tests/browser/m13.spec.ts",
+    "sha256": "cddfee4b0f2c7741d01adf4e577d2eeffc21fad164bb184120118aef0cc55d88"
+  },
+  {
+    "path": "tests/browser/m14.spec.ts",
+    "sha256": "5f587dfa637cc5780db2a1d96d1806d15408eb62934010f78a838d71bd2a5700"
+  },
+  {
+    "path": "tests/browser/m15.spec.ts",
+    "sha256": "cc4a4caf208798dfb72cdd68468b58ee08fc856482862ab2e1155bb0067f63b4"
+  },
+  {
+    "path": "tests/browser/m8.spec.ts",
+    "sha256": "fef88a37ac51729d813ce5053f6fbf49cb9b187aa86d8b0f5202fb5489230a83"
+  },
+  {
+    "path": "tests/browser/m9.spec.ts",
+    "sha256": "4d2fd4a63619f57597927a99fa9a1110ee6031bf6aebec12315b6650b6165180"
+  },
+  {
+    "path": "tests/m10.test.ts",
+    "sha256": "00a766ef7e0bd90bbcd6c94545f664b8d5d0aff8e9aae2e0169d50f5d0a0dc55"
+  },
+  {
+    "path": "tests/m11.test.ts",
+    "sha256": "1b0f0397b2a04f31348aeea855383f1c99c2fcab1f2455948d6f9759aba53996"
+  },
+  {
+    "path": "tests/m12.test.ts",
+    "sha256": "592d9a98d6be06a8bf22d32b7f87f237f9b709924122b4517b35a879c4f9f405"
+  },
+  {
+    "path": "tests/m13.test.ts",
+    "sha256": "a630f2af6fce4cd06940450e071fb4fabacef53e9a308e86a5ee65d6c0d9c814"
+  },
+  {
+    "path": "tests/m14.test.ts",
+    "sha256": "74e005fed76f84e9940675485b93538848e9b4c0798d7e8e0a951ad81fa5ab94"
+  },
+  {
+    "path": "tests/m15.test.ts",
+    "sha256": "231cdf0893db1796871a4597d7f2910d2105ffc34264d29bd6c143860a045d46"
+  },
+  {
+    "path": "tests/m8.test.ts",
+    "sha256": "6937d7e82dbc7649b8cbb55f4900fef4932b77b4b1d8531d422d6810059857f0"
+  }
+]

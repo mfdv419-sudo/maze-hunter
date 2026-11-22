@@ -1,11 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#101712" />
-    <meta name="description" content="Maze Hunter — descend into the forgotten green." />
-    <title>Maze Hunter</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#215b4c" />
+    <meta
+      name="description"
+      content="Maze Hunter — petualangan labirin keluarga dengan binturong fantasi. Retro Journey dan Modern Hidden Maze."
+    />
+    <link rel="stylesheet" href="/src/arena-loading.css" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Maze Hunter — Find your own adventure</title>
   </head>
-  <body><div id="game"></div><script type="module" src="/src/main.ts"></script></body>
+  <body>
+    <div id="game">
+      <main class="arena-loading" aria-labelledby="game-loading-title">
+        <img src="/adventure/forest-panorama.webp" alt="" />
+        <div class="arena-loading__shade" aria-hidden="true"></div>
+        <div class="arena-loading__layout">
+          <div aria-hidden="true"></div>
+          <div class="arena-loading__content">
+            <h1 id="game-loading-title">Maze Hunter</h1>
+            <div class="arena-loading__reading"><span role="status">Memuat game…</span></div>
+            <progress aria-label="Memuat game"></progress>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

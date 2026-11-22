@@ -1,0 +1,72 @@
+/* Maze Hunter Home — one visual owner.
+   Approved high-resolution forest scene + actual equipped 3D avatar.
+   Interactive illustrations belong to buttons; the hero is not a screenshot. */
+#game[data-screen="home"]{--home-accent:#77fff1;--home-focus:#fff2a1;height:100dvh;min-height:0;overflow:hidden;font-family:'Fredoka',system-ui,sans-serif}
+#game[data-screen="home"]>.title-screen{position:relative;isolation:isolate;width:100%;height:100dvh;min-height:0;overflow:hidden;background:#86d3d6;color:#fff9dd}
+#game[data-screen="home"] .home-scene{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#game[data-screen="home"] .home-scene>img{width:100%;height:100%;object-fit:cover;object-position:50% 55%;display:block}
+#game[data-screen="home"] .home-water-sheen{position:absolute;left:46%;top:40%;width:24%;height:48%;opacity:.18;background:repeating-linear-gradient(173deg,transparent 0 11px,#b2fffd 12px 14px,transparent 15px 29px);mix-blend-mode:screen;clip-path:polygon(17% 0,81% 0,75% 100%,28% 100%);animation:home-water-flow 7s linear infinite}
+@keyframes home-water-flow{to{background-position:0 156px}}
+#game[data-screen="home"] .home-floating-pollen{position:absolute;inset:0;background:radial-gradient(circle at 7% 69%,#fff7a7 0 1.4px,transparent 3px),radial-gradient(circle at 63% 72%,#dffff3 0 1.5px,transparent 3.5px),radial-gradient(circle at 85% 18%,#e1ffeb 0 1px,transparent 3px),radial-gradient(circle at 33% 27%,#ffe8a0 0 1.7px,transparent 4px);animation:home-pollen 8s ease-in-out infinite alternate;opacity:.70}
+@keyframes home-pollen{to{transform:translate(8px,-14px);opacity:.34}}
+#game[data-screen="home"] >header{position:absolute;z-index:20;left:0;right:0;top:0;min-height:0;height:auto;border:0;background:none;box-shadow:none;display:flex;justify-content:flex-end;align-items:start;padding:clamp(8px,1.4vh,16px) clamp(10px,2vw,34px);pointer-events:none}
+#game[data-screen="home"] >header #brand{display:none}
+#game[data-screen="home"] >header .header-right{display:flex;align-items:center;gap:clamp(5px,.72vw,11px);pointer-events:auto}
+#game[data-screen="home"] >header .title-tools{position:absolute;left:3vw;top:clamp(171px,24vh,245px);display:flex;gap:clamp(5px,.55vw,9px);pointer-events:auto}
+#game[data-screen="home"] >header button{appearance:none;cursor:pointer;border:1.5px solid #90eee6;background:linear-gradient(165deg,#117990,#07384f);color:#fff8e7;box-shadow:inset 0 1px 0 #d7fff388,0 3px 0 #173f53;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;font-weight:850}
+#game[data-screen="home"] >header button:hover,#game[data-screen="home"] >header button:focus-visible{transform:translateY(-3px) scale(1.035);filter:brightness(1.13);box-shadow:0 3px 0 #164b5b,0 0 12px #7ef8e488}
+#game[data-screen="home"] >header button:focus-visible,#game[data-screen="home"] .home-hero-render:focus-visible,#game[data-screen="home"] .home-art-button:focus-visible{outline:3px solid var(--home-focus);outline-offset:3px}
+#game[data-screen="home"] >header .title-tools .home-tool,#game[data-screen="home"] >header #sound-toggle{width:clamp(34px,3.3vw,50px);height:clamp(34px,3.3vw,50px);min-width:0;min-height:0;border-radius:50%;display:grid;place-items:center;padding:9px}
+#game[data-screen="home"] >header .title-tools .home-tool svg,#game[data-screen="home"] >header #sound-toggle svg{width:100%;height:100%;stroke-width:2.3}
+#game[data-screen="home"] >header .header-right button:not(#sound-toggle){min-width:0;min-height:42px;padding:7px 13px;border-radius:999px;white-space:nowrap}
+#game[data-screen="home"] .home-brand{position:absolute;left:clamp(13px,3vw,48px);top:clamp(16px,2vh,28px);z-index:4;width:clamp(200px,27vw,465px);max-width:43vw;pointer-events:none;filter:drop-shadow(0 5px 3px #0f475436)}
+#game[data-screen="home"] .home-brand-art{display:block;width:100%;height:auto}
+#game[data-screen="home"] .home-brand-tagline{margin:1px 3px;text-align:center;color:#fffdf2;letter-spacing:.1em;text-shadow:0 2px 4px #134c5f;font-size:clamp(9px,.97vw,15px);font-weight:950}
+#game[data-screen="home"] .home-brand-tagline span{color:#ffe58e}
+/* Real Three.js model, not a cropped illustration or a second popup. */
+#game[data-screen="home"] .home-hero-stage{position:absolute;z-index:3;left:clamp(85px,14vw,255px);bottom:clamp(40px,5vh,70px);width:clamp(265px,35vw,620px);height:clamp(320px,74vh,775px);min-height:0;pointer-events:none}
+#game[data-screen="home"] .home-hero-render{width:100%;height:100%;display:block;pointer-events:auto;touch-action:none;cursor:grab;outline-offset:-4px;position:relative}
+#game[data-screen="home"] .home-hero-render:active{cursor:grabbing}
+#game[data-screen="home"] .home-hero-render canvas{display:block;width:100%;height:100%}
+#game[data-screen="home"] .home-right{position:absolute;z-index:5;top:clamp(128px,16vh,175px);right:clamp(12px,2.7vw,50px);width:min(50vw,860px);display:flex;flex-direction:column;gap:clamp(0px,.35vh,5px)}
+#game[data-screen="home"] .home-art-button{display:block;position:relative;width:100%;min-width:0;padding:0;border:0;background:transparent;appearance:none;cursor:pointer;transform-origin:center;filter:drop-shadow(0 4px 6px #07374252);transition:transform .23s cubic-bezier(.2,.75,.2,1),filter .23s ease}
+#game[data-screen="home"] .home-art-button img{display:block;width:100%;height:auto;pointer-events:none;user-select:none}
+#game[data-screen="home"] .home-art-button:hover,#game[data-screen="home"] .home-art-button:focus-visible{transform:translateY(-4px) scale(1.015);filter:brightness(1.1) saturate(1.12) drop-shadow(0 8px 13px #19ebcba0)}
+#game[data-screen="home"] .home-art-button:active{transform:translateY(1px) scale(.99)}
+#game[data-screen="home"] .home-art-button-shine{position:absolute;inset:8% 3%;pointer-events:none;opacity:0;background:linear-gradient(105deg,transparent 25%,#d6fff33a 49%,transparent 70%);clip-path:polygon(8% 0,95% 0,100% 16%,100% 84%,95% 100%,7% 100%,0 84%,0 16%);transition:opacity .22s}
+#game[data-screen="home"] .home-art-button:hover .home-art-button-shine,#game[data-screen="home"] .home-art-button:focus-visible .home-art-button-shine{opacity:1}
+#game[data-screen="home"] .home-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(5px,.9vw,14px);width:97%;margin:clamp(2px,.5vh,6px) auto 0}
+#game[data-screen="home"] .home-live-progress{position:absolute;z-index:6;bottom:clamp(10px,4vh,38px);left:clamp(10px,2.7vw,46px);display:flex;gap:12px;align-items:center;min-height:clamp(36px,5vh,55px);padding:9px 16px;border:1.5px solid #a1e9dc;border-radius:40px;background:linear-gradient(160deg,#0d6e83,#06384e);color:#fff8e3;box-shadow:0 3px 0 #0b3546,0 4px 12px #08342f77;font-size:clamp(11px,1.15vw,17px);font-weight:900}
+#game[data-screen="home"] .home-progress-symbol{color:#ffdd69;font-size:1.3em}
+#game[data-screen="home"] .home-level-label{border-left:1px solid #ffffff5a;padding-left:12px;font-size:.86em}
+#game[data-screen="home"] .home-mascot-hint{position:absolute;z-index:6;bottom:10px;left:47%;transform:translateX(-50%);font-weight:850;font-size:clamp(10px,.8vw,13px);color:#fff9e8;text-shadow:0 2px 4px #07394e;pointer-events:none;white-space:nowrap}
+#game[data-screen="home"] .dev-lab{position:absolute;z-index:9;bottom:7px;left:12px}
+@media(max-width:1100px){#game[data-screen="home"] .home-brand{width:27vw}#game[data-screen="home"] .home-right{width:51vw;top:17vh;right:1.5vw}#game[data-screen="home"] .home-hero-stage{left:8vw;width:42vw;height:73vh}#game[data-screen="home"] >header .title-tools{top:21vh;left:2vw}}
+@media(max-height:570px) and (orientation:landscape){
+ #game[data-screen="home"] >header{padding:4px 9px}
+ #game[data-screen="home"] >header .title-tools{top:25vh;gap:3px}
+ #game[data-screen="home"] >header .title-tools .home-tool,#game[data-screen="home"] >header #sound-toggle{width:29px;height:29px;padding:6px}
+ #game[data-screen="home"] >header .header-right button:not(#sound-toggle){min-height:29px;padding:3px 7px;font-size:10px}
+ #game[data-screen="home"] .home-brand{top:2vh;width:23vw}
+ #game[data-screen="home"] .home-brand-tagline{font-size:8px}
+ #game[data-screen="home"] .home-right{top:11vh;right:1vw;width:46vw}
+ #game[data-screen="home"] .home-hero-stage{left:12vw;width:35vw;height:77vh;bottom:2vh}
+ #game[data-screen="home"] .home-live-progress{bottom:7px;min-height:26px;padding:4px 9px;font-size:10px}
+ #game[data-screen="home"] .home-mascot-hint{display:none}
+}
+@media(max-width:650px) and (orientation:portrait){
+ #game[data-screen="home"] >header{padding:5px 8px}
+ #game[data-screen="home"] >header .header-right{gap:3px}
+ #game[data-screen="home"] >header .header-right button:not(#sound-toggle){min-height:28px;font-size:9px;padding:3px 6px}
+ #game[data-screen="home"] >header #sound-toggle{width:29px;height:29px;padding:6px}
+ #game[data-screen="home"] >header .title-tools{top:17vh;left:8px;gap:3px}
+ #game[data-screen="home"] >header .title-tools .home-tool{width:29px;height:29px;padding:6px}
+ #game[data-screen="home"] .home-brand{top:4vh;left:10px;max-width:none;width:58vw}
+ #game[data-screen="home"] .home-brand-tagline{font-size:8px}
+ #game[data-screen="home"] .home-hero-stage{left:14vw;top:21vh;bottom:auto;width:73vw;height:43vh;min-height:0}
+ #game[data-screen="home"] .home-right{left:2vw;right:2vw;top:auto;bottom:5vh;width:96vw;gap:0}
+ #game[data-screen="home"] .home-shortcuts{margin-top:0}
+ #game[data-screen="home"] .home-live-progress{left:8px;bottom:7px;min-height:24px;font-size:9px;padding:4px 8px}
+ #game[data-screen="home"] .home-mascot-hint{display:none}
+}
+@media(prefers-reduced-motion:reduce){#game[data-screen="home"] .home-water-sheen,#game[data-screen="home"] .home-floating-pollen{animation:none}#game[data-screen="home"] .home-art-button,#game[data-screen="home"] >header button{transition:none}}

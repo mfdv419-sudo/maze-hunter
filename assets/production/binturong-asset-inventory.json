@@ -1,0 +1,4725 @@
+{
+  "schema_version": 1,
+  "status": "inventory_only_no_game_runtime_change",
+  "baseline": "maze-1 assembled source; catalogue from last delta modifying cosmetics.ts and expedition-equipment.ts (Adventure Polish & Shop), current Home Live Character Recovery",
+  "source_paths": [
+    "src/services/cosmetics.ts",
+    "src/game/expedition-equipment.ts",
+    "src/game/forest-progression.ts"
+  ],
+  "default_appearance": {
+    "head": "bare",
+    "face": "bare",
+    "body": "classic",
+    "back": "bare",
+    "tail": "bare",
+    "palette": "charcoal",
+    "hands": "bare",
+    "feet": "bare"
+  },
+  "production_rules": {
+    "identity": "Existing binturong; cute compact mascot proportions (bear/Naylong reference only for body proportions, not species).",
+    "proportions": "Proposed neutral barefoot design target: ~2.5 heads tall excluding tuft/hat; cranium broad and gently rounded, visible neck, compact torso with short rounded belly, slightly short but articulated limbs; shoulders narrower than head; palms inward toward thighs; recognizable fingers/paw pads below, long tapered prehensile tail, rounded tufted ears, whiskers and short muzzle. Final ratios require comparison to approved visual master.",
+    "mesh": "Editable connected body sculpt with retopology; paws shaped with connected digits, not spheres attached to cylinders. No per-item recolor unless palette or intentional color variant.",
+    "rig": "Single shared bind pose, units, origin at ground, standardized joint names; skin clothing and gloves/boots; rigid sockets for headgear, glasses, backpack and tools; draw/pickup tool mounts. Exact joint positions to be fixed on master before fitting items.",
+    "qa": "Every mesh verified naked/equipped front, side, back, 3/4; skinning tests in motion; no clipping, stretched torso, disconnect or foot float; compare silhouette differences and real runtime item previews. Never mark asset ready from existence or source audit alone.",
+    "runtime": "Keep catalog IDs, slots, prices, receipts, rewards and progression; do not activate asset until validated. Weapons grouped as production type only; original back slot retained. Separate scarf slot or weapon slot is not part of current catalog; no schema changes.",
+    "format": "Editable .blend; .glb delivery proposed, not mandated if another supported format meets rig/appearance contract; FBX optional interchange; icon/preview images independently generated from model, not thumbnail recolor.",
+    "animations": [
+      "idle",
+      "walk",
+      "run",
+      "turn",
+      "jump",
+      "forward_flip",
+      "fall",
+      "land",
+      "climb",
+      "swim",
+      "dive",
+      "melee",
+      "throw",
+      "hit",
+      "wave",
+      "victory"
+    ]
+  },
+  "foundation_assets": [
+    {
+      "asset": "base_binturong",
+      "outputs": [
+        "assets/production/character/binturong-master.blend",
+        "public/models/binturong/base.glb",
+        "assets/production/character/turnaround.webp"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "rig_and_socket_contract",
+      "outputs": [
+        "assets/production/character/rig.blend",
+        "assets/production/character/sockets.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "expressions",
+      "clips": [
+        "neutral",
+        "happy",
+        "blink",
+        "focus",
+        "surprise",
+        "hurt",
+        "sleepy"
+      ],
+      "outputs": [
+        "assets/production/character/face.blend",
+        "assets/production/character/expression-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/idle",
+      "outputs": [
+        "assets/production/character/animations/idle.blend",
+        "assets/production/character/animations/idle.glb",
+        "assets/production/character/animations/idle-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/walk",
+      "outputs": [
+        "assets/production/character/animations/walk.blend",
+        "assets/production/character/animations/walk.glb",
+        "assets/production/character/animations/walk-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/run",
+      "outputs": [
+        "assets/production/character/animations/run.blend",
+        "assets/production/character/animations/run.glb",
+        "assets/production/character/animations/run-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/turn",
+      "outputs": [
+        "assets/production/character/animations/turn.blend",
+        "assets/production/character/animations/turn.glb",
+        "assets/production/character/animations/turn-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/jump",
+      "outputs": [
+        "assets/production/character/animations/jump.blend",
+        "assets/production/character/animations/jump.glb",
+        "assets/production/character/animations/jump-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/forward_flip",
+      "outputs": [
+        "assets/production/character/animations/forward_flip.blend",
+        "assets/production/character/animations/forward_flip.glb",
+        "assets/production/character/animations/forward_flip-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/fall",
+      "outputs": [
+        "assets/production/character/animations/fall.blend",
+        "assets/production/character/animations/fall.glb",
+        "assets/production/character/animations/fall-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/land",
+      "outputs": [
+        "assets/production/character/animations/land.blend",
+        "assets/production/character/animations/land.glb",
+        "assets/production/character/animations/land-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/climb",
+      "outputs": [
+        "assets/production/character/animations/climb.blend",
+        "assets/production/character/animations/climb.glb",
+        "assets/production/character/animations/climb-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/swim",
+      "outputs": [
+        "assets/production/character/animations/swim.blend",
+        "assets/production/character/animations/swim.glb",
+        "assets/production/character/animations/swim-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/dive",
+      "outputs": [
+        "assets/production/character/animations/dive.blend",
+        "assets/production/character/animations/dive.glb",
+        "assets/production/character/animations/dive-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/melee",
+      "outputs": [
+        "assets/production/character/animations/melee.blend",
+        "assets/production/character/animations/melee.glb",
+        "assets/production/character/animations/melee-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/throw",
+      "outputs": [
+        "assets/production/character/animations/throw.blend",
+        "assets/production/character/animations/throw.glb",
+        "assets/production/character/animations/throw-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/hit",
+      "outputs": [
+        "assets/production/character/animations/hit.blend",
+        "assets/production/character/animations/hit.glb",
+        "assets/production/character/animations/hit-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/wave",
+      "outputs": [
+        "assets/production/character/animations/wave.blend",
+        "assets/production/character/animations/wave.glb",
+        "assets/production/character/animations/wave-qa.json"
+      ],
+      "status": "planned_not_created"
+    },
+    {
+      "asset": "animation/victory",
+      "outputs": [
+        "assets/production/character/animations/victory.blend",
+        "assets/production/character/animations/victory.glb",
+        "assets/production/character/animations/victory-qa.json"
+      ],
+      "status": "planned_not_created"
+    }
+  ],
+  "forest_legacy_reward_links": [
+    {
+      "legacy_key": "feet:trail",
+      "reward_key": "feet:expedition-forest-1",
+      "relationship": "existing ownership alias only; preserve both catalog keys; visual differences planned independently"
+    },
+    {
+      "legacy_key": "hands:climber",
+      "reward_key": "hands:expedition-forest-2",
+      "relationship": "existing ownership alias only; preserve both catalog keys; visual differences planned independently"
+    },
+    {
+      "legacy_key": "back:climber",
+      "reward_key": "back:expedition-forest-3",
+      "relationship": "existing ownership alias only; preserve both catalog keys; visual differences planned independently"
+    },
+    {
+      "legacy_key": "back:pack",
+      "reward_key": "back:expedition-forest-4",
+      "relationship": "existing ownership alias only; preserve both catalog keys; visual differences planned independently"
+    }
+  ],
+  "catalog_items": [
+    {
+      "key": "head:bare",
+      "design_id": "head/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "head",
+        "name": [
+          "Jambul Rimba",
+          "Forest Tuft"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Headwear",
+      "type": "none",
+      "design_brief_id": "Tampilkan telinga dan jambul alami base, tanpa topi",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/head/bare/icon.webp",
+        "equipped_preview": "assets/production/models/head/bare/equipped.webp",
+        "qa_report": "assets/production/models/head/bare/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:leaf",
+      "design_id": "head/leaf",
+      "catalog": {
+        "id": "leaf",
+        "slot": "head",
+        "name": [
+          "Topi Daun",
+          "Leaf Hat"
+        ],
+        "rarity": "common",
+        "stars": 50
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Headband anyaman rendah, tujuh daun berurat berdiri menyerupai kipas; bentuk terbuka di atas kepala",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/leaf/source.blend",
+        "glb": "public/models/binturong/items/head/leaf.glb",
+        "shop_icon": "assets/production/models/head/leaf/icon.webp",
+        "equipped_preview": "assets/production/models/head/leaf/equipped.webp",
+        "turnaround": "assets/production/models/head/leaf/turnaround.webp",
+        "qa_report": "assets/production/models/head/leaf/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:explorer",
+      "design_id": "head/explorer",
+      "catalog": {
+        "id": "explorer",
+        "slot": "head",
+        "name": [
+          "Topi Penjelajah",
+          "Explorer Hat"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Topi safari krem: mahkota berlekuk, brim lebar melengkung, pita kulit, dua lubang telinga dan tali dagu",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/explorer/source.blend",
+        "glb": "public/models/binturong/items/head/explorer.glb",
+        "shop_icon": "assets/production/models/head/explorer/icon.webp",
+        "equipped_preview": "assets/production/models/head/explorer/equipped.webp",
+        "turnaround": "assets/production/models/head/explorer/turnaround.webp",
+        "qa_report": "assets/production/models/head/explorer/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:crown",
+      "design_id": "head/crown",
+      "catalog": {
+        "id": "crown",
+        "slot": "head",
+        "name": [
+          "Mahkota Rimba",
+          "Forest Crown"
+        ],
+        "rarity": "epic",
+        "stars": 250
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Mahkota hutan dari akar melingkar, lima pucuk daun besar dan kristal tengah; siluet tinggi",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/crown/source.blend",
+        "glb": "public/models/binturong/items/head/crown.glb",
+        "shop_icon": "assets/production/models/head/crown/icon.webp",
+        "equipped_preview": "assets/production/models/head/crown/equipped.webp",
+        "turnaround": "assets/production/models/head/crown/turnaround.webp",
+        "qa_report": "assets/production/models/head/crown/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:moon",
+      "design_id": "head/moon",
+      "catalog": {
+        "id": "moon",
+        "slot": "head",
+        "name": [
+          "Mahkota Bulan",
+          "Moon Crown"
+        ],
+        "rarity": "legendary",
+        "stars": 500,
+        "wins": 1
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Diadem perak dengan bulan sabit besar dan bintang gantung; profil melengkung asimetris",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 1
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/moon/source.blend",
+        "glb": "public/models/binturong/items/head/moon.glb",
+        "shop_icon": "assets/production/models/head/moon/icon.webp",
+        "equipped_preview": "assets/production/models/head/moon/equipped.webp",
+        "turnaround": "assets/production/models/head/moon/turnaround.webp",
+        "qa_report": "assets/production/models/head/moon/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:bare",
+      "design_id": "face/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "face",
+        "name": [
+          "Wajah Ceria",
+          "Bright Eyes"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Face gear",
+      "type": "none",
+      "design_brief_id": "Mata dan muka asli, tanpa mask atau goggles",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/face/bare/icon.webp",
+        "equipped_preview": "assets/production/models/face/bare/equipped.webp",
+        "qa_report": "assets/production/models/face/bare/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:goggles",
+      "design_id": "face/goggles",
+      "catalog": {
+        "id": "goggles",
+        "slot": "face",
+        "name": [
+          "Kacamata Jelajah",
+          "Trail Goggles"
+        ],
+        "rarity": "common",
+        "stars": 50
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Dua lensa bulat kuningan, jembatan hidung, tangkai dan gasket; jarak bebas pipi dan kumis",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/goggles/source.blend",
+        "glb": "public/models/binturong/items/face/goggles.glb",
+        "shop_icon": "assets/production/models/face/goggles/icon.webp",
+        "equipped_preview": "assets/production/models/face/goggles/equipped.webp",
+        "turnaround": "assets/production/models/face/goggles/turnaround.webp",
+        "qa_report": "assets/production/models/face/goggles/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:mask",
+      "design_id": "face/mask",
+      "catalog": {
+        "id": "mask",
+        "slot": "face",
+        "name": [
+          "Topeng Daun",
+          "Leaf Mask"
+        ],
+        "rarity": "rare",
+        "stars": 125
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Topeng daun bertumpuk menutupi bagian atas wajah, dua lubang mata dan ikatan belakang",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/mask/source.blend",
+        "glb": "public/models/binturong/items/face/mask.glb",
+        "shop_icon": "assets/production/models/face/mask/icon.webp",
+        "equipped_preview": "assets/production/models/face/mask/equipped.webp",
+        "turnaround": "assets/production/models/face/mask/turnaround.webp",
+        "qa_report": "assets/production/models/face/mask/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:star",
+      "design_id": "face/star",
+      "catalog": {
+        "id": "star",
+        "slot": "face",
+        "name": [
+          "Kacamata Bintang",
+          "Star Glasses"
+        ],
+        "rarity": "epic",
+        "stars": 250
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Dua frame bintang lima sudut membulat, dua lensa transparan dan tangkai; bukan goggles yang dicat ulang",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/star/source.blend",
+        "glb": "public/models/binturong/items/face/star.glb",
+        "shop_icon": "assets/production/models/face/star/icon.webp",
+        "equipped_preview": "assets/production/models/face/star/equipped.webp",
+        "turnaround": "assets/production/models/face/star/turnaround.webp",
+        "qa_report": "assets/production/models/face/star/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:classic",
+      "design_id": "body/classic",
+      "catalog": {
+        "id": "classic",
+        "slot": "body",
+        "name": [
+          "Sahabat Rimba",
+          "Forest Friend"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Rompi pendek krem dengan bukaan depan, dua kantong persegi berflap, jahitan samping, punggung kain penuh dan scarf teal",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/classic/source.blend",
+        "glb": "public/models/binturong/items/body/classic.glb",
+        "shop_icon": "assets/production/models/body/classic/icon.webp",
+        "equipped_preview": "assets/production/models/body/classic/equipped.webp",
+        "turnaround": "assets/production/models/body/classic/turnaround.webp",
+        "qa_report": "assets/production/models/body/classic/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:explorer",
+      "design_id": "body/explorer",
+      "catalog": {
+        "id": "explorer",
+        "slot": "body",
+        "name": [
+          "Rompi Jelajah",
+          "Explorer Vest"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Jaket safari berlengan pendek, kerah lipat, empat kantong, sabuk dan gesper, potongan ekor belakang",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/explorer/source.blend",
+        "glb": "public/models/binturong/items/body/explorer.glb",
+        "shop_icon": "assets/production/models/body/explorer/icon.webp",
+        "equipped_preview": "assets/production/models/body/explorer/equipped.webp",
+        "turnaround": "assets/production/models/body/explorer/turnaround.webp",
+        "qa_report": "assets/production/models/body/explorer/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:raincoat",
+      "design_id": "body/raincoat",
+      "catalog": {
+        "id": "raincoat",
+        "slot": "body",
+        "name": [
+          "Hujan Ceria",
+          "Happy Rain"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Jas hujan berhood, lengan panjang, placket tahan air dan hem melebar; hood turun agar telinga bebas",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/raincoat/source.blend",
+        "glb": "public/models/binturong/items/body/raincoat.glb",
+        "shop_icon": "assets/production/models/body/raincoat/icon.webp",
+        "equipped_preview": "assets/production/models/body/raincoat/equipped.webp",
+        "turnaround": "assets/production/models/body/raincoat/turnaround.webp",
+        "qa_report": "assets/production/models/body/raincoat/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:space",
+      "design_id": "body/space",
+      "catalog": {
+        "id": "space",
+        "slot": "body",
+        "name": [
+          "Penjelajah Bintang",
+          "Star Explorer"
+        ],
+        "rarity": "epic",
+        "stars": 275
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Suit antariksa berkollar lebar, panel dada, sambungan fleksibel siku/pinggul, patch misi, pinggang integral",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/space/source.blend",
+        "glb": "public/models/binturong/items/body/space.glb",
+        "shop_icon": "assets/production/models/body/space/icon.webp",
+        "equipped_preview": "assets/production/models/body/space/equipped.webp",
+        "turnaround": "assets/production/models/body/space/turnaround.webp",
+        "qa_report": "assets/production/models/body/space/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:aurora",
+      "design_id": "body/aurora",
+      "catalog": {
+        "id": "aurora",
+        "slot": "body",
+        "name": [
+          "Aurora Rimba",
+          "Forest Aurora"
+        ],
+        "rarity": "legendary",
+        "stars": 525,
+        "wins": 1
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Mantel pendek berlapis seperti kelopak daun, kerah asimetris dan panel bercahaya lembut di punggung",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 1
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/aurora/source.blend",
+        "glb": "public/models/binturong/items/body/aurora.glb",
+        "shop_icon": "assets/production/models/body/aurora/icon.webp",
+        "equipped_preview": "assets/production/models/body/aurora/equipped.webp",
+        "turnaround": "assets/production/models/body/aurora/turnaround.webp",
+        "qa_report": "assets/production/models/body/aurora/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:bare",
+      "design_id": "back/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "back",
+        "name": [
+          "Tanpa Aksesori",
+          "No Accessory"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Backpack / Back",
+      "type": "none",
+      "design_brief_id": "Punggung pakaian asli, tanpa tas atau harness eksternal",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/back/bare/icon.webp",
+        "equipped_preview": "assets/production/models/back/bare/equipped.webp",
+        "qa_report": "assets/production/models/back/bare/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:pack",
+      "design_id": "back/pack",
+      "catalog": {
+        "id": "pack",
+        "slot": "back",
+        "name": [
+          "Tas Penjelajah",
+          "Explorer Pack"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Ransel kanvas membulat persegi, flap atas, dua kantong samping, gesper dan bedroll gulung independen",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/pack/source.blend",
+        "glb": "public/models/binturong/items/back/pack.glb",
+        "shop_icon": "assets/production/models/back/pack/icon.webp",
+        "equipped_preview": "assets/production/models/back/pack/equipped.webp",
+        "turnaround": "assets/production/models/back/pack/turnaround.webp",
+        "qa_report": "assets/production/models/back/pack/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:cape",
+      "design_id": "back/cape",
+      "catalog": {
+        "id": "cape",
+        "slot": "back",
+        "name": [
+          "Jubah Daun",
+          "Leaf Cape"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Cape berbentuk satu daun besar berurat dengan pinggiran belah, pengait leher dan drape ber-rig",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/cape/source.blend",
+        "glb": "public/models/binturong/items/back/cape.glb",
+        "shop_icon": "assets/production/models/back/cape/icon.webp",
+        "equipped_preview": "assets/production/models/back/cape/equipped.webp",
+        "turnaround": "assets/production/models/back/cape/turnaround.webp",
+        "qa_report": "assets/production/models/back/cape/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:wings",
+      "design_id": "back/wings",
+      "catalog": {
+        "id": "wings",
+        "slot": "back",
+        "name": [
+          "Sayap Bulan",
+          "Moon Wings"
+        ],
+        "rarity": "legendary",
+        "stars": 510,
+        "wins": 1
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Dua sayap bulan tiga lapis bulu pendek dengan poros lipat dan harness punggung",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 1
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/wings/source.blend",
+        "glb": "public/models/binturong/items/back/wings.glb",
+        "shop_icon": "assets/production/models/back/wings/icon.webp",
+        "equipped_preview": "assets/production/models/back/wings/equipped.webp",
+        "turnaround": "assets/production/models/back/wings/turnaround.webp",
+        "qa_report": "assets/production/models/back/wings/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "tail:bare",
+      "design_id": "tail/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "tail",
+        "name": [
+          "Ekor Asli",
+          "Natural Tail"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Tail accessory",
+      "type": "none",
+      "design_brief_id": "Ekor asli tanpa perhiasan",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "rig/tail_mid: tail_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/tail/bare/icon.webp",
+        "equipped_preview": "assets/production/models/tail/bare/equipped.webp",
+        "qa_report": "assets/production/models/tail/bare/qa.json"
+      },
+      "qa": "Kelenturan ekor dan tidak memotong tanah",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "tail:bow",
+      "design_id": "tail/bow",
+      "catalog": {
+        "id": "bow",
+        "slot": "tail",
+        "name": [
+          "Pita Ekor",
+          "Tail Bow"
+        ],
+        "rarity": "common",
+        "stars": 50
+      },
+      "production_group": "Tail accessory",
+      "type": "mesh",
+      "design_brief_id": "Pita kain dengan dua loop, simpul dan dua ujung jatuh; cincin aman di ekor",
+      "parts": [
+        "ornament",
+        "attachment"
+      ],
+      "attachment": "rig/tail_mid: tail_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/tail/bow/source.blend",
+        "glb": "public/models/binturong/items/tail/bow.glb",
+        "shop_icon": "assets/production/models/tail/bow/icon.webp",
+        "equipped_preview": "assets/production/models/tail/bow/equipped.webp",
+        "turnaround": "assets/production/models/tail/bow/turnaround.webp",
+        "qa_report": "assets/production/models/tail/bow/qa.json"
+      },
+      "qa": "Kelenturan ekor dan tidak memotong tanah",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "tail:leaf",
+      "design_id": "tail/leaf",
+      "catalog": {
+        "id": "leaf",
+        "slot": "tail",
+        "name": [
+          "Gelang Daun",
+          "Leaf Ring"
+        ],
+        "rarity": "rare",
+        "stars": 125
+      },
+      "production_group": "Tail accessory",
+      "type": "mesh",
+      "design_brief_id": "Gelang terbuka dari dua daun membungkus ekor, urat timbul dan pengikat kecil",
+      "parts": [
+        "ornament",
+        "attachment"
+      ],
+      "attachment": "rig/tail_mid: tail_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/tail/leaf/source.blend",
+        "glb": "public/models/binturong/items/tail/leaf.glb",
+        "shop_icon": "assets/production/models/tail/leaf/icon.webp",
+        "equipped_preview": "assets/production/models/tail/leaf/equipped.webp",
+        "turnaround": "assets/production/models/tail/leaf/turnaround.webp",
+        "qa_report": "assets/production/models/tail/leaf/qa.json"
+      },
+      "qa": "Kelenturan ekor dan tidak memotong tanah",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "tail:star",
+      "design_id": "tail/star",
+      "catalog": {
+        "id": "star",
+        "slot": "tail",
+        "name": [
+          "Liontin Bintang",
+          "Star Charm"
+        ],
+        "rarity": "epic",
+        "stars": 250
+      },
+      "production_group": "Tail accessory",
+      "type": "mesh",
+      "design_brief_id": "Liontin bintang tiga dimensi pada tali pendek dengan cincin, bergerak tanpa menarik ekor",
+      "parts": [
+        "ornament",
+        "attachment"
+      ],
+      "attachment": "rig/tail_mid: tail_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/tail/star/source.blend",
+        "glb": "public/models/binturong/items/tail/star.glb",
+        "shop_icon": "assets/production/models/tail/star/icon.webp",
+        "equipped_preview": "assets/production/models/tail/star/equipped.webp",
+        "turnaround": "assets/production/models/tail/star/turnaround.webp",
+        "qa_report": "assets/production/models/tail/star/qa.json"
+      },
+      "qa": "Kelenturan ekor dan tidak memotong tanah",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "palette:charcoal",
+      "design_id": "palette/charcoal",
+      "catalog": {
+        "id": "charcoal",
+        "slot": "palette",
+        "name": [
+          "Abu Arang",
+          "Charcoal"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Palette",
+      "type": "palette",
+      "design_brief_id": "Material bulu #343C45; mesh sama secara sengaja, material pakaian tetap",
+      "parts": [
+        "fur material"
+      ],
+      "attachment": "base material binding only",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "material_config": "assets/production/models/palette/charcoal/material.json",
+        "shop_icon": "assets/production/models/palette/charcoal/swatch.webp",
+        "equipped_preview": "assets/production/models/palette/charcoal/equipped.webp",
+        "qa_report": "assets/production/models/palette/charcoal/qa.json"
+      },
+      "qa": "Warna bulu saja; tidak mengubah mesh/pakaian",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "palette:brown",
+      "design_id": "palette/brown",
+      "catalog": {
+        "id": "brown",
+        "slot": "palette",
+        "name": [
+          "Cokelat",
+          "Warm Brown"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Palette",
+      "type": "palette",
+      "design_brief_id": "Material bulu #735947; mesh sama secara sengaja, material pakaian tetap",
+      "parts": [
+        "fur material"
+      ],
+      "attachment": "base material binding only",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "material_config": "assets/production/models/palette/brown/material.json",
+        "shop_icon": "assets/production/models/palette/brown/swatch.webp",
+        "equipped_preview": "assets/production/models/palette/brown/equipped.webp",
+        "qa_report": "assets/production/models/palette/brown/qa.json"
+      },
+      "qa": "Warna bulu saja; tidak mengubah mesh/pakaian",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "palette:silver",
+      "design_id": "palette/silver",
+      "catalog": {
+        "id": "silver",
+        "slot": "palette",
+        "name": [
+          "Perak",
+          "Silver"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Palette",
+      "type": "palette",
+      "design_brief_id": "Material bulu #8A969B; mesh sama secara sengaja, material pakaian tetap",
+      "parts": [
+        "fur material"
+      ],
+      "attachment": "base material binding only",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "material_config": "assets/production/models/palette/silver/material.json",
+        "shop_icon": "assets/production/models/palette/silver/swatch.webp",
+        "equipped_preview": "assets/production/models/palette/silver/equipped.webp",
+        "qa_report": "assets/production/models/palette/silver/qa.json"
+      },
+      "qa": "Warna bulu saja; tidak mengubah mesh/pakaian",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "palette:mint",
+      "design_id": "palette/mint",
+      "catalog": {
+        "id": "mint",
+        "slot": "palette",
+        "name": [
+          "Daun Mint",
+          "Mint Leaf"
+        ],
+        "rarity": "rare",
+        "stars": 125
+      },
+      "production_group": "Palette",
+      "type": "palette",
+      "design_brief_id": "Material bulu #4A8275; mesh sama secara sengaja, material pakaian tetap",
+      "parts": [
+        "fur material"
+      ],
+      "attachment": "base material binding only",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "material_config": "assets/production/models/palette/mint/material.json",
+        "shop_icon": "assets/production/models/palette/mint/swatch.webp",
+        "equipped_preview": "assets/production/models/palette/mint/equipped.webp",
+        "qa_report": "assets/production/models/palette/mint/qa.json"
+      },
+      "qa": "Warna bulu saja; tidak mengubah mesh/pakaian",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "palette:gold",
+      "design_id": "palette/gold",
+      "catalog": {
+        "id": "gold",
+        "slot": "palette",
+        "name": [
+          "Senja Emas",
+          "Golden Dusk"
+        ],
+        "rarity": "epic",
+        "stars": 250
+      },
+      "production_group": "Palette",
+      "type": "palette",
+      "design_brief_id": "Material bulu #98723F; mesh sama secara sengaja, material pakaian tetap",
+      "parts": [
+        "fur material"
+      ],
+      "attachment": "base material binding only",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "material_config": "assets/production/models/palette/gold/material.json",
+        "shop_icon": "assets/production/models/palette/gold/swatch.webp",
+        "equipped_preview": "assets/production/models/palette/gold/equipped.webp",
+        "qa_report": "assets/production/models/palette/gold/qa.json"
+      },
+      "qa": "Warna bulu saja; tidak mengubah mesh/pakaian",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:bare",
+      "design_id": "hands/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "hands",
+        "name": [
+          "Tanpa perlengkapan",
+          "Bare"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Gloves",
+      "type": "none",
+      "design_brief_id": "Paw asli dengan jari melengkung halus, telapak menghadap paha",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/hands/bare/icon.webp",
+        "equipped_preview": "assets/production/models/hands/bare/equipped.webp",
+        "qa_report": "assets/production/models/hands/bare/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:trail",
+      "design_id": "hands/trail",
+      "catalog": {
+        "id": "trail",
+        "slot": "hands",
+        "name": [
+          "Jelajah Rimba · Sarung tangan",
+          "Forest Trail · Gloves"
+        ],
+        "rarity": "common",
+        "stars": 50
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Sarung tangan tanpa ujung jari, jahitan kulit, pad telapak terpisah dan strap pergelangan",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/trail/source.blend",
+        "glb": "public/models/binturong/items/hands/trail.glb",
+        "shop_icon": "assets/production/models/hands/trail/icon.webp",
+        "equipped_preview": "assets/production/models/hands/trail/equipped.webp",
+        "turnaround": "assets/production/models/hands/trail/turnaround.webp",
+        "qa_report": "assets/production/models/hands/trail/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:climber",
+      "design_id": "hands/climber",
+      "catalog": {
+        "id": "climber",
+        "slot": "hands",
+        "name": [
+          "Pendaki Tebing · Sarung tangan",
+          "Cliff Climber · Gloves"
+        ],
+        "rarity": "common",
+        "stars": 50
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Glove pendek dengan jari melengkung terbuka, bantalan cengkeram dan carabiner kecil pada cuff",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/climber/source.blend",
+        "glb": "public/models/binturong/items/hands/climber.glb",
+        "shop_icon": "assets/production/models/hands/climber/icon.webp",
+        "equipped_preview": "assets/production/models/hands/climber/equipped.webp",
+        "turnaround": "assets/production/models/hands/climber/turnaround.webp",
+        "qa_report": "assets/production/models/hands/climber/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:desert",
+      "design_id": "hands/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "hands",
+        "name": [
+          "Penjelajah Gurun · Sarung tangan",
+          "Desert Explorer · Gloves"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Glove kain panjang menutup punggung paw dengan flap tahan pasir dan cuff lilit",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/desert/source.blend",
+        "glb": "public/models/binturong/items/hands/desert.glb",
+        "shop_icon": "assets/production/models/hands/desert/icon.webp",
+        "equipped_preview": "assets/production/models/hands/desert/equipped.webp",
+        "turnaround": "assets/production/models/hands/desert/turnaround.webp",
+        "qa_report": "assets/production/models/hands/desert/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:diver",
+      "design_id": "hands/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "hands",
+        "name": [
+          "Penyelam Karang · Sarung tangan",
+          "Reef Diver · Gloves"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Glove neoprene berujung jari, manset kedap air dan tekstur grip telapak",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/diver/source.blend",
+        "glb": "public/models/binturong/items/hands/diver.glb",
+        "shop_icon": "assets/production/models/hands/diver/icon.webp",
+        "equipped_preview": "assets/production/models/hands/diver/equipped.webp",
+        "turnaround": "assets/production/models/hands/diver/turnaround.webp",
+        "qa_report": "assets/production/models/hands/diver/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:bare",
+      "design_id": "feet/bare",
+      "catalog": {
+        "id": "bare",
+        "slot": "feet",
+        "name": [
+          "Tanpa perlengkapan",
+          "Bare"
+        ],
+        "rarity": "common",
+        "stars": 0
+      },
+      "production_group": "Boots / Fins",
+      "type": "none",
+      "design_brief_id": "Paw kaki asli; toe-off, pads di bawah telapak",
+      "parts": [
+        "base visibility"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "shop_icon": "assets/production/models/feet/bare/icon.webp",
+        "equipped_preview": "assets/production/models/feet/bare/equipped.webp",
+        "qa_report": "assets/production/models/feet/bare/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:trail",
+      "design_id": "feet/trail",
+      "catalog": {
+        "id": "trail",
+        "slot": "feet",
+        "name": [
+          "Jelajah Rimba · Sepatu",
+          "Forest Trail · Boots"
+        ],
+        "rarity": "common",
+        "stars": 60
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot hiking pendek dengan lidah, tali silang, tapak lug dan ruang bentuk jari di ujung",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/trail/source.blend",
+        "glb": "public/models/binturong/items/feet/trail.glb",
+        "shop_icon": "assets/production/models/feet/trail/icon.webp",
+        "equipped_preview": "assets/production/models/feet/trail/equipped.webp",
+        "turnaround": "assets/production/models/feet/trail/turnaround.webp",
+        "qa_report": "assets/production/models/feet/trail/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:climber",
+      "design_id": "feet/climber",
+      "catalog": {
+        "id": "climber",
+        "slot": "feet",
+        "name": [
+          "Pendaki Tebing · Sepatu",
+          "Cliff Climber · Boots"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Sepatu panjat profil ramping, toe rand karet melengkung, heel cup dan dua strap",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/climber/source.blend",
+        "glb": "public/models/binturong/items/feet/climber.glb",
+        "shop_icon": "assets/production/models/feet/climber/icon.webp",
+        "equipped_preview": "assets/production/models/feet/climber/equipped.webp",
+        "turnaround": "assets/production/models/feet/climber/turnaround.webp",
+        "qa_report": "assets/production/models/feet/climber/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:desert",
+      "design_id": "feet/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "feet",
+        "name": [
+          "Penjelajah Gurun · Sepatu",
+          "Desert Explorer · Boots"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot gurun ringan dengan gaiter kain, sol lebar anti-pasir dan ikat samping",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/desert/source.blend",
+        "glb": "public/models/binturong/items/feet/desert.glb",
+        "shop_icon": "assets/production/models/feet/desert/icon.webp",
+        "equipped_preview": "assets/production/models/feet/desert/equipped.webp",
+        "turnaround": "assets/production/models/feet/desert/turnaround.webp",
+        "qa_report": "assets/production/models/feet/desert/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:diver",
+      "design_id": "feet/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "feet",
+        "name": [
+          "Penyelam Karang · Sepatu",
+          "Reef Diver · Boots"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Fin renang pendek dengan kantong kaki, heel strap dan bilah bercabang",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/diver/source.blend",
+        "glb": "public/models/binturong/items/feet/diver.glb",
+        "shop_icon": "assets/production/models/feet/diver/icon.webp",
+        "equipped_preview": "assets/production/models/feet/diver/equipped.webp",
+        "turnaround": "assets/production/models/feet/diver/turnaround.webp",
+        "qa_report": "assets/production/models/feet/diver/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:climber",
+      "design_id": "head/climber",
+      "catalog": {
+        "id": "climber",
+        "slot": "head",
+        "name": [
+          "Pendaki Tebing",
+          "Cliff Climber"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Helm panjat rendah bersegmen, lubang ventilasi, lampu depan dan chin strap",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/climber/source.blend",
+        "glb": "public/models/binturong/items/head/climber.glb",
+        "shop_icon": "assets/production/models/head/climber/icon.webp",
+        "equipped_preview": "assets/production/models/head/climber/equipped.webp",
+        "turnaround": "assets/production/models/head/climber/turnaround.webp",
+        "qa_report": "assets/production/models/head/climber/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:climber",
+      "design_id": "body/climber",
+      "catalog": {
+        "id": "climber",
+        "slot": "body",
+        "name": [
+          "Pendaki Tebing",
+          "Cliff Climber"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Harness panjat berbentuk rompi pendek, loop pinggang dan paha serta dua buckle nyata",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/climber/source.blend",
+        "glb": "public/models/binturong/items/body/climber.glb",
+        "shop_icon": "assets/production/models/body/climber/icon.webp",
+        "equipped_preview": "assets/production/models/body/climber/equipped.webp",
+        "turnaround": "assets/production/models/body/climber/turnaround.webp",
+        "qa_report": "assets/production/models/body/climber/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:climber",
+      "design_id": "back/climber",
+      "catalog": {
+        "id": "climber",
+        "slot": "back",
+        "name": [
+          "Pendaki Tebing",
+          "Cliff Climber"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Carrier rangka ringan dengan gulungan tali, karabiner dan saku kapur",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/climber/source.blend",
+        "glb": "public/models/binturong/items/back/climber.glb",
+        "shop_icon": "assets/production/models/back/climber/icon.webp",
+        "equipped_preview": "assets/production/models/back/climber/equipped.webp",
+        "turnaround": "assets/production/models/back/climber/turnaround.webp",
+        "qa_report": "assets/production/models/back/climber/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:desert",
+      "design_id": "head/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "head",
+        "name": [
+          "Penjelajah Gurun",
+          "Desert Explorer"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Kain penutup kepala berlapis dengan ekor kain leher; bukaan telinga",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/desert/source.blend",
+        "glb": "public/models/binturong/items/head/desert.glb",
+        "shop_icon": "assets/production/models/head/desert/icon.webp",
+        "equipped_preview": "assets/production/models/head/desert/equipped.webp",
+        "turnaround": "assets/production/models/head/desert/turnaround.webp",
+        "qa_report": "assets/production/models/head/desert/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:desert",
+      "design_id": "body/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "body",
+        "name": [
+          "Penjelajah Gurun",
+          "Desert Explorer"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Tunik gurun berkerah tinggi dan lengan longgar, sabuk kain, panel ventilasi dan belahan ekor",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/desert/source.blend",
+        "glb": "public/models/binturong/items/body/desert.glb",
+        "shop_icon": "assets/production/models/body/desert/icon.webp",
+        "equipped_preview": "assets/production/models/body/desert/equipped.webp",
+        "turnaround": "assets/production/models/body/desert/turnaround.webp",
+        "qa_report": "assets/production/models/body/desert/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:desert",
+      "design_id": "back/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "back",
+        "name": [
+          "Penjelajah Gurun",
+          "Desert Explorer"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Satchel survival vertikal dengan kantong botol, flap gulung dan tali kompresi",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/desert/source.blend",
+        "glb": "public/models/binturong/items/back/desert.glb",
+        "shop_icon": "assets/production/models/back/desert/icon.webp",
+        "equipped_preview": "assets/production/models/back/desert/equipped.webp",
+        "turnaround": "assets/production/models/back/desert/turnaround.webp",
+        "qa_report": "assets/production/models/back/desert/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:desert",
+      "design_id": "face/desert",
+      "catalog": {
+        "id": "desert",
+        "slot": "face",
+        "name": [
+          "Penjelajah Gurun",
+          "Desert Explorer"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Visor angin melengkung satu lensa, foam seal, tali melebar di samping",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/desert/source.blend",
+        "glb": "public/models/binturong/items/face/desert.glb",
+        "shop_icon": "assets/production/models/face/desert/icon.webp",
+        "equipped_preview": "assets/production/models/face/desert/equipped.webp",
+        "turnaround": "assets/production/models/face/desert/turnaround.webp",
+        "qa_report": "assets/production/models/face/desert/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "head:diver",
+      "design_id": "head/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "head",
+        "name": [
+          "Penyelam Karang",
+          "Reef Diver"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Headwear",
+      "type": "mesh",
+      "design_brief_id": "Hood neoprene pas kepala dengan bukaan telinga dan muka, seam tengah",
+      "parts": [
+        "main_shell",
+        "fit_openings",
+        "trim_and_fasteners"
+      ],
+      "attachment": "rig/head: headwear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/head/diver/source.blend",
+        "glb": "public/models/binturong/items/head/diver.glb",
+        "shop_icon": "assets/production/models/head/diver/icon.webp",
+        "equipped_preview": "assets/production/models/head/diver/equipped.webp",
+        "turnaround": "assets/production/models/head/diver/turnaround.webp",
+        "qa_report": "assets/production/models/head/diver/qa.json"
+      },
+      "qa": "Clearance telinga/kacamata; putar kepala dan lihat ke kamera",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:diver",
+      "design_id": "body/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "body",
+        "name": [
+          "Penyelam Karang",
+          "Reef Diver"
+        ],
+        "rarity": "rare",
+        "stars": 150
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Wetsuit pendek dengan panel neoprene, zipper belakang, cuffs dan panel lutut; bukaan ekor kedap",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/diver/source.blend",
+        "glb": "public/models/binturong/items/body/diver.glb",
+        "shop_icon": "assets/production/models/body/diver/icon.webp",
+        "equipped_preview": "assets/production/models/body/diver/equipped.webp",
+        "turnaround": "assets/production/models/body/diver/turnaround.webp",
+        "qa_report": "assets/production/models/body/diver/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:diver",
+      "design_id": "back/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "back",
+        "name": [
+          "Penyelam Karang",
+          "Reef Diver"
+        ],
+        "rarity": "uncommon",
+        "stars": 100
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Tabung scuba tunggal dengan valve, regulator, selang dan harness",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/diver/source.blend",
+        "glb": "public/models/binturong/items/back/diver.glb",
+        "shop_icon": "assets/production/models/back/diver/icon.webp",
+        "equipped_preview": "assets/production/models/back/diver/equipped.webp",
+        "turnaround": "assets/production/models/back/diver/turnaround.webp",
+        "qa_report": "assets/production/models/back/diver/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:diver",
+      "design_id": "face/diver",
+      "catalog": {
+        "id": "diver",
+        "slot": "face",
+        "name": [
+          "Penyelam Karang",
+          "Reef Diver"
+        ],
+        "rarity": "uncommon",
+        "stars": 75
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Masker dua lensa dengan nose pocket, skirt silikon, strap dan snorkel samping",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "method": "existing catalog redemption / default entitlement",
+        "minimum_wins": 0
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/diver/source.blend",
+        "glb": "public/models/binturong/items/face/diver.glb",
+        "shop_icon": "assets/production/models/face/diver/icon.webp",
+        "equipped_preview": "assets/production/models/face/diver/equipped.webp",
+        "turnaround": "assets/production/models/face/diver/turnaround.webp",
+        "qa_report": "assets/production/models/face/diver/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-forest-1",
+      "design_id": "feet/expedition-forest-1",
+      "catalog": {
+        "id": "expedition-forest-1",
+        "area": "forest",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "trail",
+        "effect": "land",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Rimba",
+          "Trail Boots"
+        ],
+        "expedition": {
+          "id": "expedition-forest-1",
+          "area": "forest",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "trail",
+          "effect": "land",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Rimba",
+            "Trail Boots"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot rimba pergelangan tinggi; sol akar bergigi, toe cap kulit dan tali pengikat",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak darat +8%.",
+          "Land speed +8%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-forest-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-forest-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-forest-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-forest-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-forest-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-forest-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:expedition-forest-2",
+      "design_id": "hands/expedition-forest-2",
+      "catalog": {
+        "id": "expedition-forest-2",
+        "area": "forest",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "hands",
+        "style": "climber",
+        "effect": "climb",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Sarung Tangan Panjat",
+          "Climbing Gloves"
+        ],
+        "expedition": {
+          "id": "expedition-forest-2",
+          "area": "forest",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "hands",
+          "style": "climber",
+          "effect": "climb",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Sarung Tangan Panjat",
+            "Climbing Gloves"
+          ]
+        }
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Glove panjat dengan jari terbuka, pad beralur, strap ganda dan pengait tali",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Panjat 20% lebih cepat.",
+          "Climb 20% faster."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/expedition-forest-2/source.blend",
+        "glb": "public/models/binturong/items/hands/expedition-forest-2.glb",
+        "shop_icon": "assets/production/models/hands/expedition-forest-2/icon.webp",
+        "equipped_preview": "assets/production/models/hands/expedition-forest-2/equipped.webp",
+        "turnaround": "assets/production/models/hands/expedition-forest-2/turnaround.webp",
+        "qa_report": "assets/production/models/hands/expedition-forest-2/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-forest-3",
+      "design_id": "back/expedition-forest-3",
+      "catalog": {
+        "id": "expedition-forest-3",
+        "area": "forest",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "back",
+        "style": "climber",
+        "effect": "reach",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Set Tali",
+          "Rope Kit"
+        ],
+        "expedition": {
+          "id": "expedition-forest-3",
+          "area": "forest",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "back",
+          "style": "climber",
+          "effect": "reach",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Set Tali",
+            "Rope Kit"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Gulungan tali berdiameter besar, dua karabiner, kantong kapur dan sling belakang",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan meraih tepian bertambah.",
+          "Increased ledge reach."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-forest-3/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-forest-3.glb",
+        "shop_icon": "assets/production/models/back/expedition-forest-3/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-forest-3/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-forest-3/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-forest-3/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-forest-4",
+      "design_id": "back/expedition-forest-4",
+      "catalog": {
+        "id": "expedition-forest-4",
+        "area": "forest",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "pack",
+        "effect": "reserve",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Set Penjelajah Rimba",
+          "Forest Explorer Gear"
+        ],
+        "expedition": {
+          "id": "expedition-forest-4",
+          "area": "forest",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "pack",
+          "effect": "reserve",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Set Penjelajah Rimba",
+            "Forest Explorer Gear"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Ransel ekspedisi rimba dua kompartemen, bedroll, lentera, kantong botol; lebih besar dari Explorer Pack",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Oksigen cadangan di hutan. Di arena lain, kue awal penuh.",
+          "Reserve oxygen in Forest Grove. Full starting cakes elsewhere."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-forest-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-forest-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-forest-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-forest-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-forest-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-forest-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-forest-5",
+      "design_id": "back/expedition-forest-5",
+      "catalog": {
+        "id": "expedition-forest-5",
+        "area": "forest",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "climber",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Busur Alam",
+          "Nature Bow"
+        ],
+        "expedition": {
+          "id": "expedition-forest-5",
+          "area": "forest",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "climber",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Busur Alam",
+            "Nature Bow"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Busur kayu melengkung berbentuk ranting, string, grip lilit, quiver dan anak panah tumpul fantasi",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-forest-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-forest-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-forest-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-forest-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-forest-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-forest-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-forest-6",
+      "design_id": "body/expedition-forest-6",
+      "catalog": {
+        "id": "expedition-forest-6",
+        "area": "forest",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "climber",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Zirah Penjaga",
+          "Guardian Armor"
+        ],
+        "expedition": {
+          "id": "expedition-forest-6",
+          "area": "forest",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "climber",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Zirah Penjaga",
+            "Guardian Armor"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Zirah daun berlapis dengan chest plate, pauldrons kecil, sabuk dan pelindung paha; punggung tertutup",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "forest",
+        "world": "Forest Grove",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-forest-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-forest-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-forest-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-forest-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-forest-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-forest-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-desert-1",
+      "design_id": "feet/expedition-desert-1",
+      "catalog": {
+        "id": "expedition-desert-1",
+        "area": "desert",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "desert",
+        "effect": "land",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Pasir",
+          "Sand Boots"
+        ],
+        "expedition": {
+          "id": "expedition-desert-1",
+          "area": "desert",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "desert",
+          "effect": "land",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Pasir",
+            "Sand Boots"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot pasir dengan gaiter tinggi, toe luas, tapak dangkal dan ventilasi kain",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak darat +8%.",
+          "Land speed +8%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-desert-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-desert-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-desert-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-desert-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-desert-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-desert-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:expedition-desert-2",
+      "design_id": "face/expedition-desert-2",
+      "catalog": {
+        "id": "expedition-desert-2",
+        "area": "desert",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "face",
+        "style": "desert",
+        "effect": "find",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Kacamata Gurun",
+          "Desert Goggles"
+        ],
+        "expedition": {
+          "id": "expedition-desert-2",
+          "area": "desert",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "face",
+          "style": "desert",
+          "effect": "find",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Kacamata Gurun",
+            "Desert Goggles"
+          ]
+        }
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Goggles badai pasir dua lensa lebar bersiku, filter samping, strap kepala",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan mengambil bekal dan harta bertambah.",
+          "Increased pickup reach for supplies and treasure."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/expedition-desert-2/source.blend",
+        "glb": "public/models/binturong/items/face/expedition-desert-2.glb",
+        "shop_icon": "assets/production/models/face/expedition-desert-2/icon.webp",
+        "equipped_preview": "assets/production/models/face/expedition-desert-2/equipped.webp",
+        "turnaround": "assets/production/models/face/expedition-desert-2/turnaround.webp",
+        "qa_report": "assets/production/models/face/expedition-desert-2/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-desert-3",
+      "design_id": "body/expedition-desert-3",
+      "catalog": {
+        "id": "expedition-desert-3",
+        "area": "desert",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "body",
+        "style": "desert",
+        "effect": "suit",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Rompi Pendingin",
+          "Cooling Vest"
+        ],
+        "expedition": {
+          "id": "expedition-desert-3",
+          "area": "desert",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "body",
+          "style": "desert",
+          "effect": "suit",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Rompi Pendingin",
+            "Cooling Vest"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Rompi pendingin dengan panel kain mesh, kantong gel berpetak dan duct ventilasi; full wrap",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Mengurangi dampak bahaya lingkungan.",
+          "Reduces damage from environmental hazards."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-desert-3/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-desert-3.glb",
+        "shop_icon": "assets/production/models/body/expedition-desert-3/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-desert-3/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-desert-3/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-desert-3/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-desert-4",
+      "design_id": "back/expedition-desert-4",
+      "catalog": {
+        "id": "expedition-desert-4",
+        "area": "desert",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "desert",
+        "effect": "reserve",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Tas Bertahan Hidup",
+          "Survival Pack"
+        ],
+        "expedition": {
+          "id": "expedition-desert-4",
+          "area": "desert",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "desert",
+          "effect": "reserve",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Tas Bertahan Hidup",
+            "Survival Pack"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Ransel survival berprofil pipih dengan dua canteen, flaps dan gulungan shelter",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Oksigen cadangan di hutan. Di arena lain, kue awal penuh.",
+          "Reserve oxygen in Forest Grove. Full starting cakes elsewhere."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-desert-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-desert-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-desert-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-desert-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-desert-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-desert-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-desert-5",
+      "design_id": "back/expedition-desert-5",
+      "catalog": {
+        "id": "expedition-desert-5",
+        "area": "desert",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "desert",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Pelontar Scarab",
+          "Scarab Blaster"
+        ],
+        "expedition": {
+          "id": "expedition-desert-5",
+          "area": "desert",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "desert",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Pelontar Scarab",
+            "Scarab Blaster"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Blaster scarab berbentuk kumbang dengan dua sayap cangkang, nozzle, grip dan tabung energi fantasi",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-desert-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-desert-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-desert-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-desert-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-desert-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-desert-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-desert-6",
+      "design_id": "body/expedition-desert-6",
+      "catalog": {
+        "id": "expedition-desert-6",
+        "area": "desert",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "desert",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Zirah Sphinx",
+          "Sphinx Armor"
+        ],
+        "expedition": {
+          "id": "expedition-desert-6",
+          "area": "desert",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "desert",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Zirah Sphinx",
+            "Sphinx Armor"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Zirah sphinx dengan kerah kipas, chest plate bersisik, sabuk dan panel pinggul pasir",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "desert",
+        "world": "Sunlit Desert",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-desert-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-desert-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-desert-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-desert-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-desert-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-desert-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-gorge-1",
+      "design_id": "feet/expedition-gorge-1",
+      "catalog": {
+        "id": "expedition-gorge-1",
+        "area": "gorge",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "climber",
+        "effect": "land",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Cengkeram",
+          "Grip Shoes"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-1",
+          "area": "gorge",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "climber",
+          "effect": "land",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Cengkeram",
+            "Grip Shoes"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Grip shoes berprofil panjat dengan ujung karet, toe hook, heel grip dan buckle diagonal",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak darat +8%.",
+          "Land speed +8%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-gorge-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-gorge-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-gorge-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-gorge-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-gorge-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-gorge-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-gorge-2",
+      "design_id": "back/expedition-gorge-2",
+      "catalog": {
+        "id": "expedition-gorge-2",
+        "area": "gorge",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "back",
+        "style": "climber",
+        "effect": "reach",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Tali Panjat",
+          "Climbing Rope"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-2",
+          "area": "gorge",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "back",
+          "style": "climber",
+          "effect": "reach",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Tali Panjat",
+            "Climbing Rope"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Tali panjat berbentuk coil panjang dengan sling dada dan pengikat carabiner ganda",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan meraih tepian bertambah.",
+          "Increased ledge reach."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-gorge-2/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-gorge-2.glb",
+        "shop_icon": "assets/production/models/back/expedition-gorge-2/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-gorge-2/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-gorge-2/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-gorge-2/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "hands:expedition-gorge-3",
+      "design_id": "hands/expedition-gorge-3",
+      "catalog": {
+        "id": "expedition-gorge-3",
+        "area": "gorge",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "hands",
+        "style": "climber",
+        "effect": "climb",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Perlengkapan Panjat",
+          "Climbing Gear"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-3",
+          "area": "gorge",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "hands",
+          "style": "climber",
+          "effect": "climb",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Perlengkapan Panjat",
+            "Climbing Gear"
+          ]
+        }
+      },
+      "production_group": "Gloves",
+      "type": "mesh",
+      "design_brief_id": "Sarung tangan panjat teknis dengan padding buku jari, grip telapak dan wrist belay clip",
+      "parts": [
+        "left_glove",
+        "right_glove",
+        "cuffs_and_pads"
+      ],
+      "attachment": "skin/shared skeleton: wrists + digits/paw",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Panjat 20% lebih cepat.",
+          "Climb 20% faster."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/hands/expedition-gorge-3/source.blend",
+        "glb": "public/models/binturong/items/hands/expedition-gorge-3.glb",
+        "shop_icon": "assets/production/models/hands/expedition-gorge-3/icon.webp",
+        "equipped_preview": "assets/production/models/hands/expedition-gorge-3/equipped.webp",
+        "turnaround": "assets/production/models/hands/expedition-gorge-3/turnaround.webp",
+        "qa_report": "assets/production/models/hands/expedition-gorge-3/qa.json"
+      },
+      "qa": "Jari/paw terbaca; grip, punch dan release; bare pads hanya sisi dalam",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-gorge-4",
+      "design_id": "back/expedition-gorge-4",
+      "catalog": {
+        "id": "expedition-gorge-4",
+        "area": "gorge",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "climber",
+        "effect": "reach",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Kait Panjat Lanjutan",
+          "Advanced Grapple"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-4",
+          "area": "gorge",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "climber",
+          "effect": "reach",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Kait Panjat Lanjutan",
+            "Advanced Grapple"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Grapple lipat dengan tiga kait membulat, reel tali, trigger dan dudukan belakang",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan meraih tepian bertambah.",
+          "Increased ledge reach."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-gorge-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-gorge-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-gorge-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-gorge-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-gorge-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-gorge-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-gorge-5",
+      "design_id": "back/expedition-gorge-5",
+      "catalog": {
+        "id": "expedition-gorge-5",
+        "area": "gorge",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "pack",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Pelontar Batu",
+          "Rock Launcher"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-5",
+          "area": "gorge",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "pack",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Pelontar Batu",
+            "Rock Launcher"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Rock Launcher berupa sling mekanis dengan cup batu, rel pendek, handle dan magazen kerikil",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-gorge-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-gorge-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-gorge-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-gorge-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-gorge-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-gorge-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-gorge-6",
+      "design_id": "body/expedition-gorge-6",
+      "catalog": {
+        "id": "expedition-gorge-6",
+        "area": "gorge",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "climber",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Set Penjelajah Ngarai",
+          "Canyon Explorer Suit"
+        ],
+        "expedition": {
+          "id": "expedition-gorge-6",
+          "area": "gorge",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "climber",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Set Penjelajah Ngarai",
+            "Canyon Explorer Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Suit penjelajah ngarai dengan jaket canvas, harness kaki, pelindung lutut dan elbow pad",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "gorge",
+        "world": "Verdant Gorge",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-gorge-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-gorge-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-gorge-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-gorge-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-gorge-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-gorge-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-mountain-1",
+      "design_id": "feet/expedition-mountain-1",
+      "catalog": {
+        "id": "expedition-mountain-1",
+        "area": "mountain",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "climber",
+        "effect": "land",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Mendaki",
+          "Hiking Boots"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-1",
+          "area": "mountain",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "climber",
+          "effect": "land",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Mendaki",
+            "Hiking Boots"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot gunung tinggi berinsulasi, toe cap, tread tebal dan lacing naik ke cuff",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak darat +8%.",
+          "Land speed +8%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-mountain-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-mountain-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-mountain-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-mountain-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-mountain-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-mountain-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:expedition-mountain-2",
+      "design_id": "face/expedition-mountain-2",
+      "catalog": {
+        "id": "expedition-mountain-2",
+        "area": "mountain",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "face",
+        "style": "goggles",
+        "effect": "find",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Kacamata Salju",
+          "Snow Goggles"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-2",
+          "area": "mountain",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "face",
+          "style": "goggles",
+          "effect": "find",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Kacamata Salju",
+            "Snow Goggles"
+          ]
+        }
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Goggles salju satu lensa lebar bercermin, lapisan seal tebal dan strap elastis",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan mengambil bekal dan harta bertambah.",
+          "Increased pickup reach for supplies and treasure."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/expedition-mountain-2/source.blend",
+        "glb": "public/models/binturong/items/face/expedition-mountain-2.glb",
+        "shop_icon": "assets/production/models/face/expedition-mountain-2/icon.webp",
+        "equipped_preview": "assets/production/models/face/expedition-mountain-2/equipped.webp",
+        "turnaround": "assets/production/models/face/expedition-mountain-2/turnaround.webp",
+        "qa_report": "assets/production/models/face/expedition-mountain-2/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-mountain-3",
+      "design_id": "body/expedition-mountain-3",
+      "catalog": {
+        "id": "expedition-mountain-3",
+        "area": "mountain",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "body",
+        "style": "raincoat",
+        "effect": "suit",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Perlengkapan Termal",
+          "Thermal Gear"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-3",
+          "area": "mountain",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "body",
+          "style": "raincoat",
+          "effect": "suit",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Perlengkapan Termal",
+            "Thermal Gear"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Jaket puffer termal berpanel, hood turun, lapisan pinggang dan celana berinsulasi",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Mengurangi dampak bahaya lingkungan.",
+          "Reduces damage from environmental hazards."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-mountain-3/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-mountain-3.glb",
+        "shop_icon": "assets/production/models/body/expedition-mountain-3/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-mountain-3/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-mountain-3/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-mountain-3/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-mountain-4",
+      "design_id": "back/expedition-mountain-4",
+      "catalog": {
+        "id": "expedition-mountain-4",
+        "area": "mountain",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "climber",
+        "effect": "reserve",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Tas Pendakian Tinggi",
+          "Altitude Pack"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-4",
+          "area": "mountain",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "climber",
+          "effect": "reserve",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Tas Pendakian Tinggi",
+            "Altitude Pack"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Carrier gunung tinggi memanjang dengan tabung air, ice-tool fantasi, ikat kompresi dan bedroll",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Oksigen cadangan di hutan. Di arena lain, kue awal penuh.",
+          "Reserve oxygen in Forest Grove. Full starting cakes elsewhere."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-mountain-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-mountain-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-mountain-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-mountain-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-mountain-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-mountain-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-mountain-5",
+      "design_id": "back/expedition-mountain-5",
+      "catalog": {
+        "id": "expedition-mountain-5",
+        "area": "mountain",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "climber",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Tongkat Badai",
+          "Storm Staff"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-5",
+          "area": "mountain",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "climber",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Tongkat Badai",
+            "Storm Staff"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Tongkat badai berporos kayu, cincin konduktor, kristal angin dan grip; dudukan punggung",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-mountain-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-mountain-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-mountain-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-mountain-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-mountain-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-mountain-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-mountain-6",
+      "design_id": "body/expedition-mountain-6",
+      "catalog": {
+        "id": "expedition-mountain-6",
+        "area": "mountain",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "aurora",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Set Penakluk Puncak",
+          "Summit Suit"
+        ],
+        "expedition": {
+          "id": "expedition-mountain-6",
+          "area": "mountain",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "aurora",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Set Penakluk Puncak",
+            "Summit Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Summit Suit berupa parka tebal, kerah bulu sintetis, harness, pelindung kaki dan panel reflektif",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "mountain",
+        "world": "Cloud Mountain",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-mountain-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-mountain-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-mountain-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-mountain-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-mountain-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-mountain-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-coast-1",
+      "design_id": "feet/expedition-coast-1",
+      "catalog": {
+        "id": "expedition-coast-1",
+        "area": "coast",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "diver",
+        "effect": "swim",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Air",
+          "Aqua Shoes"
+        ],
+        "expedition": {
+          "id": "expedition-coast-1",
+          "area": "coast",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "diver",
+          "effect": "swim",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Air",
+            "Aqua Shoes"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Sepatu air mesh low-cut dengan drain holes, toe protection dan sol karet beralur",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kecepatan berenang +12%.",
+          "Swim speed +12%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-coast-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-coast-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-coast-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-coast-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-coast-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-coast-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:expedition-coast-2",
+      "design_id": "face/expedition-coast-2",
+      "catalog": {
+        "id": "expedition-coast-2",
+        "area": "coast",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "face",
+        "style": "diver",
+        "effect": "snorkel",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Perlengkapan Renang",
+          "Swim Gear"
+        ],
+        "expedition": {
+          "id": "expedition-coast-2",
+          "area": "coast",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "face",
+          "style": "diver",
+          "effect": "snorkel",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Perlengkapan Renang",
+            "Swim Gear"
+          ]
+        }
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Goggles renang ramping, nose bridge, strap dan snorkel permukaan pendek",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak permukaan dan pemulihan oksigen lebih cepat.",
+          "Faster surface swimming and oxygen recovery."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/expedition-coast-2/source.blend",
+        "glb": "public/models/binturong/items/face/expedition-coast-2.glb",
+        "shop_icon": "assets/production/models/face/expedition-coast-2/icon.webp",
+        "equipped_preview": "assets/production/models/face/expedition-coast-2/equipped.webp",
+        "turnaround": "assets/production/models/face/expedition-coast-2/turnaround.webp",
+        "qa_report": "assets/production/models/face/expedition-coast-2/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-coast-3",
+      "design_id": "back/expedition-coast-3",
+      "catalog": {
+        "id": "expedition-coast-3",
+        "area": "coast",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "back",
+        "style": "pack",
+        "effect": "find",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Alat Harta Karun",
+          "Treasure Tools"
+        ],
+        "expedition": {
+          "id": "expedition-coast-3",
+          "area": "coast",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "back",
+          "style": "pack",
+          "effect": "find",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Alat Harta Karun",
+            "Treasure Tools"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Alat harta berupa detector ber-coil, pouch temuan, sekop kecil dan pengikat belakang",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan mengambil bekal dan harta bertambah.",
+          "Increased pickup reach for supplies and treasure."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-coast-3/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-coast-3.glb",
+        "shop_icon": "assets/production/models/back/expedition-coast-3/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-coast-3/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-coast-3/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-coast-3/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-coast-4",
+      "design_id": "body/expedition-coast-4",
+      "catalog": {
+        "id": "expedition-coast-4",
+        "area": "coast",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "body",
+        "style": "diver",
+        "effect": "suit",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Perlengkapan Laut",
+          "Marine Gear"
+        ],
+        "expedition": {
+          "id": "expedition-coast-4",
+          "area": "coast",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "body",
+          "style": "diver",
+          "effect": "suit",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Perlengkapan Laut",
+            "Marine Gear"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Set pakaian laut berupa jaket spray tahan air, celana pendek, kantong kering dan collar",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Mengurangi dampak bahaya lingkungan.",
+          "Reduces damage from environmental hazards."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-coast-4/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-coast-4.glb",
+        "shop_icon": "assets/production/models/body/expedition-coast-4/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-coast-4/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-coast-4/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-coast-4/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-coast-5",
+      "design_id": "back/expedition-coast-5",
+      "catalog": {
+        "id": "expedition-coast-5",
+        "area": "coast",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "diver",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Harpon",
+          "Harpoon"
+        ],
+        "expedition": {
+          "id": "expedition-coast-5",
+          "area": "coast",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "diver",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Harpon",
+            "Harpoon"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Harpoon fantasi nonrealistis dengan badan kayu/karang, ujung membulat, reel tali dan grip",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-coast-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-coast-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-coast-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-coast-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-coast-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-coast-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-coast-6",
+      "design_id": "body/expedition-coast-6",
+      "catalog": {
+        "id": "expedition-coast-6",
+        "area": "coast",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "explorer",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Set Penjelajah Korsar",
+          "Corsair Explorer Set"
+        ],
+        "expedition": {
+          "id": "expedition-coast-6",
+          "area": "coast",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "explorer",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Set Penjelajah Korsar",
+            "Corsair Explorer Set"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Set korsar: jaket berekor pendek, kerah lipat, sabuk lebar dan pouch; siluet punggung berbeda",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "coast",
+        "world": "Sunset Coast",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-coast-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-coast-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-coast-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-coast-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-coast-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-coast-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-sea-1",
+      "design_id": "feet/expedition-sea-1",
+      "catalog": {
+        "id": "expedition-sea-1",
+        "area": "sea",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "diver",
+        "effect": "swim",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Katak",
+          "Fins"
+        ],
+        "expedition": {
+          "id": "expedition-sea-1",
+          "area": "sea",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "diver",
+          "effect": "swim",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Katak",
+            "Fins"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Fin panjang dengan bilah lentur bercabang, socket kaki dan heel strap; bilah menekuk saat berenang",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kecepatan berenang +12%.",
+          "Swim speed +12%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-sea-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-sea-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-sea-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-sea-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-sea-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-sea-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:expedition-sea-2",
+      "design_id": "face/expedition-sea-2",
+      "catalog": {
+        "id": "expedition-sea-2",
+        "area": "sea",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "face",
+        "style": "diver",
+        "effect": "snorkel",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Masker dan Snorkel",
+          "Mask + Snorkel"
+        ],
+        "expedition": {
+          "id": "expedition-sea-2",
+          "area": "sea",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "face",
+          "style": "diver",
+          "effect": "snorkel",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Masker dan Snorkel",
+            "Mask + Snorkel"
+          ]
+        }
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Masker selam wide-view dengan skirt silikon, nose pocket dan snorkel dry-top di samping",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples",
+        "snorkel"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak permukaan dan pemulihan oksigen lebih cepat.",
+          "Faster surface swimming and oxygen recovery."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/expedition-sea-2/source.blend",
+        "glb": "public/models/binturong/items/face/expedition-sea-2.glb",
+        "shop_icon": "assets/production/models/face/expedition-sea-2/icon.webp",
+        "equipped_preview": "assets/production/models/face/expedition-sea-2/equipped.webp",
+        "turnaround": "assets/production/models/face/expedition-sea-2/turnaround.webp",
+        "qa_report": "assets/production/models/face/expedition-sea-2/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-sea-3",
+      "design_id": "body/expedition-sea-3",
+      "catalog": {
+        "id": "expedition-sea-3",
+        "area": "sea",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "body",
+        "style": "diver",
+        "effect": "suit",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Sarung Tangan dan Baju Selam",
+          "Diving Gloves + Diving Suit"
+        ],
+        "expedition": {
+          "id": "expedition-sea-3",
+          "area": "sea",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "body",
+          "style": "diver",
+          "effect": "suit",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Sarung Tangan dan Baju Selam",
+            "Diving Gloves + Diving Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Wetsuit full-body berpanel neoprene dengan zipper dan tail seal; sepasang glove selam dengan jari terdefinisi terpisah",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets",
+        "left_glove",
+        "right_glove"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance; wrists + paw bones for separate gloves; existing composite reward ID retained",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Mengurangi dampak bahaya lingkungan.",
+          "Reduces damage from environmental hazards."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-sea-3/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-sea-3.glb",
+        "shop_icon": "assets/production/models/body/expedition-sea-3/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-sea-3/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-sea-3/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-sea-3/qa.json",
+        "sub_assets": [
+          {
+            "part": "suit",
+            "glb": "public/models/binturong/items/body/expedition-sea-3-suit.glb",
+            "blend": "assets/production/models/body/expedition-sea-3/suit.blend"
+          },
+          {
+            "part": "gloves_pair",
+            "glb": "public/models/binturong/items/body/expedition-sea-3-gloves.glb",
+            "blend": "assets/production/models/body/expedition-sea-3/gloves.blend"
+          }
+        ]
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-sea-4",
+      "design_id": "back/expedition-sea-4",
+      "catalog": {
+        "id": "expedition-sea-4",
+        "area": "sea",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "diver",
+        "effect": "tank",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Tabung Oksigen",
+          "Oxygen Tank"
+        ],
+        "expedition": {
+          "id": "expedition-sea-4",
+          "area": "sea",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "diver",
+          "effect": "tank",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Tabung Oksigen",
+            "Oxygen Tank"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Tabung scuba silinder dengan regulator, pressure gauge, hose, valve, dua strap dan dudukan punggung",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail",
+        "tank",
+        "valve",
+        "regulator",
+        "hose"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Selam lebih dalam dengan 48 detik oksigen.",
+          "Dive deeper with 48 seconds of oxygen."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-sea-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-sea-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-sea-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-sea-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-sea-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-sea-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-sea-5",
+      "design_id": "back/expedition-sea-5",
+      "catalog": {
+        "id": "expedition-sea-5",
+        "area": "sea",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "diver",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Capit Gelembung",
+          "Bubble Claw"
+        ],
+        "expedition": {
+          "id": "expedition-sea-5",
+          "area": "sea",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "diver",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Capit Gelembung",
+            "Bubble Claw"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Bubble Claw: capit bercangkang karang yang membuka, chamber gelembung transparan, nozzle burst, grip tangan dan holster punggung",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-sea-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-sea-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-sea-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-sea-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-sea-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-sea-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-sea-6",
+      "design_id": "body/expedition-sea-6",
+      "catalog": {
+        "id": "expedition-sea-6",
+        "area": "sea",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "diver",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Set Premium Abyssal",
+          "Abyssal Premium Suit"
+        ],
+        "expedition": {
+          "id": "expedition-sea-6",
+          "area": "sea",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "diver",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Set Premium Abyssal",
+            "Abyssal Premium Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Premium Abyssal Suit dengan pelat hidro berlapis, panel fleksibel, seam glow lembut dan port perlengkapan; tidak mengambil slot tank",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "sea",
+        "world": "Coral Sea",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-sea-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-sea-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-sea-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-sea-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-sea-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-sea-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "feet:expedition-volcano-1",
+      "design_id": "feet/expedition-volcano-1",
+      "catalog": {
+        "id": "expedition-volcano-1",
+        "area": "volcano",
+        "stage": "easy",
+        "rank": 1,
+        "slot": "feet",
+        "style": "desert",
+        "effect": "land",
+        "stars": 50,
+        "rarity": "common",
+        "name": [
+          "Sepatu Tahan Panas",
+          "Heat Boots"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-1",
+          "area": "volcano",
+          "stage": "easy",
+          "rank": 1,
+          "slot": "feet",
+          "style": "desert",
+          "effect": "land",
+          "stars": 50,
+          "rarity": "common",
+          "name": [
+            "Sepatu Tahan Panas",
+            "Heat Boots"
+          ]
+        }
+      },
+      "production_group": "Boots / Fins",
+      "type": "mesh",
+      "design_brief_id": "Boot tahan panas dengan toe guard keramik, panel insulasi dan tread batu vulkanik",
+      "parts": [
+        "left_shoe",
+        "right_shoe",
+        "soles_and_closures"
+      ],
+      "attachment": "skin/shared skeleton: ankles + toes",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 1,
+        "stage": "easy",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Gerak darat +8%.",
+          "Land speed +8%."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/feet/expedition-volcano-1/source.blend",
+        "glb": "public/models/binturong/items/feet/expedition-volcano-1.glb",
+        "shop_icon": "assets/production/models/feet/expedition-volcano-1/icon.webp",
+        "equipped_preview": "assets/production/models/feet/expedition-volcano-1/equipped.webp",
+        "turnaround": "assets/production/models/feet/expedition-volcano-1/turnaround.webp",
+        "qa_report": "assets/production/models/feet/expedition-volcano-1/qa.json"
+      },
+      "qa": "Kontak lantai, heel lift, toe-off, mendarat; telapak tidak mengambang",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "face:expedition-volcano-2",
+      "design_id": "face/expedition-volcano-2",
+      "catalog": {
+        "id": "expedition-volcano-2",
+        "area": "volcano",
+        "stage": "medium",
+        "rank": 2,
+        "slot": "face",
+        "style": "desert",
+        "effect": "find",
+        "stars": 75,
+        "rarity": "uncommon",
+        "name": [
+          "Visor Tahan Panas",
+          "Heat Visor"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-2",
+          "area": "volcano",
+          "stage": "medium",
+          "rank": 2,
+          "slot": "face",
+          "style": "desert",
+          "effect": "find",
+          "stars": 75,
+          "rarity": "uncommon",
+          "name": [
+            "Visor Tahan Panas",
+            "Heat Visor"
+          ]
+        }
+      },
+      "production_group": "Face gear",
+      "type": "mesh",
+      "design_brief_id": "Visor heat-shield berbentuk shield melengkung, frame tebal tahan panas dan gasket",
+      "parts": [
+        "frame_or_mask",
+        "lenses_or_openings",
+        "strap_or_temples"
+      ],
+      "attachment": "rig/head: eyewear",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 2,
+        "stage": "medium",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Jangkauan mengambil bekal dan harta bertambah.",
+          "Increased pickup reach for supplies and treasure."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/face/expedition-volcano-2/source.blend",
+        "glb": "public/models/binturong/items/face/expedition-volcano-2.glb",
+        "shop_icon": "assets/production/models/face/expedition-volcano-2/icon.webp",
+        "equipped_preview": "assets/production/models/face/expedition-volcano-2/equipped.webp",
+        "turnaround": "assets/production/models/face/expedition-volcano-2/turnaround.webp",
+        "qa_report": "assets/production/models/face/expedition-volcano-2/qa.json"
+      },
+      "qa": "Kumis, mata, moncong bebas clipping; blink/head turn",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-volcano-3",
+      "design_id": "body/expedition-volcano-3",
+      "catalog": {
+        "id": "expedition-volcano-3",
+        "area": "volcano",
+        "stage": "hard",
+        "rank": 3,
+        "slot": "body",
+        "style": "desert",
+        "effect": "suit",
+        "stars": 125,
+        "rarity": "rare",
+        "name": [
+          "Sarung Tangan dan Baju Termal",
+          "Thermal Gloves + Suit"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-3",
+          "area": "volcano",
+          "stage": "hard",
+          "rank": 3,
+          "slot": "body",
+          "style": "desert",
+          "effect": "suit",
+          "stars": 125,
+          "rarity": "rare",
+          "name": [
+            "Sarung Tangan dan Baju Termal",
+            "Thermal Gloves + Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Suit termal dengan panel reflektif, penutup leher dan bukaan ekor; glove termal terpisah dengan pad tangan",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets",
+        "left_glove",
+        "right_glove"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance; wrists + paw bones for separate gloves; existing composite reward ID retained",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 3,
+        "stage": "hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Mengurangi dampak bahaya lingkungan.",
+          "Reduces damage from environmental hazards."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-volcano-3/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-volcano-3.glb",
+        "shop_icon": "assets/production/models/body/expedition-volcano-3/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-volcano-3/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-volcano-3/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-volcano-3/qa.json",
+        "sub_assets": [
+          {
+            "part": "suit",
+            "glb": "public/models/binturong/items/body/expedition-volcano-3-suit.glb",
+            "blend": "assets/production/models/body/expedition-volcano-3/suit.blend"
+          },
+          {
+            "part": "gloves_pair",
+            "glb": "public/models/binturong/items/body/expedition-volcano-3-gloves.glb",
+            "blend": "assets/production/models/body/expedition-volcano-3/gloves.blend"
+          }
+        ]
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-volcano-4",
+      "design_id": "back/expedition-volcano-4",
+      "catalog": {
+        "id": "expedition-volcano-4",
+        "area": "volcano",
+        "stage": "extreme",
+        "rank": 4,
+        "slot": "back",
+        "style": "desert",
+        "effect": "reserve",
+        "stars": 250,
+        "rarity": "epic",
+        "name": [
+          "Tas Tahan Panas",
+          "Heat Survival Pack"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-4",
+          "area": "volcano",
+          "stage": "extreme",
+          "rank": 4,
+          "slot": "back",
+          "style": "desert",
+          "effect": "reserve",
+          "stars": 250,
+          "rarity": "epic",
+          "name": [
+            "Tas Tahan Panas",
+            "Heat Survival Pack"
+          ]
+        }
+      },
+      "production_group": "Backpack / Back",
+      "type": "mesh",
+      "design_brief_id": "Heat Survival Pack berbentuk container tahan panas, fins pendingin, canteen dan harness",
+      "parts": [
+        "main_volume",
+        "harness",
+        "functional_detail"
+      ],
+      "attachment": "rig/upper_spine: back_mount",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 4,
+        "stage": "extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Oksigen cadangan di hutan. Di arena lain, kue awal penuh.",
+          "Reserve oxygen in Forest Grove. Full starting cakes elsewhere."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-volcano-4/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-volcano-4.glb",
+        "shop_icon": "assets/production/models/back/expedition-volcano-4/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-volcano-4/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-volcano-4/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-volcano-4/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "back:expedition-volcano-5",
+      "design_id": "back/expedition-volcano-5",
+      "catalog": {
+        "id": "expedition-volcano-5",
+        "area": "volcano",
+        "stage": "world-hard",
+        "rank": 5,
+        "slot": "back",
+        "style": "desert",
+        "effect": "weapon",
+        "stars": 500,
+        "rarity": "legendary",
+        "name": [
+          "Senjata Magma",
+          "Magma Weapon"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-5",
+          "area": "volcano",
+          "stage": "world-hard",
+          "rank": 5,
+          "slot": "back",
+          "style": "desert",
+          "effect": "weapon",
+          "stars": 500,
+          "rarity": "legendary",
+          "name": [
+            "Senjata Magma",
+            "Magma Weapon"
+          ]
+        }
+      },
+      "production_group": "Weapon / Tool",
+      "type": "mesh",
+      "design_brief_id": "Magma Weapon fantasi: chamber batu pijar berlapis, nozzle keramik, grip berinsulasi dan efek visual terpisah",
+      "parts": [
+        "weapon_main",
+        "grip",
+        "holster",
+        "moving_or_effect_parts"
+      ],
+      "attachment": "rig/back_mount when stowed; rig/right_grip when used (retain original back slot)",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 5,
+        "stage": "world-hard",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Serangan khas arena. Gunakan tombol Ability atau 5.",
+          "Area weapon. Use the Ability tray or key 5."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/back/expedition-volcano-5/source.blend",
+        "glb": "public/models/binturong/items/back/expedition-volcano-5.glb",
+        "shop_icon": "assets/production/models/back/expedition-volcano-5/icon.webp",
+        "equipped_preview": "assets/production/models/back/expedition-volcano-5/equipped.webp",
+        "turnaround": "assets/production/models/back/expedition-volcano-5/turnaround.webp",
+        "qa_report": "assets/production/models/back/expedition-volcano-5/qa.json"
+      },
+      "qa": "Harness terhubung; ekor bebas; tidak menembus tubuh saat berlari/panjat; wield/stow and ability animation with correct projectile",
+      "production_status": "planned_not_created"
+    },
+    {
+      "key": "body:expedition-volcano-6",
+      "design_id": "body/expedition-volcano-6",
+      "catalog": {
+        "id": "expedition-volcano-6",
+        "area": "volcano",
+        "stage": "world-extreme",
+        "rank": 6,
+        "slot": "body",
+        "style": "space",
+        "effect": "armor",
+        "stars": 500,
+        "rarity": "mythic",
+        "name": [
+          "Set Inferno",
+          "Inferno Suit"
+        ],
+        "expedition": {
+          "id": "expedition-volcano-6",
+          "area": "volcano",
+          "stage": "world-extreme",
+          "rank": 6,
+          "slot": "body",
+          "style": "space",
+          "effect": "armor",
+          "stars": 500,
+          "rarity": "mythic",
+          "name": [
+            "Set Inferno",
+            "Inferno Suit"
+          ]
+        }
+      },
+      "production_group": "Outfit",
+      "type": "mesh",
+      "design_brief_id": "Inferno Suit dengan pelat obsidian bertingkat, sambungan fleksibel, panel pelindung punggung dan aksen bara terkendali",
+      "parts": [
+        "front_shell",
+        "back_shell",
+        "side_seams",
+        "closures_and_pockets"
+      ],
+      "attachment": "skin/shared skeleton: torso, shoulders, hips; tail clearance",
+      "unlock": {
+        "area": "volcano",
+        "world": "Ember Volcano",
+        "rank": 6,
+        "stage": "world-extreme",
+        "method": "solo progression or existing star redemption",
+        "benefit": [
+          "Kerusakan serangan berkurang 20%.",
+          "Take 20% less attack damage."
+        ]
+      },
+      "outputs": {
+        "blend": "assets/production/models/body/expedition-volcano-6/source.blend",
+        "glb": "public/models/binturong/items/body/expedition-volcano-6.glb",
+        "shop_icon": "assets/production/models/body/expedition-volcano-6/icon.webp",
+        "equipped_preview": "assets/production/models/body/expedition-volcano-6/equipped.webp",
+        "turnaround": "assets/production/models/body/expedition-volcano-6/turnaround.webp",
+        "qa_report": "assets/production/models/body/expedition-volcano-6/qa.json"
+      },
+      "qa": "Pakaian utuh depan-samping-belakang; bahu/pinggul tidak tertarik; tail opening",
+      "production_status": "planned_not_created"
+    }
+  ]
+}

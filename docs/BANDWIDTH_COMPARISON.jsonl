@@ -1,0 +1,6 @@
+{"mode":"race","players":2,"roomBytes":21096,"selfStateBytes":10170,"newResponseBytes":10899}
+{"mode":"race","players":4,"roomBytes":41821,"selfStateBytes":10170,"newResponseBytes":11266}
+{"mode":"race","players":10,"roomBytes":149407,"selfStateBytes":14710,"newResponseBytes":16912}
+{"mode":"coop","players":2,"roomBytes":31281,"selfStateBytes":10170,"newResponseBytes":10899}
+{"mode":"coop","players":4,"roomBytes":52006,"selfStateBytes":10170,"newResponseBytes":11266}
+{"mode":"coop","players":10,"roomBytes":164144,"selfStateBytes":14711,"newResponseBytes":16914}

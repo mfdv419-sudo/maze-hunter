@@ -1,0 +1,18 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(p,'utf8');
+const f={main:read('src/main.ts'),hud:read('src/adventure-hud.css'),pad:read('src/adventure-action-pad.css'),style:read('src/style.css'),presentation:read('src/presentation.css'),forest:read('src/forest-pilot.css'),modern:read('src/game/modern.ts'),controller:read('src/ui/adventure-action-pad.ts'),touch:read('src/game/touch-controls.ts')};
+const t=[];const add=(n,o)=>t.push([n,!!o]);
+add('home untouched by imports',!f.main.includes('home-ui.css')&&!f.main.includes('ui-pages.css')&&!f.main.includes('retro-ui.css'));
+add('action pad mounted',f.main.includes('mountAdventureActionPad')&&f.main.includes('adventurePad=mountAdventureActionPad'));
+add('no adventure camera reset button',f.main.includes("if(!modern.adventure){const cameraButton"));
+add('minimap no plus',!f.modern.includes('class="minimap-toggle"'));
+add('four-button controller',['forest-ability','forest-merge','#hit-action','#jump-action'].every(x=>f.controller.includes(x)));
+add('zero important in owners',![f.hud,f.pad,f.forest].some(x=>x.includes('!important')));
+const forbidden=['.joystick','.action-controls','.action-button','.action-hit','.action-jump','.minimap-panel','.adventure-objectives','.adventure-hud-stack'];
+add('style has no gameplay owner',forbidden.every(x=>!f.style.includes(x)));
+add('presentation has no gameplay owner',forbidden.every(x=>!f.presentation.includes(x)));
+add('hud owns map tools joystick',f.hud.includes('.minimap-panel')&&f.hud.includes('.forest-tools')&&f.hud.includes('.joystick'));
+add('pad owns all four geometry',['forest-merge','forest-ability','#hit-action','#jump-action'].every(x=>f.pad.includes(x)));
+add('touch controls do not move action pad',!f.touch.includes("querySelector<HTMLElement>('.action-controls')")&&!f.touch.includes('actions.style'));
+add('no middle item belt',f.hud.includes('.forest-item-belt')&&f.hud.includes('display:none'));
+let fail=0;for(const [n,o] of t){console.log(o?'PASS':'FAIL',n);if(!o)fail++;}if(fail)process.exit(2);

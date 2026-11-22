@@ -1,0 +1,5 @@
+--- a/src/scenes/MenuScene.ts
++++ b/src/scenes/MenuScene.ts
+@@
+-    this.add.text(w*.095,h*.17+Math.min(100,w*.1),'THE MAZE IS ALIVE. IT KNOWS YOUR NAME.',{fontFamily:'monospace',fontSize:`${Math.max(10,12*s)}px`,color:C.gold,letterSpacing:1});
++    this.add.text(w*.095,h*.17+Math.min(100,w*.1),'THE MAZE IS ALIVE. IT KNOWS YOUR NAME.',{fontFamily:'monospace',fontSize:`${Math.max(10,12*s)}px`,color:'#d9b66b',letterSpacing:1});
